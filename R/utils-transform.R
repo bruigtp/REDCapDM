@@ -8,21 +8,31 @@
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
+#' @param exclude_recalc Character vector with the names of the variables that do not have to be recalculated. Might be useful for projects were there are some calculated fields that have a time consuming recalculation.
 #' @importFrom rlang :=
 #'
 ############Calculated functions############
-recalculate <- function(data, dic, event_form = NULL){
+recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
+
+  #Redefine rounding function (the round original function is troublesome for some special cases)
+  round = function(x, digits) {
+    posneg = sign(x)
+    z = abs(x)*10^digits
+    z = z + 0.5 + sqrt(.Machine$double.eps)
+    z = trunc(z)
+    z = z/10^digits
+    z*posneg
+  }
 
   #Calculate for each calculated field the transcribed logic and if possible to transcribe recalculate it
-
   calc <- tibble::tibble(dic) %>%
-    dplyr::filter(.data$field_type == "calc") %>%
+    dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude_recalc) %>%
     dplyr::mutate(
       calc = purrr::map(.data$field_name, function(x) {
           val <- data[, x]
           if(is.numeric(val)){
             as.numeric(val)
-          }else{
+          } else {
             val
           }
       }),
@@ -45,27 +55,24 @@ recalculate <- function(data, dic, event_form = NULL){
         if(!is.null(x)){
           x$eval
         }else{
-          NA
-        }
-      }),
-      calc = purrr::map2(.data$trans, calc, function(x, y){
-        if(!is.na(x)){
-          y
-        }else{
-          NA
+          NULL
         }
       }),
       is_equal = purrr::map2_lgl(.data$calc, .data$recalc, function(x, y){
-        if(is.numeric(x) & is.numeric(y)){
-          identical(round(x, 3), round(y, 3))
-        }else{
-          identical(x, y)
+        if(!is.null(y)) {
+          if(is.numeric(x) & is.numeric(y)){
+            identical(round(x, 3), round(y, 3))
+          }else if(all(is.na(x)) & all(is.na(y))) {
+            TRUE
+          } else {
+            identical(x, y)
+          }
+        } else {
+          NA
         }
-      }),
-      is_equal = ifelse(is.na(.data$trans), NA, .data$is_equal)
+      })
     ) %>%
     dplyr::select(-"rlogic")
-
 
   #Add this recalculated variables to data and dictionary and return both datasets
 
@@ -98,10 +105,11 @@ recalculate <- function(data, dic, event_form = NULL){
 
   report1 <- calc %>%
     dplyr::mutate(n = 1) %>%
-    dplyr::summarise(trans = sum(!is.na(.data$trans)),
-              N = sum(.data$n),
-              no_trans = .data$N - .data$trans,
-              no_equal = sum(!.data$is_equal, na.rm = TRUE),
+    dplyr::summarise(
+      trans = sum(!is.na(.data$trans)),
+      N = sum(.data$n),
+      no_trans = .data$N - .data$trans,
+      no_equal = sum(!.data$is_equal, na.rm = TRUE),
     ) %>%
     dplyr::mutate(text1 = stringr::str_glue("{no_trans} ({round(no_trans*100/N, 2)}%)"),
            text2 = stringr::str_glue("{no_equal} ({round(no_equal*100/trans, 2)}%)")
@@ -137,10 +145,9 @@ recalculate <- function(data, dic, event_form = NULL){
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
-#' @param checkbox_labels Character vector with the names that will have the two options of every checkbox variable. Default is `c('No', 'Yes')`.
-#' @param checkbox_na Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (meaning that some of the variables specified in it are missing) or also when the branching logic isn't satisfied (true).
+#' @param checkbox_na Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.
 
-transform_checkboxes <- function(data, dic, event_form, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE){
+transform_checkboxes <- function(data, dic, event_form, checkbox_na = FALSE){
 
   vars <- dic$field_name[dic$field_type=="checkbox"]
   results <- results1 <- results2 <- NULL
@@ -227,17 +234,69 @@ transform_checkboxes <- function(data, dic, event_form, checkbox_labels = c("No"
 #' @param labels Named character vector with the name of the variables in the data and the REDCap label in its name.
 #' @param checkbox_labels Character vector with the names that will have the two options of every checkbox variable. Default is c('No', 'Yes').
 
-checkbox_names <- function(data,dic,labels, checkbox_labels = c("No", "Yes")){
+checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
 
   #Identify checkbox variables:
-  var_check<-names(data)[grep("___",names(data))]
+  var_check <- names(data)[grep("___",names(data))]
 
-  #Add to dictionary all variables from checkbox found in the data and remove the original one (dic_checkboxes is an auxiliary function defined afterwards)
-  dic <- dic_checkboxes(var_check,dic,labels, checkbox_labels)
+  names_trim <- unique(gsub("___.*$", "", var_check))
 
-  #Transform name in the bbdd and in the dictionary (transform_name is another auxiliary function defined afterwards)
-  names(data) <- make.unique(purrr::map_chr(names(data),~transform_name(var_check,.x,labels)))
-  dic$field_name <- make.unique(purrr::map_chr(dic$field_name,~transform_name(var_check,.x,labels)))
+  #Add to dictionary all variables from checkbox found in the data and remove the original one. Also, change the name both in the data and in the dictionary
+  for(i in 1:length(names_trim)){
+
+    svar_check <- grep(stringr::str_glue("^{names_trim[i]}___"), var_check, value = TRUE)
+
+    label <- labels[svar_check]
+    label <- gsub(".*choice=","",label)
+    label <- gsub("\\)","",label)
+
+    #Add rows with the name of all the variables for all the options
+    new_row <- dic %>%
+      dplyr::filter(.data$field_name==names_trim[i])
+
+    #We have to repeat the original row n times (the length of svar_check)
+    new_row <-  purrr::map_dfr(seq_len(length(svar_check)), ~new_row) %>%
+      dplyr::mutate(
+        field_name=svar_check,
+        field_label=label,
+        choices_calculations_or_slider_labels=stringr::str_glue("0, {checkbox_labels[1]} | 1, {checkbox_labels[2]}"))
+
+    dic <- dic %>%
+      tibble::add_row(new_row, .before = which(dic$field_name==names_trim[i])) %>%
+      #Remove the original checkbox variable that was present in the beginning
+      dplyr::filter(!.data$field_name%in%names_trim[i])
+
+    label_name <- purrr::map_chr(label, ~janitor::make_clean_names(.x))
+    label_name <- gsub("^x(\\d)","\\1",label_name)
+
+    #Replace the original number corresponding on the option to the name of the choice
+    out <- stringr::str_glue("{names_trim[i]}_{label_name}")
+
+    #Trim name if it has more than 60 characters (if the option name is very large)
+    out <- strtrim(out, 60)
+
+    for(j in 1:length(out)) {
+      out0 <- out[j]
+      #Make unique if the name was already present in the names of the data
+      out[j] <- utils::tail(make.unique(c(names(data), out[j])), 1)
+      if(out[j] != out0) {
+        warning(stringr::str_glue("The new name after the transformation of the checkox ({out0}) was already present in the data so it will be transformed to {out[j]}"))
+      }
+      #Change the name in the data and in the dictionary:
+      names(data) <- dplyr::case_when(
+        names(data) == svar_check[j] ~ out[j],
+        TRUE ~ names(data)
+      )
+
+      dic <- dic %>%
+        dplyr::mutate(
+          field_name = dplyr::case_when(
+            field_name == svar_check[j] ~ out[j],
+            TRUE ~ field_name
+          )
+        )
+    }
+  }
 
   out <- list(
     data=data,
@@ -248,142 +307,50 @@ checkbox_names <- function(data,dic,labels, checkbox_labels = c("No", "Yes")){
 
 }
 
-#' Change the names of checkboxes variables in the REDCap dictionary
-#' @description
-#' Auxiliary function to checkbox_names. Adds to the dictionary all variables that correspond to all the options of checkbox (with the name as it is in the data) and remove the original general checkbox variable.
-#' @param var_check Character vector containing the names of those variables that are checkboxes.
-#' @param dic  Dataset containing the REDCap dictionary.
-#' @param labels Named character vector with the name of the variables in the data and the REDCap label in its name.
-#' @param checkbox_labels Character vector with the names that will have the two options of every checkbox variable. Default is c('No', 'Yes').
-
-dic_checkboxes <- function(var_check,dic,labels, checkbox_labels = c("No", "Yes")){
-
-  names_trim <- NULL
-
-  for(i in 1:length(var_check)){
-
-    label <- labels[var_check[i]]
-    label <- gsub(".*choice=","",label)
-    label <- gsub("\\)","",label)
-
-    names_trim[i] <- gsub("___.*$","",var_check[i])
-
-    #Add rows with the name of all the variables for all the options
-    new_row <- dic %>%
-      dplyr::filter(.data$field_name==names_trim[i]) %>%
-      dplyr::mutate(
-             field_name=var_check[i],
-             field_label=label,
-             choices_calculations_or_slider_labels=stringr::str_glue("0, {checkbox_labels[1]} | 1, {checkbox_labels[2]}"))
-
-    dic <- dic %>%
-      tibble::add_row(new_row, .before = which(dic$field_name==names_trim[i]))
-
-
-  }
-
-  dic %>%
-    #Remove the original checkbox variable that was present in the beginning
-    dplyr::filter(!.data$field_name%in%names_trim)
-
-}
-
-#' Auxiliary function to `checkbox_names`
-#' @description
-#' Auxiliary function to checkbox_names. It changes the name of the checkbox variable to the name of the option it corresponds
-#' @param var_check a character vector containing the names of those variables that are checkboxes
-#' @param name a character element with the original name of the checkbox variable that has to be changed
-#' @param labels a named character vector with the name of the variables in the data and the REDCap label in its name
-transform_name <- function(var_check,name,labels){
-
-  #It only transforms the name if the variable is a checkbox
-  if(name%in%var_check){
-    #Look the variable label and obtain the name of the corresponding option
-    label <- labels[name]
-    label <- gsub(".*choice=","",label)
-    label <- janitor::make_clean_names(label)
-    label <- gsub("^x(\\d)","\\1",label)
-
-    #Replace the original number corresponding on the option to the name of the choice
-    out <-  gsub("___.*","",name)
-    out <- stringr::str_glue("{out}_{label}")
-
-    #Trim name if it has more than 60 characters (if the option name is very large)
-    strtrim(out, 60)
-  }else{
-    name
-  }
-
-}
-
 ############Structural functions##################
 
 #' Creation of a data frame with variables of all the forms of a specified event
 #' @description
-#' Function that given the data, the dictionary and the mapping between forms and events it creates a dataset with the variables of all the forms that are in this event. It can be chosen to return only the data from the specified event.
+#' Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets filtered by each event and containing only the variables found in the event. It can be chosen to return only the data from the specified event.
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param which Specify an event if only data for the desired event is wanted.
 split_event <- function(data,dic,event_form,which=NULL){
 
-  #We create event-variable correspondence::
+  #We create event-variable correspondence from the variables in the dictionary:
   var_event <- event_form %>%
     dplyr::select("form_name"="form","redcap_event_name"="unique_event_name") %>%
-    dplyr::right_join(dic[,c("form_name","field_name","field_type","branching_logic_show_field_only_if")],by="form_name") %>%
-    #Remove variables that we don't need (type descriptive and borrar/complete)
-    dplyr::filter(.data$field_type!="descriptive",!(grepl("borrar_",.data$field_name) | grepl("_complete$",.data$field_name))) %>%
+    dplyr::right_join(dic[,c("form_name","field_name","field_type","branching_logic_show_field_only_if")],by="form_name", multiple = "all") %>%
+    #Remove variables that are not in the database (the descriptive type)
+    dplyr::filter(.data$field_type!="descriptive", .data$field_name != "record_id") %>%
     tibble::as_tibble() %>%
-    #Remove variables with event filters
-    dplyr::mutate(
-      # To be included:
-      filtre_events = purrr::map(.data$branching_logic_show_field_only_if, ~unlist(stringr::str_extract_all(.x, "\\[event-name\\]='[\\w,\\-]+"))),
-      filtre_events = purrr::map(.data$filtre_events, ~gsub("\\[event-name\\]='", "", .x)),
-      # To be excluded:
-      no_filtre_events = purrr::map(.data$branching_logic_show_field_only_if, ~unlist(stringr::str_extract_all(.x, "\\[event-name\\]<>'[\\w,\\-]+"))),
-      no_filtre_events = purrr::map(.data$no_filtre_events, ~gsub("\\[event-name\\]<>'", "", .x)),
-      #create variable for filtering
-      logic = purrr::pmap_lgl(list(.data$redcap_event_name,.data$branching_logic_show_field_only_if, .data$filtre_events, .data$no_filtre_events), ~((length(..3) == 0 & length(..4) == 0) | (..1 %in% ..3) | (length(..4) > 0 & !..1 %in% ..4))),
-      #extra logic to look for variables that is not event-name and has an or
-      vars_clau = purrr::map(.data$branching_logic_show_field_only_if, ~unlist(stringr::str_extract_all(.x, "\\[[\\w,\\-]+\\]"))),
-      logic = ifelse(grepl(" or ", .data$branching_logic_show_field_only_if) & !all(.data$vars_clau == "[event-name]"), TRUE, .data$logic)
-    ) %>%
-    #If the variable only is found in one event we keep it
-    dplyr::group_by(.data$field_name) %>%
-    dplyr::mutate(l = length(.data$field_name)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(
-      logic = ifelse(!.data$logic & .data$l == 1, TRUE, .data$logic)
-    ) %>%
-    #Apply the filter generated before
-    dplyr::filter(.data$logic) %>%
     dplyr::select("redcap_event_name", "field_name")
 
-  var_event_add <- data.frame(redcap_event_name=unique(var_event$redcap_event_name)[-1],field_name="record_id")
-  var_event <- rbind(var_event, var_event_add)%>%
-    dplyr::mutate(redcap_event_name=factor(.data$redcap_event_name, levels=unique(var_event$redcap_event_name)))%>%
-    dplyr::arrange(.data$redcap_event_name)
-
-  #Add basic REDCap variables that by default aren't in the dictionary:
-
-  basic_redcap_vars <- c("redcap_event_name","redcap_repeat_instrument","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor")
+  #Let's add the basic variables from redcap that are found in the data but not in the dictionary:
+  basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor")
 
   #It can happen that one of these variables are not in the database for some projects
   basic_redcap_vars <- basic_redcap_vars[basic_redcap_vars%in%names(data)]
-  var_event_redcap <- data.frame(redcap_event_name=NA,field_name=basic_redcap_vars)
 
-  var_event <- rbind(var_event_redcap,var_event)
+  var_event_add <- data.frame(redcap_event_name = NA, field_name = basic_redcap_vars)
+
+  var_event <- rbind(var_event_add, var_event)
+
+  #Now, let's see if there are more variables found in the var_event form than in the data, or the opposite:
 
   vars_more <- var_event$field_name[!var_event$field_name%in%names(data)]
 
   if(length(vars_more)>0){
-    stop("There're more variables in the dictionary than in the data base. Transformation stops", call. = FALSE)
+    # print(vars_more)
+    stop("There're more variables in the dictionary than in the data base so it's not possible to split by event. Transformation stops.", call. = FALSE)
   }
 
   vars_less <- names(data)[!names(data)%in%var_event$field_name]
 
   if(length(vars_less)>0){
-    stop("There're more variables in the data base than in the dictionary. Transformation stops", call. = FALSE)
+    # print(vars_less)
+    stop("There're more variables in the data base than in the dictionary so it's not possible to split by event. Transformation stops.", call. = FALSE)
   }
 
   #Let's create a database for every event filtering variables found in every event
@@ -391,12 +358,21 @@ split_event <- function(data,dic,event_form,which=NULL){
   list_events <- stats::na.exclude(unique(var_event$redcap_event_name))
 
   ndata <- tibble::tibble("events"=list_events) %>%
-    dplyr::mutate(vars=purrr::map(.data$events,~var_event %>%
-                      dplyr::filter(.data$redcap_event_name==.x | is.na(.data$redcap_event_name)) %>%
-                      dplyr::pull("field_name")),
-           df=purrr::map2(.data$events, .data$vars, ~data %>%
-                     dplyr::filter(.data$redcap_event_name==.x) %>%
-                     dplyr::select(tidyselect::all_of(.y))%>% dplyr::relocate(.data$record_id)))
+    dplyr::mutate(
+      vars = purrr::map(
+        .data$events,
+        ~ var_event %>%
+          dplyr::filter(.data$redcap_event_name == .x) %>%
+          dplyr::pull("field_name")
+      ),
+      df = purrr::map2(
+        .data$events,
+        .data$vars,
+        ~ data %>%
+          dplyr::filter(.data$redcap_event_name == .x) %>%
+          dplyr::select(tidyselect::all_of(c(basic_redcap_vars, .y)))
+      )
+    )
 
 
   if(!is.null(which)){
@@ -410,7 +386,7 @@ split_event <- function(data,dic,event_form,which=NULL){
 
 #' Creation of a data frame with variables of a specified form
 #' @description
-#' Function that given the data, the dictionary and the mapping between forms and events it creates a dataset with the variables that are in this form for all events. It can be chosen to return only the data from the specified form.
+#' Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets having only the variables in each form. It can be chosen to return only the data from the specified form
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
@@ -434,7 +410,7 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   #Previous to begin with the transformation let's find if there're the same variables in the data base than in the dictionary
   #But first we have to remove from the dictionary the descriptive variables that are found in the dictionary but not in the data
   dic <- dic %>%
-    dplyr::filter(.data$field_type!="descriptive",!(grepl("borrar_",.data$field_name) | grepl("_complete$",.data$field_name)))
+    dplyr::filter(.data$field_type!="descriptive")
 
   vars_more <- dic$field_name[!dic$field_name%in%names(data)]
 
@@ -454,15 +430,20 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 
   if(longitudinal){
     ndata <- tibble::tibble("form"=form) %>%
-      dplyr::mutate(events = purrr::map(.data$form, ~event_form$unique_event_name[event_form$form == .x]),
-                    vars = purrr::map(.data$form, ~dic$field_name[dic$form_name == .x]),
-                    #Add to vars the basic REDCap variables not found in the dictionary:
-                    vars = purrr::map(.data$vars, ~unique(c(basic_redcap_vars, .x)))
+      dplyr::mutate(
+        events = purrr::map(.data$form, ~ event_form$unique_event_name[event_form$form == .x]),
+        vars = purrr::map(.data$form, ~ dic$field_name[dic$form_name == .x])
       ) %>%
       #Collect variables from every event
-      dplyr::mutate(df = purrr::map2(.data$events, .data$vars,~data %>%
-                                       dplyr::filter(redcap_event_name==.x) %>%
-                                       dplyr::select(tidyselect::all_of(.y))%>% dplyr::relocate(.data$record_id)))
+      dplyr::mutate(df = purrr::map2(
+        .data$events,
+        .data$vars,
+        ~ data %>%
+          dplyr::filter(redcap_event_name %in% .x) %>%
+          dplyr::select(tidyselect::all_of(unique(
+            c(basic_redcap_vars, .y)
+          )))
+      ))
   }else{
     ndata <- tibble::tibble("form"=form) %>%
       dplyr::mutate(vars = purrr::map(.data$form, ~dic$field_name[dic$form_name == .x]),
@@ -470,25 +451,26 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
                     vars = purrr::map(.data$vars, ~unique(c(basic_redcap_vars, .x)))
       ) %>%
       #Collect variables from every event
-      dplyr::mutate(df = purrr::map(.data$vars,~data %>%
-                                       dplyr::select(tidyselect::all_of(.x))%>% dplyr::relocate(.data$record_id)))
+      dplyr::mutate(df = purrr::map(.data$vars,  ~ data %>%
+                                      dplyr::select(tidyselect::all_of(unique(c(basic_redcap_vars, .x))))))
   }
 
 
   if(wide){
 
-    #We will add it with the order that repeated measures happen for every patient
+    #We will add it with the order that repeated measures happen for every patient. There will be a row for each record-id.
 
     ndata <- ndata %>%
-      dplyr::mutate(vars_esp = purrr::map(.data$vars, ~.x[!.x %in% basic_redcap_vars]),
-             df = purrr::map2(.data$vars_esp, .data$df, ~ .y %>%
-                         dplyr::select("record_id", .x) %>%
+      dplyr::mutate(
+        df = purrr::map2(.data$vars, .data$df, ~ .y %>%
+                         dplyr::select(tidyselect::all_of(c("record_id", .x))) %>%
                          dplyr::group_by(.data$record_id) %>%
                          dplyr::mutate(id = 1:length(.data$record_id)) %>%
                          dplyr::ungroup() %>%
-                         tidyr::pivot_wider(names_from = .data$id, values_from = -c(.data$record_id, .data$id))
+                         tidyr::pivot_wider(names_from = "id", values_from = -c("record_id", "id"))
              )
       )
+
   }
 
   if(!is.null(which)){
@@ -545,7 +527,7 @@ to_factor <- function(data, exclude = NULL){
 
 #' Fill rows with the values in one event
 #' @description
-#' Function that with one particular variable and event it fills all the rows in the data with the value in that particular event
+#' Function that with one particular variable and event it fills all the rows in the data with the value in that particular event. Auxiliar to rd_rlogic function
 #' @param which_event String with the name of the event
 #' @param which_var String with the name of the variable
 #' @param data Dataset containing the REDCap data.
@@ -555,12 +537,15 @@ fill_data <- function(which_event, which_var, data){
   if(which_event %in% data$redcap_event_name){
 
     fill_values <- data %>%
-      dplyr::select("record_id", "redcap_event_name", "var" = "which_var") %>%
+      dplyr::select("record_id", "redcap_event_name", "var" = which_var) %>%
       dplyr::group_by(.data$record_id) %>%
       dplyr::mutate(
-             var = ifelse(.data$redcap_event_name != which_event, NA, .data$var),
-             #Only the first value if the event is repeated
-             var = stats::na.exclude(unique(.data$var))[1]
+        var = dplyr::case_when(
+          .data$redcap_event_name != which_event ~ NA,
+          TRUE ~ .data$var
+        ),
+        #Only the first value if the event is repeated
+        var = stats::na.exclude(unique(.data$var))[1]
       ) %>%
       tidyr::fill(.data$var, .direction = "downup") %>%
       dplyr::pull("var")

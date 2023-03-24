@@ -4,13 +4,7 @@
 \alias{transform_checkboxes}
 \title{Transformation of checkboxes in case of having a branching logic}
 \usage{
-transform_checkboxes(
-  data,
-  dic,
-  event_form,
-  checkbox_labels = c("No", "Yes"),
-  checkbox_na = FALSE
-)
+transform_checkboxes(data, dic, event_form, checkbox_na = FALSE)
 }
 \arguments{
 \item{data}{Data frame containing data from REDCap.}
@@ -19,9 +13,7 @@ transform_checkboxes(
 
 \item{event_form}{Data frame  containing the correspondence of each event with each form.}
 
-\item{checkbox_labels}{Character vector with the names that will have the two options of every checkbox variable. Default is `c('No', 'Yes')`.}
-
-\item{checkbox_na}{Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (meaning that some of the variables specified in it are missing) or also when the branching logic isn't satisfied (true).}
+\item{checkbox_na}{Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.}
 }
 \description{
 Inspects all the checkboxes of the study and looks if there is a branching logic. If there is one, when the logic of the branching logic is missing it directly inputs a missing to the checkbox. If checkbox_na is TRUE additionally it will put a missing when the branching logic isn't satisfied and not only when the logic is missing. If a branching logic cannot be found or the logic cannot be transcribed because of the presence of some smart variables, the variable is added in the list of the reviewable ones that will be printed.

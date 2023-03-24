@@ -3,7 +3,7 @@
 \docType{data}
 \name{covican}
 \alias{covican}
-\title{Subset of COVICAN's database}
+\title{Subset of the COVICAN's database}
 \format{
 A data frame with 342 rows and 56 columns
  \describe{

@@ -7,7 +7,7 @@
 #' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not needed.
 #' @param event_form Data frame  containing the correspondence of each event with each form. If the list is specified this argument is not needed.
 #' @param logic String containing a logic in REDCap format.
-#' @param var string containing the name of the variable that contains the logic.
+#' @param var string with the name of the variable that contains the logic.
 #' @return List containing the logic in R format and its evaluation.
 #' @examples
 #' rd_rlogic(covican,
@@ -33,7 +33,7 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
 
     if("event_form" %in% names(project)){
       if(!is.null(event_form)){
-        warning("Event has been specified twice so the function will not use the information in the event argument.")
+        warning("Event has been specified twice so the function will not use the information in the event_form argument.")
       }
       event_form <- project$event_form
     }
@@ -90,7 +90,6 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     })
   }
 
-
   #If there are some that are not in the dataframe it will give an error
 
   if(any(!check_lgl)){
@@ -109,7 +108,7 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     rlogic <- gsub("rounddown(.*),0\\)", "floor\\1)", rlogic)
     rlogic <- gsub("rounddown(.*)\\)", "floor\\1)", rlogic)
     rlogic <- gsub("datediff\\s?", "lubridate::time_length(lubridate::interval", rlogic)
-    rlogic <- gsub("sum\\(","rowSums(cbind(", rlogic)
+    rlogic <- gsub("sum\\((.*?)\\)","rowSums(cbind(\\1))", rlogic)
     #Change dates (there can be dates specified in the logic) to date format
     if(grepl("'dmy'", rlogic)){
       rlogic <- gsub("'(\\d\\d-\\d\\d-\\d\\d\\d\\d)'", "lubridate::dmy('\\1')", rlogic)
@@ -172,6 +171,15 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     rlogic <- gsub("\\[(\\w+)\\]\\s?=\\s?''", "is.na(data$\\1)", rlogic)
     rlogic <- gsub("\\[(\\w+)\\]","data$\\1",rlogic)
 
+    # #Inside the interval function there will be date variables so we have to wrap them with as.Date. Let's take the part we want to change:
+    # if(grepl("interval\\(", rlogic)) {
+    #   interval_str <- unlist(str_match_all(rlogic, "interval\\(.*?\\)"))
+    #   interval_str2 <- map(interval_str, ~gsub("(data\\$\\w+)", "as.Date(\\1)", .x))
+    #   for(i in 1:length(interval_str2)) {
+    #     rlogic <- stringi::stri_replace_all_fixed(rlogic, interval_str[[i]], interval_str2[[i]])
+    #   }
+    # }
+
     #Change the redcap operators into r operators
     rlogic <- gsub("=","==",rlogic)
     rlogic <- gsub("<==","<=",rlogic)
@@ -179,6 +187,12 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     rlogic <- gsub("<>","!=",rlogic)
     rlogic <- gsub(" and "," & ",rlogic)
     rlogic <- gsub(" or "," | ",rlogic)
+
+    #Remove '' after one of these symbols appear: <, >, <=, >=
+    rlogic <- gsub("\\s?<\\s?'([\\d\\.]+)'", " < \\1", rlogic, perl = TRUE)
+    rlogic <- gsub("\\s?>\\s?'([\\d\\.]+)'", " > \\1", rlogic, perl = TRUE)
+    rlogic <- gsub("\\s?<=\\s?'([\\d\\.]+)'", " <= \\1", rlogic, perl = TRUE)
+    rlogic <- gsub("\\s?>=\\s?'([\\d\\.]+)'", " >= \\1", rlogic, perl = TRUE)
 
     #Transform '' for missing:
     rlogic <- gsub("''", "NA", rlogic)
@@ -196,6 +210,16 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
         dplyr::filter(.data$form == form_var) %>%
         dplyr::pull(.data$unique_event_name)
 
+    }
+
+    #Redefine rounding function to match the one in redcap for rounding .5 decimals in the same way (2.5 ~ 3)
+    round = function(x, digits) {
+      posneg = sign(x)
+      z = abs(x)*10^digits
+      z = z + 0.5 + sqrt(.Machine$double.eps)
+      z = trunc(z)
+      z = z/10^digits
+      z*posneg
     }
 
     #Calculate evaluating the logic

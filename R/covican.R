@@ -1,4 +1,4 @@
-#' Subset of COVICAN's database
+#' Subset of the COVICAN's database
 #'
 #' A random sample of the COVICAN study. An international, multicentre cohort study of cancer patients with COVID-19 to describe the epidemiology, risk factors, and clinical outcomes of co-infections and superinfections in onco-hematological patients with COVID-19.
 #'

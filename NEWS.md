@@ -1,3 +1,21 @@
+# REDCapDM 0.5-0
+
+2023-03-24
+
+## Changes to functions
+
+- New function _rd_export()_ to export the identified queries to an excel file.
+- The _redcap_data()_ function can read the relative path to the working directory in the path arguments.
+- Now _rd_transform()_ will keep all the labels of the variables in the transformed data. Therefore, the _keep_labels_ argument has been removed.
+- _rd_transform()_ now will also return the _event_form_ element in the output.
+- New argument _exclude_recalc_ added to the _rd_transform()_ function to exclude specified calculated fields from being recalculated. It may reduce the execution time in projects with complex calculated fields.
+- The _filter_ argument in the _rd_query()_ and _rd_event()_ functions now works as a vector so a different filter can be applied to each variable.
+- Minor changes to the _rd_query()_ function.
+
+## Bug fixes
+
+- Fixed bugs in several functions resulting from testing in special project structures of REDCap.
+
 # REDCapDM 0.4-0
 
 2023-03-03

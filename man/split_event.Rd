@@ -16,5 +16,5 @@ split_event(data, dic, event_form, which = NULL)
 \item{which}{Specify an event if only data for the desired event is wanted.}
 }
 \description{
-Function that given the data, the dictionary and the mapping between forms and events it creates a dataset with the variables of all the forms that are in this event. It can be chosen to return only the data from the specified event.
+Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets filtered by each event and containing only the variables found in the event. It can be chosen to return only the data from the specified event.
 }

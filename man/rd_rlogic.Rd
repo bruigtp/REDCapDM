@@ -17,7 +17,7 @@ rd_rlogic(..., data = NULL, dic = NULL, event_form = NULL, logic, var)
 
 \item{logic}{String containing a logic in REDCap format.}
 
-\item{var}{string containing the name of the variable that contains the logic.}
+\item{var}{string with the name of the variable that contains the logic.}
 }
 \value{
 List containing the logic in R format and its evaluation.

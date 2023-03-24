@@ -1,7 +1,7 @@
 Package: REDCapDM
 Type: Package
 Title: 'REDCap' Data Management
-Version: 0.4.0
+Version: 0.5.0
 Authors@R: c(
     person("João", "Carmezim", email = "ubidi@idibell.cat", role = c("aut", "cre")),
     person("Judith", "Peñafiel", role = c("aut")),
@@ -28,7 +28,8 @@ Imports:
     purrr,
     tidyselect,
     tibble,
-    rlang	
+    rlang,
+    openxlsx
 Suggests: 
     knitr,
     rmarkdown,

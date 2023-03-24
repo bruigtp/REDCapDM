@@ -28,7 +28,7 @@ Function that allows you to manually input a missing to some variables (`vars`) 
 \examples{
 table(is.na(covican$data$potassium))
 data <- rd_insert_na(covican,
-             filter = "age < 65",
-             vars = "potassium")
+             vars = "potassium",
+             filter = "age < 65")
 table(data$potassium)
 }

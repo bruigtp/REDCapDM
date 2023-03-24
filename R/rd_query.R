@@ -1,27 +1,28 @@
 #' Identification of queries
 #'
-#' This function allows you to identify queries by using a specific expression.
-#' It can be used to identify missing values or values that fall outside the lower and upper limit of a variable.
+#' This function allows you to identify queries by the use a specific expression.
+#' It can be used to identify missing values or to identify values that are outside the lower and upper limits of a variable.
 #'
-#' @param ... List containing the data and the dictionary and the event if it's needed. Can be the output of the function `redcap_data`.
-#' @param data Data frame containing data from REDCap. If the list is specified this argument is not needed.
-#' @param dic Data frame containing the dictionary read from REDCap. If the list is specified this argument is not needed.
-#' @param variables Vector with variables names from the database that will be checked. If this argument alongside with the argument `expression` are unspecified, this function will look for abnormal values using the minimum and maximum of each variable in the dataset (information contained in the dictionary).
-#' @param expression Expression that will be applied to the chosen variables, for example, "<170". If this argument is unspecified, this function will look for abnormal values using the minimum and maximum of each variable in the dataset (information contained in the dictionary).
-#' @param negate Logical value indicating whether or not to negate the defined expression. Defaults to `FALSE`.
-#' @param variables_names Vector with the description of each variable. By default, the function will automatically pick the description of each variable from the dictionary of the dataset.
-#' @param query_name Description of the query. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will define the description as `The value is [value] and it should not be [expression]' for each one of the variables`.
-#' @param instrument REDCap's instrument to which the variables belong. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will automatically pick the corresponding instrument of each variable from the dictionary of the dataset.
-#' @param event REDCap's event name to be analyzed. If your REDCap project has events, you should use this argument in order to name the event to which the defined variables belong.
-#' @param filter A filter to apply to the dataset. This argument can be used to, for example, apply the branching logic of a determined variable.
-#' @param addTo Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.
-#' @param report_title Character string with the report's title.
-#' @param report_zeros Logical. If `TRUE`, it returns a report including variables with zero queries.
-#' @param by_dag Logical. If `TRUE`, both elements of the output will be grouped by the data access groups (DAGs) of the REDCap project.
+#' @param ... List containing the data, the dictionary and the event (if required). It may be the output of the `redcap_data` function.
+#' @param data Data frame containing the data read from REDCap. If the list is given, this argument is not required.
+#' @param dic Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.
+#' @param variables Character vector of the names of the database variables to be checked.
+#' @param expression Character vector of expressions to be applied to the selected variables.
+#' @param negate Logical value which indicates whether the defined expression should be negated. Defaults to `FALSE`.
+#' @param variables_names Character vector containing the description of each selected variable. By default, the function automatically takes the description of each variable from the dictionary of the REDCap project.
+#' @param query_name Description of the query. It can be defined as the same one for all the variables, or you can define a different one for each variable. By default, the function defines it as `The value is [value] and it should not be [expression]'`.
+#' @param instrument REDCap's instrument to which the variables belong. It can be defined as the same one for all the variables, or you can define a different one for each variable. By default, the function automatically selects the corresponding instrument of each variable from the dictionary of the REDCap project.
+#' @param event The name of the REDCap event to be analyzed. If there are events in your REDCap project, you should use this argument in order to name the event to which the defined variables belong.
+#' @param filter A filter to be applied to the dataset. For example, the branching logic of a determined variable can be applied using this argument.
+#' @param addTo Data frame corresponding to a previous query data frame to which you can add the new query data frame. By default, the function always generates a new data frame without taking into account previous reports.
+#' @param report_title Character string specifying the title of the report.
+#' @param report_zeros Logical. If `TRUE`, the function returns a report containing variables with zero queries.
+#' @param by_dag Logical. If `TRUE`, both elements of the output are grouped by the data access groups (DAGs) of the REDCap project.
 #' @param link List containing project information used to create a web link to each query.
-#' @return A list with a data frame with 9 columns meant to help the user identify each query and a table with the total of queries per variable.
+#' @return A list with a data frame of 9 columns (10 columns, if the link argument is specified) meant to help the user identify each query and a table with the total number of queries per variable.
+#'
 #' @examples
-#' # Missings
+#' # Missing values
 #' example <- rd_query(covican,
 #'                     variables = c("copd", "age"),
 #'                     expression = c("%in%NA", "%in%NA"),
@@ -35,7 +36,7 @@
 #'                     event="baseline_visit_arm_1")
 #' example
 #'
-#' # Using a filter
+#' # Using the filter argument
 #' example <- rd_query(covican,
 #'                     variables = "potassium",
 #'                     expression = "%in%NA",
@@ -47,18 +48,20 @@
 
 rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, addTo = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list())
   {
-    old_options <- options()
-    on.exit(options(old_options))
 
     # If the entire list resulting from the 'redcap_data' function is used
     project <- c(...)
+
     if(!is.null(project)){
+
       if(!is.null(data)){
         warning("Data has been specified twice so the function will not use the information in the data argument.")
       }
+
       if(!is.null(dic)){
         warning("Dictionary has been specified twice so the function will not use the information in the dic argument.")
       }
+
       data <- project$data
       dic <- project$dictionary
     }
@@ -75,228 +78,191 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       names(data)[1] <- "record_id"
     }
 
+    # Warning: there is an event specified
+    if (all(is.na(event)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+      warning("There is none event specified. Therefore, the function will automatically consider observations from all events in the dataset. Ensure that the selected variable(s) is(are) collected in all specified events. This will avoid overestimating the number of queries.", call. = F)
+    }
+
     # Applying a filter of the chosen events to the database
-    if (all(!event %in% NA)) {
+    if (all(!is.na(event))) {
+
+      # Saving initial dataset
       data0 <- data
-        # Error: one of the specified events does not exist in the database
-        if (any(!event %in% data$redcap_event_name)) {
-          if (any(names(data) == "redcap_event_name.factor")) {
-            if (any(!event %in% data$redcap_event_name.factor))
-              stop("One of the events mentioned does not exist in the database, please verify the argument 'event'.")
-          } else {
-            stop("One of the events mentioned does not exist in the database, please verify the argument 'event'.")
-          }
-        }
-      if (any(names(data) == "redcap_event_name.factor")) {
-        if (all(event %in% data$redcap_event_name.factor)) {
-          data <- dplyr::filter(data, data$redcap_event_name.factor %in% event)
+
+      # Error: there is no event name variable in the dataset but the argument has a value
+      if (all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+        stop("The event argument is specified, but there is no event name variable in the dataset.")
+      }
+
+      # Error: one of the specified events does not exist in the database
+      if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+        if (any(!event %in% data$redcap_event_name) & any(!event %in% data$redcap_event_name.factor)) {
+          stop("One of the events mentioned does not exist in the database, please verify the argument 'event'.")
         }
       }
+
+      # Warning: there is more than one event specified
+      if (length(event) > 1) {
+        warning("More than one event has been specified. Ensure that the selected variable(s) are collected in all specified events. This will avoid overestimating the number of queries.", call. = F)
+      }
+
+      # Filtering by event_name.factor if the event is equal to the category in the factor version
+      if ("redcap_event_name.factor" %in% names(data) & all(event %in% data$redcap_event_name.factor)) {
+          data <- dplyr::filter(data, data$redcap_event_name.factor %in% event)
+      }
+
+      # Filtering by event_name if the event is equal to the category in the raw version
       if (all(event %in% data$redcap_event_name)) {
         data <- dplyr::filter(data, data$redcap_event_name %in% event)
       }
 
       # Warning: there are identifiers that do not present the specified event (it only appears when checking for missings - %in%NA)
-      if (length(unique(data0$record_id))!=length(unique(data$record_id)) & any(stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA")))) {
+      if (length(unique(data0$record_id)) != length(unique(data$record_id)) & any(grepl("%in%NA", gsub(" ", "", expression)))) {
         warning("There are certain identifiers without observations in one of the events. \nUse the function 'rd_event' to check which ones are missing.", call. = FALSE)
       }
     }
 
-    # Adding the information from the link argument to the data
+    # Error: Trying to split the report by DAGs but the REDCap project does not present DAGs
+    if (by_dag %in% TRUE & all(!c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data))) {
+      stop("Trying to split the query reporting according to each DAG, but the project does not present DAGs. To continue, please specify by_dag = F.", call. = F)
+    }
+
+    # Warning: If the link argument is not fully completed
+    if (!is.null(names(link))) {
+      if (!all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+        stop("There is not enough information in the link argument. \nTo create the link correctly, please provide the domain, redcap version, project ID and event ID.", call. = F)
+      }
+      if (!all(c("domain", "redcap_version", "proj_id") %in% names(link)) & !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+        stop("There is not enough information in the link argument. \nTo create the link correctly, please provide the domain, redcap version and project ID.", call. = F)
+      }
+    }
+
+    # Adding the information of the event_id from the link argument to the data
     if (!is.null(link[["event_id"]])) {
-      if (any(names(data) == "redcap_event_name")) {
+
+      # The dataset has an event name variable
+      if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+
+        # The event argument is specified and the event_id is specified using the events in the raw version
         if (all(event %in% names(link[["event_id"]])) & all(event %in% data[, "redcap_event_name"])) {
           event_link <- data.frame("name" = names(link[["event_id"]]),
                                    "event_id" = as.numeric(link[["event_id"]]))
           data <- merge(data, event_link, by.x = "redcap_event_name", by.y = "name")
         }
+
+        # The event argument is specified and the event_id is specified using the events in the factor version
         if (all(event %in% names(link[["event_id"]])) & all(event %in% data[, "redcap_event_name.factor"])) {
           event_link <- data.frame("name" = names(link[["event_id"]]),
                                    "event_id" = as.numeric(link[["event_id"]]))
           data <- merge(data, event_link, by.x = "redcap_event_name.factor", by.y = "name")
         }
+
+        # The event argument is not specified and the event_id is specified using the events in the raw version
         if (all(is.na(event) & all(names(data[, "redcap_event_name"] %in% names(link[["event_id"]]))))) {
           event_link <- data.frame("name" = names(link[["event_id"]]),
                                    "event_id" = as.numeric(link[["event_id"]]))
           data <- merge(data, event_link, by.x = "redcap_event_name", by.y = "name")
         }
+
+        # The event argument is not specified and the event_id is specified using the events in the factor version
         if (all(is.na(event) & all(names(data[, "redcap_event_name.factor"] %in% names(link[["event_id"]]))))) {
           event_link <- data.frame("name" = names(link[["event_id"]]),
                                    "event_id" = as.numeric(link[["event_id"]]))
           data <- merge(data, event_link, by.x = "redcap_event_name.factor", by.y = "name")
         }
+
       } else {
+
+        # There is not an event name variable in the dataset
         if (length(link[["event_id"]]) == 1) {
+
           data[, "event_id"] <- as.numeric(link[["event_id"]])
+
         } else {
-          stop("The project is non-longitudinal (has no events). Therefore, you only need to specify an event ID.")
+
+          # Error: More than one event_id is specified and the project is non-longitudinal
+          stop("The project is non-longitudinal (has no events). Therefore, you only need to specify a single event ID.", call. = F)
+
+          }
         }
-      }
     }
 
-    # Warning: If the link argument is not fully completed
-    if (!is.null(names(link))) {
-      if (!all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
-        stop("There is not enough information in the link argument. \nTo create the link correctly, please provide the domain, redcap version, project ID and event ID.", call. = F)
-      }
+    # Warning: detecting more variables than expressions, so the function applies the same expression to all variables
+    if (length(variables) > length(expression)) {
+
+      expression <- rep(expression[1], length(variables))
+      warning("There are more variables than there are expressions, so the same expression has been applied to all.", call. = FALSE)
+
     }
 
     # Filtering the data using the information of the argument 'filter'
-    if (all(!filter %in% NA)) {
-      if (length(filter) == 1) {
+    if (all(!is.na(filter)) & length(filter) == 1) {
+
         command <- paste0("data", "<-dplyr::filter(data,", filter, ")")
         eval(parse(text = command))
+
+        # Error: filtering results in zero observations
         if (nrow(data)==0) {
-          stop("The filter applied results in no observations, please change it.", call. = FALSE)
+          stop("The applied filter does not match any observations, please modify it.", call. = FALSE)
         }
-      }
     }
 
-    # Warning: some of the variables present a branching logic (just for cases where they are being checked for missings)
-    if (any(gsub("___.*$", "", variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))]) %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])) {
-      var_logic <- dic[!dic$branching_logic_show_field_only_if%in%c(NA,""),"field_name"]
-      var_miss <- variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))]
-      # Identification of the variables with a branching logic
-      vars <- var_miss[gsub("___.*$", "", var_miss) %in% var_logic]
+    # Variables to be checked for missing values which present a branching logic
+    var_logic <- variables[which(gsub("\\s+", "", expression) %in% "%in%NA")]
+    var_logic <- var_logic[which(gsub("___\\d*$", "", var_logic) %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])]
 
-      if (any(stringr::str_detect(unique(dic$branching_logic_show_field_only_if), "\\(\\d\\)"))==FALSE) {
-        # Future report of the variables with a branching logic
-        branch <- data.frame(
-          var = dic$field_name[dic$field_name %in% gsub("___.*$", "", vars)],
-          label = gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___.*$", "", vars)]),
-          branch = dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___.*$", "", vars)]
-        )
+    # Branching logic detected (only in variables checked for missing values)
+    if (length(var_logic) > 0) {
 
-        # Adaptation of the REDCap's branching logic to R's logic
-        branch$branch <- gsub("\\[(.+)\\((\\d+)\\)\\]", "[\\1___\\2]", branch$branch)
-        branch$branch <- gsub("\\[event\\-name\\]", "[redcap_event_name]", branch$branch)
-        branch$branch <- gsub("\\[user\\-dag\\-name\\]", "[redcap_data_access_group]", branch$branch)
-        branch$branch <- gsub("\\[record\\-dag\\-name\\]", "[redcap_data_access_group]", branch$branch)
-        branch$branch <- gsub("=", "==", branch$branch)
-        branch$branch <- gsub("<>", "!=", branch$branch)
-        branch$branch <- gsub(" and ", " & ", branch$branch)
-        branch$branch <- gsub(" or ", " | ", branch$branch)
-        branch$branch <- gsub(" ", "", branch$branch)
-        branch$vars <- gsub("\\[(\\w+)\\]==.(\\w+).", "\\1",
-                            gsub("\\[(\\w+)\\]==(\\w+)", "\\1",
-                                 gsub("\\[(\\w+)\\]!=(\\w+)", "\\1",
-                                      gsub("\\[(\\w+)\\]!=''", "\\1",
-                                           gsub("\\[(\\w+)\\]!=.(\\w+).", "\\1",
-                                                gsub("\\(", "",
-                                                     gsub("\\)", "",branch$branch)))))))
+      # Data frame with variable, variable name and branching logic
+      branch <- data.frame(
+        var = dic$field_name[dic$field_name %in% gsub("___\\d*$", "", var_logic)],
+        label = gsub("\\s+", "", gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___\\d*$", "", var_logic)])),
+        branch = dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___\\d*$", "", var_logic)])
 
-        branch2 <- as.data.frame(branch)
-
-        # In case the branching logic presents multiple conditions, we create a data frame with every single condition
-        for (i in 1:10) {
-          vars_branch <- data.frame(cbind(
-            stringr::str_split_fixed(branch2$vars, "&", i),
-            stringr::str_split_fixed(branch2$vars, "\\|", i)
-          ))
-        }
-        vars_branch[,11] <- ifelse(vars_branch[, 11] %in% vars_branch[, 1], NA, vars_branch[, 11])
-        vars_branch$var_ori <- branch2$var
-        for (i in 1:20) {
-          vars_branch[,i] <- ifelse(stringr::str_detect(string = vars_branch[, i], pattern = "&"), NA, vars_branch[, i])
-          vars_branch[,i] <- ifelse(stringr::str_detect(string = vars_branch[, i], pattern = "\\|"), NA, vars_branch[, i])
-          vars_branch[,i][vars_branch[, i] %in% c("")] <- NA
-          vars_branch[,i] <- gsub(" ", "", vars_branch[, i])
-          vars_branch[,i] <- gsub("\\[(\\w+)\\]==.(\\w+).", "\\1", vars_branch[, i])
-        }
-        cmd <- paste0("!vars_branch[,", 1:(length(vars_branch) - 1), "]", "%in%c(names(data),NA)")
-        cmd <- paste(cmd, collapse = "|")
-        cmd <- paste0("vars_branch$var_ori[", cmd, "]")
-        branch2 <- dplyr::filter(branch2, !branch2$var %in% eval(parse(text = cmd)))
-        branch2$branch <- gsub("\\[(\\w+)\\]", "data$\\1", branch2$branch)
-        invalid <- dplyr::filter(branch2, branch2$var %in% eval(parse(text = cmd)))
-        var <- branch2$var
-
-        # Construction of the data frame with the branching logic
-        for (q in 1:nrow(branch2)) {
-          vars_dep <- c(stringr::str_split_fixed(branch2$vars[q], "&", 10),stringr::str_split_fixed(branch2$vars[q], "\\|", 10))
-          vars_dep[11] <- ifelse(vars_dep[11] %in% vars_dep[1], NA, vars_dep[11])
-          vars_dep <- dplyr::filter(vars_dep, vars_dep %in% c(vars_dep[!stringr::str_detect(vars_dep, "&")]))
-          vars_dep <- dplyr::filter(vars_dep, vars_dep %in% c(vars_dep[!stringr::str_detect(vars_dep, "\\|")]))
-          vars_dep <- dplyr::filter(vars_dep, vars_dep %in% c(vars_dep[!vars_dep %in% c(NA, "")]))
-          vars_dep <- gsub(" ", "", vars_dep)
-
-          branch2$branch[q] <- gsub(" ", "", branch2$branch[q])
-
-          # If one of the variables in the branching logic is a factor, we change the condition to present the level of the factor
-          for (z in 1:length(vars_dep)) {
-            if (any(class(data[, vars_dep[z]]) == "factor")){
-              value_dep[z] <- (gsub(paste0(".*", vars_dep[z], "==.(\\w+).*"), "\\1",
-                                    gsub(paste0(".*", vars_dep[z], "==(\\w+)"), "\\1", branch2$branch[q])))
-              if (value_dep[z] %in% value_dep[stringr::str_detect(string = value_dep, pattern = "^\\d*$")]){
-                branch2$branch[q] <- gsub(paste0(vars_dep[z],"==(\\w+)"),
-                                          paste0(vars_dep[z], "=='", levels(data[, vars_dep[z]])[as.numeric(value_dep[z]) + 1], "'"),
-                                          gsub(paste0(vars_dep[z], "==.(\\w+)."),
-                                               paste0(vars_dep[z], "=='", levels(data[, vars_dep[z]])[as.numeric(value_dep[z]) + 1], "'"),
-                                               branch2$branch[q]))
-              }
-            }
-          }
-        }
-
-        # Improvements made to the data frame
-        branch2$branch <- gsub("data[$]", "", branch2$branch)
-        branch2$branch <- gsub("&", " & ", branch2$branch)
-        branch2$branch <- gsub("\\|", " | ", branch2$branch)
-        branch2 <- branch2 %>% dplyr::select(-vars)
-        branch <- as.data.frame(branch2)
-      } else {
-        # Future report of the variables with a branching logic
-        branch <- data.frame(matrix(ncol=3))
-        names(branch) <- c("var", "label", "branch")
-        for (i in 1:length(vars)) {
-          branch[i,] <- c(vars[i], gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___.*$", "", vars[i])]), dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___.*$", "", vars[i])])
-        }
-      }
+      # Arrange the data frame
       rownames(branch) <- NULL
       names(branch) <- c("Variable", "Label", "Branching logic")
+
+      ## Warning about the variables with branching logic
+      warning("At least one of the variables that have been checked for missing values present a branching logic. \nCheck the results element of the output(...$results) for details.", call. = FALSE)
+
     }
 
-    # Warning: selecting more than one event can lead to identify missings in variables that are not collected in those events
-    if (length(event)>1) {
-      warning("You have selected queries from more than one event. \nThis could lead to a larger number of queries, for example missings. \nPlease verify if you really want to check all the events provided.", call. = FALSE)
-    }
-
-    # Warning: detecting that the data has events, but there is none specified
-    if (all(event %in% NA) & any(names(data) %in% "redcap_event_name") & length(unique(data$redcap_event_name)) > 1) {
-      warning("event = NA, but the dataset presents a variable that indicates the presence of events, please specify the event.", call. = FALSE)
-    }
-
-    # Warning: detecting more variables than expressions, so the function applies the same expression to all of them
-    if (length(variables) > length(expression)) {
-      expression <- rep(expression[1], length(variables))
-      warning("There are more variables than expressions, so the same expression was applied to all variables", call. = FALSE)
-    }
-
-    # We make sure the order of the variables chosen remains the same as the original
-    if (any(variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))] %in% dic[!dic$branching_logic_show_field_only_if%in%c(NA,""),"field_name"])) {
-      if (all(variables != vars)) {
-      variables <- vars
-      }
-    }
-
+    # Apply an expression to the corresponding variable
     for (i in 1:length(expression)) {
-      # If there is a large expression using '|' or '&', convert into a filter and apply it
-      if (any(stringr::str_detect(string = expression[i], pattern  = c("[|]", "&"))) == TRUE) {
-        split <- unlist(stringr::str_split(expression[i], "& | [|]"))
+
+      # If there is a large expression using '|' or '&', convert it into a filter and apply it
+      if (any(stringr::str_detect(string = expression[i], pattern  = c("\\|", "&")))) {
+
+        # Separate the expression into multiple elements and pasting the variable
+        split <- unlist(stringr::str_split(expression[i], "&|\\|"))
         split <- paste(variables[i], split)
         split <- gsub(" ", "", split)
-        if (any(stringr::str_detect(split, "[(?]")) == TRUE) {
-          split[stringr::str_detect(split, "[(?]")] <- paste0("(", gsub("[(]", "", split[stringr::str_detect(split, "[(?]")]))
+
+        # If there is a parentheses we put it before the variable name
+        if (any(stringr::str_detect(split, "\\("))) {
+          split[stringr::str_detect(split, "\\(")] <- paste0("(", gsub("\\(", "", split[stringr::str_detect(split, "\\(")]))
         }
-        vec <- unlist(stringr::str_extract_all(expression, "& | [|]"))
+
+        # We take the "&" and "|"
+        vec <- unlist(stringr::str_extract_all(expression, "&|\\|"))
         vec <- gsub(" ", "", vec)
+
+        # Using both objects we mount the expression that will be applied to our dataset
         expre <- c(split[1], paste(vec, split[2:length(split)]))
         expre <- paste(expre, collapse = " ")
 
+        # Command to filter the dataset using the generated expression
         command <- paste0("raw", "<-dplyr::filter(data,", expre, ")")
+
       } else {
+
         command <- paste0("raw", "<-dplyr::filter(data,", variables[i], expression[i], ")")
+
       }
+
+      # Evaluation of the command with the resulting expression
       eval(parse(text = command))
 
       # If the argument negate is TRUE, reverse the filters apllied so far
@@ -304,62 +270,85 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         raw <- suppressMessages(dplyr::anti_join(data, raw))
       }
 
-      if (all(!filter %in% NA)) {
-        if (length(filter) > 1) {
+      # If there is more than one filter
+      if (all(!filter %in% NA) & length(filter) > 1) {
+
+        # If the number of filters is equal to the number of variables
+        if (length(filter) == length(variables)) {
+
+          # Apply each filter
           command <- paste0("definitive", "<-dplyr::filter(raw,", filter[i], ")")
           eval(parse(text = command))
-          if (nrow(data)==0) {
+
+          # Filtering results in zero observations
+          if (nrow(data) == 0) {
             stop("One of the filters applied results in no observations, please change it.", call. = FALSE)
+            }
+          } else {
+            # Error: number of filters is different from the number of variables
+            stop("Multiple filters applied but the number of filters does not correspond to the number of variables. Please verify it.", call. = F)
           }
+
         } else {
           definitive <- raw
         }
-      } else {
-        definitive <- raw
-      }
+
+      # Creation of the structure for variables with zero queries
+      excel_zero <- as.data.frame(matrix(ncol = 4, nrow = 0))
+      colnames(excel_zero) <- c("DAG", "Variables", "Description", "Query")
 
       # Identification of queries, using the structure built before
       if (nrow(definitive) > 0) {
-        x <- definitive[, c("record_id", names(definitive)[stringr::str_detect(names(definitive), "redcap")], variables[i])]
+        x <- definitive[, c("record_id", grep("redcap", names(definitive), value = T), variables[i])]
+
+        # Add event_id when the link argument is specified
         if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
           x[, "event_id"] <- definitive[, "event_id"]
         }
+
+        # Filling the structure data frame with data
         excel <- data.frame(
           Identifier = x[, "record_id"],
-          DAG = if (any(utils::head(names(x)) == "redcap_data_access_group")) {
-            if (any(names(x) == "redcap_data_access_group.factor")) {
+          DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(x))) {
+            if ("redcap_data_access_group.factor" %in% names(x)) {
               as.character(x[, "redcap_data_access_group.factor"])
             } else {
-              ifelse(as.character(x[, "redcap_data_access_group"]) == NA,
-                     NA,
-                     as.character(x[, "redcap_data_access_group"]))
-            }
-          },
-          Event = if (any(utils::head(names(x)) == "redcap_event_name")) {
-            if (any(names(x) == "redcap_event_name.factor")) {
-              as.character(x[, "redcap_event_name.factor"])
-            } else {
-              as.character(x[, "redcap_event_name"])
+              as.character(x[, "redcap_data_access_group"])
             }
           } else {
             "-"
           },
-          Instrument = if (unique(instrument %in% NA)) {
+          Event = if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(x))) {
+            if ("redcap_event_name.factor" %in% names(x)) {
+              as.character(x[, "redcap_event_name.factor"])
+            } else {
+              as.character(x[, "redcap_event_name"])
+              }
+          } else {
+            "-"
+          },
+          Instrument = if (all(is.na(instrument))) {
             if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
               gsub("_", " ", Hmisc::capitalize(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"]))
             } else{
               "-"
             }
           } else {
-            if (length(instrument) > 1) {
-              instrument[i]
-            } else {
+            if (length(instrument) == 1) {
               instrument
+            } else {
+              if (length(instrument) == length(variables) & length(instrument) > 1) {
+                instrument[i]
+              } else {
+                if (length(instrument) != length(variables) & length(instrument) > 1) {
+                  stop("Multiple instruments specified, but the number of instruments is different from the number of variables. Please match each variable to each instrument.", call. = F)
+                }
+              }
             }
           },
           Field = variables[i],
-          Repetition = if (any(utils::head(names(x)) == "redcap_repeat_instrument") & any(utils::head(names(x)) == "redcap_repeat_instance")) {
-            if (all(is.na(x[, "redcap_repeat_instrument"]))) {
+          Repetition = if (any(c("redcap_repeat_instrument", "redcap_repeat_instance") %in% names(x))) {
+            if ("redcap_repeat_instrument" %in% names(x) & all(is.na(x[, "redcap_repeat_instrument"]))) {
               paste0(x[, "redcap_repeat_instance"])
             } else {
               paste0(x[, "redcap_repeat_instrument"], "-", x[, "redcap_repeat_instance"])
@@ -367,20 +356,36 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
           } else {
             "-"
           },
-          Description = if (unique(variables_names %in% NA)) {
+          Description = if (all(is.na(variables_names))) {
             if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
-              dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"]
+              trimws(gsub("<.*?>", "", as.character(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"])))
             } else{
               "-"
             }
           } else {
-            variables_names[i]
-          },
-          Query = if (all(!query_name %in% NA)) {
-            if (length(query_name) > 1) {
-              query_name[i]
+            if (length(variables_names) == 1) {
+              variables_names
             } else {
+              if (length(variables_names) == length(variables) & length(variables_names) > 1) {
+                variables_names[i]
+              } else {
+                if (length(variables_names) != length(variables) & length(variables_names) > 1) {
+                  stop("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", call. = F)
+                }
+              }
+            }
+          },
+          Query = if (all(!is.na(query_name))) {
+            if (length(query_name) %in% 1) {
               query_name
+            } else {
+              if (length(query_name) %in% length(variables) & length(query_name) > 1) {
+                query_name[i]
+              } else {
+                if (!length(query_name) %in% length(variables) & length(query_name) > 1) {
+                  stop("Multiple query names specified, but the number of query names is different from the number of variables. Please match each variable to each query name.", call. = F)
+                }
+              }
             }
           } else {
             if (negate == TRUE) {
@@ -392,46 +397,80 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
           Code = "",
           stringsAsFactors = FALSE
         )
-        if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
-          excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[i, "event_id"], "&page=", gsub("_", " ", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"]), "&id=", x[, "record_id"])
+
+        # Add link to each query
+        if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+            excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"])
         }
+
+        if (all(c("domain", "redcap_version", "proj_id") %in% names(link)) & !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+          excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"])
+        }
+
+        # Adding each identified query to the queries data frame
         queries <- rbind(queries, excel)
+
       } else {
+
         # If there are no queries to be identified, we still need this information to build the report
-        excel <- list(
-          DAG = if (any(utils::head(names(data)) == "redcap_data_access_group")) {
-            if (any(names(data) == "redcap_data_access_group.factor")) {
-              unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group.factor"]))
+        excel <- data.frame(
+          DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data))) {
+            if("redcap_data_access_group.factor" %in% names(data)) {
+              if (is.na(event)) {
+                unique(as.character(data[, "redcap_data_access_group.factor"]))
+              } else {
+                unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group.factor"]))
+              }
             } else {
-              unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group"]))
+              if (is.na(event)) {
+                unique(as.character(data[, "redcap_data_access_group"]))
+              } else {
+                unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group"]))
+              }
             }
           } else {
             "-"
           },
           Variables = variables[i],
-          Description = if (unique(variables_names %in% NA)) {
+          Description = if (all(is.na(variables_names))) {
             if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
-              dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"]
+              trimws(gsub("<.*?>", "", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"]))
             } else{
               "-"
             }
           } else {
-            variables_names[i]
-          },
-          Event = if (any(utils::head(names(data)) == "redcap_event_name")) {
-            if (any(names(data) == "redcap_event_name.factor")) {
-              as.character(data[, "redcap_event_name.factor"])
+            if (length(variables_names) == 1) {
+              variables_names
             } else {
-              as.character(data[, "redcap_event_name"])
+              if (length(variables_names) == length(variables) & length(variables_names) > 1) {
+                variables_names[i]
+              } else {
+                if (length(variables_names) != length(variables) & length(variables_names) > 1) {
+                  stop("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", call. = F)
+                }
+              }
+            }
+          },
+          Event = if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+            if ("redcap_event_name.factor" %in% names(data)) {
+              unique(as.character(data[, "redcap_event_name.factor"]))
+            } else {
+              unique(as.character(data[, "redcap_event_name"]))
             }
           } else {
             "-"
           },
-          Query = if (all(!query_name %in% NA)) {
-            if (length(query_name) > 1) {
-              query_name[i]
-            } else {
+          Query = if (all(!is.na(query_name))) {
+            if (length(query_name) == 1) {
               query_name
+            } else {
+              if (length(query_name) == length(variables) & length(query_name) > 1) {
+                query_name[i]
+              } else {
+                if (length(query_name) != length(variables) & length(query_name) > 1) {
+                  stop("Multiple query names specified, but the number of query names is different from the number of variables. Please match each variable to each query name.", call. = F)
+                }
+              }
             }
           } else {
             if (negate == TRUE) {
@@ -439,369 +478,288 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
             } else {
               paste0("The value should not be ", gsub(pattern = "==", "equal to ", x = gsub(pattern = "!=", "not equal to ", x = gsub(pattern = "%in%NA", replacement = "missing", x = gsub(" ", "", expression[i])))))
             }
-          }
+          },
+          stringsAsFactors = F
         )
+
+        # Adding each variable with zero queries to the data frame
+        excel_zero <- rbind(excel_zero, excel)
       }
     }
 
-    # If the argument 'addTo' is specified, combine the queries generated with another ones
-    if (all(!addTo %in% NA)) {
+    # If the argument 'addTo' is specified, combine the queries generated with a previous data frame of queries
+    if (all(!is.na(addTo))) {
       col_names <- names(queries)
-      queries <- merge(queries, addTo$queries, by = names(addTo$queries)[names(addTo$queries) %in% names(queries)], all = TRUE)
-      queries <- queries %>% dplyr::select(col_names)
+      queries <- merge(queries,
+                       addTo$queries,
+                       by = intersect(names(addTo$queries), names(queries)),
+                       all = TRUE)
+      queries <- queries %>% dplyr::select(dplyr::all_of(col_names))
     }
 
     # Classify each query with it's own code
     if (nrow(queries) != 0) {
-      if (any(stringr::str_detect(queries$Identifier, "-"))) {
+
+      # First we sort the data frame by record_id
+      if (all(grepl("-", queries$Identifier))) {
         queries <- queries %>%
                       tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
         queries[, "center"] <- as.numeric(queries[, "center"])
         queries[, "id"] <- as.numeric(queries[, "id"])
         queries <- queries[order(queries[, "center"], queries[, "id"]), ]
         rownames(queries) <- NULL
-        queries <- queries[, names(queries)[which(!names(queries) %in% c("center", "id"))]]
+        queries <- queries %>% dplyr::select(-"center", -"id")
       } else {
         queries$Identifier <- as.numeric(queries$Identifier)
         queries <- queries[order(queries$Identifier), ]
       }
+
+      # Add the code to each query and eliminate duplicated ones
       queries <- unique(queries %>%
                           dplyr::select(-"Code"))
       queries <- data.frame(queries %>%
                               dplyr::group_by(.data$Identifier) %>%
                               dplyr::mutate(cod = 1:dplyr::n()))
       queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
-      queries <- queries[, names(queries)[which(!names(queries) %in% c("cod"))]]
-      if (any(names(queries) == "Link")) {
-        queries <- queries %>% dplyr::select("Identifier":"Query", "Code", "Link")
+      queries <- queries %>% dplyr::select(-"cod")
+
+      # Reorder the columns if the link argument was specified
+      if ("Link" %in% names(queries)) {
+        queries <- queries %>%
+                      dplyr::select("Identifier":"Query", "Code", "Link")
       }
 
-      report <- data.frame("var" = queries$Field,
+      # Build the report
+      report <- data.frame("dag" = queries$DAG,
+                           "var" = queries$Field,
                            "descr" = queries$Description,
-                           "query_descr" = gsub(" is .* it", "", queries$Query),
-                           "event" = queries$Event, "dag" = queries$DAG)
+                           "event" = queries$Event,
+                           "query_descr" = gsub(" is .* it", "", queries$Query))
+
+      # If there is no previous report or variables names specified we convert the variables and their description to factors using the dictionary
       if (all(addTo %in% NA & variables_names %in% NA)) {
         report$var <- factor(report$var,
                              levels = c(unique(variables)))
         report$descr <- factor(report$descr,
-                               levels = c(unique(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables), "field_label"])))
-        if (any(names(data) == "redcap_event_name")) {
+                               levels = c(trimws(gsub("<.*?>", "", unique(dic$field_label[dic$field_name %in% gsub("___.*$", "", variables)])))))
+
+        # If our project has events, we also convert them to factors
+        if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
           report$event <- factor(report$event,
-                                 levels = if (any(names(data) == "redcap_event_name.factor")) {
-                                   unique(as.character(data[, "redcap_event_name.factor"]))
+                                 levels = if("redcap_event_name.factor" %in% names(data)) {
+                                   unique(as.character(data$redcap_event_name.factor))
                                  } else {
-                                   unique(as.character(data[, "redcap_event_name"]))
+                                   unique(as.character(data$redcap_event_name))
                                  })
         }
       }
+
+      # If there is no previous report but the variables names argument is specified we convert the variables and their description to factors using the selected names
       if (all(addTo %in% NA & !is.na(variables_names))) {
         report$var <- factor(report$var,
                              levels = c(unique(variables)))
         report$descr <- factor(report$descr,
                                levels = c(unique(variables_names)))
-        report$event <- factor(report$event,
-                               levels = if (any(names(data) == "redcap_event_name.factor")) {
-                                 unique(as.character(data[, "redcap_event_name.factor"]))
-                               } else {
-                                 unique(as.character(data[, "redcap_event_name"]))
-                               })
+
+        # If our project has events, we also convert them to factors
+        if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+          report$event <- factor(report$event,
+                                 levels = if("redcap_event_name.factor" %in% names(data)) {
+                                   unique(as.character(data$redcap_event_name.factor))
+                                 } else {
+                                   unique(as.character(data$redcap_event_name))
+                                 })
+        }
+
       }
 
-      if (report_zeros == FALSE) {
-        report <- report %>%
-                    dplyr::group_by(.data$var, .data$event, .data$query_descr, .data$dag, .drop = TRUE) %>%
-                    dplyr::summarise("total" = dplyr::n(), .groups = "keep")
-      }
+
+      # Report of all variables (including the ones with zero queries)
       if (report_zeros == TRUE) {
+
+        # Total number of queries by variable, event and DAG
         report <- report %>%
-                    dplyr::group_by(.data$var, .data$event, .data$query_descr, .data$dag, .drop = FALSE) %>%
+                    dplyr::group_by(.data$dag, .data$var, .data$event, .data$query_descr, .drop = FALSE) %>%
                     dplyr::summarise("total" = dplyr::n(), .groups = "keep")
 
-      if (any(report$dag %in% NA & report$total %in% 0)) {
-        zero_vars <- as.character(report$var[report$total == 0])
-        zero <- data.frame(matrix(ncol = 5, nrow = rep(length(unique(report$dag[report$total != 0])), length(zero_vars))))
-        names(zero) <- c("var", "dag", "query_descr", "event", "total")
-        zero$var <- rep(zero_vars, each = length(zero_vars))
-        zero$dag <- rep(unique(report$dag[report$total != 0]), length(zero_vars))
-        zero$total <- 0
-        for (i in 1:length(zero_vars)) {
-          zero$event[zero$var %in% zero_vars[i]] <- as.character(report$event[report$total %in% 0 & report$var %in% zero_vars[i]])
-          if (length(which(variables %in% zero_vars[i])) > 1) {
-            zero$query_descr[zero$var %in% zero_vars[i]] <-  "-"
-          } else {
-            zero$query_descr[zero$var %in% zero_vars[i]] <- paste0("This value should not be ", ifelse(gsub(" ", "", expression[which(variables %in% zero_vars[i])]) %in% "%in%NA", "missing", gsub(" ", "", expression[which(variables %in% zero_vars[i])])))
+        # Adding the description and query description to the variables with 0 queries
+        if (any(report$total %in% 0)) {
+
+          # Add the query description
+          report$var_event <- paste0(report$var, "_", report$event)
+          complete_vars <- unique(as.character(report$var_event[report$total != 0]))
+          zero_vars <- unique(as.character(report$var_event[!report$var_event %in% complete_vars]))
+          report <- report %>%
+                      dplyr::filter((.data$var_event %in% complete_vars & .data$total != 0) | .data$var_event %in% zero_vars)
+
+          for (i in zero_vars) {
+            report$query_descr[report$var_event %in% i] <- paste0("This value should not be ", ifelse(gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])]) %in% "%in%NA", "missing", gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])])))
           }
+
+          report <- report %>% dplyr::select(- "var_event")
+
+          # Add the variables description
+          report$descr <- purrr::map_chr(gsub("___.*$","",report$var), function(x){
+            if (x %in% dic$field_name){
+
+              # Truncate description name if it exceeds 50 characters
+              name <- gsub("<.*?>", "", dic$field_label[dic$field_name %in% x])
+              stringr::str_trunc(name, 50)
+
+            } else {
+              "-"
+            }})
         }
-        report <- merge(report, zero, by = c(names(zero)), all = T)
+      } else {
+
+        # Report of the variables with identified queries (eliminating the ones with zero queries)
         report <- report %>%
-                    dplyr::filter(!is.na(.data$query_descr) & !is.na(.data$dag))
-        }
+            dplyr::group_by(.data$var, .data$descr, .data$event, .data$query_descr, .data$dag, .drop = TRUE) %>%
+            dplyr::summarise("total" = dplyr::n(), .groups = "keep") %>%
+            dplyr::filter("total" != 0)
+
       }
 
-      report <- data.frame(report$var,
-                           purrr::map_chr(gsub("___.*$","",report$var), function(x){
-                             if(x %in% dic$field_name){
-                               name <- gsub("<.*?>", "", dic$field_label[dic$field_name %in% x])
-                               # Truncate description name if it exceeds 50 words
-                               stringr::str_trunc(name, 50)
-                               }else{
-                                 "-"
-                                 }}),
-                           report$event,
-                           report$query_descr,
-                           report$total,
-                           report$dag)
-      report <- report[order(report[, "report.total"], decreasing = TRUE), ]
       # Truncate variable name if it exceeds 26 characters
-      report$report.var <- as.character(report$report.var)
-      report$report.var <- stringr::str_trunc(report$report.var, 26)
+      report$descr <- as.character(report$descr)
+      report$descr <- stringr::str_trunc(report$descr, 50)
 
-      names(report) <- c("Variables", "Description", "Event", "Query", "Total", "DAG")
+      # Truncate variable name if it exceeds 26 characters
+      report$var <- as.character(report$var)
+      report$var <- stringr::str_trunc(report$var, 26)
+
+      # Sorting by the total number of queries
+      report <- as.data.frame(report)
+      report <- report[order(as.numeric(report$total), decreasing = TRUE), ]
+
+      # Arrange the report
+      report <- report %>% dplyr::select("dag", "var", "descr", "event", "query_descr", "total")
+      names(report) <- c("DAG", "Variables", "Description", "Event", "Query", "Total")
       report[, "Query"] <- gsub("&", " & ", gsub("\\|", " \\| ", report[, "Query"]))
       rownames(report) <- NULL
 
-      # Warning and Adding information about the variables with branching logic to the report
-      if (any(gsub("___.*$","", variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))]) %in% dic[!dic$branching_logic_show_field_only_if%in%c(NA,""),"field_name"])) {
-        if (!all(filter%in%branch$`Branching logic`)) {
-          warning("Some of the variables that were checked for missings present a branching logic. \nCheck the results tab of output for more details (...$results).", call. = FALSE)
-          branch$Variable <- stringr::str_trunc(branch$Variable, 26)
-          report <- merge(report,
-                          branch %>%
-                            dplyr::select("Variable", "Branching logic"),
-                          by.x = "Variables", by.y = "Variable", all.x = TRUE)
-          report$`Branching logic`[is.na(report$`Branching logic`)] <- "-"
-          report_dag <- merge(report,
-                              branch %>%
-                                dplyr::select("Variable", "Branching logic"),
-                              by.x = "Variables", by.y = "Variable", all.x = TRUE)
-          report_dag$`Branching logic`[is.na(report$`Branching logic`)] <- "-"
-        }
-      }
-
-
-      if (by_dag %in% FALSE) {
-        report <- report %>%
-                    dplyr::select(-"DAG") %>%
-                    dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .drop = FALSE) %>%
-                    dplyr::summarise("Total" = sum(.data$Total), .groups = "keep")
-        report <- report[order(report$Total, decreasing = T), ]
-      if (all(report_title %in% NA)) {
-        result <- knitr::kable(report, "pipe",
-                               align = "ccccc",
-                               caption = "Report of queries")
-        viewer <- knitr::kable(report,
-                               align = "ccccc",
-                               row.names = FALSE,
-                               caption = "Report of queries",
-                               format = "html",
-                               longtable = TRUE)
-        viewer <- kableExtra::kable_styling(viewer,
-                                            bootstrap_options = c("striped", "condensed"),
-                                            full_width = FALSE)
-        viewer <- kableExtra::row_spec(viewer, 0,
-                                       italic = FALSE,
-                                       extra_css = "border-bottom: 1px solid grey")
-      }
-      if (all(!report_title %in% NA) & length(report_title) == 1) {
-        result <- knitr::kable(report, "pipe",
-                               align = "ccccc",
-                               caption = report_title)
-        viewer <- knitr::kable(report,
-                               align = c("ccccc"),
-                               row.names = FALSE,
-                               caption = report_title,
-                               format = "html",
-                               longtable = TRUE)
-        viewer <- kableExtra::kable_styling(viewer,
-                                            bootstrap_options = c("striped", "condensed"),
-                                            full_width = FALSE)
-        viewer <- kableExtra::row_spec(viewer, 0,
-                                       italic = FALSE,
-                                       extra_css = "border-bottom: 1px solid grey")
-      }
-      if (all(!report_title %in% NA) & length(report_title) > 1) {
-        stop("There is more than one title for the report, please choose only one.", call. = FALSE)
-      }
-
-        def <- list(queries = queries,
-                    results = viewer)
-      }
-
-
-      if (by_dag %in% TRUE) {
-        report_dag <- split(report, f = report$DAG)
-        report <- report %>%
-                    dplyr::select(-"DAG") %>%
-                    dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .drop = FALSE) %>%
-                    dplyr::summarise("Total" = sum(.data$Total), .groups = "keep")
-        report <- report[order(report$Total, decreasing = T), ]
-
-        if (all(report_title %in% NA)) {
-          for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- report_dag[[i]] %>%
-                                  dplyr::select("DAG", "Variables", "Description", "Event", "Query", "Total")
-            report_dag[[i]] <- knitr::kable(report_dag[[i]],
-                                            align = "ccccc",
-                                            row.names = FALSE,
-                                            caption = "Report of queries",
-                                            format = "html",
-                                            longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
-                                                         bootstrap_options = c("striped", "condensed"),
-                                                         full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
-                                                    italic = FALSE,
-                                                    extra_css = "border-bottom: 1px solid grey")
-          }
-        }
-        if (all(!report_title %in% NA) & length(report_title) == 1) {
-          for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- knitr::kable(report_dag[[i]],
-                                            align = c("ccccc"),
-                                            row.names = FALSE,
-                                            caption = report_title,
-                                            format = "html",
-                                            longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
-                                                         bootstrap_options = c("striped", "condensed"),
-                                                         full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
-                                                    italic = FALSE,
-                                                    extra_css = "border-bottom: 1px solid grey")
-          }
-        }
-        if (all(!report_title %in% NA) & length(report_title) > 1) {
-          stop("There is more than one title for the report, please choose only one.", call. = FALSE)
-        }
-
-        def <- list(queries = split(queries, f = queries$DAG),
-                    results = report_dag)
-      }
     } else {
-      # If there is none query, the function still creates a report with the different variables showing zeros as the total number of queries.
+      # If there is none query, the function still creates a report containing all selected variables.
 
-      ## Warning: if there is none query to be identified
-      options(warn = 1)
+      # Message: if there is none query to be identified
       message("There is no query to be identified in the dataset.")
 
-      max_length <- max(lengths(excel))
-      excel <- lapply(excel, function(x) {length(x) <- max_length; x})
-      no_queries <- data.frame(excel)
-
-      no_queries <- no_queries %>%
-                      tidyr::fill(.data$Event, .data$Variables, .data$Description, .data$Query, .direction = "down")
-      no_queries$Description <- stringr::str_trunc(no_queries$Description, 50)
-      no_queries$Variables <- stringr::str_trunc(no_queries$Variables, 26)
-
-      report <- no_queries
+      report <- excel_zero
       report$Total <- 0
       rownames(report) <- NULL
+    }
 
-      ## Warning and Adding information about the variables with branching logic to the report
-      if (any(gsub("___.*$","", variables[stringr::str_detect(string = gsub(" ", "", expression), pattern = c("%in%NA"))]) %in% dic[!dic$branching_logic_show_field_only_if%in%c(NA,""),"field_name"])) {
-        if (!all(filter%in%branch$`Branching logic`)) {
-          warning("Some of the variables that were checked for missings present a branching logic. \nCheck the results tab of output for more details (...$results).", call. = FALSE)
-          branch$Variable <- stringr::str_trunc(branch$Variable, 26)
-          report <- merge(report,
-                          branch %>%
-                            dplyr::select("Variable", "Branching logic"),
-                          by.x = "Variables", by.y = "Variable", all.x = TRUE)
-          report$`Branching logic`[is.na(report$`Branching logic`)] <- "-"
-        }
-      }
-
-      if (by_dag %in% FALSE) {
-        report <- report %>%
-                      dplyr::select(-"DAG") %>%
-                      dplyr::distinct(.keep_all = T)
-        if (all(report_title %in% NA)) {
-          result <- knitr::kable(report,
-                                 "pipe",
-                                 align = "ccccc",
-                                 caption = "Report of queries")
-          viewer <- knitr::kable(report,
-                                 align = c("ccccc"),
-                                 row.names = FALSE,
-                                 caption = "Report of queries",
-                                 format = "html",
-                                 longtable = TRUE)
-          viewer <- kableExtra::kable_styling(viewer,
-                                              bootstrap_options = c("striped", "condensed"),
-                                              full_width = FALSE)
-          viewer <- kableExtra::row_spec(viewer, 0,
-                                         italic = FALSE,
-                                         extra_css = "border-bottom: 1px solid grey")
-        }
-        if (all(!report_title %in% NA) & length(report_title) == 1) {
-          result <- knitr::kable(report,
-                                 "pipe",
-                                 align = "ccccc",
-                                 caption = report_title)
-          viewer <- knitr::kable(report,
-                                 align = "ccccc",
-                                 row.names = FALSE,
-                                 caption = report_title,
-                                 format = "html",
-                                 longtable = TRUE)
-          viewer <- kableExtra::kable_styling(viewer,
-                                              bootstrap_options = c("striped", "condensed"),
-                                              full_width = FALSE)
-          viewer <- kableExtra::row_spec(viewer, 0,
-                                         italic = FALSE,
-                                         extra_css = "border-bottom: 1px solid grey")
-        }
-        def <- list(queries = queries,
-                    results = viewer)
-      }
-
-      if (by_dag %in% TRUE) {
-        report_dag <- split(report, f = report$DAG)
-        report <- report %>%
-                    dplyr::select(-"DAG") %>%
-                    dplyr::distinct(.keep_all = T)
-        if (all(report_title %in% NA)) {
-          for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- report_dag[[i]] %>%
-                                  dplyr::select("DAG", "Variables", "Description", "Event", "Query", "Total")
-            report_dag[[i]] <- knitr::kable(report_dag[[i]],
-                                            align = "ccccc",
-                                            row.names = FALSE,
-                                            caption = "Report of queries",
-                                            format = "html",
-                                            longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
-                                                         bootstrap_options = c("striped", "condensed"),
-                                                         full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
-                                                    italic = FALSE,
-                                                    extra_css = "border-bottom: 1px solid grey")
-          }
-        }
-        if (all(!report_title %in% NA) & length(report_title) == 1) {
-          for (i in 1:length(report_dag)) {
-            report_dag[[i]] <- knitr::kable(report_dag[[i]],
-                                            align = "ccccc",
-                                            row.names = FALSE,
-                                            caption = report_title,
-                                            format = "html",
-                                            longtable = TRUE)
-            report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
-                                                         bootstrap_options = c("striped", "condensed"),
-                                                         full_width = FALSE)
-            report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
-                                                    italic = FALSE,
-                                                    extra_css = "border-bottom: 1px solid grey")
-          }
-        }
-        def <- list(queries = queries,
-                    results = report_dag)
-      }
-
-      if (all(!report_title %in% NA) & length(report_title) > 1) {
+    # Before starting we check if there is more than one report_title and if it isn't the case we stabilish the caption for the report_title
+    if (all(is.na(report_title))) {
+      report_title <- "Report of queries"
+    } else {
+      if (length(report_title) > 1) {
         stop("There is more than one title for the report, please choose only one.", call. = FALSE)
       }
-
     }
+
+    # Adding information about the variables with branching logic to the report
+    if (length(var_logic) > 0) {
+      branch$Variable <- stringr::str_trunc(branch$Variable, 26)
+      report <- merge(report,
+                      branch %>% dplyr::select("Variable", "Branching logic"),
+                      by.x = "Variables", by.y = "Variable", all.x = TRUE)
+      report[, "Branching logic"] <- stringr::str_replace_na(report[, "Branching logic"], "-")
+    }
+
+    # Reorder the report
+    report <- report %>%
+                dplyr::arrange(dplyr::desc(.data$Total))
+
+    # Report in case the by_dag argument is true
+    if (by_dag %in% TRUE) {
+      report[is.na(report)] <- "-"
+      report_dag <- split(report, f = report$DAG)
+
+      # Build structure of each report in order to appear in the RStudio Viewer tab
+      for (i in 1:length(report_dag)) {
+        report_dag[[i]] <- report_dag[[i]] %>%
+          dplyr::select("DAG", names(report))
+        report_dag[[i]] <- knitr::kable(report_dag[[i]],
+                                        align = "ccccc",
+                                        row.names = FALSE,
+                                        caption = report_title,
+                                        format = "html",
+                                        longtable = TRUE)
+        report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
+                                                     bootstrap_options = c("striped", "condensed"),
+                                                     full_width = FALSE)
+        report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
+                                                italic = FALSE,
+                                                extra_css = "border-bottom: 1px solid grey")
+      }
+
+      # Definitive output
+      def <- list(queries = split(queries, f = queries$DAG),
+                  results = report_dag)
+
+    } else {
+
+      # If by_dag argument is false
+      # If there is a branching logic, we cannot lose the branching logic column
+      if (length(var_logic) > 0) {
+
+        report <- report %>%
+          dplyr::select(-"DAG") %>%
+          dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .data$`Branching logic`, .drop = FALSE) %>%
+          dplyr::summarise("Total" = sum(.data$Total), .groups = "keep") %>%
+          dplyr::select("Variables", "Description", "Event", "Query", "Total", "Branching logic")
+
+      } else {
+
+        report <- report %>%
+          dplyr::select(-"DAG") %>%
+          dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .drop = FALSE) %>%
+          dplyr::summarise("Total" = sum(.data$Total), .groups = "keep")
+
+      }
+
+      if (any(!report$Total %in% 0)) {
+        if (report_zeros == TRUE) {
+
+          report <- report %>%
+            dplyr::arrange(dplyr::desc(.data$Total))
+
+          report$Query[report$Total %in% 0]
+
+        } else {
+
+          report <- report %>%
+            dplyr::arrange(dplyr::desc(.data$Total)) %>%
+            dplyr::filter(.data$Total != 0)
+
+        }
+      }
+
+      report[is.na(report)] <- "-"
+
+      # Build structure of each report in order to appear in the RStudio Viewer tab
+      result <- knitr::kable(report, "pipe",
+                             align = "ccccc",
+                             caption = report_title)
+      viewer <- knitr::kable(report,
+                             align = "ccccc",
+                             row.names = FALSE,
+                             caption = report_title,
+                             format = "html",
+                             longtable = TRUE)
+      viewer <- kableExtra::kable_styling(viewer,
+                                          bootstrap_options = c("striped", "condensed"),
+                                          full_width = FALSE)
+      viewer <- kableExtra::row_spec(viewer, 0,
+                                     italic = FALSE,
+                                     extra_css = "border-bottom: 1px solid grey")
+
+      # Definitive output
+      def <- list(queries = queries,
+                  results = viewer)
+    }
+
     # Return the final product
     def
   }

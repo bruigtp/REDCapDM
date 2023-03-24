@@ -3,6 +3,7 @@
 export("%>%")
 export(check_queries)
 export(rd_event)
+export(rd_export)
 export(rd_insert_na)
 export(rd_query)
 export(rd_rlogic)

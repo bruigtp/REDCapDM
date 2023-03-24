@@ -4,7 +4,7 @@
 \alias{recalculate}
 \title{Recalculate REDCap calculated fields}
 \usage{
-recalculate(data, dic, event_form = NULL)
+recalculate(data, dic, event_form = NULL, exclude_recalc = NULL)
 }
 \arguments{
 \item{data}{Data frame containing data from REDCap.}
@@ -12,6 +12,8 @@ recalculate(data, dic, event_form = NULL)
 \item{dic}{Data frame  containing the dictionary read from REDCap.}
 
 \item{event_form}{Data frame  containing the correspondence of each event with each form.}
+
+\item{exclude_recalc}{Character vector with the names of the variables that do not have to be recalculated. Might be useful for projects were there are some calculated fields that have a time consuming recalculation.}
 }
 \description{
 Function that recalculates every calculated field if the logic can be transcribed to R. Recall that calculated fields with smart-variables in the logic or variables in other events cannot be transcribed.

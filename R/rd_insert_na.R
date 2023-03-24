@@ -11,8 +11,8 @@
 #' @examples
 #' table(is.na(covican$data$potassium))
 #' data <- rd_insert_na(covican,
-#'              filter = "age < 65",
-#'              vars = "potassium")
+#'              vars = "potassium",
+#'              filter = "age < 65")
 #' table(data$potassium)
 #' @export
 #' @importFrom rlang .data
@@ -63,7 +63,7 @@ rd_insert_na <- function(..., data = NULL, dic = NULL, event_form = NULL, vars, 
       #For every filter & variable get the variables specified in the filter and their events (if there is more than one event)
       if(longitudinal){
         #First, let's get the variables in the filter:
-        vars_filter <- trimws(stringr::str_split_1(filter[i], "[&|]"))
+        vars_filter <- trimws(unlist(stringr::str_split(filter[i], "[&|]")))
         vars_filter <- gsub("!?is.na\\(", "", vars_filter)
         vars_filter <- unlist(stringr::str_extract_all(vars_filter, "^\\w+"))
 

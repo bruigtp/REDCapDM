@@ -18,5 +18,5 @@ split_form(data, dic, event_form = NULL, which = NULL, wide = FALSE)
 \item{wide}{If the dataset needs to be in a wide format or not (long).}
 }
 \description{
-Function that given the data, the dictionary and the mapping between forms and events it creates a dataset with the variables that are in this form for all events. It can be chosen to return only the data from the specified form.
+Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets having only the variables in each form. It can be chosen to return only the data from the specified form
 }

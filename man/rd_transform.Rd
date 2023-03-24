@@ -9,11 +9,10 @@ rd_transform(
   data = NULL,
   dic = NULL,
   event_form = NULL,
-  event_path = NULL,
   checkbox_labels = c("No", "Yes"),
   checkbox_na = FALSE,
+  exclude_recalc = NULL,
   exclude_to_factor = NULL,
-  keep_labels = FALSE,
   delete_vars = c("_complete", "_timestamp"),
   final_format = "raw",
   which_event = NULL,
@@ -22,25 +21,23 @@ rd_transform(
 )
 }
 \arguments{
-\item{...}{List containing the data and the dictionary and the event_form if it's needed. Can be the output of the function `redcap_data`.}
+\item{...}{Output of the function `redcap_data`, that is a list containing the data frames of the data, he dictionary and the event_form (if it's needed) of the REDCap project.}
 
-\item{data}{Data frame containing data from REDCap. If the list is specified this argument is not needed.}
+\item{data}{Data frame containing the data read from REDCap. If the list is specified this argument is not necessary.}
 
-\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not needed.}
+\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not necessary.}
 
-\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified this argument is not needed.}
-
-\item{event_path}{Character string with the pathname of the file with the correspondence between each event and each form (it can be downloaded in `Designate Instruments for My Events` inside the `Project Setup` section of REDCap).}
+\item{event_form}{Data frame containing the correspondence of each event with each form. If the list is specified this argument is not necessary.}
 
 \item{checkbox_labels}{Character vector with the names that will have the two options of every checkbox variable. Default is `c('No', 'Yes')`.}
 
-\item{checkbox_na}{Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (meaning that some of the variables specified in it are missing) or also when the branching logic isn't satisfied (true).}
+\item{checkbox_na}{Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.}
+
+\item{exclude_recalc}{Character vector with the names of the variables that do not have to be recalculated. Might be useful for projects were there are some calculated fields that have a time consuming recalculation.}
 
 \item{exclude_to_factor}{Character vector with the names of the variables that do not have to be transformed to factors.}
 
-\item{keep_labels}{Logical indicating if the labels have to be kept or not.}
-
-\item{delete_vars}{Character vector specifying the pattern that will contain variables to exclude. By default, variables ending up with `_complete` will be removed.}
+\item{delete_vars}{Character vector specifying the regex pattern that will contain the variables to exclude. By default, variables ending up with `_complete` and `_timestamp` will be removed.}
 
 \item{final_format}{Character string indicating the final arrangement format of the data that the function will return. Choose one of `raw`, `by_event` or `by_form`. `raw` (default) will return the transformed data with the original structure. `by_event` will return the transformed data as a nested data frame by event. `by_form` will return the transformed data as a nested data frame by form.}
 
@@ -51,7 +48,7 @@ rd_transform(
 \item{wide}{Logical indicating if the data split by form (if selected) has to be in a wide format or in a long one.}
 }
 \value{
-List with the transformed dataset, dictionary and the results
+List with the transformed dataset, dictionary, event_form and the results
 }
 \description{
 Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns the transformed data and dictionary along with the summary of the results of each step.

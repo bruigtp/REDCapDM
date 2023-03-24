@@ -17,22 +17,22 @@ redcap_data(
 
 \item{dic_path}{Character string with the pathname of the dictionary.}
 
-\item{event_path}{Character string with the pathname of the file with the correspondence between each event and each form (it can be downloaded in `Designate Instruments for My Events` inside the `Project Setup` section of REDCap)}
+\item{event_path}{Character string with the pathname of the file containing the correspondence between each event and each form (it can be downloaded through the `Designate Instruments for My Events` tab inside the `Project Setup` section of REDCap)}
 
-\item{uri}{The URI (uniform resource identifier) of the REDCap project.}
+\item{uri}{The URI (Uniform Resource Identification) of the REDCap project.}
 
-\item{token}{Character vector with the code of the token.}
+\item{token}{Character vector with the generated token.}
 }
 \value{
-List with the dataset and the dictionary of the corresponding REDCap project. If the event_path is specified it will also contain a third element with the correspondence of the events & forms of the project.
+List containing the dataset and the dictionary of the REDCap project. If the event_path is specified, it will also contain a third element with the correspondence of the events & forms of the project.
 }
 \description{
-This function allows users to read datasets from a REDCap project, through exported data or an API connection, into R for analysis.
+This function allows users to read datasets from a REDCap project into R for analysis, either via export of the data or via an API connection.
 
 The REDCap API is an interface that allows communication with REDCap and server without going through the interactive REDCap interface.
 }
 \note{
-If you will give further use to the package, we advise you to use the argument 'dic_path' to read your dictionary, since all other functions need it in order to run properly.
+If you will give further use to the package, we advise you to use the argument 'dic_path' to read your dictionary, as all other functions need it in order to run properly.
 
-To read exported data you have to first use REDCap's 'Export Data' function and select the format 'R Statistical Software', then it will generate one CSV file with all observations and an R file with the necessary code to complete each variable information.
+To read exported data, you must first use REDCap's 'Export Data' function and select the 'R Statistical Software' format. It will then generate a CSV file with all the observations and an R file with the necessary code to complete each variable's information.
 }

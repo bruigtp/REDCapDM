@@ -2,24 +2,25 @@
 % Please edit documentation in R/check_queries.R
 \name{check_queries}
 \alias{check_queries}
-\title{Check modifications between two report of queries}
+\title{Check for changes between two reports of the queries}
 \usage{
 check_queries(old, new, report_title = NULL)
 }
 \arguments{
-\item{old}{Previous version of the report of queries.}
+\item{old}{Previous version of the queries report.}
 
-\item{new}{New version of the report of queries. This object will be used to determine the status of each query.}
+\item{new}{New version of the queries report. The status of each query is determined using this object.}
 
-\item{report_title}{Character string with the report's title.}
+\item{report_title}{Character string specifying the title of the report.}
 }
 \value{
-A list composed by a data frame that combines all queries and includes a column that shows the status of the queries (new, modified, or unchanged) when compared to the previous report of queries. In addition to this data frame, it also has a summary of the total number of queries per category.
+A list consisting of a dataframe with every single query of both reports and a column containing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. There is also a summary of the total number of queries per category in addition to this dataframe.
 }
 \description{
 This function compares a previous report of queries with a new one and allows you to check which queries are new, which have been modified, and which remain unchanged.
 }
 \examples{
+# Example of a query
 data_old <- rd_query(covican,
                      variables = "copd",
                      expression = "\%in\%NA",

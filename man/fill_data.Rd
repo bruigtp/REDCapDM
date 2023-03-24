@@ -14,5 +14,5 @@ fill_data(which_event, which_var, data)
 \item{data}{Dataset containing the REDCap data.}
 }
 \description{
-Function that with one particular variable and event it fills all the rows in the data with the value in that particular event
+Function that with one particular variable and event it fills all the rows in the data with the value in that particular event. Auxiliar to rd_rlogic function
 }

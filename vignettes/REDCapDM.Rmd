@@ -21,6 +21,7 @@ library(kableExtra)
 library(knitr)
 library(dplyr)
 library(Hmisc)
+library(purrr)
 ```
 
 <br>
@@ -28,7 +29,7 @@ library(Hmisc)
 
 # **Introduction**
 
-The REDCapDM package allows users to read data exported directly from REDCap or via API connection. It also allows users to preprocess the previously downloaded data, create reports of queries such as outliers or missing values and track the identified queries.
+The REDCapDM package allows users to read data exported directly from REDCap or via API connection. It also allows users to process the previously downloaded data, create reports of queries such as outliers or missing values and track the identified queries.
 
 <br>
 <br>
@@ -39,7 +40,7 @@ Functions included in the package:
 
 - <u>redcap_data</u>: reads data.
 
-- <u>rd_transform</u>: pre-processes data.
+- <u>rd_transform</u>: processes data.
 
 - <u>rd_rlogic</u>: transforms REDCap logic into R logic.
 
@@ -109,7 +110,7 @@ kable(vars) %>%
 
 # **Examples**
 
-The package structure can be divided into three main components: reading raw data, preprocessing data and identifying queries. Typically, after collecting data in REDCap, we will have to follow this three components in order to have a final validated dataset for analysis. We will provide a complete user guide on how to perform each one of these steps using the package's functions. For the preprocessing of the data and query identification, we will use the built-in dataset as an example.
+The package structure can be divided into three main components: reading raw data, processing data and identifying queries. Typically, after collecting data in REDCap, we will have to follow this three components in order to have a final validated dataset for analysis. We will provide a complete user guide on how to perform each one of these steps using the package's functions. For the processing of the data and query identification, we will use the built-in dataset as an example.
 
 ## **Read data**
 
@@ -134,7 +135,7 @@ dataset <- redcap_data(data_path = "C:/Users/username/example.r",
                        event_path = "C:/Users/username/events.csv")
 ```
 
-Note: if the project is longitudinal and the event-form file is not provided using the `event_path` argument, some steps of the preprocessment can not be performed.
+Note: if the project is longitudinal and the event-form file is not provided using the `event_path` argument, some steps of the processment can not be performed.
 
 Another way to read data exported from a REDCap project is using an API connection. To do this, we can use the arguments `uri` and `token` which respectively refer to the uniform resource identifier of the REDCap project and the user-specific string that serves as the password:
 
@@ -149,11 +150,11 @@ In this case, there is no need to specify the event-form file since the function
 
 This function returns a list with 3 elements (imported data, dictionary and event-form mapping) which can then be used for further analysis or visualization. 
 
-## **Preprocess**
+## **Process**
 
 ### **rd_transform**
 
-The main function involved in the preprocessing of the data is `rd_transform`. This function is used to preprocess the REDCap data read into R using the `redcap_data`, as described above. Using the arguments of the function we can perform different type of transformations of our data.
+The main function involved in the processing of the data is `rd_transform`. This function is used to process the REDCap data read into R using the `redcap_data`, as described above. Using the arguments of the function we can perform different type of transformations of our data.
 
 As previously stated, we will use the built-in dataset `covican` as an example.
 
@@ -174,7 +175,7 @@ covican_transformed <- rd_transform(data = covican$data,
 covican_transformed$results
 ```
 
-This function will return a list with the transformed dataset, dictionary and the output of the results of the transformation.
+This function will return a list with the transformed dataset, dictionary, event_form and the output of the results of the transformation.
 
 As we can see, there are 4 steps in the transformation:
 
@@ -266,22 +267,22 @@ dataset <- rd_transform(covican,
 
 <br>
 
+<u>exclude_recalc</u>: specifies the name of the variables that we do not want to be recalculated. For example, if we do not want to recalculate the variable _age_:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+dataset <- rd_transform(covican,
+                        exclude_recalc = "age")
+```
+
+This argument is useful to reduce the time of execution of the function. For calculated fields with complex logic involving variables in different events the recalculation operation may be time consuming, so we can prevent the function to recalculate them with this argument.
+
+<br>
+
 <u>exclude_to_factor</u>: specifies the name of the variables that we do not want to transform into a factor. For example, if we want the variable _dm_ to keep its original numeric version:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 dataset <- rd_transform(covican,
                         exclude_to_factor = "dm")
-```
-
-<br>
-
-<u>keep_labels</u>: logical argument, retains the labeling of the dataset columns from REDCap. By default, the function will remove the labels of the dataset and the labels can be found in the dictionary:
-
-```{r message=FALSE, warning=FALSE, comment=NA}
-dataset <- rd_transform(covican,
-                        keep_labels = TRUE)
-
-str(dataset$data[,1:2])
 ```
 
 <br>
@@ -449,6 +450,8 @@ example$results
 ```
 
 The total number of missing values changes when we use the `filter` argument, the variable _potassium_ now presents 21 missing values instead of the previous 31 cases identified. This means that we were identifying 10 missing values in which _available_analytics_ did not have the value _1_ and, therefore, should not be considered as missing values.
+
+Note: This argument is treated as a vector, which means that we can add a filter to each any of the specified variables. Also, even if the filter argument is used to apply the branching logic condition, the warning about the presence of a branching logic is still be displayed, so we can ignore it in this case.
 
 #### *Expressions*
 
@@ -700,7 +703,6 @@ example$queries$Link
 
 We can go straight to the specific query by copying and pasting the link into the web browser of your choice.
 
-<br>
 
 ### **rd_event**
 
@@ -788,3 +790,35 @@ kable(example) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styli
 ```
 
 
+### **rd_export**
+
+With the help of the `rd_export` function, we can export the identified queries to a `.xlsx` file of our choice:
+
+```{r message=FALSE, warning=FALSE, comment=NA, include=FALSE}
+example <- rd_query(covican_transformed,
+                    variables = c("copd", "age"),
+                    expression = c("%in%NA", "%in%NA"),
+                    event = "baseline_visit_arm_1")
+```
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+rd_export(example)
+```
+
+This is the easiest way to use the function and it will create a file with the name "example.xlsx" in your current working directory.
+
+In order to have a more personalised output file, we can add information to the following arguments:
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+rd_export(queries = example$queries,
+          column = "Link",
+          sheet_name = "Queries - Proyecto",
+          path = "C:/User/Desktop/queries.xlsx",
+          password = "123") 
+```
+
+We specify the sheet name with the `sheet_name` argument and the path to the file to be exported with the `path` argument. To prevent anyone from modifying the exported file, we can also add a password.
+
+The `column` argument refers to the column of the report that contains the link to each query. The function converts this column into hyperlink format in the exported file, so that we can simply click on the link to go to the specific query in the REDCap project.
+
+In both cases, a message will be generated in the console informing you that the file has been created and where it is located.

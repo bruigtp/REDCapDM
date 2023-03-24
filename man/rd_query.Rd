@@ -24,47 +24,47 @@ rd_query(
 )
 }
 \arguments{
-\item{...}{List containing the data and the dictionary and the event if it's needed. Can be the output of the function `redcap_data`.}
+\item{...}{List containing the data, the dictionary and the event (if required). It may be the output of the `redcap_data` function.}
 
-\item{data}{Data frame containing data from REDCap. If the list is specified this argument is not needed.}
+\item{data}{Data frame containing the data read from REDCap. If the list is given, this argument is not required.}
 
-\item{dic}{Data frame containing the dictionary read from REDCap. If the list is specified this argument is not needed.}
+\item{dic}{Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.}
 
-\item{variables}{Vector with variables names from the database that will be checked. If this argument alongside with the argument `expression` are unspecified, this function will look for abnormal values using the minimum and maximum of each variable in the dataset (information contained in the dictionary).}
+\item{variables}{Character vector of the names of the database variables to be checked.}
 
-\item{expression}{Expression that will be applied to the chosen variables, for example, "<170". If this argument is unspecified, this function will look for abnormal values using the minimum and maximum of each variable in the dataset (information contained in the dictionary).}
+\item{expression}{Character vector of expressions to be applied to the selected variables.}
 
-\item{negate}{Logical value indicating whether or not to negate the defined expression. Defaults to `FALSE`.}
+\item{negate}{Logical value which indicates whether the defined expression should be negated. Defaults to `FALSE`.}
 
-\item{event}{REDCap's event name to be analyzed. If your REDCap project has events, you should use this argument in order to name the event to which the defined variables belong.}
+\item{event}{The name of the REDCap event to be analyzed. If there are events in your REDCap project, you should use this argument in order to name the event to which the defined variables belong.}
 
-\item{filter}{A filter to apply to the dataset. This argument can be used to, for example, apply the branching logic of a determined variable.}
+\item{filter}{A filter to be applied to the dataset. For example, the branching logic of a determined variable can be applied using this argument.}
 
-\item{addTo}{Data frame corresponding to a prior report of queries to which you can add the new data frame of queries. By default, the function will always generate a new data frame without taking into account former reports.}
+\item{addTo}{Data frame corresponding to a previous query data frame to which you can add the new query data frame. By default, the function always generates a new data frame without taking into account previous reports.}
 
-\item{variables_names}{Vector with the description of each variable. By default, the function will automatically pick the description of each variable from the dictionary of the dataset.}
+\item{variables_names}{Character vector containing the description of each selected variable. By default, the function automatically takes the description of each variable from the dictionary of the REDCap project.}
 
-\item{query_name}{Description of the query. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will define the description as `The value is [value] and it should not be [expression]' for each one of the variables`.}
+\item{query_name}{Description of the query. It can be defined as the same one for all the variables, or you can define a different one for each variable. By default, the function defines it as `The value is [value] and it should not be [expression]'`.}
 
-\item{instrument}{REDCap's instrument to which the variables belong. It can be defined as the same one for all variables or you can define one for each variable. By default, the function will automatically pick the corresponding instrument of each variable from the dictionary of the dataset.}
+\item{instrument}{REDCap's instrument to which the variables belong. It can be defined as the same one for all the variables, or you can define a different one for each variable. By default, the function automatically selects the corresponding instrument of each variable from the dictionary of the REDCap project.}
 
-\item{report_title}{Character string with the report's title.}
+\item{report_title}{Character string specifying the title of the report.}
 
-\item{report_zeros}{Logical. If `TRUE`, it returns a report including variables with zero queries.}
+\item{report_zeros}{Logical. If `TRUE`, the function returns a report containing variables with zero queries.}
 
-\item{by_dag}{Logical. If `TRUE`, both elements of the output will be grouped by the data access groups (DAGs) of the REDCap project.}
+\item{by_dag}{Logical. If `TRUE`, both elements of the output are grouped by the data access groups (DAGs) of the REDCap project.}
 
 \item{link}{List containing project information used to create a web link to each query.}
 }
 \value{
-A list with a data frame with 9 columns meant to help the user identify each query and a table with the total of queries per variable.
+A list with a data frame of 9 columns (10 columns, if the link argument is specified) meant to help the user identify each query and a table with the total number of queries per variable.
 }
 \description{
-This function allows you to identify queries by using a specific expression.
-It can be used to identify missing values or values that fall outside the lower and upper limit of a variable.
+This function allows you to identify queries by the use a specific expression.
+It can be used to identify missing values or to identify values that are outside the lower and upper limits of a variable.
 }
 \examples{
-# Missings
+# Missing values
 example <- rd_query(covican,
                     variables = c("copd", "age"),
                     expression = c("\%in\%NA", "\%in\%NA"),
@@ -78,7 +78,7 @@ example <- rd_query(covican,
                     event="baseline_visit_arm_1")
 example
 
-# Using a filter
+# Using the filter argument
 example <- rd_query(covican,
                     variables = "potassium",
                     expression = "\%in\%NA",
