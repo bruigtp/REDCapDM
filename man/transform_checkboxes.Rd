@@ -4,7 +4,7 @@
 \alias{transform_checkboxes}
 \title{Transformation of checkboxes in case of having a branching logic}
 \usage{
-transform_checkboxes(data, dic, event_form, checkbox_na = FALSE)
+transform_checkboxes(data, dic, event_form = NULL, checkbox_na = FALSE)
 }
 \arguments{
 \item{data}{Data frame containing data from REDCap.}

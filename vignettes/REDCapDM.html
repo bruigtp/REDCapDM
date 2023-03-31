@@ -636,14 +636,15 @@ or missing values and track the identified queries.</p>
 <strong>Functions</strong></h1>
 <p>Functions included in the package:</p>
 <ul>
-<li><p><u>redcap_data</u>: reads data.</p></li>
-<li><p><u>rd_transform</u>: processes data.</p></li>
-<li><p><u>rd_rlogic</u>: transforms REDCap logic into R logic.</p></li>
-<li><p><u>rd_insert_na</u>: allows a manual entry of a missing value in
-specific variables using a filter.</p></li>
-<li><p><u>rd_query</u>: identifies queries.</p></li>
-<li><p><u>rd_event</u>: identifies missing events.</p></li>
-<li><p><u>check_queries</u>: tracks queries.</p></li>
+<li><p><code>redcap_data()</code>: reads data.</p></li>
+<li><p><code>rd_transform()</code>: processes data.</p></li>
+<li><p><code>rd_rlogic()</code>: transforms REDCap logic into R
+logic.</p></li>
+<li><p><code>rd_insert_na()</code>: allows a manual entry of a missing
+value in specific variables using a filter.</p></li>
+<li><p><code>rd_query()</code>: identifies queries.</p></li>
+<li><p><code>rd_event()</code>: identifies missing events.</p></li>
+<li><p><code>check_queries()</code>: tracks queries.</p></li>
 </ul>
 <p><br> <br></p>
 </div>
@@ -916,7 +917,7 @@ data</strong></h2>
 <div id="redcap_data" class="section level3" number="4.1.1">
 <h3><span class="header-section-number">4.1.1</span>
 <strong>redcap_data</strong></h3>
-<p>The <code>redcap_data</code> function allows users to easily import
+<p>The <code>redcap_data()</code> function allows users to easily import
 data from a REDCap project into R for analysis.</p>
 <p>To read exported data from REDCap, use the arguments
 <code>data_path</code> and <code>dic_path</code> to, respectively,
@@ -962,20 +963,20 @@ analysis or visualization.</p>
 <h3><span class="header-section-number">4.2.1</span>
 <strong>rd_transform</strong></h3>
 <p>The main function involved in the processing of the data is
-<code>rd_transform</code>. This function is used to process the REDCap
-data read into R using the <code>redcap_data</code>, as described above.
-Using the arguments of the function we can perform different type of
-transformations of our data.</p>
+<code>rd_transform()</code>. This function is used to process the REDCap
+data read into R using the <code>redcap_data()</code>, as described
+above. Using the arguments of the function we can perform different type
+of transformations of our data.</p>
 <p>As previously stated, we will use the built-in dataset
-<code>covican</code> as an example.</p>
+<code>REDCapDM::covican</code> as an example.</p>
 <div id="data-transformation" class="section level4" number="4.2.1.1">
 <h4><span class="header-section-number">4.2.1.1</span> <em>Data
 transformation</em></h4>
 <p>The only necessary elements that must be provided are the dataset to
 be transformed and the corresponding dictionary. If the project is
-longitudinal, as in the case of <code>covican</code>, also the
+longitudinal, as in the case of <code>REDCapDM::covican</code>, also the
 event-form dataset should be specified. These elements can be specified
-directly using the output of the <code>redcap_data</code> function or
+directly using the output of the <code>redcap_data()</code> function or
 separately in different arguments.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Option A: list object </span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>covican_transformed <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican)</span>
@@ -1054,7 +1055,7 @@ dataset, the names are converted to
 <em>type_underlying_disease_solid_tumour</em>. Then, since this checkbox
 variable does not have a branching logic, the variable is advised to be
 reviewed by the user in the <code>results</code>, as seen above. When
-reviewed we could use an additional function <code>rd_insert_na</code>
+reviewed we could use an additional function <code>rd_insert_na()</code>
 to insert the necessary missing values into this variable, as we will
 explain later. If a branching logic was found for this variable,
 <code>rd_transform</code> will insert automatically the missing values
@@ -1131,12 +1132,12 @@ consists in splitting the data according to the events in the study. So,
 now the transformed dataset found in the output of the function is a
 tibble object with as many data frames as events there are in the REDCap
 project:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>dataset<span class="sc">$</span>data</span></code></pre></div>
-<pre><code># A tibble: 2 × 3
-  events                   vars       df             
-  &lt;chr&gt;                    &lt;list&gt;     &lt;list&gt;         
-1 baseline_visit_arm_1     &lt;chr [31]&gt; &lt;df [190 × 36]&gt;
-2 follow_up_visit_da_arm_1 &lt;chr [4]&gt;  &lt;df [152 × 9]&gt; </code></pre>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>dataset<span class="sc">$</span>data</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 3</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   events                   vars       df             </span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                    &lt;list&gt;     &lt;list&gt;         </span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 baseline_visit_arm_1     &lt;chr [31]&gt; &lt;df [190 × 36]&gt;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 follow_up_visit_da_arm_1 &lt;chr [4]&gt;  &lt;df [152 × 9]&gt;</span></span></code></pre></div>
 <p>The column <code>df</code> of the nested dataframe is a list
 containing the data corresponding to each event. Also the variables of
 the forms that are found in each event are reported in the column
@@ -1150,11 +1151,11 @@ transformation and classification by form</em></h4>
 <p>Another option is to split the data by the forms found in the REDCap
 project. We will use also the <code>final_format</code> argument to
 specify that we want to split data by form:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_form&quot;</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co">#To print the results</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>dataset<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_form&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#To print the results</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>dataset<span class="sc">$</span>results</span></code></pre></div>
 <pre><code>1. Recalculating calculated fields and saving them as &#39;[field_name]_recalc&#39;
 
 | Total calculated fields | Non-transcribed fields | Recalculated different fields |
@@ -1183,17 +1184,17 @@ Table: Checkbox variables advisable to be reviewed
 is to split the data according to the forms in the study. Thus, the
 transformed dataset will now be a tibble object with as many data frames
 as forms there are in the REDCap project:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>dataset<span class="sc">$</span>data</span></code></pre></div>
-<pre><code># A tibble: 7 × 4
-  form                        events    vars        df             
-  &lt;chr&gt;                       &lt;list&gt;    &lt;list&gt;      &lt;list&gt;         
-1 inclusionexclusion_criteria &lt;chr [1]&gt; &lt;glue [7]&gt;  &lt;df [190 × 11]&gt;
-2 demographics                &lt;chr [1]&gt; &lt;glue [4]&gt;  &lt;df [190 × 9]&gt; 
-3 comorbidities               &lt;chr [1]&gt; &lt;glue [5]&gt;  &lt;df [190 × 10]&gt;
-4 cancer                      &lt;chr [1]&gt; &lt;glue [11]&gt; &lt;df [190 × 16]&gt;
-5 vital_signs                 &lt;chr [2]&gt; &lt;glue [2]&gt;  &lt;df [342 × 7]&gt; 
-6 laboratory_findings         &lt;chr [2]&gt; &lt;glue [2]&gt;  &lt;df [342 × 7]&gt; 
-7 microbiological_studies     &lt;chr [1]&gt; &lt;glue [1]&gt;  &lt;df [190 × 6]&gt; </code></pre>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>dataset<span class="sc">$</span>data</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 7 × 4</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   form                        events    vars        df             </span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                       &lt;list&gt;    &lt;list&gt;      &lt;list&gt;         </span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 inclusionexclusion_criteria &lt;chr [1]&gt; &lt;glue [7]&gt;  &lt;df [190 × 11]&gt;</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 demographics                &lt;chr [1]&gt; &lt;glue [4]&gt;  &lt;df [190 × 9]&gt; </span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 comorbidities               &lt;chr [1]&gt; &lt;glue [5]&gt;  &lt;df [190 × 10]&gt;</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 cancer                      &lt;chr [1]&gt; &lt;glue [11]&gt; &lt;df [190 × 16]&gt;</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5 vital_signs                 &lt;chr [2]&gt; &lt;glue [2]&gt;  &lt;df [342 × 7]&gt; </span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6 laboratory_findings         &lt;chr [2]&gt; &lt;glue [2]&gt;  &lt;df [342 × 7]&gt; </span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7 microbiological_studies     &lt;chr [1]&gt; &lt;glue [1]&gt;  &lt;df [190 × 6]&gt;</span></span></code></pre></div>
 <p>Note: If the REDCap project is longitudinal and the event-form is not
 specified, this transformation is not posible.</p>
 </div>
@@ -1206,8 +1207,8 @@ transformation steps that the function performs by default:</p>
 <p><u>checkbox_labels</u>: specifies the name of the categories for the
 checkbox variables. Default is ‘No/Yes’, but we can change it to
 ‘N/Y’:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">checkbox_labels =</span> <span class="fu">c</span>(<span class="st">&quot;N&quot;</span>, <span class="st">&quot;Y&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">checkbox_labels =</span> <span class="fu">c</span>(<span class="st">&quot;N&quot;</span>, <span class="st">&quot;Y&quot;</span>))</span></code></pre></div>
 <p><br></p>
 <p><u>checkbox_na</u>: logical argument involved in the transformation
 of checkbox variables. For checkbox variables that have a branching
@@ -1215,14 +1216,14 @@ logic specified, when the logic is missing the values of the checkbox
 will be always converted to missing. Additionally, if this argument is
 true then also when the branching logic isn’t satisfied their values
 will be converted to missing.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">checkbox_na =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">checkbox_na =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <p><br></p>
 <p><u>exclude_recalc</u>: specifies the name of the variables that we do
 not want to be recalculated. For example, if we do not want to
 recalculate the variable <em>age</em>:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">exclude_recalc =</span> <span class="st">&quot;age&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">exclude_recalc =</span> <span class="st">&quot;age&quot;</span>)</span></code></pre></div>
 <p>This argument is useful to reduce the time of execution of the
 function. For calculated fields with complex logic involving variables
 in different events the recalculation operation may be time consuming,
@@ -1232,8 +1233,8 @@ argument.</p>
 <p><u>exclude_to_factor</u>: specifies the name of the variables that we
 do not want to transform into a factor. For example, if we want the
 variable <em>dm</em> to keep its original numeric version:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">exclude_to_factor =</span> <span class="st">&quot;dm&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">exclude_to_factor =</span> <span class="st">&quot;dm&quot;</span>)</span></code></pre></div>
 <p><br></p>
 <p><u>delete_vars</u>: every variable containing the strings specified
 in this argument will be removed from the dataset. By default, the value
@@ -1241,27 +1242,27 @@ of <code>delete_vars</code> is ‘_complete’. For example, we can change
 the argument to remove the inclusion and exclusion criteria variables
 from the dataset (variables that contain ‘inc_’ and ‘exc_’ in their
 names):</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">delete_vars =</span> <span class="fu">c</span>(<span class="st">&quot;inc_&quot;</span>, <span class="st">&quot;exc_&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">delete_vars =</span> <span class="fu">c</span>(<span class="st">&quot;inc_&quot;</span>, <span class="st">&quot;exc_&quot;</span>))</span></code></pre></div>
 <p><br></p>
 <p><u>which_event</u>: in the transformation by event explained earlier,
 we can specify whether we want to keep only one out of all the events in
 the dataset. For example, if we only want to keep the baseline
 visit:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_event&quot;</span>,</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which_event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_event&quot;</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which_event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
 <p><br></p>
 <p><u>which_form</u>: in the transformation by form explained earlier,
 we can specify whether we want to keep only one of the forms. For
 example, if we only want to keep the demographic form:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_form&quot;</span>,</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which_form =</span> <span class="st">&quot;demographics&quot;</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> dataset<span class="sc">$</span>data</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(data)</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_form&quot;</span>,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which_form =</span> <span class="st">&quot;demographics&quot;</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> dataset<span class="sc">$</span>data</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(data)</span></code></pre></div>
 <pre><code>[1] &quot;record_id&quot;                       &quot;redcap_event_name&quot;              
 [3] &quot;redcap_data_access_group&quot;        &quot;redcap_event_name.factor&quot;       
 [5] &quot;redcap_data_access_group.factor&quot; &quot;d_admission&quot;                    
@@ -1275,21 +1276,21 @@ Then, we will only have one row per patient and all the variables of the
 form will be in columns repeated by each event in the order that the
 events appear in REDCap. For example, if we want to keep only the
 laboratory findings in a wide format we can do:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_form&quot;</span>,</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which_form =</span> <span class="st">&quot;laboratory_findings&quot;</span>,</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                        <span class="at">wide =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dataset<span class="sc">$</span>data)</span></code></pre></div>
-<pre><code># A tibble: 6 × 5
-  record_id available_analytics_1 available_analytics_2 potassium_1 potassium_2
-  &lt;chr&gt;     &lt;fct&gt;                 &lt;fct&gt;                       &lt;dbl&gt;       &lt;dbl&gt;
-1 100-6     Yes                   Yes                          4.3          4.5
-2 100-13    Yes                   Yes                          3.66         4.1
-3 100-16    Yes                   No                           4.04        NA  
-4 100-31    Yes                   &lt;NA&gt;                         4.58        NA  
-5 100-34    Yes                   No                           3.48        NA  
-6 100-36    Yes                   No                           4.09        NA  </code></pre>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_form&quot;</span>,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which_form =</span> <span class="st">&quot;laboratory_findings&quot;</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                        <span class="at">wide =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dataset<span class="sc">$</span>data)</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 5</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   record_id available_analytics_1 available_analytics_2 potassium_1 potassium_2</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;     &lt;fct&gt;                 &lt;fct&gt;                       &lt;dbl&gt;       &lt;dbl&gt;</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 100-6     Yes                   Yes                          4.3          4.5</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 100-13    Yes                   Yes                          3.66         4.1</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 100-16    Yes                   No                           4.04        NA  </span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 100-31    Yes                   &lt;NA&gt;                         4.58        NA  </span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5 100-34    Yes                   No                           3.48        NA  </span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6 100-36    Yes                   No                           4.09        NA</span></span></code></pre></div>
 <p><br></p>
 </div>
 </div>
@@ -1299,15 +1300,15 @@ laboratory findings in a wide format we can do:</p>
 <p>This function transforms the REDCap logic into logic that can be
 evaluated in R. It returns both the transformed logic and the result of
 the evaluation of the logic. This function is used in the
-<code>rd_transform</code> to recalculate the calculate fields, but it
+<code>rd_transform()</code> to recalculate the calculate fields, but it
 may also be useful to use it in other circunstances. Let’s see how it
 transforms the logic of one of the calculated fields in the built-in
 dataset:</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>logic_trans <span class="ot">&lt;-</span> <span class="fu">rd_rlogic</span>(covican,</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                         <span class="at">logic =</span> <span class="st">&quot;if([exc_1]=&#39;1&#39; or [inc_1]=&#39;0&#39; or [inc_2]=&#39;0&#39; or [inc_3]=&#39;0&#39;,1,0)&quot;</span>,</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                         <span class="at">var =</span> <span class="st">&quot;screening_fail_crit&quot;</span>)</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(logic_trans)</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>logic_trans <span class="ot">&lt;-</span> <span class="fu">rd_rlogic</span>(covican,</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                         <span class="at">logic =</span> <span class="st">&quot;if([exc_1]=&#39;1&#39; or [inc_1]=&#39;0&#39; or [inc_2]=&#39;0&#39; or [inc_3]=&#39;0&#39;,1,0)&quot;</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                         <span class="at">var =</span> <span class="st">&quot;screening_fail_crit&quot;</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(logic_trans)</span></code></pre></div>
 <pre><code>List of 2
  $ rlogic: chr &quot;ifelse(data$exc_1==&#39;1&#39; | data$inc_1==&#39;0&#39; | data$inc_2==&#39;0&#39; | data$inc_3==&#39;0&#39;,1,0)&quot;
  $ eval  : num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</code></pre>
@@ -1318,30 +1319,30 @@ dataset:</p>
 <strong>rd_insert_na</strong></h3>
 <p>This function sets some values of a variable to missing if a certain
 logic is fulfilled. It can be used as a complementary function for
-<code>rd_transform</code>, for example, to change the values of those
+<code>rd_transform()</code>, for example, to change the values of those
 checkboxes that do not have a branching logic, as mentioned earlier. For
 instance, we can perform a raw transformation of our data, as in section
 4.2.1.1, and then use this function to set the values of the checkbox
 <em>type_underlying_disease_haematological_cancer</em> to missing when
 the age is less than 65 years old:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Raw transformation of the data:</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican)</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> dataset<span class="sc">$</span>data</span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="co">#Before inserting missings</span></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(data<span class="sc">$</span>type_underlying_disease_haematological_cancer)</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Raw transformation of the data:</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> dataset<span class="sc">$</span>data</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co">#Before inserting missings</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(data<span class="sc">$</span>type_underlying_disease_haematological_cancer)</span></code></pre></div>
 <pre><code>
  No Yes 
 103  87 </code></pre>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Run the function</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>data2 <span class="ot">&lt;-</span> <span class="fu">rd_insert_na</span>(dataset,</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">event_form =</span> covican<span class="sc">$</span>event_form,</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">vars =</span> <span class="st">&quot;type_underlying_disease_haematological_cancer&quot;</span>,</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">filter =</span> <span class="st">&quot;age &lt; 65&quot;</span>)</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co">#After inserting missings</span></span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(data2<span class="sc">$</span>type_underlying_disease_haematological_cancer)</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Run the function</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>data2 <span class="ot">&lt;-</span> <span class="fu">rd_insert_na</span>(dataset,</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">event_form =</span> covican<span class="sc">$</span>event_form,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">vars =</span> <span class="st">&quot;type_underlying_disease_haematological_cancer&quot;</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">filter =</span> <span class="st">&quot;age &lt; 65&quot;</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="co">#After inserting missings</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(data2<span class="sc">$</span>type_underlying_disease_haematological_cancer)</span></code></pre></div>
 <pre><code>
  No Yes 
  65  50 </code></pre>
@@ -1368,7 +1369,7 @@ order to correct them later.</p>
 <div id="rd_query" class="section level3" number="4.3.1">
 <h3><span class="header-section-number">4.3.1</span>
 <strong>rd_query</strong></h3>
-<p>The <code>rd_query</code> function allows users to generate queries
+<p>The <code>rd_query()</code> function allows users to generate queries
 by using a specific expression. It can be used to identify missing
 values, values that fall outside the lower and upper limit of a variable
 and other types of inconsistencies.</p>
@@ -1376,7 +1377,7 @@ and other types of inconsistencies.</p>
 <h4><span class="header-section-number">4.3.1.1</span>
 <em>Output</em></h4>
 <p>First, we will examine the output of this function. When the
-<code>rd_query</code> function is executed, it returns a list that
+<code>rd_query()</code> function is executed, it returns a list that
 includes a data frame with all the queries identified and a second
 element with a summary of the number of generated queries in each
 specified variable for each expression applied:</p>
@@ -1661,13 +1662,13 @@ objects containing the REDCap data and dictionary, respectively. If the
 REDCap project presents a longitudinal design, we should also specify
 the event in which the described variables are present through the use
 of the <code>event</code> argument:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;%in%NA&quot;</span>),</span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;%in%NA&quot;</span>),</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -1742,14 +1743,14 @@ missing values (conditions not met) should not be reported. To adress
 this, if a variable presents a branching logic, the function will issue
 a warning with a message to check the <code>results</code> element of
 our output:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;copd&quot;</span>, <span class="st">&quot;potassium&quot;</span>),</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;%in%NA&quot;</span>),</span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;copd&quot;</span>, <span class="st">&quot;potassium&quot;</span>),</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;%in%NA&quot;</span>),</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
 <pre><code>Warning: At least one of the variables that have been checked for missing values present a branching logic. 
 Check the results element of the output(...$results) for details.</code></pre>
-<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -1851,15 +1852,15 @@ value ‘1’. To accomplish this, we can use the <code>filter</code>
 argument to ensure that the condition in this branching logic is
 fulfilled. Recall that, in the transformed dataset, the value ‘1’ was
 changed to ‘Yes’.</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;potassium&quot;</span>),</span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>),</span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">filter =</span> <span class="fu">c</span>(<span class="st">&quot;available_analytics==&#39;Yes&#39;&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;potassium&quot;</span>),</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>),</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">filter =</span> <span class="fu">c</span>(<span class="st">&quot;available_analytics==&#39;Yes&#39;&quot;</span>))</span></code></pre></div>
 <pre><code>Warning: At least one of the variables that have been checked for missing values present a branching logic. 
 Check the results element of the output(...$results) for details.</code></pre>
-<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -1926,19 +1927,19 @@ so we can ignore it in this case.</p>
 <em>Expressions</em></h4>
 <p>Up until this point, we have illustrated examples where the
 expression applied is for detecting missing values. But, as previously
-mentioned, the <code>rd_query</code> function is also able to identify
+mentioned, the <code>rd_query()</code> function is also able to identify
 outliers or observations that fulfill a specific condition. Hence, to
 identify, for example, all the observations where <em>age</em> is
 greater than 70, we should use the <code>expression</code> argument
 again specifying ‘&gt;70’:</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(<span class="at">variables=</span><span class="st">&quot;age&quot;</span>,</span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression=</span><span class="st">&quot;&gt;70&quot;</span>,</span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event=</span><span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">dic=</span>covican_transformed<span class="sc">$</span>dictionary,</span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data=</span>covican_transformed<span class="sc">$</span>data)</span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(<span class="at">variables=</span><span class="st">&quot;age&quot;</span>,</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression=</span><span class="st">&quot;&gt;70&quot;</span>,</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event=</span><span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">dic=</span>covican_transformed<span class="sc">$</span>dictionary,</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data=</span>covican_transformed<span class="sc">$</span>data)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -1991,13 +1992,13 @@ element at position ‘n’ of <code>variables</code>.</p>
 <p>For example, if we wanted to identify all the observations where
 <em>age</em> is greater than 70 and all the observations where
 <em>copd</em> is ‘Yes’ we should use:</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables=</span><span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;copd&quot;</span>),</span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression=</span><span class="fu">c</span>(<span class="st">&quot;&gt;70&quot;</span>, <span class="st">&quot;==&#39;Yes&#39;&quot;</span>),</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event=</span><span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables=</span><span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;copd&quot;</span>),</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression=</span><span class="fu">c</span>(<span class="st">&quot;&gt;70&quot;</span>, <span class="st">&quot;==&#39;Yes&#39;&quot;</span>),</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event=</span><span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2062,13 +2063,13 @@ The value should not be equal to ‘Yes’
 <p>In a more complex scenario, for example, to identify all the
 observations where <em>age</em> is greater than 70, less than 80, or is
 a missing value we should use the following expression:</p>
-<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables=</span><span class="st">&quot;age&quot;</span>,</span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression=</span><span class="st">&quot;(&gt;70 &amp; &lt;80) | %in%NA&quot;</span>,</span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event=</span><span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables=</span><span class="st">&quot;age&quot;</span>,</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression=</span><span class="st">&quot;(&gt;70 &amp; &lt;80) | %in%NA&quot;</span>,</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event=</span><span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2119,14 +2120,14 @@ cases</em></h4>
 <p><u>Same expression for all variables</u></p>
 <p>In order to evaluate the same expression for all variables, the user
 should supply just a single element for <code>expression</code>:</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>,<span class="st">&quot;age&quot;</span>,<span class="st">&quot;dm&quot;</span>),</span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>,</span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>,<span class="st">&quot;age&quot;</span>,<span class="st">&quot;dm&quot;</span>),</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>,</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
 <pre><code>Warning: There are more variables than there are expressions, so the same
 expression has been applied to all.</code></pre>
-<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2213,15 +2214,15 @@ when providing the information for each argument.</p>
 <p>Another special case is when the data analysed corresponds to a
 REDCap longitudinal project, but the event argument of the function is
 not defined:</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="st">&quot;copd&quot;</span>,</span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="st">&quot;copd&quot;</span>,</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>)</span></code></pre></div>
 <pre><code>Warning: There is none event specified. Therefore, the function will
 automatically consider observations from all events in the dataset. Ensure that
 the selected variable(s) is(are) collected in all specified events. This will
 avoid overestimating the number of queries.</code></pre>
-<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2301,13 +2302,13 @@ the function. We can change the variables names using the
 <code>variables_names</code> argument, alter the description of the
 query using the <code>query_name</code> argument or even change the name
 of the instrument using the <code>instrument</code> argument:</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>example<span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>),</span>
-<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">variables_names =</span> <span class="fu">c</span>(<span class="st">&quot;Chronic obstructive pulmonary disease (Yes/No)&quot;</span>),</span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>),</span>
-<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">query_name =</span> <span class="fu">c</span>(<span class="st">&quot;COPD is a missing value.&quot;</span>),</span>
-<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">instrument =</span> <span class="fu">c</span>(<span class="st">&quot;Admission&quot;</span>),</span>
-<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>example<span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>),</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">variables_names =</span> <span class="fu">c</span>(<span class="st">&quot;Chronic obstructive pulmonary disease (Yes/No)&quot;</span>),</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>),</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">query_name =</span> <span class="fu">c</span>(<span class="st">&quot;COPD is a missing value.&quot;</span>),</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">instrument =</span> <span class="fu">c</span>(<span class="st">&quot;Admission&quot;</span>),</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span></code></pre></div>
 <p>Output:</p>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
@@ -2382,14 +2383,14 @@ values of the variable <em>copd</em>, we can apply the expression
 ‘%in%NA’ which normally would report the missing values and add
 <code>negate = TRUE</code>, so the result will be the number of non
 missing values in <em>copd</em>:</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="st">&quot;copd&quot;</span>,</span>
-<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>,</span>
-<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">negate =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
-<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="st">&quot;copd&quot;</span>,</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>,</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">negate =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>)</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2439,14 +2440,14 @@ The value should be missing
 <p>In order to keep all queries in the same R object, we can use the
 <code>addTo</code> argument to specify the output of another query
 dataset.</p>
-<div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>example2 <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">variables =</span> <span class="st">&quot;age&quot;</span>,</span>
-<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>,</span>
-<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
-<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">addTo =</span> example)</span>
-<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>example2<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>example2 <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">variables =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">expression =</span> <span class="st">&quot;%in%NA&quot;</span>,</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">addTo =</span> example)</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>example2<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2514,14 +2515,14 @@ missing values of the variable <em>age</em>.</p>
 <p><u>report_title</u></p>
 <p>To customize the title of the summary of queries, we can use the
 <code>report_title</code> argument:</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
-<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;&lt;20&quot;</span>),</span>
-<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
-<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">report_title =</span> <span class="st">&quot;Missing COPD values in the baseline event&quot;</span>)</span>
-<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;&lt;20&quot;</span>),</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">report_title =</span> <span class="st">&quot;Missing COPD values in the baseline event&quot;</span>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Missing COPD values in the baseline event
@@ -2573,14 +2574,14 @@ changed it to “Missing COPD values in the baseline event”.</p>
 variables with at least one query and will omit those with zero queries.
 To include these omitted variables in the summary, we can use the
 <code>report_zeros</code> argument:</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
-<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;&lt;20&quot;</span>),</span>
-<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
-<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">report_zeros =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;&lt;20&quot;</span>),</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">report_zeros =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2648,15 +2649,15 @@ having any queries identified.</p>
 <p>If the REDCap project has Data Access Groups (DAGs), it might be of
 our interest to report the summary by each one of the DAGs. To do that,
 we can use the <code>by_dag</code> argument:</p>
-<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
-<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;&gt;60&quot;</span>),</span>
-<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
-<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">by_dag =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">&quot;copd&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="fu">c</span>(<span class="st">&quot;%in%NA&quot;</span>, <span class="st">&quot;&gt;60&quot;</span>),</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">by_dag =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <p>Now we can choose to see the report of a specific DAG, for example,
 the summary of the generated queries for the <em>Hospital 2</em>:</p>
-<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results<span class="sc">$</span><span class="st">`</span><span class="at">Hospital 2</span><span class="st">`</span></span></code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results<span class="sc">$</span><span class="st">`</span><span class="at">Hospital 2</span><span class="st">`</span></span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2746,18 +2747,18 @@ Setup</em> &lt; <em>Define My Events</em></p>
 <p><img src="data:image/png;base64,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" width="543" /></p>
 <p>Once we have this information, we pass it as a list to the
 <code>link</code> argument:</p>
-<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
-<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="st">&quot;age&quot;</span>,</span>
-<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;&gt;89&quot;</span>,</span>
-<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
-<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">link =</span> <span class="fu">list</span>(<span class="at">domain =</span> <span class="st">&quot;redcappre.idibell.cat&quot;</span>,</span>
-<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>                                <span class="at">redcap_version =</span> <span class="st">&quot;13.1.9&quot;</span>,</span>
-<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>                                <span class="at">proj_id =</span> <span class="dv">800</span>,</span>
-<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>                                <span class="at">event_id =</span> <span class="fu">c</span>(<span class="st">&quot;baseline_visit_arm_1&quot;</span> <span class="ot">=</span> <span class="dv">811</span>, <span class="st">&quot;follow_up_visit_da_arm_1&quot;</span> <span class="ot">=</span> <span class="dv">812</span>)))</span></code></pre></div>
+<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_query</span>(covican_transformed,</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">variables =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expression =</span> <span class="st">&quot;&gt;89&quot;</span>,</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;baseline_visit_arm_1&quot;</span>,</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">link =</span> <span class="fu">list</span>(<span class="at">domain =</span> <span class="st">&quot;redcappre.idibell.cat&quot;</span>,</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>                                <span class="at">redcap_version =</span> <span class="st">&quot;13.1.9&quot;</span>,</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>                                <span class="at">proj_id =</span> <span class="dv">800</span>,</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>                                <span class="at">event_id =</span> <span class="fu">c</span>(<span class="st">&quot;baseline_visit_arm_1&quot;</span> <span class="ot">=</span> <span class="dv">811</span>, <span class="st">&quot;follow_up_visit_da_arm_1&quot;</span> <span class="ot">=</span> <span class="dv">812</span>)))</span></code></pre></div>
 <p>The output of the function now has an additional column with the link
 to the respective query:</p>
-<div class="sourceCode" id="cb56"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
-<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>queries<span class="sc">$</span>Link</span></code></pre></div>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Printing results</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>queries<span class="sc">$</span>Link</span></code></pre></div>
 <pre><code>[1] &quot;https://redcappre.idibell.cat/redcap_v13.1.9/DataEntry/index.php?pid=800&amp;event_id=811&amp;page=demographics&amp;id=109-22&quot;
 [2] &quot;https://redcappre.idibell.cat/redcap_v13.1.9/DataEntry/index.php?pid=800&amp;event_id=811&amp;page=demographics&amp;id=110-19&quot;</code></pre>
 <p>We can go straight to the specific query by copying and pasting the
@@ -2772,15 +2773,15 @@ the exported data has a structure where each row represents one event
 per record. However, by default, REDCap will not export the
 corresponding rows of the events that have no collected data. So, if we
 try to identify missing values in variables that are inside a missing
-event for some records using the <code>rd_query</code> function, these
+event for some records using the <code>rd_query()</code> function, these
 missing values will not be identified because they do not exist in the
-exported data. The <code>rd_event</code> function can be used to point
+exported data. The <code>rd_event()</code> function can be used to point
 out in how many records an event does not exist:</p>
-<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_event</span>(covican_transformed,</span>
-<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;follow_up_visit_da_arm_1&quot;</span>)</span>
-<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
-<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_event</span>(covican_transformed,</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;follow_up_visit_da_arm_1&quot;</span>)</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2817,7 +2818,7 @@ corresponding to the event <em>Follow up visit day 14+/-5d</em>. Thus,
 when searching for missing values of variables in the <em>Follow up
 visit day 14+/-5d</em> event, we need to consider that there will be 38
 additional missing values which will not be accounted for by
-<code>rd_query</code>.</p>
+<code>rd_query()</code>.</p>
 <p><br></p>
 <p>It might happen that an event is not mandatory for all records so we
 only want to check if the event is missing in a subgroup of records. For
@@ -2825,14 +2826,14 @@ example, in the <em>COVICAN</em> study only patients satisfying the
 inclusion and exclusion criteria would have to perform the follow up
 visit. Therefore, to check if the follow up event is missing only in the
 records that fulfill the inclusion and exclusion criteria, we can use
-the <code>filter</code> argument of the <code>rd_event</code>
+the <code>filter</code> argument of the <code>rd_event()</code>
 function:</p>
-<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_event</span>(covican_transformed,</span>
-<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;follow_up_visit_da_arm_1&quot;</span>,</span>
-<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">filter =</span> <span class="st">&quot;screening_fail_crit==0&quot;</span>)</span>
-<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
-<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb56"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_event</span>(covican_transformed,</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="st">&quot;follow_up_visit_da_arm_1&quot;</span>,</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">filter =</span> <span class="st">&quot;screening_fail_crit==0&quot;</span>)</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2865,16 +2866,16 @@ Follow up visit day 14+/-5d
 </tbody>
 </table>
 <p><br></p>
-<p>Like the <code>rd_query</code> function, this function also treats
+<p>Like the <code>rd_query()</code> function, this function also treats
 the argument <code>event</code> as a vector allowing us to check for
 multiple missing events at the same time.</p>
-<div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_event</span>(covican_transformed,</span>
-<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="fu">c</span>(<span class="st">&quot;baseline_visit_arm_1&quot;</span>,<span class="st">&quot;follow_up_visit_da_arm_1&quot;</span>),</span>
-<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">filter =</span> <span class="st">&quot;screening_fail_crit==0&quot;</span>,</span>
-<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">report_zeros =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
-<span id="cb60-7"><a href="#cb60-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>example <span class="ot">&lt;-</span> <span class="fu">rd_event</span>(covican_transformed,</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">event =</span> <span class="fu">c</span>(<span class="st">&quot;baseline_visit_arm_1&quot;</span>,<span class="st">&quot;follow_up_visit_da_arm_1&quot;</span>),</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">filter =</span> <span class="st">&quot;screening_fail_crit==0&quot;</span>,</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">report_zeros =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>example<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Report of queries
@@ -2930,7 +2931,7 @@ previously mentioned in section 4.3.1.6.</p>
 approach would be to adress them by modifying the original dataset in
 REDCap and re-run the query identification process generating a new
 query dataset.</p>
-<p>The <code>check_queries</code> function compares the previous query
+<p>The <code>check_queries()</code> function compares the previous query
 dataset with the new one by using the arguments <code>old</code> and
 <code>new</code>, respectively. The output remains a list with 2 items,
 but the data frame containing the information for each query will now
@@ -2938,11 +2939,11 @@ have an additional column (“Modification”) indicating which queries are
 new, which have been modified, which have been corrected, and which
 remain unchanged. Besides, the summary will show the number of queries
 in each one of these categories:</p>
-<div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>check <span class="ot">&lt;-</span> <span class="fu">check_queries</span>(<span class="at">old =</span> example<span class="sc">$</span>queries, </span>
-<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">new =</span> new_example<span class="sc">$</span>queries)</span>
-<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
-<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>check<span class="sc">$</span>results</span></code></pre></div>
+<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>check <span class="ot">&lt;-</span> <span class="fu">check_queries</span>(<span class="at">old =</span> example<span class="sc">$</span>queries, </span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">new =</span> new_example<span class="sc">$</span>queries)</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Print results</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>check<span class="sc">$</span>results</span></code></pre></div>
 <table class="table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Comparison report
@@ -3176,18 +3177,18 @@ Pending
 <div id="rd_export" class="section level3" number="4.3.4">
 <h3><span class="header-section-number">4.3.4</span>
 <strong>rd_export</strong></h3>
-<p>With the help of the <code>rd_export</code> function, we can export
+<p>With the help of the <code>rd_export()</code> function, we can export
 the identified queries to a <code>.xlsx</code> file of our choice:</p>
-<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rd_export</span>(example)</span></code></pre></div>
+<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rd_export</span>(example)</span></code></pre></div>
 <p>This is the easiest way to use the function and it will create a file
 with the name “example.xlsx” in your current working directory.</p>
 <p>In order to have a more personalised output file, we can add
 information to the following arguments:</p>
-<div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rd_export</span>(<span class="at">queries =</span> example<span class="sc">$</span>queries,</span>
-<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">column =</span> <span class="st">&quot;Link&quot;</span>,</span>
-<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">sheet_name =</span> <span class="st">&quot;Queries - Proyecto&quot;</span>,</span>
-<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">path =</span> <span class="st">&quot;C:/User/Desktop/queries.xlsx&quot;</span>,</span>
-<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">password =</span> <span class="st">&quot;123&quot;</span>) </span></code></pre></div>
+<div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rd_export</span>(<span class="at">queries =</span> example<span class="sc">$</span>queries,</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">column =</span> <span class="st">&quot;Link&quot;</span>,</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">sheet_name =</span> <span class="st">&quot;Queries - Proyecto&quot;</span>,</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">path =</span> <span class="st">&quot;C:/User/Desktop/queries.xlsx&quot;</span>,</span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">password =</span> <span class="st">&quot;123&quot;</span>) </span></code></pre></div>
 <p>We specify the sheet name with the <code>sheet_name</code> argument
 and the path to the file to be exported with the <code>path</code>
 argument. To prevent anyone from modifying the exported file, we can

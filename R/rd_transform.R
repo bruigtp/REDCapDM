@@ -91,13 +91,19 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
   message("Transformation in progress...")
 
-  labels <- Hmisc::label(data)
+  labels <- purrr::map_chr(data, function(x) {
+    lab <- attr(x, "label")
+    if (!is.null(lab)) {
+      lab
+    } else {
+      ""
+    }
+  })
 
   #Change the labelled class of each column but don't remove the label:
   data <- data %>%
     dplyr::mutate_all(function(x){
       class(x) <- setdiff(class(x), "labelled")
-      # attr(x,"label") <- NULL
       x
     })
 
@@ -167,13 +173,22 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
   #If there is some checkbox:
   if(length(var_check) > 0){
 
-    #Transform missings of checkboxes with branching logic:
+    #If the event_form is not provided and the project is longitudinal
+    if(is.null(event_form) & longitudinal) {
 
-    trans <- transform_checkboxes(data, dic, event_form, checkbox_na)
+        results <- c(results, "\nBranching logic evaluation is not possible as the project has more than one event and the event-form correspondence has not been specified\n")
 
-    data <- trans$data
+    } else {
 
-    results <- c(results, trans$results)
+      #Transform missings of checkboxes with branching logic:
+
+      trans <- transform_checkboxes(data = data, dic = dic, event_form = event_form, checkbox_na = checkbox_na)
+
+      data <- trans$data
+
+      results <- c(results, trans$results)
+
+    }
 
     #Transform them to No/Yes:
 
@@ -189,11 +204,6 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
     data <- data_dic$data
     dic <- data_dic$dic
-
-    #If the project is longitudinal and the event_form hasn't been specified no branching logic evaluation is possible
-    if(longitudinal & is.null(event_form)){
-      results <- c(results, "\nBranching logic evaluation is not possible as the project has more than one event and the event-form correspondence has not been specified\n")
-    }
 
   }else{
     results <- c(results, "\nNo checkboxes are found in the data\n")

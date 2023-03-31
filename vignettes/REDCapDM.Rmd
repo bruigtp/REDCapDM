@@ -14,13 +14,14 @@ editor_options:
   chunk_output_type: inline
 ---
 
+
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 rm(list = ls())
 library(REDCapDM) 
 library(kableExtra)
 library(knitr)
 library(dplyr)
-library(Hmisc)
+library(magrittr)
 library(purrr)
 ```
 
@@ -38,19 +39,19 @@ The REDCapDM package allows users to read data exported directly from REDCap or 
 
 Functions included in the package:
 
-- <u>redcap_data</u>: reads data.
+- `redcap_data()`: reads data.
 
-- <u>rd_transform</u>: processes data.
+- `rd_transform()`: processes data.
 
-- <u>rd_rlogic</u>: transforms REDCap logic into R logic.
+- `rd_rlogic()`: transforms REDCap logic into R logic.
 
-- <u>rd_insert_na</u>: allows a manual entry of a missing value in specific variables using a filter.
+- `rd_insert_na()`: allows a manual entry of a missing value in specific variables using a filter.
 
-- <u>rd_query</u>: identifies queries.
+- `rd_query()`: identifies queries.
 
-- <u>rd_event</u>: identifies missing events.
+- `rd_event()`: identifies missing events.
 
-- <u>check_queries</u>: tracks queries.
+- `check_queries()`: tracks queries.
 
 <br>
 <br>
@@ -116,7 +117,7 @@ The package structure can be divided into three main components: reading raw dat
 
 ### **redcap_data**
 
-The `redcap_data` function allows users to easily import data from a REDCap project into R for analysis.
+The `redcap_data()` function allows users to easily import data from a REDCap project into R for analysis.
 
 To read exported data from REDCap, use the arguments `data_path` and `dic_path` to, respectively, describe the path of the R file and the REDCap project's dictionary:
 
@@ -154,13 +155,13 @@ This function returns a list with 3 elements (imported data, dictionary and even
 
 ### **rd_transform**
 
-The main function involved in the processing of the data is `rd_transform`. This function is used to process the REDCap data read into R using the `redcap_data`, as described above. Using the arguments of the function we can perform different type of transformations of our data.
+The main function involved in the processing of the data is `rd_transform()`. This function is used to process the REDCap data read into R using the `redcap_data()`, as described above. Using the arguments of the function we can perform different type of transformations of our data.
 
-As previously stated, we will use the built-in dataset `covican` as an example.
+As previously stated, we will use the built-in dataset `REDCapDM::covican` as an example.
 
 #### *Data transformation*
 
-The only necessary elements that must be provided are the dataset to be transformed and the corresponding dictionary. If the project is longitudinal, as in the case of `covican`, also the event-form dataset should be specified. These elements can be specified directly using the output of the `redcap_data` function or separately in different arguments.
+The only necessary elements that must be provided are the dataset to be transformed and the corresponding dictionary. If the project is longitudinal, as in the case of `REDCapDM::covican`, also the event-form dataset should be specified. These elements can be specified directly using the output of the `redcap_data()` function or separately in different arguments.
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 #Option A: list object 
@@ -190,7 +191,7 @@ In the example, we can see how there are two REDCap calculated fields, both have
 
 Note: If the REDCap project is longitudinal and the event-form is not specified, the evaluations of the branching logic will not be done.
 
-For example, let's explain the transformation that undergo the variables corresponding to the checkbox field of the type of underlying disease. The variables were named originally as _type_underlying_disease___0_ and _type_underlying_disease___1_ although the name of the options are 'Haematological cancer' and 'Solid tumour'. Thus, in the transformed dataset, the names are converted to _type_underlying_disease_haematological_cancer_ and _type_underlying_disease_solid_tumour_. Then, since this checkbox variable does not have a branching logic, the variable is advised to be reviewed by the user in the `results`, as seen above. When reviewed we could use an additional function `rd_insert_na` to insert the necessary missing values into this variable, as we will explain later. If a branching logic was found for this variable, `rd_transform` will insert automatically the missing values when the logic is not satisfied and no further transformation will be needed.
+For example, let's explain the transformation that undergo the variables corresponding to the checkbox field of the type of underlying disease. The variables were named originally as _type_underlying_disease___0_ and _type_underlying_disease___1_ although the name of the options are 'Haematological cancer' and 'Solid tumour'. Thus, in the transformed dataset, the names are converted to _type_underlying_disease_haematological_cancer_ and _type_underlying_disease_solid_tumour_. Then, since this checkbox variable does not have a branching logic, the variable is advised to be reviewed by the user in the `results`, as seen above. When reviewed we could use an additional function `rd_insert_na()` to insert the necessary missing values into this variable, as we will explain later. If a branching logic was found for this variable, `rd_transform` will insert automatically the missing values when the logic is not satisfied and no further transformation will be needed.
 
 
 <li><u>Replacement of the original variable by its factor version:</u> REDCap creates two versions of the variables in the dataset for multiple-choice fields: a numerical one with the number that corresponds to each category and a factor one containing the labels of each category. In this step, we will replace the original variables with their factor versions, except for _redcap_event_name_ and _redcap_data_access_group_, for which we will keep both versions. We can specify other variables that we do not want to transform to factor using the argument `exclude_to_factor` which we will see later.</li>
@@ -215,7 +216,7 @@ dataset$results
 
 Now, a final step in the transformation has been added, which consists in splitting the data according to the events in the study. So, now the transformed dataset found in the output of the function is a tibble object with as many data frames as events there are in the REDCap project:
 
-```{r message=FALSE, warning=FALSE, comment=NA}
+```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
 dataset$data
 ```
 
@@ -237,7 +238,7 @@ dataset$results
 
 As before, a final step in the transformation has been added, which is to split the data according to the forms in the study. Thus, the transformed dataset will now be a tibble object with as many data frames as forms there are in the REDCap project:
 
-```{r message=FALSE, warning=FALSE, comment=NA}
+```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
 dataset$data
 ```
 
@@ -323,7 +324,7 @@ names(data)
 
 <u>wide</u>: in the transformation by form, we can specify that we want each of the split datasets to be in a wide format. This is useful if the form appears in more than one event (or in a repeated event). Then, we will only have one row per patient and all the variables of the form will be in columns repeated by each event in the order that the events appear in REDCap. For example, if we want to keep only the laboratory findings in a wide format we can do:
 
-```{r message=FALSE, warning=FALSE, comment=NA}
+```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
 dataset <- rd_transform(covican,
                         final_format = "by_form",
                         which_form = "laboratory_findings",
@@ -336,7 +337,7 @@ head(dataset$data)
 
 ### **rd_rlogic**
 
-This function transforms the REDCap logic into logic that can be evaluated in R. It returns both the transformed logic and the result of the evaluation of the logic. This function is used in the `rd_transform` to recalculate the calculate fields, but it may also be useful to use it in other circunstances. Let's see how it transforms the logic of one of the calculated fields in the built-in dataset:
+This function transforms the REDCap logic into logic that can be evaluated in R. It returns both the transformed logic and the result of the evaluation of the logic. This function is used in the `rd_transform()` to recalculate the calculate fields, but it may also be useful to use it in other circunstances. Let's see how it transforms the logic of one of the calculated fields in the built-in dataset:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 logic_trans <- rd_rlogic(covican,
@@ -350,7 +351,7 @@ str(logic_trans)
 
 ### **rd_insert_na**
 
-This function sets some values of a variable to missing if a certain logic is fulfilled. It can be used as a complementary function for `rd_transform`, for example, to change the values of those checkboxes that do not have a branching logic, as mentioned earlier. For instance, we can perform a raw transformation of our data, as in section 4.2.1.1, and then use this function to set the values of the checkbox _type_underlying_disease_haematological_cancer_ to missing when the age is less than 65 years old:
+This function sets some values of a variable to missing if a certain logic is fulfilled. It can be used as a complementary function for `rd_transform()`, for example, to change the values of those checkboxes that do not have a branching logic, as mentioned earlier. For instance, we can perform a raw transformation of our data, as in section 4.2.1.1, and then use this function to set the values of the checkbox _type_underlying_disease_haematological_cancer_ to missing when the age is less than 65 years old:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 #Raw transformation of the data:
@@ -383,11 +384,11 @@ For all the following examples we will use the raw transformed data: `covican_tr
 
 ### **rd_query**
 
-The `rd_query` function allows users to generate queries by using a specific expression. It can be used to identify missing values, values that fall outside the lower and upper limit of a variable and other types of inconsistencies.
+The `rd_query()` function allows users to generate queries by using a specific expression. It can be used to identify missing values, values that fall outside the lower and upper limit of a variable and other types of inconsistencies.
 
 #### *Output*
 
-First, we will examine the output of this function. When the `rd_query` function is executed, it returns a list that includes a data frame with all the queries identified and a second element with a summary of the number of generated queries in each specified variable for each expression applied:
+First, we will examine the output of this function. When the `rd_query()` function is executed, it returns a list that includes a data frame with all the queries identified and a second element with a summary of the number of generated queries in each specified variable for each expression applied:
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 example <- rd_query(covican_transformed,
@@ -455,7 +456,7 @@ Note: This argument is treated as a vector, which means that we can add a filter
 
 #### *Expressions*
 
-Up until this point, we have illustrated examples where the expression applied is for detecting missing values. But, as previously mentioned, the `rd_query` function is also able to identify outliers or observations that fulfill a specific condition. Hence, to identify, for example, all the observations where _age_ is greater than 70, we should use the `expression` argument again specifying '>70':
+Up until this point, we have illustrated examples where the expression applied is for detecting missing values. But, as previously mentioned, the `rd_query()` function is also able to identify outliers or observations that fulfill a specific condition. Hence, to identify, for example, all the observations where _age_ is greater than 70, we should use the `expression` argument again specifying '>70':
 
 
 ```{r message=FALSE, warning=TRUE, comment=NA}
@@ -706,7 +707,7 @@ We can go straight to the specific query by copying and pasting the link into th
 
 ### **rd_event**
 
-When working with a longitudinal REDCap project (presence of events), the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export the corresponding rows of the events that have no collected data. So, if we try to identify missing values in variables that are inside a missing event for some records using the `rd_query` function, these missing values will not be identified because they do not exist in the exported data. The `rd_event` function can be used to point out in how many records an event does not exist:
+When working with a longitudinal REDCap project (presence of events), the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export the corresponding rows of the events that have no collected data. So, if we try to identify missing values in variables that are inside a missing event for some records using the `rd_query()` function, these missing values will not be identified because they do not exist in the exported data. The `rd_event()` function can be used to point out in how many records an event does not exist:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_event(covican_transformed,
@@ -716,11 +717,11 @@ example <- rd_event(covican_transformed,
 example$results
 ```
 
-There are a total of 38 events per record without any row corresponding to the event _Follow up visit day 14+/-5d_. Thus, when searching for missing values of variables in the _Follow up visit day 14+/-5d_ event, we need to consider that there will be 38 additional missing values which will not be accounted for by `rd_query`.
+There are a total of 38 events per record without any row corresponding to the event _Follow up visit day 14+/-5d_. Thus, when searching for missing values of variables in the _Follow up visit day 14+/-5d_ event, we need to consider that there will be 38 additional missing values which will not be accounted for by `rd_query()`.
 
 <br>
 
-It might happen that an event is not mandatory for all records so we only want to check if the event is missing in a subgroup of records. For example, in the _COVICAN_ study only patients satisfying the inclusion and exclusion criteria would have to perform the follow up visit. Therefore, to check if the follow up event is missing only in the records that fulfill the inclusion and exclusion criteria, we can use the `filter` argument of the `rd_event` function:
+It might happen that an event is not mandatory for all records so we only want to check if the event is missing in a subgroup of records. For example, in the _COVICAN_ study only patients satisfying the inclusion and exclusion criteria would have to perform the follow up visit. Therefore, to check if the follow up event is missing only in the records that fulfill the inclusion and exclusion criteria, we can use the `filter` argument of the `rd_event()` function:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_event(covican_transformed,
@@ -733,7 +734,7 @@ example$results
 
 <br>
 
-Like the `rd_query` function, this function also treats the argument `event` as a vector allowing us to check for multiple missing events at the same time. 
+Like the `rd_query()` function, this function also treats the argument `event` as a vector allowing us to check for multiple missing events at the same time. 
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_event(covican_transformed,
@@ -753,7 +754,7 @@ Note: This function also has the arguments `query_name`, `addTo`, `report_title`
 
 Once the process of identifying queries is complete, the typical approach would be to adress them by modifying the original dataset in REDCap and re-run the query identification process generating a new query dataset.
 
-The `check_queries` function compares the previous query dataset with the new one by using the arguments `old` and `new`, respectively. The output remains a list with 2 items, but the data frame containing the information for each query will now have an additional column ("Modification") indicating which queries are new, which have been modified, which have been corrected, and which remain unchanged. Besides, the summary will show the number of queries in each one of these categories:
+The `check_queries()` function compares the previous query dataset with the new one by using the arguments `old` and `new`, respectively. The output remains a list with 2 items, but the data frame containing the information for each query will now have an additional column ("Modification") indicating which queries are new, which have been modified, which have been corrected, and which remain unchanged. Besides, the summary will show the number of queries in each one of these categories:
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 example <- rd_query(covican_transformed,
@@ -792,7 +793,7 @@ kable(example) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styli
 
 ### **rd_export**
 
-With the help of the `rd_export` function, we can export the identified queries to a `.xlsx` file of our choice:
+With the help of the `rd_export()` function, we can export the identified queries to a `.xlsx` file of our choice:
 
 ```{r message=FALSE, warning=FALSE, comment=NA, include=FALSE}
 example <- rd_query(covican_transformed,

@@ -1,7 +1,7 @@
 Package: REDCapDM
 Type: Package
 Title: 'REDCap' Data Management
-Version: 0.5.0
+Version: 0.6.0
 Authors@R: c(
     person("João", "Carmezim", email = "ubidi@idibell.cat", role = c("aut", "cre")),
     person("Judith", "Peñafiel", role = c("aut")),
@@ -16,20 +16,19 @@ License: MIT + file LICENSE
 BugReports: https://github.com/ubidi/REDCapDM/issues
 Encoding: UTF-8
 RoxygenNote: 7.2.3
-Imports: 
+Imports:
     dplyr,
-    REDCapR,
     janitor,
-    stringr,
     magrittr,
-    tidyr,
-    Hmisc,
-    utils,
+    openxlsx,
     purrr,
-    tidyselect,
-    tibble,
+    REDCapR,
     rlang,
-    openxlsx
+    stringr,
+    tibble,
+    tidyr,
+    tidyselect,
+    utils
 Suggests: 
     knitr,
     rmarkdown,

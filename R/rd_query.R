@@ -203,7 +203,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
         # Error: filtering results in zero observations
         if (nrow(data)==0) {
-          stop("The applied filter does not match any observations, please modify it.", call. = FALSE)
+          warning("The applied filter does not match any observations. Please check that it is correct.", call. = FALSE)
         }
     }
 
@@ -282,11 +282,11 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
           # Filtering results in zero observations
           if (nrow(data) == 0) {
-            stop("One of the filters applied results in no observations, please change it.", call. = FALSE)
+            warning("One of the applied filters does not match any observations. Please check that it is correct.", call. = FALSE)
             }
           } else {
             # Error: number of filters is different from the number of variables
-            stop("Multiple filters applied but the number of filters does not correspond to the number of variables. Please verify it.", call. = F)
+            stop("Multiple filters have been applied, but the number of filters does not match the number of variables. Please verify it.", call. = F)
           }
 
         } else {
@@ -329,7 +329,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
           },
           Instrument = if (all(is.na(instrument))) {
             if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
-              gsub("_", " ", Hmisc::capitalize(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"]))
+              gsub("_", " ", stringr::str_to_sentence(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"]))
             } else{
               "-"
             }
@@ -414,7 +414,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
         # If there are no queries to be identified, we still need this information to build the report
         excel <- data.frame(
-          DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data))) {
+          DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data)) & nrow(data) > 0) {
             if("redcap_data_access_group.factor" %in% names(data)) {
               if (is.na(event)) {
                 unique(as.character(data[, "redcap_data_access_group.factor"]))
@@ -451,7 +451,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
               }
             }
           },
-          Event = if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+          Event = if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) & nrow(data) > 0) {
             if ("redcap_event_name.factor" %in% names(data)) {
               unique(as.character(data[, "redcap_event_name.factor"]))
             } else {

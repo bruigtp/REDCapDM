@@ -1,3 +1,15 @@
+# REDCapDM 0.6-0
+
+2023-03-31
+
+## Changes to functions
+
+- Reduced number of dependencies of the package.
+
+## Bug fixes
+
+- Fixed a bug in the _rd_transform()_ function in the branching logic evaluation of checkboxes from non longitudinal projects.
+
 # REDCapDM 0.5-0
 
 2023-03-24

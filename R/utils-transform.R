@@ -147,7 +147,7 @@ recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
 #' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param checkbox_na Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.
 
-transform_checkboxes <- function(data, dic, event_form, checkbox_na = FALSE){
+transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FALSE){
 
   vars <- dic$field_name[dic$field_type=="checkbox"]
   results <- results1 <- results2 <- NULL

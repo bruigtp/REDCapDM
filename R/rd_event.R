@@ -65,7 +65,7 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
 
       # Error: filtering results in zero observations
       if (nrow(data) == 0) {
-        stop("The filter applied results in no observations, please change it.", call. = FALSE)
+        warning("The aplplied filter does not match any observations. Please check that it is correct.", call. = FALSE)
       }
 
     }
