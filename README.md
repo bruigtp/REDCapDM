@@ -1,5 +1,6 @@
 # REDCapDM <img src='man/figures/logo.png' align="right" height="200" />
-R package to perform data management of REDCap datasets in R
+R package to perform data management of REDCap datasets in R.
+
 You can see the package in action in: https://ubidi.github.io/REDCapDM/
 
 Package: REDCapDM
