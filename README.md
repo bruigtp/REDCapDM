@@ -1,5 +1,6 @@
 # REDCapDM <img src='man/figures/logo.png' align="right" height="200" />
 R package to perform data management of REDCap datasets in R
+You can see the package in action in: https://ubidi.github.io/REDCapDM/
 
 Package: REDCapDM
 
@@ -7,7 +8,7 @@ Type: Package
 
 Title: REDCap Data Management
 
-Version: 0.5.0
+Version: 0.6.0
 
 Authors: João Carmezim, Judith Peñafiel, Pau Satorra, Esther García, Natàlia Pallarés, Naiara Santos, Cristian Tebé.
 
