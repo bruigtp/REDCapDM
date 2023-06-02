@@ -1,84 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://REDCapDM.r.org/404.html</loc>
+    <loc>/404.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/articles/index.html</loc>
+    <loc>/articles/index.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/articles/REDCapDM.html</loc>
+    <loc>/articles/REDCapDM.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/authors.html</loc>
+    <loc>/authors.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/index.html</loc>
+    <loc>/index.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/LICENSE-text.html</loc>
+    <loc>/LICENSE-text.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/LICENSE.html</loc>
+    <loc>/LICENSE.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/news/index.html</loc>
+    <loc>/news/index.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/checkbox_names.html</loc>
+    <loc>/reference/checkbox_names.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/check_queries.html</loc>
+    <loc>/reference/check_queries.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/covican.html</loc>
+    <loc>/reference/covican.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/fill_data.html</loc>
+    <loc>/reference/fill_data.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/index.html</loc>
+    <loc>/reference/index.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/pipe.html</loc>
+    <loc>/reference/pipe.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/rd_event.html</loc>
+    <loc>/reference/rd_event.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/rd_export.html</loc>
+    <loc>/reference/rd_export.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/rd_insert_na.html</loc>
+    <loc>/reference/rd_insert_na.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/rd_query.html</loc>
+    <loc>/reference/rd_query.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/rd_rlogic.html</loc>
+    <loc>/reference/rd_rlogic.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/rd_transform.html</loc>
+    <loc>/reference/rd_transform.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/recalculate.html</loc>
+    <loc>/reference/recalculate.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/REDCapDM.html</loc>
+    <loc>/reference/REDCapDM.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/redcap_data.html</loc>
+    <loc>/reference/redcap_data.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/split_event.html</loc>
+    <loc>/reference/split_event.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/split_form.html</loc>
+    <loc>/reference/split_form.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/to_factor.html</loc>
+    <loc>/reference/to_factor.html</loc>
   </url>
   <url>
-    <loc>https://REDCapDM.r.org/reference/transform_checkboxes.html</loc>
+    <loc>/reference/transform_checkboxes.html</loc>
   </url>
 </urlset>
