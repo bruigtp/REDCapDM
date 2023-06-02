@@ -8,9 +8,6 @@ template:
     link-color: "#fa8011"
     link-hover-color: "#f8a85f"
 
-development:
-  mode: auto
-
 reference:
 - title: "Import data"
   desc: "Function to easily import data from a REDCap project into R for analysis."
