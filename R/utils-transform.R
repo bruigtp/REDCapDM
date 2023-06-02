@@ -166,7 +166,7 @@ transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FAL
       logic <- dic$branching_logic_show_field_only_if[dic$field_name==vars[i]]
 
       #If there is one
-      if(logic!=""){
+      if(!logic %in% ""){
 
         #Translate the REDCap logic to r language using rd_rlogic function
 
@@ -236,6 +236,8 @@ transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FAL
 
 checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
 
+  correspondence <- NULL
+
   #Identify checkbox variables:
   var_check <- names(data)[grep("___",names(data))]
 
@@ -275,6 +277,10 @@ checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
     #Trim name if it has more than 60 characters (if the option name is very large)
     out <- strtrim(out, 60)
 
+    # We save the correspondence between the old name and the new one
+    x <- cbind(gsub("___(.+)", "\\(\\1\\)", svar_check), out)
+    correspondence <- rbind(correspondence, x)
+
     for(j in 1:length(out)) {
       out0 <- out[j]
       #Make unique if the name was already present in the names of the data
@@ -297,6 +303,42 @@ checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
         )
     }
   }
+
+  # Transforming the branching logic that contain checkboxes
+  correspondence <- as.data.frame(correspondence)
+
+  cats <- dic %>%
+    dplyr::select("field_name", "choices_calculations_or_slider_labels") %>%
+    dplyr::filter(.data$field_name %in% correspondence$out)
+
+  cats <- cats %>%
+    dplyr::mutate(choices_calculations_or_slider_labels = strsplit(.data$choices_calculations_or_slider_labels, "\\|")) %>%
+    tidyr::unnest(.data$choices_calculations_or_slider_labels)
+
+  cats <- cats %>%
+    tidyr::separate(.data$choices_calculations_or_slider_labels, c("num", "cat"), ", ", extra = "merge") %>%
+    dplyr::filter(.data$cat != "") %>%
+    dplyr::mutate(num = trimws(.data$num), cat = trimws(.data$cat))
+
+  cats <- merge(cats, correspondence, by.x = "field_name", by.y = "out")
+
+  cats <- cats %>%
+    dplyr::mutate(factor = paste0("[", .data$field_name, "]='", .data$cat, "'"),
+                  V1 = stringi::stri_replace_all_fixed(cats$V1, c("(", ")"), c("\\(", "\\)"), vectorize_all = F),
+                  redcap = paste0("\\[", .data$V1, "\\] ?=? ?'?", .data$num, "'?"),
+                  redcap2 = paste0("\\[", .data$V1, "\\] ?<?>? ?'?", .data$num, "'?")) %>%
+    dplyr::select(-"V1") %>%
+    dplyr::arrange(dplyr::desc(.data$redcap))
+
+  replace <- cats$factor
+  names(replace) <- cats$redcap
+
+  replace2 <- cats$factor
+  names(replace2) <- cats$redcap2
+
+  dic <- dic %>%
+    dplyr::mutate(branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace),
+                  branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace2))
 
   out <- list(
     data=data,
@@ -492,8 +534,9 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 #' @description
 #' Function that converts every variable except those specified to factor.
 #' @param data Dataset containing the REDCap data.
+#' @param dic Dataset containing the REDCap dictionary.
 #' @param exclude Character vector containing the names of those variables that will not be converted to factors. If `NULL`, all variables will be converted.
-to_factor <- function(data, exclude = NULL){
+to_factor <- function(data, dic, exclude = NULL){
 
   #We need redcap_event_name to have the original values so we exclude of the conversion the variable redcap_event_name.factor. Also for redcap_data_access_group if present
 
@@ -516,13 +559,57 @@ to_factor <- function(data, exclude = NULL){
     dplyr::select(-tidyselect::ends_with(".factor")) %>%
     tibble::add_column("redcap_event_name.factor" = keep_factors$redcap_event_name.factor, .after = "redcap_event_name")
 
-  if("redcap_data_access_group" %in% names(data)){
-    data %>%
-      tibble::add_column("redcap_data_access_group.factor" = keep_factors$redcap_data_access_group.factor, .after = "redcap_data_access_group")
-  }else{
-    data
+  if (length(factors) > 0) {
+
+    # Transform branching logics in the dictionary for variables that are currently factors
+    cat_factors <- dic %>%
+      dplyr::select("field_name", "choices_calculations_or_slider_labels") %>%
+      dplyr::filter(.data$field_name %in% factors)
+
+    cat_factors <- cat_factors %>%
+      dplyr::mutate(
+        choices_calculations_or_slider_labels = strsplit(.data$choices_calculations_or_slider_labels, "\\|")
+      ) %>%
+      tidyr::unnest(.data$choices_calculations_or_slider_labels)
+
+    cat_factors <- cat_factors %>%
+      tidyr::separate(.data$choices_calculations_or_slider_labels,
+                      c("num", "cat"),
+                      ", ",
+                      extra = "merge") %>%
+      dplyr::filter(.data$cat != "") %>%
+      dplyr::mutate(num = trimws(.data$num), cat = trimws(.data$cat))
+
+    cat_factors <- cat_factors %>%
+      dplyr::mutate(
+        redcap = paste0("\\[", .data$field_name, "\\] ?=? ?'?", .data$num, "'?"),
+        redcap2 = paste0("\\[", .data$field_name, "\\] ?<?>? ?'?", .data$num, "'?"),
+        factor = paste0("[", .data$field_name, "]='", .data$cat, "'"),
+        factor2 = paste0("[", .data$field_name, "]<>'", .data$cat, "'"),
+      ) %>%
+      dplyr::arrange(.data$field_name, dplyr::desc(.data$num))
+
+    replace <- cat_factors$factor
+    names(replace) <- cat_factors$redcap
+
+    replace2 <- cat_factors$factor2
+    names(replace2) <- cat_factors$redcap2
+
+    dic <- dic %>%
+      dplyr::mutate(branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace),
+                    branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace2))
+
   }
 
+
+
+  if("redcap_data_access_group" %in% names(data)){
+    list(data = data %>%
+                    tibble::add_column("redcap_data_access_group.factor" = keep_factors$redcap_data_access_group.factor, .after = "redcap_data_access_group"),
+         dic = dic)
+  }else{
+    list(data = data, dic = dic)
+  }
 }
 
 #' Fill rows with the values in one event
@@ -537,7 +624,7 @@ fill_data <- function(which_event, which_var, data){
   if(which_event %in% data$redcap_event_name){
 
     fill_values <- data %>%
-      dplyr::select("record_id", "redcap_event_name", "var" = which_var) %>%
+      dplyr::select("record_id", "redcap_event_name", tidyselect::all_of(which_var)) %>%
       dplyr::group_by(.data$record_id) %>%
       dplyr::mutate(
         var = dplyr::case_when(

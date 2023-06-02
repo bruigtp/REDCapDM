@@ -6,6 +6,7 @@
 #' @param ... List containing the data, the dictionary and the event (if required). It may be the output of the `redcap_data` function.
 #' @param data Data frame containing the data read from REDCap. If the list is given, this argument is not required.
 #' @param dic Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.
+#' @param event_form Data frame containing the correspondence of each event with each form. If the list is specified this argument is not necessary.
 #' @param variables Character vector of the names of the database variables to be checked.
 #' @param expression Character vector of expressions to be applied to the selected variables.
 #' @param negate Logical value which indicates whether the defined expression should be negated. Defaults to `FALSE`.
@@ -25,28 +26,28 @@
 #' # Missing values
 #' example <- rd_query(covican,
 #'                     variables = c("copd", "age"),
-#'                     expression = c("%in%NA", "%in%NA"),
+#'                     expression = c("is.na(x)", "x %in% NA"),
 #'                     event = "baseline_visit_arm_1")
 #' example
 #'
 #' # Expression
 #' example <- rd_query(covican,
 #'                     variables="age",
-#'                     expression=">20",
+#'                     expression="x>20",
 #'                     event="baseline_visit_arm_1")
 #' example
 #'
 #' # Using the filter argument
 #' example <- rd_query(covican,
 #'                     variables = "potassium",
-#'                     expression = "%in%NA",
+#'                     expression = "is.na(x)",
 #'                     event = "baseline_visit_arm_1",
 #'                     filter = "available_analytics=='1'")
 #' example
 #' @importFrom rlang .data
 #' @export
 
-rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, addTo = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list())
+rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, addTo = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list(), data = NULL, dic = NULL, event_form = NULL)
   {
 
     # If the entire list resulting from the 'redcap_data' function is used
@@ -64,23 +65,51 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
       data <- project$data
       dic <- project$dictionary
+
+      if("event_form" %in% names(project)) {
+        if(!is.null(event_form)){
+          warning("Event form has been specified twice so the function will not use the information in the event_form argument.")
+        }
+        event_form <- as.data.frame(project$event_form)
+      }
     }
 
-    # Making sure that the object data is a data.frame
+    # Making sure that the object data and dic are a data.frame
     data <- as.data.frame(data)
+    dic <- as.data.frame(dic)
 
     # Creation of the structure of the queries
     queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
     colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
+
+    # Creation of the structure for variables with zero queries
+    excel_zero <- as.data.frame(matrix(ncol = 4, nrow = 0))
+    colnames(excel_zero) <- c("DAG", "Variables", "Description", "Query")
 
     # Naming the first column of the REDCap's database as record_id
     if (all(!names(data) == "record_id")) {
       names(data)[1] <- "record_id"
     }
 
-    # Warning: there is an event specified
-    if (all(is.na(event)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      warning("There is none event specified. Therefore, the function will automatically consider observations from all events in the dataset. Ensure that the selected variable(s) is(are) collected in all specified events. This will avoid overestimating the number of queries.", call. = F)
+    # Error: one of the variables does not exist in the data
+    if (any(!variables %in% names(data))) {
+      stop("The data does not contain the specified variable(s). Please double-check the input variable name.")
+    }
+
+    # Warning: event not specified
+    if (all(is.na(event)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) & is.null(event_form)) {
+      warning("No event or event-form has been specified. Therefore, the function will automatically consider observations from all events in the dataset. Ensure that the selected variable(s) is(are) collected in all specified events. This will avoid overestimating the number of queries.", call. = F)
+    }
+
+    # If the argument event is not specified but there is the event form element in our data frame
+    if (all(is.na(event)) & !is.null(event_form)) {
+      var_form <- dic %>%
+        dplyr::filter(.data$field_name %in% variables) %>%
+        dplyr::pull(.data$form_name)
+
+      event <- event_form %>%
+        dplyr::filter(.data$form %in% var_form) %>%
+        dplyr::pull(.data$unique_event_name)
     }
 
     # Applying a filter of the chosen events to the database
@@ -102,7 +131,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
       }
 
       # Warning: there is more than one event specified
-      if (length(event) > 1) {
+      if (length(event) > 1 & is.null(event_form)) {
         warning("More than one event has been specified. Ensure that the selected variable(s) are collected in all specified events. This will avoid overestimating the number of queries.", call. = F)
       }
 
@@ -191,25 +220,39 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
     if (length(variables) > length(expression)) {
 
       expression <- rep(expression[1], length(variables))
-      warning("There are more variables than there are expressions, so the same expression has been applied to all.", call. = FALSE)
+      warning("Due to the greater number of variables compared to expressions, the same expression has been applied to all of them.", call. = FALSE)
 
     }
 
     # Filtering the data using the information of the argument 'filter'
     if (all(!is.na(filter)) & length(filter) == 1) {
 
+        # Error: logic used in the filter is incorrect
         command <- paste0("data", "<-dplyr::filter(data,", filter, ")")
-        eval(parse(text = command))
 
-        # Error: filtering results in zero observations
-        if (nrow(data)==0) {
-          warning("The applied filter does not match any observations. Please check that it is correct.", call. = FALSE)
+        evaluation <- try(eval(parse(text = command)), silent = TRUE)
+
+        if(inherits(evaluation, "try-error")){
+
+          stop("The logic used in the filter is incorrect. Please review the filter argument and make the necessary adjustments.")
+
+        } else {
+
+          eval(parse(text = command))
+
+        }
+
+        # Error: filter results in zero observations
+        if (nrow(data) == 0) {
+          warning("The applied filter is accurate, but it does not correspond to any observations. Please ensure that you have selected the appropriate filter.", call. = FALSE)
         }
     }
 
     # Variables to be checked for missing values which present a branching logic
-    var_logic <- variables[which(gsub("\\s+", "", expression) %in% "%in%NA")]
-    var_logic <- var_logic[which(gsub("___\\d*$", "", var_logic) %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])]
+    var_logic <- variables[which(variables %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])]
+
+    # We create an object that will contain the branching logic that can't be converted to R logic
+    logics <- NULL
 
     # Branching logic detected (only in variables checked for missing values)
     if (length(var_logic) > 0) {
@@ -220,54 +263,69 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         label = gsub("\\s+", "", gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___\\d*$", "", var_logic)])),
         branch = dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___\\d*$", "", var_logic)])
 
+      # We convert the REDCap logic into R logic
+      if (!is.null(event_form) & all(stringr::str_detect(branch$branch, paste(c("\\[", "\\]"), collapse = "|")))) {
+
+        for (j in 1:nrow(branch)) {
+
+          evaluation <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j])$rlogic, silent = T)
+
+          if (!inherits(evaluation, "try-error")) {
+
+            branch$branch[j] <- rd_rlogic(data = data, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j])$rlogic
+
+          } else {
+
+            logics <- rbind(logics, branch$var[j])
+
+          }
+        }
+
+        if (!is.null(logics)) {
+
+          warning(c("The branching logic of the following variables could not be converted into R logic:", paste0("\n - ", logics), "\n Check the results element of the output(...$results) for details."), call. = F)
+
+        }
+      }
+
       # Arrange the data frame
       rownames(branch) <- NULL
       names(branch) <- c("Variable", "Label", "Branching logic")
 
       ## Warning about the variables with branching logic
-      warning("At least one of the variables that have been checked for missing values present a branching logic. \nCheck the results element of the output(...$results) for details.", call. = FALSE)
-
+      if (is.null(event_form) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+        warning("At least one of the variables that have been checked for missing values present a branching logic. \nCheck the results element of the output(...$results) for details.", call. = FALSE)
+      }
     }
 
     # Apply an expression to the corresponding variable
     for (i in 1:length(expression)) {
 
-      # If there is a large expression using '|' or '&', convert it into a filter and apply it
-      if (any(stringr::str_detect(string = expression[i], pattern  = c("\\|", "&")))) {
+      x <- variables[i]
 
-        # Separate the expression into multiple elements and pasting the variable
-        split <- unlist(stringr::str_split(expression[i], "&|\\|"))
-        split <- paste(variables[i], split)
-        split <- gsub(" ", "", split)
-
-        # If there is a parentheses we put it before the variable name
-        if (any(stringr::str_detect(split, "\\("))) {
-          split[stringr::str_detect(split, "\\(")] <- paste0("(", gsub("\\(", "", split[stringr::str_detect(split, "\\(")]))
-        }
-
-        # We take the "&" and "|"
-        vec <- unlist(stringr::str_extract_all(expression, "&|\\|"))
-        vec <- gsub(" ", "", vec)
-
-        # Using both objects we mount the expression that will be applied to our dataset
-        expre <- c(split[1], paste(vec, split[2:length(split)]))
-        expre <- paste(expre, collapse = " ")
-
-        # Command to filter the dataset using the generated expression
-        command <- paste0("raw", "<-dplyr::filter(data,", expre, ")")
-
-      } else {
-
-        command <- paste0("raw", "<-dplyr::filter(data,", variables[i], expression[i], ")")
-
-      }
+      command <- paste0("raw", "<-dplyr::filter(data,", gsub("\\bx\\b", x, expression[i]), ")")
 
       # Evaluation of the command with the resulting expression
       eval(parse(text = command))
 
+      # Transform the expression so it does not contain "x"
+      expression[i] <- gsub("\\bx\\b", "", expression[i])
+
       # If the argument negate is TRUE, reverse the filters apllied so far
       if (negate == TRUE) {
         raw <- suppressMessages(dplyr::anti_join(data, raw))
+      }
+
+      # If the chosen variable has a branching logic and there is an event form designation
+      if (length(var_logic) > 0 & (!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & any(!variables[i] %in% logics)) {
+        if (any(variables[i] == var_logic)) {
+
+          logic <- branch %>% dplyr::filter(.data$Variable %in% variables[i]) %>% dplyr::pull(.data$`Branching logic`)
+
+          command <- paste0("raw", "<-dplyr::filter(raw,", gsub(pattern = "data\\$", replacement = "raw$", x = logic), ")")
+
+          eval(parse(text = command))
+        }
       }
 
       # If there is more than one filter
@@ -293,9 +351,6 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
           definitive <- raw
         }
 
-      # Creation of the structure for variables with zero queries
-      excel_zero <- as.data.frame(matrix(ncol = 4, nrow = 0))
-      colnames(excel_zero) <- c("DAG", "Variables", "Description", "Query")
 
       # Identification of queries, using the structure built before
       if (nrow(definitive) > 0) {
@@ -389,9 +444,9 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
             }
           } else {
             if (negate == TRUE) {
-              paste0("The value is ", x[, variables[i]], " and it should be ", gsub(pattern = "==", "equal to ", x = gsub(pattern = "!=", "not equal to ", x = gsub(pattern = "%in%NA", replacement = "missing", x = gsub(" ", "", expression[i])))))
+              trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern=c("<", ">", "<=", ">=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement=c(" less than ", " greater than ", " less than or equal to ", " greater than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize=FALSE))))
             } else {
-              paste0("The value is ", x[, variables[i]], " and it should not be ", gsub(pattern = "==", "equal to ", x = gsub(pattern = "!=", "not equal to ", x = gsub(pattern = "%in%NA", replacement = "missing", x = gsub(" ", "", expression[i])))))
+              trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern=c("<", ">", "<=", ">=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement=c(" less than ", "greater than ", " less than or equal to ", " greater than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize=FALSE))))
             }
           },
           Code = "",
@@ -416,13 +471,13 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
         excel <- data.frame(
           DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data)) & nrow(data) > 0) {
             if("redcap_data_access_group.factor" %in% names(data)) {
-              if (is.na(event)) {
+              if (all(is.na(event))) {
                 unique(as.character(data[, "redcap_data_access_group.factor"]))
               } else {
                 unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group.factor"]))
               }
             } else {
-              if (is.na(event)) {
+              if (all(is.na(event))) {
                 unique(as.character(data[, "redcap_data_access_group"]))
               } else {
                 unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group"]))
@@ -474,9 +529,9 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
             }
           } else {
             if (negate == TRUE) {
-              paste0("The value should be ", gsub(pattern = "==", "equal to ", x = gsub(pattern = "!=", "not equal to ", x = gsub(pattern = "%in%NA", replacement = "missing", x = gsub(" ", "", expression[i])))))
+              gsub("  ", " ", paste("The value should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern=c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement=c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize=FALSE)))
             } else {
-              paste0("The value should not be ", gsub(pattern = "==", "equal to ", x = gsub(pattern = "!=", "not equal to ", x = gsub(pattern = "%in%NA", replacement = "missing", x = gsub(" ", "", expression[i])))))
+              gsub("  ", " ", paste("The value should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern=c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement=c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize=FALSE)))
             }
           },
           stringsAsFactors = F
@@ -498,7 +553,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
     }
 
     # Classify each query with it's own code
-    if (nrow(queries) != 0) {
+    if (nrow(queries) > 0) {
 
       # First we sort the data frame by record_id
       if (all(grepl("-", queries$Identifier))) {
@@ -593,7 +648,8 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
                       dplyr::filter((.data$var_event %in% complete_vars & .data$total != 0) | .data$var_event %in% zero_vars)
 
           for (i in zero_vars) {
-            report$query_descr[report$var_event %in% i] <- paste0("This value should not be ", ifelse(gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])]) %in% "%in%NA", "missing", gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])])))
+            report$query_descr[report$var_event %in% i] <- paste0("The value should not be ",
+                                                                  stringi::stri_replace_all_regex(gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])]), pattern=c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement=c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize=FALSE))
           }
 
           report <- report %>% dplyr::select(- "var_event")
@@ -659,7 +715,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
     }
 
     # Adding information about the variables with branching logic to the report
-    if (length(var_logic) > 0) {
+    if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
       branch$Variable <- stringr::str_trunc(branch$Variable, 26)
       report <- merge(report,
                       branch %>% dplyr::select("Variable", "Branching logic"),
@@ -702,7 +758,7 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
 
       # If by_dag argument is false
       # If there is a branching logic, we cannot lose the branching logic column
-      if (length(var_logic) > 0) {
+      if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
 
         report <- report %>%
           dplyr::select(-"DAG") %>%
@@ -756,11 +812,12 @@ rd_query <- function(..., data = NULL, dic = NULL, variables = NA, expression = 
                                      extra_css = "border-bottom: 1px solid grey")
 
       # Definitive output
-      def <- list(queries = queries,
+      def <- list(queries = dplyr::tibble(queries),
                   results = viewer)
     }
 
     # Return the final product
     def
   }
+
 

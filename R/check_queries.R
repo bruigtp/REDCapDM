@@ -9,7 +9,7 @@
 #' # Example of a query
 #' data_old <- rd_query(covican,
 #'                      variables = "copd",
-#'                      expression = "%in%NA",
+#'                      expression = "is.na(x)",
 #'                      event = "baseline_visit_arm_1")
 #' data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
 #'
@@ -46,10 +46,14 @@ check_queries <-function(old, new, report_title = NULL)
   if (any(check[, "n"] > 1)) {
     dups <- check %>%
               dplyr::filter(.data$n > 1 & .data$Modification %in% "New")
-    dups[, "Modification"] <- "Miscorrected"
-    check <- check %>%
-                dplyr::filter(.data$n == 1)
-    check <- rbind(check, dups)
+    if (nrow(dups) > 0) {
+      dups[, "Modification"] <- "Miscorrected"
+
+      check <- check %>%
+        dplyr::filter(!(.data$n > 1 & .data$Modification %in% "New"))
+
+      check <- rbind(check, dups)
+    }
   }
 
   # Convert the column Modification in a factor

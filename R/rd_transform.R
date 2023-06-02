@@ -27,10 +27,11 @@
 
 rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_recalc = NULL, exclude_to_factor = NULL, delete_vars = c("_complete", "_timestamp"), final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL){
 
+  project <- c(...)
+
   results <- NULL
   ind <- 1
 
-  project <- c(...)
   if(!is.null(project)){
     if(!is.null(data)){
       warning("Data has been specified twice so the function will not use the information in the data argument.")
@@ -42,6 +43,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
     data <- project$data
     dic <- project$dictionary
+    dic_ori <- dic
 
     if("event_form" %in% names(project)){
       if(!is.null(event_form)){
@@ -86,7 +88,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
   #If the project is longitudinal and the event hasn't been specified:
   if(longitudinal & is.null(event_form)){
-    warning("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence")
+    warning("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
   }
 
   message("Transformation in progress...")
@@ -128,47 +130,69 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
       as.POSIXct(x)
     })
 
+  dic <- dic %>%
+    dplyr::mutate(branching_logic_show_field_only_if = dplyr::case_when(is.na(branching_logic_show_field_only_if) ~ "",
+                                                                        TRUE ~ branching_logic_show_field_only_if))
 
-  #Recalculate calculated fields (previous to transforming factors and other preprocessing)
-  #It wil create duplicate variables of each calculated field with "_recalc" in the end and the recalculated value
+  if (!"redcap_repeat_instrument" %in% names(data)) {
+    #Recalculate calculated fields (previous to transforming factors and other preprocessing)
+    #It wil create duplicate variables of each calculated field with "_recalc" in the end and the recalculated value
 
-  results <- c(results, stringr::str_glue("{ind}. Recalculating calculated fields and saving them as '[field_name]_recalc'\n\n"))
-  ind <- ind + 1
+    results <- c(results, stringr::str_glue("{ind}. Recalculating calculated fields and saving them as '[field_name]_recalc'\n\n"))
+    ind <- ind + 1
 
-  #If the project is longitudinal and the event hasn't been specified no recalculation is possible
-  if(longitudinal & is.null(event_form)){
+    #If the project is longitudinal and the event hasn't been specified no recalculation is possible
+    if(longitudinal & is.null(event_form)){
 
-    results <- c(results, "\nNo recalculation is possible as the project has more than one event and the event-form correspondence has not been specified\n")
+      results <- c(results, "\nNo recalculation is possible as the project has more than one event and the event-form correspondence has not been specified\n")
 
-  }else{
+    }else{
 
-    recalc <- recalculate(data, dic, event_form, exclude_recalc)
+      recalc <- recalculate(data, dic, event_form, exclude_recalc)
 
-    data <- recalc$data
-    dic <- recalc$dic
+      data <- recalc$data
+      dic <- recalc$dic
 
-    results <- c(results, recalc$results)
+      results <- c(results, recalc$results)
 
+    }
   }
 
 
-  if(checkbox_na){
-    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing\n\n"))
-  }else{
-    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing\n\n"))
+  if (!"redcap_repeat_instrument" %in% names(data)) {
+    if(checkbox_na){
+      results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing\n\n"))
+    }else{
+      results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing\n\n"))
+    }
+  } else {
+    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options.\n"))
   }
 
   ind <- ind + 1
 
   #Identify checkbox variables:
   var_check<-names(data)[grep("___",names(data))]
+
   #Remove .factor:
   var_check_factors <- var_check[grep(".factor$",var_check)]
 
-  data <- data %>%
-    dplyr::select(-tidyselect::all_of(var_check_factors))
+  if (length(var_check_factors) > 0) {
+    data <- data %>%
+      dplyr::select(-tidyselect::all_of(var_check_factors))
 
-  var_check <- var_check[!grepl(".factor$",var_check)]
+    var_check <- var_check[!grepl(".factor$",var_check)]
+  } else {
+    if (length(var_check) > 0){
+      data <- data %>%
+        dplyr::mutate(dplyr::across(
+          tidyselect::all_of(var_check),
+          ~ dplyr::case_when(.x == "Unchecked" ~ 0,
+                             .x == "Checked" ~ 1,
+                             TRUE ~ NA)
+        ))
+    }
+  }
 
   #If there is some checkbox:
   if(length(var_check) > 0){
@@ -180,13 +204,15 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
     } else {
 
-      #Transform missings of checkboxes with branching logic:
+      if (!"redcap_repeat_instrument" %in% names(data)) {
 
-      trans <- transform_checkboxes(data = data, dic = dic, event_form = event_form, checkbox_na = checkbox_na)
+        #Transform missings of checkboxes with branching logic:
+        trans <- transform_checkboxes(data = data, dic = dic, event_form = event_form, checkbox_na = checkbox_na)
 
-      data <- trans$data
+        data <- trans$data
 
-      results <- c(results, trans$results)
+        results <- c(results, trans$results)
+      }
 
     }
 
@@ -198,24 +224,34 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
         ~ factor(.x, levels = 0:1, labels = checkbox_labels)
       ))
 
-    #Change the variable names:
+    #Change the variable names and their branching logic:
 
     data_dic <- checkbox_names(data, dic, labels, checkbox_labels)
 
     data <- data_dic$data
     dic <- data_dic$dic
 
+
   }else{
+
     results <- c(results, "\nNo checkboxes are found in the data\n")
+
   }
 
   #Replace original variables with their factor version except for redcap_event_name and redcap_data_access_group
   #If we dont want to convert another additional variable to factor we can specify it with the exclude argument:
 
-  results <- c(results, stringr::str_glue("\n\n{ind}. Replacing original variables for their factor version"))
-  ind <- ind + 1
+  factors <- names(data)[grep("\\.factor$",names(data))]
 
-  data <- to_factor(data, exclude = exclude_to_factor)
+  if (length(factors) > 0) {
+    results <- c(results, stringr::str_glue("\n\n{ind}. Replacing original variables for their factor version"))
+    ind <- ind + 1
+
+    data_dic <- to_factor(data, dic, exclude = exclude_to_factor) # This step also transforms the branching logic of the factors
+
+    data <- data_dic$data
+    dic <- data_dic$dic
+  }
 
   #Fix variables that instead of missing have an empty field (text variables, etc.):
   data <- data %>%
@@ -224,6 +260,39 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     #Fix factors:
     dplyr::mutate_if(is.factor,function(x){levels(x)[levels(x)==""] <- NA; x})
 
+  if (!"redcap_repeat_instrument" %in% names(data)) {
+    # Transform the branching logic from the dictionary which is in REDCap logic (raw) into R logic
+    results <- c(results, stringr::str_glue("\n\n{ind}. Converting every branching logic in the dictionary into R logic"))
+    ind <- ind + 1
+
+    pos <- which(!dic$branching_logic_show_field_only_if %in% "")
+    logics <- NULL
+
+    for (i in pos) {
+
+      evaluation <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = dic$branching_logic_show_field_only_if[i], var = dic$field_name[i])$rlogic, silent = T)
+
+      if (!inherits(evaluation, "try-error")) {
+
+        dic$branching_logic_show_field_only_if[i] <- rd_rlogic(data = data, dic = dic, event_form = event_form, logic = dic$branching_logic_show_field_only_if[i], var = dic$field_name[i])$rlogic
+
+      } else {
+
+        logics <- rbind(logics, dic$field_name[i])
+
+      }
+    }
+
+    if (!is.null(logics)) {
+
+      tabla <- tibble::tibble("Variables" = logics)
+      results <- c(results, "\n", knitr::kable(tabla, "pipe", align = c("ccc"), caption = "Variables with unconverted branching logic"))
+
+    }
+  }
+
+
+  # Delete variables that contain specific patterns
   results <- c(results, stringr::str_glue("\n\n{ind}. Deleting variables that contain some patterns"))
   ind <- ind + 1
 
@@ -247,6 +316,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     }
 
   }
+
 
   #Arrange our dataset by record_id and event (will keep the same order of events as in redcap)
   if(longitudinal) {

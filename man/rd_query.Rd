@@ -6,8 +6,6 @@
 \usage{
 rd_query(
   ...,
-  data = NULL,
-  dic = NULL,
   variables = NA,
   expression = NA,
   negate = FALSE,
@@ -20,15 +18,14 @@ rd_query(
   report_title = NA,
   report_zeros = FALSE,
   by_dag = FALSE,
-  link = list()
+  link = list(),
+  data = NULL,
+  dic = NULL,
+  event_form = NULL
 )
 }
 \arguments{
 \item{...}{List containing the data, the dictionary and the event (if required). It may be the output of the `redcap_data` function.}
-
-\item{data}{Data frame containing the data read from REDCap. If the list is given, this argument is not required.}
-
-\item{dic}{Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.}
 
 \item{variables}{Character vector of the names of the database variables to be checked.}
 
@@ -55,6 +52,12 @@ rd_query(
 \item{by_dag}{Logical. If `TRUE`, both elements of the output are grouped by the data access groups (DAGs) of the REDCap project.}
 
 \item{link}{List containing project information used to create a web link to each query.}
+
+\item{data}{Data frame containing the data read from REDCap. If the list is given, this argument is not required.}
+
+\item{dic}{Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.}
+
+\item{event_form}{Data frame containing the correspondence of each event with each form. If the list is specified this argument is not necessary.}
 }
 \value{
 A list with a data frame of 9 columns (10 columns, if the link argument is specified) meant to help the user identify each query and a table with the total number of queries per variable.
@@ -67,21 +70,21 @@ It can be used to identify missing values or to identify values that are outside
 # Missing values
 example <- rd_query(covican,
                     variables = c("copd", "age"),
-                    expression = c("\%in\%NA", "\%in\%NA"),
+                    expression = c("is.na(x)", "x \%in\% NA"),
                     event = "baseline_visit_arm_1")
 example
 
 # Expression
 example <- rd_query(covican,
                     variables="age",
-                    expression=">20",
+                    expression="x>20",
                     event="baseline_visit_arm_1")
 example
 
 # Using the filter argument
 example <- rd_query(covican,
                     variables = "potassium",
-                    expression = "\%in\%NA",
+                    expression = "is.na(x)",
                     event = "baseline_visit_arm_1",
                     filter = "available_analytics=='1'")
 example

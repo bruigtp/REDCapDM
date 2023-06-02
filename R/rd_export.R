@@ -56,7 +56,7 @@ rd_export <- function(..., queries = NULL, column = NULL, sheet_name = NULL, pat
       } else {
 
         # Error: the named column is not present in the dataset
-        stop("The column you have specified does not exist in the data set.", call. = F)
+        stop("The column you have specified does not exist in the dataset.", call. = F)
 
       }
     } else {
@@ -69,7 +69,13 @@ rd_export <- function(..., queries = NULL, column = NULL, sheet_name = NULL, pat
   }
 
   # Write the data frame to the worksheet
-  openxlsx::writeData(wb = wb, x = queries, sheet = sheet, startRow = 1, startCol = 1, rowNames = F)
+  openxlsx::writeDataTable(wb = wb, sheet = sheet, x = queries, startRow = 1, startCol = 1, rowNames = F, tableStyle = "TableStyleLight11")
+
+  # Align cells to the center
+  openxlsx::addStyle(wb = wb, sheet = sheet, style = openxlsx::createStyle(halign = "CENTER"), rows = 1:(nrow(queries) + 1), cols = 1:length(queries), gridExpand = T)
+
+  # Cell widths
+  openxlsx::setColWidths(wb = wb, sheet = sheet, cols = 1:length(queries), widths = "auto")
 
   # Path to the file
   path <- if (!is.null(path)) {

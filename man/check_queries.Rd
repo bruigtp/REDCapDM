@@ -23,7 +23,7 @@ This function compares a previous report of queries with a new one and allows yo
 # Example of a query
 data_old <- rd_query(covican,
                      variables = "copd",
-                     expression = "\%in\%NA",
+                     expression = "is.na(x)",
                      event = "baseline_visit_arm_1")
 data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
 

@@ -1,3 +1,35 @@
+# REDCapDM 0.7-0
+
+2023-06-02
+
+## Changes to functions
+
+- The _rd_transform()_ function will now also transform the branching logic in the dictionary into R logic.
+
+- The _rd_query()_ will now use the information of the event-form to automatically detect the events where the variables are present.
+
+- The _rd_query()_ will now automatically apply the branching logic of the variable before generating queries.
+
+## Minor Changes
+
+- Remove descriptive variables from the dictionary in the _redcap_data()_ function.
+
+- Improve the resulting summary of the _rd_query()_ function.
+
+- New error added to the _rd_query()_ function when trying to use a variable that is not in the dataset.
+
+- New error added to the _rd_query()_ function when the logic of the filter was using incorrected logic.
+
+- The _rd_export()_ function will now create a themed excel file.
+
+## Bug fixes
+
+- Minor error fixed in the summary report of the _rd_query()_ function when there were multiple variables with zero queries.
+
+- Error fixed in the _check_queries()_ function when there were several 'Miscorrected' queries.
+
+- We now take into account REDCap projects with repeated instruments.
+
 # REDCapDM 0.6-0
 
 2023-03-31

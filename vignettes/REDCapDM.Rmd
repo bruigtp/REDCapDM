@@ -178,7 +178,7 @@ covican_transformed$results
 
 This function will return a list with the transformed dataset, dictionary, event_form and the output of the results of the transformation.
 
-As we can see, there are 4 steps in the transformation:
+As we can see, there are 5 steps in the transformation:
 
 <ol>
 <li><u>Recalculation of REDCap calculated fields:</u> it finds all the calculated fields and recalculates them using the REDCap logic specified in the calculation field translated into R. The recalculated variable is saved as the original name adding '_recalc' at the end. It can happen that the logic found contains some specific smart-variables or other complex structures which the function is not able to transcribe. With the summary found in `results` we can see how many calculated fields have been found, if they have been transcribed and, if that is the case, if the recalculated variable is equal to the original one. </li>
@@ -195,6 +195,8 @@ For example, let's explain the transformation that undergo the variables corresp
 
 
 <li><u>Replacement of the original variable by its factor version:</u> REDCap creates two versions of the variables in the dataset for multiple-choice fields: a numerical one with the number that corresponds to each category and a factor one containing the labels of each category. In this step, we will replace the original variables with their factor versions, except for _redcap_event_name_ and _redcap_data_access_group_, for which we will keep both versions. We can specify other variables that we do not want to transform to factor using the argument `exclude_to_factor` which we will see later.</li>
+
+<li><u>Transformation of the branching logic:</u> by default, every branching logic contained in the dictionary is presented in REDCap logic. In this step, we will convert each branching logic into R logic in order to apply this information when needed. For example, we will use it to properly identify missing values in variables with a branching logic, as we will see later in the vignette.</li>
 
 <li><u>Elimination of variables containing some pattern:</u> by default, the pattern that the function looks for is '_complete' and '_timestamp'. We can specify any other pattern using the argument `delete_vars`, as explained later.</li>
 
@@ -337,7 +339,7 @@ head(dataset$data)
 
 ### **rd_rlogic**
 
-This function transforms the REDCap logic into logic that can be evaluated in R. It returns both the transformed logic and the result of the evaluation of the logic. This function is used in the `rd_transform()` to recalculate the calculate fields, but it may also be useful to use it in other circunstances. Let's see how it transforms the logic of one of the calculated fields in the built-in dataset:
+This function transforms the REDCap logic into logic that can be evaluated in R. It returns both the transformed logic and the result of the evaluation of the logic. This function is used in the `rd_transform()` to recalculate the calculated fields and convert the branching logics, but it may also be useful to use it in other circunstances. Let's see how it transforms the logic of one of the calculated fields in the built-in dataset:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 logic_trans <- rd_rlogic(covican,
@@ -393,12 +395,14 @@ First, we will examine the output of this function. When the `rd_query()` functi
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 example <- rd_query(covican_transformed,
                     variables = "copd",
-                    expression = "%in%NA",
+                    expression = "is.na(x)",
                     event = "baseline_visit_arm_1")
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
-kable(head(example$queries)) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
+kable(head(example$queries)) %>% 
+  kableExtra::row_spec(0, bold = TRUE) %>% 
+  kableExtra::kable_styling()
 
 example$results
 ```
@@ -409,12 +413,12 @@ Let's see some examples of the usability of the function in generating different
 
 #### *Missings*
 
-If we want to identify missing values in the variables _copd_ and _age_ in the raw transformed data, a list of required arguments needs to be supplied. We must use the `variables` argument to specify the variables from the database that will be examined and the `expression` argument to describe the expression that will be applied to those variables, in this case '%in%NA' to detect missing values. Additionaly, we must use the `data` and `dic` arguments to indicate the R objects containing the REDCap data and dictionary, respectively. If the REDCap project presents a longitudinal design, we should also specify the event in which the described variables are present through the use of the `event` argument:
+If we want to identify missing values in the variables _copd_ and _age_ in the raw transformed data, a list of required arguments needs to be supplied. We must use the `variables` argument to specify the variables from the database that will be examined and the `expression` argument to describe the expression that will be applied to those variables, in this case 'is.na(x)' to detect missing values where x represents the variable itself. Additionaly, we must use the `data` and `dic` arguments to indicate the R objects containing the REDCap data and dictionary, respectively. If the REDCap project presents a longitudinal design, we should also specify the event in which the described variables are present through the use of the `event` argument:
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "%in%NA"),
+                    expression = c("is.na(x)", "is.na(x)"),
                     event = "baseline_visit_arm_1")
 
 # Printing results
@@ -425,24 +429,35 @@ In this case, we can observe that there are 6 missing values in the _copd_ varia
 
 #### *Missings of variables with a branching logic*
 
-Another example is when we try to identify missing values in variables where a branching logic is employed. In this scenario, when the conditions of the branching logic are not satisfied, by definition, all of the values should be missing and thus queries for this specific missing values (conditions not met) should not be reported. To adress this, if a variable presents a branching logic, the function will issue a warning with a message to check the `results` element of our output:
+Another example is when we try to identify missing values in variables where a branching logic is employed. In this scenario, when the conditions of the branching logic are not satisfied, by definition, all of the values should be missing and thus queries for this specific missing values (conditions not met) should not be reported. To adress this, the function, when working with raw data, follows a two-step process. Firstly, it transforms the branching logic associated with the specified variable. Then, it applies this transformed logic during the query generation process. However, if the dataset has already been transformed using the `rd_transform()` function beforehand, the function will automatically apply the previously transformed branching logic.
+
+In both scenarios, if a variable contains branching logic that cannot be converted from REDCap logic to R logic, the function will issue a warning. The warning message will advise the user to review the `results` element of the output for more information. This is to indicate that there might be potential issues or limitations with the conversion process for that specific variable's branching logic:
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+covican_transformed$dictionary$branching_logic_show_field_only_if[covican_transformed$dictionary$field_name %in% "potassium"] <- "[available_analytics][current-instance]=‘1’"
+```
+
 
 ```{r message=FALSE, warning=TRUE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = c("age", "copd", "potassium"),
-                    expression = c("%in%NA", "%in%NA", "%in%NA"),
+                    expression = c("is.na(x)", "is.na(x)", "is.na(x)"),
                     event = "baseline_visit_arm_1")
 
 # Printing results
 example$results
 ```
 
-As we can see, in addition to the missing values of the _age_ and _copd_ variables already identified, there are 31 missing values in the _potassium_ variable. The variable _potassium_ has the following branching logic `[available_analytics]=‘1’`, which means that we should only identify the missing values when _available_analytics_ has the value '1'. To accomplish this, we can use the  `filter` argument to ensure that the condition in this branching logic is fulfilled. Recall that, in the transformed dataset, the value '1' was changed to 'Yes'.
+Based on the information provided, in addition to the missing values of the _age_ and _copd_ variables already identified, there are 31 missing values in the _potassium_ variable. The branching logic associated with this variable, `[available_analytics][current-instance]=‘1’`, contains a smart variable `[current-instance]`, which cannot be directly transformed into R logic. 
+
+To address this issue and correctly identify missing values only when _available_analytics_ has the value _1_, the filter argument can be utilized. By specifying the condition within the branching logic, you can ensure that the filtering process fulfills this condition.
+
+It is worth noting that during the transformation process, the value _1_ of the _available_analytics_ variable was changed to _Yes_ due to it being a factor. Therefore, when implementing the filter, you need to consider this transformed value rather than the original one. This ensures that the condition is accurately applied and missing values are appropriately identified based on the desired criteria.
 
 ```{r message=FALSE, warning=TRUE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = c("potassium"),
-                    expression = c("%in%NA"),
+                    expression = c("is.na(x)"),
                     event = "baseline_visit_arm_1",
                     filter = c("available_analytics=='Yes'"))
 
@@ -450,18 +465,18 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-The total number of missing values changes when we use the `filter` argument, the variable _potassium_ now presents 21 missing values instead of the previous 31 cases identified. This means that we were identifying 10 missing values in which _available_analytics_ did not have the value _1_ and, therefore, should not be considered as missing values.
+The total number of missing values changes when we use the `filter` argument, the variable _potassium_ now presents 21 missing values instead of the previous 31 cases identified. This means that we were identifying 10 missing values in which _available_analytics_ did not have the value _Yes_ and, therefore, should not be considered as missing values.
 
-Note: This argument is treated as a vector, which means that we can add a filter to each any of the specified variables. Also, even if the filter argument is used to apply the branching logic condition, the warning about the presence of a branching logic is still be displayed, so we can ignore it in this case.
+Note: The `filter` argument is treated as a vector, which means that we can add a filter to each specified variable. Also, even if this argument is used to apply the branching logic condition, the warning about the presence of unconverted branching logic will still be displayed. In this specific case, you can safely ignore this warning.
 
 #### *Expressions*
 
-Up until this point, we have illustrated examples where the expression applied is for detecting missing values. But, as previously mentioned, the `rd_query()` function is also able to identify outliers or observations that fulfill a specific condition. Hence, to identify, for example, all the observations where _age_ is greater than 70, we should use the `expression` argument again specifying '>70':
+Up until this point, we have illustrated examples where the expression applied is used to detect missing values. But, as previously mentioned, the `rd_query()` function is also able to identify outliers or observations that fulfill a specific condition. Hence, to identify, for example, all the observations where _age_ is greater than 70, we should use the `expression` argument again specifying 'x>70':
 
 
 ```{r message=FALSE, warning=TRUE, comment=NA}
 example <- rd_query(variables="age",
-                    expression=">70",
+                    expression="x>70",
                     event="baseline_visit_arm_1",
                     dic=covican_transformed$dictionary,
                     data=covican_transformed$data)
@@ -472,14 +487,14 @@ example$results
 
 <br>
 
-We can add other variables with other specific expressions in the same function because it is designed to treat the arguments `variables` and `expression` as vectors, so that the element at position 'n' of `expression` is applied to the element at position 'n' of `variables`.
+We can add other variables with other specific expressions in the same function because it is designed to treat the arguments `variables` and `expression` as vectors, so that the element at position _n_ of `expression` is applied to the element at position _n_ of `variables`.
 
-For example, if we wanted to identify all the observations where _age_ is greater than 70 and all the observations where _copd_ is 'Yes' we should use:
+For example, if we want to identify all the observations where _age_ is greater than 70 and all the observations where _copd_ is 'Yes' we shall use:
 
 ```{r message=FALSE, warning=TRUE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables=c("age", "copd"),
-                    expression=c(">70", "=='Yes'"),
+                    expression=c("x > 70", "x == 'Yes'"),
                     event="baseline_visit_arm_1")
 
 # Printing results
@@ -488,12 +503,12 @@ example$results
 
 <br>
 
-In a more complex scenario, for example, to identify all the observations where _age_ is greater than 70, less than 80, or is a missing value we should use the following expression:
+In a more complex scenario, for example, to identify all the observations where _age_ is greater than 70, less than 80, or it is a missing value we shall use the following expression:
 
 ```{r message=FALSE, warning=TRUE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables="age",
-                    expression="(>70 & <80) | %in%NA",
+                    expression="(x>70 & x<80) | is.na(x)",
                     event="baseline_visit_arm_1")
 
 # Printing results
@@ -509,7 +524,7 @@ In order to evaluate the same expression for all variables, the user should supp
 ```{r message=FALSE, warning=TRUE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = c("copd","age","dm"),
-                    expression = "%in%NA",
+                    expression = "is.na(x)",
                     event = "baseline_visit_arm_1")
 
 # Printing results
@@ -522,14 +537,36 @@ The function issues a warning every time the same expression is applied to all v
 
 <br>
 
-<u>Not defining an event in a dataset with multiple events</u>
+<u>Not defining an event</u>
 
-Another special case is when the data analysed corresponds to a REDCap longitudinal project, but the event argument of the function is not defined:
+Another special case is when the data analysed corresponds to a REDCap longitudinal project, but the event argument of the function is not defined.
+
+There are two possibilities here:
+
+<ol>
+<li><u>With event-form:</u> the function automatically detects in which events the variable is collected and generates queries for those events.</li>
 
 ```{r message=FALSE, warning=TRUE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = "copd",
-                    expression = "%in%NA")
+                    expression = "is.na(x)")
+
+# Printing results
+example$results
+```
+
+We get the same result as if we had used the `event` argument.
+
+
+
+<li><u>Without event-form:</u> the function generates queries for all events present in the dataset.</li>
+
+```{r message=FALSE, warning=TRUE, comment=NA}
+my_list <- subset(covican_transformed, !names(covican_transformed) %in% "event_form")
+
+example <- rd_query(my_list,
+                    variables = "copd",
+                    expression = "is.na(x)")
 
 # Printing results
 example$results
@@ -537,9 +574,12 @@ example$results
 
 As we can see, there are 152 new missing values in the follow-up visit because the variable _copd_ it is only present in the baseline visit. Thus, it might result in an overestimation of the number of missing values, as the function considers all the events of the study if no event is specified. 
 
-<br>
 
-The function will issue a warning if it detects that the REDCap project contains multiple events and the `event` argument is not specified. 
+The function will issue a warning if it detects that the REDCap project contains multiple events, the event-form mapping is not specified and the `event` argument is not specified. 
+
+</ol>
+
+<br>
 
 #### *Additional arguments*
 
@@ -551,7 +591,7 @@ These arguments allow users to customize the data frame returned by the function
 example<- rd_query(covican_transformed,
                    variables = c("copd"),
                    variables_names = c("Chronic obstructive pulmonary disease (Yes/No)"),
-                   expression = c("%in%NA"),
+                   expression = c("is.na(x)"),
                    query_name = c("COPD is a missing value."),
                    instrument = c("Admission"),
                    event = "baseline_visit_arm_1")
@@ -567,12 +607,12 @@ kable(example$queries[1,]) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra:
 
 <u>negate</u>
 
-This argument can be used to negate the expression applied to the variables. For example, if we want to identify all the non missing values of the variable _copd_, we can apply the expression '%in%NA' which normally would report the missing values and add `negate = TRUE`, so the result will be the number of non missing values in _copd_:
+This argument can be used to negate the expression applied to the variables. For example, if we want to identify all the non missing values of the variable _copd_, we can apply the expression 'is.na(x)' which normally would report the missing values and add `negate = TRUE`, so the result will be the number of non missing values in _copd_:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = "copd",
-                    expression = "%in%NA",
+                    expression = "is.na(x)",
                     negate = TRUE,
                     event = "baseline_visit_arm_1")
 
@@ -591,7 +631,7 @@ In order to keep all queries in the same R object, we can use the `addTo` argume
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example2 <- rd_query(covican_transformed,
                      variables = "age",
-                     expression = "%in%NA",
+                     expression = "is.na(x)",
                      event = "baseline_visit_arm_1",
                      addTo = example)
 
@@ -610,7 +650,7 @@ To customize the title of the summary of queries, we can use the `report_title` 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "<20"),
+                    expression = c("is.na(x)", "x<20"),
                     event = "baseline_visit_arm_1",
                     report_title = "Missing COPD values in the baseline event")
 
@@ -629,7 +669,7 @@ By default, the function will only report, in the summary of queries, variables 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "<20"),
+                    expression = c("is.na(x)", "x < 20"),
                     event = "baseline_visit_arm_1",
                     report_zeros = TRUE)
 
@@ -648,7 +688,7 @@ If the REDCap project has Data Access Groups (DAGs), it might be of our interest
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", ">60"),
+                    expression = c("is.na(x)", "x>60"),
                     event = "baseline_visit_arm_1",
                     by_dag = TRUE)
 ```
@@ -687,7 +727,7 @@ Once we have this information, we pass it as a list to the `link` argument:
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_query(covican_transformed,
                     variables = "age",
-                    expression = ">89",
+                    expression = "x>89",
                     event = "baseline_visit_arm_1",
                     link = list(domain = "redcappre.idibell.cat",
                                 redcap_version = "13.1.9",
@@ -759,9 +799,10 @@ The `check_queries()` function compares the previous query dataset with the new 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "%in%NA"),
+                    expression = c("is.na(x)", "is.na(x)"),
                     event = "baseline_visit_arm_1")
 new_example <- example
+new_example$queries <- as.data.frame(new_example$queries)
 new_example$queries <- new_example$queries[c(1:5, 10:11),] # We take only some of the previously created queries
 new_example$queries[nrow(new_example$queries)+1,] <- c("100-79", "Hospital 11", "Baseline visit", "Comorbidities", "copd", "-", "Chronic obstructive pulmonary disease", "The value is NA and it should not be missing", "100-79-4") # we create a new query
 new_example$queries[nrow(new_example$queries)+1,] <- c("105-56", "Hospital 5", "Baseline visit", "Demographics", "age", "-", "Age", "The value is 80 and it should not be >70", "105-56-2")
@@ -798,7 +839,7 @@ With the help of the `rd_export()` function, we can export the identified querie
 ```{r message=FALSE, warning=FALSE, comment=NA, include=FALSE}
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "%in%NA"),
+                    expression = c("is.na(x)", "is.na(x)"),
                     event = "baseline_visit_arm_1")
 ```
 

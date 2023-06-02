@@ -4,10 +4,12 @@
 \alias{to_factor}
 \title{Convert variables to factors}
 \usage{
-to_factor(data, exclude = NULL)
+to_factor(data, dic, exclude = NULL)
 }
 \arguments{
 \item{data}{Dataset containing the REDCap data.}
+
+\item{dic}{Dataset containing the REDCap dictionary.}
 
 \item{exclude}{Character vector containing the names of those variables that will not be converted to factors. If `NULL`, all variables will be converted.}
 }

@@ -159,27 +159,32 @@ table(data2$type_underlying_disease_haematological_cancer)
 ## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
 example <- rd_query(covican_transformed,
                     variables = "copd",
-                    expression = "%in%NA",
+                    expression = "is.na(x)",
                     event = "baseline_visit_arm_1")
 
 ## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-kable(head(example$queries)) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
+kable(head(example$queries)) %>% 
+  kableExtra::row_spec(0, bold = TRUE) %>% 
+  kableExtra::kable_styling()
 
 example$results
 
 ## ----echo=TRUE, message=FALSE, warning=FALSE, comment=NA----------------------
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "%in%NA"),
+                    expression = c("is.na(x)", "is.na(x)"),
                     event = "baseline_visit_arm_1")
 
 # Printing results
 example$results
 
+## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
+covican_transformed$dictionary$branching_logic_show_field_only_if[covican_transformed$dictionary$field_name %in% "potassium"] <- "[available_analytics][current-instance]=‘1’"
+
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(covican_transformed,
                     variables = c("age", "copd", "potassium"),
-                    expression = c("%in%NA", "%in%NA", "%in%NA"),
+                    expression = c("is.na(x)", "is.na(x)", "is.na(x)"),
                     event = "baseline_visit_arm_1")
 
 # Printing results
@@ -188,7 +193,7 @@ example$results
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(covican_transformed,
                     variables = c("potassium"),
-                    expression = c("%in%NA"),
+                    expression = c("is.na(x)"),
                     event = "baseline_visit_arm_1",
                     filter = c("available_analytics=='Yes'"))
 
@@ -197,7 +202,7 @@ example$results
 
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(variables="age",
-                    expression=">70",
+                    expression="x>70",
                     event="baseline_visit_arm_1",
                     dic=covican_transformed$dictionary,
                     data=covican_transformed$data)
@@ -208,7 +213,7 @@ example$results
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(covican_transformed,
                     variables=c("age", "copd"),
-                    expression=c(">70", "=='Yes'"),
+                    expression=c("x > 70", "x == 'Yes'"),
                     event="baseline_visit_arm_1")
 
 # Printing results
@@ -217,7 +222,7 @@ example$results
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(covican_transformed,
                     variables="age",
-                    expression="(>70 & <80) | %in%NA",
+                    expression="(x>70 & x<80) | is.na(x)",
                     event="baseline_visit_arm_1")
 
 # Printing results
@@ -226,7 +231,7 @@ example$results
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(covican_transformed,
                     variables = c("copd","age","dm"),
-                    expression = "%in%NA",
+                    expression = "is.na(x)",
                     event = "baseline_visit_arm_1")
 
 # Printing results
@@ -235,7 +240,17 @@ example$results
 ## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
 example <- rd_query(covican_transformed,
                     variables = "copd",
-                    expression = "%in%NA")
+                    expression = "is.na(x)")
+
+# Printing results
+example$results
+
+## ----message=FALSE, warning=TRUE, comment=NA----------------------------------
+my_list <- subset(covican_transformed, !names(covican_transformed) %in% "event_form")
+
+example <- rd_query(my_list,
+                    variables = "copd",
+                    expression = "is.na(x)")
 
 # Printing results
 example$results
@@ -244,7 +259,7 @@ example$results
 example<- rd_query(covican_transformed,
                    variables = c("copd"),
                    variables_names = c("Chronic obstructive pulmonary disease (Yes/No)"),
-                   expression = c("%in%NA"),
+                   expression = c("is.na(x)"),
                    query_name = c("COPD is a missing value."),
                    instrument = c("Admission"),
                    event = "baseline_visit_arm_1")
@@ -255,7 +270,7 @@ kable(example$queries[1,]) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra:
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(covican_transformed,
                     variables = "copd",
-                    expression = "%in%NA",
+                    expression = "is.na(x)",
                     negate = TRUE,
                     event = "baseline_visit_arm_1")
 
@@ -265,7 +280,7 @@ example$results
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example2 <- rd_query(covican_transformed,
                      variables = "age",
-                     expression = "%in%NA",
+                     expression = "is.na(x)",
                      event = "baseline_visit_arm_1",
                      addTo = example)
 
@@ -275,7 +290,7 @@ example2$results
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "<20"),
+                    expression = c("is.na(x)", "x<20"),
                     event = "baseline_visit_arm_1",
                     report_title = "Missing COPD values in the baseline event")
 
@@ -285,7 +300,7 @@ example$results
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", "<20"),
+                    expression = c("is.na(x)", "x < 20"),
                     event = "baseline_visit_arm_1",
                     report_zeros = TRUE)
 
@@ -295,7 +310,7 @@ example$results
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
-                    expression = c("%in%NA", ">60"),
+                    expression = c("is.na(x)", "x>60"),
                     event = "baseline_visit_arm_1",
                     by_dag = TRUE)
 
@@ -312,76 +327,10 @@ knitr::include_graphics("files/EventsID.png", dpi = 150)
 ## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
 example <- rd_query(covican_transformed,
                     variables = "age",
-                    expression = ">89",
+                    expression = "x>89",
                     event = "baseline_visit_arm_1",
                     link = list(domain = "redcappre.idibell.cat",
                                 redcap_version = "13.1.9",
                                 proj_id = 800,
                                 event_id = c("baseline_visit_arm_1" = 811, "follow_up_visit_da_arm_1" = 812)))
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-# Printing results
-example$queries$Link
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-example <- rd_event(covican_transformed,
-                    event = "follow_up_visit_da_arm_1")
-
-# Print results
-example$results
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-example <- rd_event(covican_transformed,
-                    event = "follow_up_visit_da_arm_1",
-                    filter = "screening_fail_crit==0")
-
-# Print results
-example$results
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-example <- rd_event(covican_transformed,
-                    event = c("baseline_visit_arm_1","follow_up_visit_da_arm_1"),
-                    filter = "screening_fail_crit==0",
-                    report_zeros = TRUE)
-
-# Print results
-example$results
-
-## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
-example <- rd_query(covican_transformed,
-                    variables = c("copd", "age"),
-                    expression = c("%in%NA", "%in%NA"),
-                    event = "baseline_visit_arm_1")
-new_example <- example
-new_example$queries <- new_example$queries[c(1:5, 10:11),] # We take only some of the previously created queries
-new_example$queries[nrow(new_example$queries)+1,] <- c("100-79", "Hospital 11", "Baseline visit", "Comorbidities", "copd", "-", "Chronic obstructive pulmonary disease", "The value is NA and it should not be missing", "100-79-4") # we create a new query
-new_example$queries[nrow(new_example$queries)+1,] <- c("105-56", "Hospital 5", "Baseline visit", "Demographics", "age", "-", "Age", "The value is 80 and it should not be >70", "105-56-2")
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-check <- check_queries(old = example$queries, 
-                       new = new_example$queries)
-
-# Print results
-check$results
-
-## ----echo=FALSE, message=FALSE, warning=FALSE, comment=NA---------------------
-example <- rbind(head(check$queries, 4), 
-                 check$queries %>% dplyr::filter(Modification == "Modified") %>% dplyr::filter(row_number()==1))
-kable(example) %>% kableExtra::row_spec(0,bold=TRUE) %>% kableExtra::kable_styling()
-
-## ----message=FALSE, warning=FALSE, comment=NA, include=FALSE------------------
-example <- rd_query(covican_transformed,
-                    variables = c("copd", "age"),
-                    expression = c("%in%NA", "%in%NA"),
-                    event = "baseline_visit_arm_1")
-
-## ----message=FALSE, warning=FALSE, comment=NA, eval=FALSE---------------------
-#  rd_export(example)
-
-## ----message=FALSE, warning=FALSE, comment=NA, eval=FALSE---------------------
-#  rd_export(queries = example$queries,
-#            column = "Link",
-#            sheet_name = "Queries - Proyecto",
-#            path = "C:/User/Desktop/queries.xlsx",
-#            password = "123")
 

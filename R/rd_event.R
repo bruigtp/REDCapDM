@@ -26,13 +26,21 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
   {
     # If the entire list resulting from the 'redcap_data' function is used
     project <- c(...)
+
     if(!is.null(project)){
-      if(!is.null(data)){
+
+      if (!is.null(data)) {
+
         warning("Data has been specified twice so the function will not use the information in the data argument.")
+
       }
-      if(!is.null(dic)){
+
+      if (!is.null(dic)) {
+
         warning("Dictionary has been specified twice so the function will not use the information in the dic argument.")
+
       }
+
       data <- project$data
       dic <- project$dictionary
     }
@@ -60,12 +68,24 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
     # Filtering the data using the information of the argument 'filter'
     if (!is.na(filter) & length(filter) == 1) {
 
-      command <- paste0("data", "<-dplyr::filter(data, ", filter, ")")
-      eval(parse(text = command))
+      # Error: logic used in the filter is incorrect
+      command <- paste0("data", "<-dplyr::filter(data,", filter, ")")
+
+      evaluation <- try(eval(parse(text = command)), silent = TRUE)
+
+      if(inherits(evaluation, "try-error")){
+
+        stop("The logic used in the filter is incorrect. Please review and adjust the filter's logic.")
+
+      } else {
+
+        eval(parse(text = command))
+
+      }
 
       # Error: filtering results in zero observations
       if (nrow(data) == 0) {
-        warning("The aplplied filter does not match any observations. Please check that it is correct.", call. = FALSE)
+        warning("The applied filter is accurate, but it does not correspond to any observations. Please ensure that you have selected the appropriate filter.", call. = FALSE)
       }
 
     }
@@ -240,7 +260,7 @@ rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_nam
 
       report$var <- event
       report$descr <- if ("redcap_event_name.factor" %in% names(data)) {
-        as.character(unique(data$redcap_event_name.factor[which(data$redcap_event_name %in% event)]))
+        as.character(unique(data0$redcap_event_name.factor[which(data0$redcap_event_name %in% event)]))
       } else{
         "-"
       }

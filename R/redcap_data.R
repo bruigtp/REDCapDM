@@ -59,6 +59,12 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       dic[1,1] <- "record_id"
     }
 
+    # Remove descriptive variables from dictionary
+    if ("descriptive" %in% dic$field_type) {
+      dic <- dic %>% dplyr::filter(!.data$field_type %in% "descriptive")
+    }
+
+
     # Indicator of longitudinal projects
     longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
@@ -84,11 +90,22 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
   # Read data, dictionary and event-form mapping in case of an API connection.
   if(all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)){
 
+    # First read the labels
+    labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label_headers = "label")$data)
+
+    labels <- gsub("\\)(.*\\))", "\\1", gsub("(\\(.*)\\(", "\\1", names(labels)))
+
     # Read data using the API connection
-    data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE)$data
-    if (names(data_api)[1]!="record_id") {
+    data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label")$data
+
+    if (nrow(data_api) > 0) {
       names(data_api)[1] <- "record_id"
+    } else {
+      stop("No observational data is available for reading. Please ensure that you add records to your REDCap project.", call. = F)
     }
+
+    # Apply labels
+    data_api <- as.data.frame(purrr::map2(data_api, labels, ~labelled::set_variable_labels(.x, .y)))
 
     # Read dictionary using the API connection
     dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
@@ -96,12 +113,18 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     ## Making sure the names of both dictionaries(exported data and API connection) match
     names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
 
+    # Remove descriptive variables from dictionary
+    if ("descriptive" %in% dic_api$field_type) {
+      dic_api <- dic_api %>% dplyr::filter(!.data$field_type %in% "descriptive")
+    }
+
     # Indicator of longitudinal projects
     longitudinal <- ifelse("redcap_event_name" %in% names(data_api), TRUE, FALSE)
 
     # Read event file
     if(!is.na(event_path)){
 
+      # Warning: event_path not necessary while using API connection
       warning("The event_path argument is not necessary as the event-form correspondence can be automatically read with the API connection")
 
       setwd(oldwd)
@@ -122,7 +145,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
       } else {
 
-        data_def <- list(data = data_api[, !(grepl("_complete", names(data_api)))],
+        data_def <- list(data = data_api,
                          dictionary = dic_api)
 
       }
@@ -135,6 +158,11 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     if(is.character(data_def$data[, i])){
       suppressWarnings(data_def$data[, i] <- stringr::str_conv(data_def$data[, i], "UTF-8"))
     }
+  }
+
+  # Apply labels (just in API cases)
+  if(all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)){
+    data_def$data <- as.data.frame(purrr::map2(data_def$data, labels, ~ labelled::set_variable_labels(.x, .y)))
   }
 
   # Output
