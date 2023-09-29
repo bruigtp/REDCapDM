@@ -1,7 +1,7 @@
 Package: REDCapDM
 Type: Package
 Title: 'REDCap' Data Management
-Version: 0.7.0
+Version: 0.8.0
 Authors@R: c(
     person("João", "Carmezim", email = "jcarmezim@igtp.cat", role = c("aut", "cre")),
     person("Judith", "Peñafiel", role = c("aut")),

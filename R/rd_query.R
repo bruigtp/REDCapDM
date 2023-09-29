@@ -244,15 +244,17 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
 
         # Error: filter results in zero observations
         if (nrow(data) == 0) {
-          warning("The applied filter is accurate, but it does not correspond to any observations. Please ensure that you have selected the appropriate filter.", call. = FALSE)
+          warning("The filter applied is correct but does not match any observations. Please double-check that the filter is properly formulated.", call. = FALSE)
         }
     }
 
     # Variables to be checked for missing values which present a branching logic
     var_logic <- variables[which(variables %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])]
 
-    # We create an object that will contain the branching logic that can't be converted to R logic
+    # We create three objects that will contain the branching logic that can't be converted to R logic
+    compatible <- NULL
     logics <- NULL
+    br_eval <- NULL
 
     # Branching logic detected (only in variables checked for missing values)
     if (length(var_logic) > 0) {
@@ -263,8 +265,11 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
         label = gsub("\\s+", "", gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___\\d*$", "", var_logic)])),
         branch = dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___\\d*$", "", var_logic)])
 
+      # Saving the original data frame before the transformation
+      branch0 <- branch
+
       # We convert the REDCap logic into R logic
-      if (!is.null(event_form) & all(stringr::str_detect(branch$branch, paste(c("\\[", "\\]"), collapse = "|")))) {
+      if ((!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & all(stringr::str_detect(branch$branch, paste(c("\\[", "\\]"), collapse = "|")))) {
 
         for (j in 1:nrow(branch)) {
 
@@ -281,14 +286,16 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
           }
         }
 
-        if (!is.null(logics)) {
+        if (!is.null(logics) & nrow(data) > 0) {
 
-          warning(c("The branching logic of the following variables could not be converted into R logic:", paste0("\n - ", logics), "\n Check the results element of the output(...$results) for details."), call. = F)
+          warning(c("The branching logic of the following variables could not be converted into R logic:", paste0("\n - ", unique(logics)), "\n Check the results element of the output(...$results) for details."), call. = F)
 
         }
       }
 
-      # Arrange the data frame
+      # Arrange the data frames
+      rownames(branch0) <- NULL
+      names(branch0) <- c("Variable", "Label", "Branching logic")
       rownames(branch) <- NULL
       names(branch) <- c("Variable", "Label", "Branching logic")
 
@@ -301,9 +308,45 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
     # Apply an expression to the corresponding variable
     for (i in 1:length(expression)) {
 
+      # If the chosen variable has a branching logic
+      if (length(var_logic) > 0 & (!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & any(!variables[i] %in% logics)) {
+        if (any(variables[i] == var_logic)) {
+
+          logic <- branch %>%
+            dplyr::filter(.data$Variable %in% variables[i]) %>%
+            dplyr::pull(.data$`Branching logic`)
+
+          branching <- NULL
+          command <- paste0("branching", "<-dplyr::filter(data,", gsub(pattern = "data\\$", replacement = "data$", x = logic), ")")
+
+          eval(parse(text = command))
+
+          if(nrow(branching) > 0) {
+
+            compatible <- rbind(compatible, variables[i])
+            raw0 <- branching
+
+          } else {
+
+            br_eval <- rbind(br_eval, variables[i])
+            raw0 <- data
+
+          }
+        } else {
+
+          raw0 <- data
+
+        }
+      } else {
+
+        raw0 <- data
+
+      }
+
+      # Applying the expression
       x <- variables[i]
 
-      command <- paste0("raw", "<-dplyr::filter(data,", gsub("\\bx\\b", x, expression[i]), ")")
+      command <- paste0("raw", "<-dplyr::filter(raw0,", gsub("\\bx\\b", x, expression[i]), ")")
 
       # Evaluation of the command with the resulting expression
       eval(parse(text = command))
@@ -311,21 +354,9 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
       # Transform the expression so it does not contain "x"
       expression[i] <- gsub("\\bx\\b", "", expression[i])
 
-      # If the argument negate is TRUE, reverse the filters apllied so far
+      # If the argument negate is TRUE, reverse the expression apllied
       if (negate == TRUE) {
-        raw <- suppressMessages(dplyr::anti_join(data, raw))
-      }
-
-      # If the chosen variable has a branching logic and there is an event form designation
-      if (length(var_logic) > 0 & (!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & any(!variables[i] %in% logics)) {
-        if (any(variables[i] == var_logic)) {
-
-          logic <- branch %>% dplyr::filter(.data$Variable %in% variables[i]) %>% dplyr::pull(.data$`Branching logic`)
-
-          command <- paste0("raw", "<-dplyr::filter(raw,", gsub(pattern = "data\\$", replacement = "raw$", x = logic), ")")
-
-          eval(parse(text = command))
-        }
+        raw <- suppressMessages(dplyr::anti_join(raw0, raw))
       }
 
       # If there is more than one filter
@@ -404,7 +435,11 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
           Field = variables[i],
           Repetition = if (any(c("redcap_repeat_instrument", "redcap_repeat_instance") %in% names(x))) {
             if ("redcap_repeat_instrument" %in% names(x) & all(is.na(x[, "redcap_repeat_instrument"]))) {
-              paste0(x[, "redcap_repeat_instance"])
+              if ("redcap_repeat_instance" %in% names(x) & all(is.na(x[, "redcap_repeat_instance"]))) {
+                "-"
+              } else {
+                paste0(x[, "redcap_repeat_instance"])
+              }
             } else {
               paste0(x[, "redcap_repeat_instrument"], "-", x[, "redcap_repeat_instance"])
             }
@@ -542,14 +577,36 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
       }
     }
 
+    ## Warnings about the variables with branching logic
+    if (!is.null(br_eval) & nrow(data) > 0) {
+      warning("The branching logic of the following variables can not be applied automatically:", paste0("\n- ", unique(br_eval)), "\nCheck the results element of the output(...$results) for details.", call. = FALSE)
+    }
+
+    if (!is.null(compatible)) {
+      if (length(compatible) > 1) {
+        sentence <- c("The branching logic of the following variables were applied automatically: ", paste0("\n- ", unique(compatible)))
+      } else {
+        sentence <- paste0("The branching logic of the following variable was applied automatically: ", unique(compatible))
+      }
+      warning(sentence, call. = F)
+    }
+
+
     # If the argument 'addTo' is specified, combine the queries generated with a previous data frame of queries
     if (all(!is.na(addTo))) {
-      col_names <- names(queries)
+
+      if ("Link" %in% names(addTo$queries)) {
+        col_names <- c(names(queries), "Link")
+      } else {
+        col_names <- names(queries)
+      }
+
       queries <- merge(queries,
                        addTo$queries,
                        by = intersect(names(addTo$queries), names(queries)),
                        all = TRUE)
-      queries <- queries %>% dplyr::select(dplyr::all_of(col_names))
+      queries <- queries %>%
+        dplyr::select(dplyr::all_of(col_names))
     }
 
     # Classify each query with it's own code
@@ -596,7 +653,7 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
         report$var <- factor(report$var,
                              levels = c(unique(variables)))
         report$descr <- factor(report$descr,
-                               levels = c(trimws(gsub("<.*?>", "", unique(dic$field_label[dic$field_name %in% gsub("___.*$", "", variables)])))))
+                               levels = c(unique(trimws(gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___.*$", "", variables)])))))
 
         # If our project has events, we also convert them to factors
         if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
@@ -698,7 +755,9 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
       # If there is none query, the function still creates a report containing all selected variables.
 
       # Message: if there is none query to be identified
-      message("There is no query to be identified in the dataset.")
+      if (nrow(data) > 0) {
+        message("There is no query to be identified in the dataset.")
+      }
 
       report <- excel_zero
       report$Total <- 0
@@ -715,10 +774,10 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
     }
 
     # Adding information about the variables with branching logic to the report
-    if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      branch$Variable <- stringr::str_trunc(branch$Variable, 26)
+    if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & (!is.null(br_eval) | any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)))) {
+      branch0$Variable <- stringr::str_trunc(branch0$Variable, 26)
       report <- merge(report,
-                      branch %>% dplyr::select("Variable", "Branching logic"),
+                      branch0 %>% dplyr::select("Variable", "Branching logic"),
                       by.x = "Variables", by.y = "Variable", all.x = TRUE)
       report[, "Branching logic"] <- stringr::str_replace_na(report[, "Branching logic"], "-")
     }
@@ -758,7 +817,7 @@ rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event
 
       # If by_dag argument is false
       # If there is a branching logic, we cannot lose the branching logic column
-      if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+      if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & (!is.null(br_eval) | any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)))) {
 
         report <- report %>%
           dplyr::select(-"DAG") %>%

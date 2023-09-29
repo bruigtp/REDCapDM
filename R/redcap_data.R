@@ -50,7 +50,27 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
     # Read dictionary
     setwd(oldwd)
-    dic <- utils::read.csv(paste(dic_path), encoding = "UTF-8", header = FALSE)
+
+    # Evaluate the extension
+    extension <- tools::file_ext(dic_path)
+
+    if (extension == "xlsx") {
+
+      # Read XLSX file
+      dic <- openxlsx::read.xlsx(dic_path, colNames = F, detectDates = T)
+
+    } else if (extension == "csv") {
+
+      # Read CSV file
+      dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE)
+
+    } else {
+
+      stop("Unsupported file format. Only XLSX and CSV are supported.")
+
+    }
+
+    # Changing names of the first column and first observation
     names(dic) <- dic[1,]
     dic <- dic[-1,]
     names(dic) <- janitor::make_clean_names(names(dic))
@@ -72,7 +92,26 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     if(!is.na(event_path)){
 
       setwd(oldwd)
-      event_form <- utils::read.csv(paste(event_path), encoding = "UTF-8")
+
+      # Evaluate the extension
+      extension <- tools::file_ext(event_path)
+
+      if (extension == "xlsx") {
+
+        # Read XLSX file
+        event_form <- openxlsx::read.xlsx(event_path, detectDates = T)
+
+      } else if (extension == "csv") {
+
+        # Read CSV file
+        event_form <- utils::read.csv(event_path, encoding = "UTF-8")
+
+      } else {
+
+        stop("Unsupported file format. Only XLSX and CSV are supported.")
+
+      }
+
       data_def <- list(data = data, dictionary = dic, event_form = event_form)
 
     }else{
@@ -128,7 +167,26 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       warning("The event_path argument is not necessary as the event-form correspondence can be automatically read with the API connection")
 
       setwd(oldwd)
-      event_form <- utils::read.csv(paste(event_path), encoding = "UTF-8")
+
+      # Evaluate the extension
+      extension <- tools::file_ext(event_path)
+
+      if (extension == "xlsx") {
+
+        # Read XLSX file
+        event_form <- openxlsx::read.xlsx(event_path, detectDates = T)
+
+      } else if (extension == "csv") {
+
+        # Read CSV file
+        event_form <- utils::read.csv(event_path, encoding = "UTF-8")
+
+      } else {
+
+        stop("Unsupported file format. Only XLSX and CSV are supported.")
+
+      }
+
       data_def <- list(data = data_api,
                        dictionary = dic_api,
                        event_form = event_form)

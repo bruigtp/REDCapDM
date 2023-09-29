@@ -106,6 +106,9 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     #Change the redcap functions into r functions
     rlogic <- gsub("if\\s?\\(", "ifelse(", rlogic)
     rlogic <- gsub("rounddown(.*),0\\)", "floor\\1)", rlogic)
+    rlogic <- gsub("rounddown(.*),1\\)", "round\\1, 1)", rlogic)
+    rlogic <- gsub("rounddown(.*),2\\)", "round\\1, 2)", rlogic)
+    rlogic <- gsub("rounddown(.*),3\\)", "round\\1, 3)", rlogic)
     rlogic <- gsub("rounddown(.*)\\)", "floor\\1)", rlogic)
     rlogic <- gsub("datediff\\s?", "lubridate::time_length(lubridate::interval", rlogic)
     rlogic <- gsub("sum\\((.*?)\\)","rowSums(cbind(\\1))", rlogic)
@@ -128,6 +131,12 @@ rd_rlogic <- function(..., data = NULL, dic = NULL, event_form = NULL, logic, va
     rlogic <- gsub("\\,\\s?'y'\\,\\s?'dmy'", "), 'year'", rlogic)
     rlogic <- gsub("\\,\\s?'d'\\,\\s?'dmy'", "), 'day'", rlogic)
     rlogic <- gsub("\\,\\s?'m'\\,\\s?'dmy'", "), 'month'", rlogic)
+
+    rlogic <- gsub("\\,\\s?'y'\\)", "), 'year')", rlogic)
+    rlogic <- gsub("\\,\\s?'d'\\)", "), 'day')", rlogic)
+    rlogic <- gsub("\\,\\s?'m'\\)", "), 'month')", rlogic)
+
+
 
     #Change variables specification. If [][] we get the event with the first claudator. If not the event will be the same as the one of the calculated variable
 

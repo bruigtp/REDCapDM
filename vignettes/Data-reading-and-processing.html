@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>REDCapDM - Data reading and processing</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">REDCapDM - Data reading and processing</h1>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#read-data" id="toc-read-data"><span class="toc-section-number">1</span> <strong>Read data</strong></a>
+<ul>
+<li><a href="#local-files" id="toc-local-files"><span class="toc-section-number">1.1</span> <strong>Local
+files</strong></a></li>
+<li><a href="#api-connection" id="toc-api-connection"><span class="toc-section-number">1.2</span> <strong>API
+connection</strong></a></li>
+<li><a href="#output" id="toc-output"><span class="toc-section-number">1.3</span> <strong>Output</strong></a></li>
+</ul></li>
+<li><a href="#process-data" id="toc-process-data"><span class="toc-section-number">2</span> <strong>Process data</strong></a>
+<ul>
+<li><a href="#standard" id="toc-standard"><span class="toc-section-number">2.1</span> <strong>Standard</strong></a></li>
+<li><a href="#by-event" id="toc-by-event"><span class="toc-section-number">2.2</span> <strong>By event</strong></a></li>
+<li><a href="#by-form" id="toc-by-form"><span class="toc-section-number">2.3</span> <strong>By form</strong></a></li>
+</ul></li>
+</ul>
+</div>
+
+<p><br></p>
+<p>This vignette provides a summary of the straightforward and common
+use of <a href="https://github.com/ubidi/REDCapDM">REDCapDM</a> to
+interact with <a href="https://www.project-redcap.org/">REDCap</a>
+data.</p>
+<p><br></p>
+<div id="read-data" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> <strong>Read
+data</strong></h1>
+<p>To import data from <a href="https://www.project-redcap.org/">REDCap</a>, you can use the <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
+function, which provides two primary methods: importing data from local
+files or establishing an API connection.</p>
+<div id="local-files" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> <strong>Local
+files</strong></h2>
+<p>Before starting, ensure you have the required R and CSV files
+exported from <a href="https://www.project-redcap.org/">REDCap</a>,
+including the instrument-event mappings file. All these files should be
+in the same directory for the package to work correctly.</p>
+<p>Use the <code>data_path</code> and <code>dic_path</code> arguments to
+indicate the paths to your R data file and <a href="https://www.project-redcap.org/">REDCap</a> project’s dictionary
+file, respectively. If your <a href="https://www.project-redcap.org/">REDCap</a> project is
+longitudinal, you’ll additionally need to supply the event-form mapping
+file using the <code>event_path</code> argument.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">redcap_data</span>(<span class="at">data_path =</span> <span class="st">&quot;C:/Users/username/example.r&quot;</span>,</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>                       <span class="at">dic_path =</span> <span class="st">&quot;C:/Users/username/example_dictionary.csv&quot;</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>                       <span class="at">event_path =</span> <span class="st">&quot;C:/Users/username/events.csv&quot;</span>)</span></code></pre></div>
+</div>
+<div id="api-connection" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> <strong>API
+connection</strong></h2>
+<p>If you opt for an API connection, you can provide the
+<code>uri</code> (uniform resource identifier) and <code>token</code>
+(user-specific password) for your <a href="https://www.project-redcap.org/">REDCap</a> project. This method
+will automatically retrieve the event-form mapping if your project is
+longitudinal.</p>
+<p>Use both arguments to set up the API connection and import the
+data:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>dataset_api <span class="ot">&lt;-</span> <span class="fu">redcap_data</span>(<span class="at">uri =</span> <span class="st">&quot;https://redcap.idibell.cat/api/&quot;</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>                           <span class="at">token =</span> <span class="st">&quot;55E5C3D1E83213ADA2182A4BFDEA&quot;</span>)</span></code></pre></div>
+</div>
+<div id="output" class="section level2" number="1.3">
+<h2><span class="header-section-number">1.3</span>
+<strong>Output</strong></h2>
+<p>The <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
+function returns a list with three elements:</p>
+<ul>
+<li><p>Imported data: Contains the data from your <a href="https://www.project-redcap.org/">REDCap</a> project</p></li>
+<li><p>Dictionary: Provides information about variables and their
+associated labels.</p></li>
+<li><p>Event-form mapping (only available for longitudinal projects):
+Describes the correspondence between events and forms in your
+project.</p></li>
+</ul>
+<p><br> <br></p>
+</div>
+</div>
+<div id="process-data" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> <strong>Process
+data</strong></h1>
+<p>Having successfully imported our data into R, you can now use the <a href="https://ubidi.github.io/REDCapDM/reference/rd_transform.html"><code>rd_transform()</code></a>
+function to start processing the data.</p>
+<p>This function performs several transformations:</p>
+<ul>
+<li><p>Recalculation of <a href="https://www.project-redcap.org/">REDCap</a> calculated
+fields</p></li>
+<li><p>Checkbox transformation by changing their names to the names of
+their options</p></li>
+<li><p>Replacement of the original variables with their factor
+version</p></li>
+<li><p>Branching logic transformation, converting <a href="https://www.project-redcap.org/">REDCap</a> logic to R
+logic.</p></li>
+<li><p>Elimination of variables containing certain patterns such as
+’_complete’ and ’_timestamp’</p></li>
+</ul>
+<div id="standard" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span>
+<strong>Standard</strong></h2>
+<p>The only essential elements that must be supplied are the dataset to
+be transformed and the corresponding dictionary. In the case of a
+longitudinal project, it is advisable to also specify the event form
+dataset to take full advantage of this function. These elements can be
+directly specified using the output of the <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
+function or separately using distinct arguments:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co">#Option A: list object </span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>covican_transformed <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#Option B: separately with different arguments</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>covican_transformed <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(<span class="at">data =</span> covican<span class="sc">$</span>data, </span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>                                    <span class="at">dic =</span> covican<span class="sc">$</span>dictionary, </span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>                                    <span class="at">event_form =</span> covican<span class="sc">$</span>event_form)</span></code></pre></div>
+<p>This function returns a list containing the transformed dataset,
+dictionary, event_form and the results of each transformation. To
+retrieve the results of the transformation, use the following code
+block:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co">#Print the results of the transformation</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>covican_transformed<span class="sc">$</span>results</span></code></pre></div>
+<pre><code>1. Recalculating calculated fields and saving them as &#39;[field_name]_recalc&#39;
+
+| Total calculated fields | Non-transcribed fields | Recalculated different fields |
+|:-----------------------:|:----------------------:|:-----------------------------:|
+|            2            |         0 (0%)         |            1 (50%)            |
+
+
+|     field_name      | Transcribed? | Is equal? |
+|:-------------------:|:------------:|:---------:|
+|         age         |     Yes      |   FALSE   |
+| screening_fail_crit |     Yes      |   TRUE    |
+
+2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
+
+Table: Checkbox variables advisable to be reviewed
+
+| Variables without any branching logic |
+|:-------------------------------------:|
+|        type_underlying_disease        |
+
+3. Replacing original variables for their factor version
+
+4. Converting every branching logic in the dictionary into R logic
+
+5. Deleting variables that contain some patterns</code></pre>
+</div>
+<div id="by-event" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> <strong>By
+event</strong></h2>
+<p>If the <a href="https://www.project-redcap.org/">REDCap</a> project
+is longitudinal, you can further adjust the structure of the transformed
+dataset. For example, it can be split by event:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_event&quot;</span>)</span></code></pre></div>
+<p>Where the transformed dataset is a tibble object, containing data
+frames for each event in the <a href="https://www.project-redcap.org/">REDCap</a> project.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>dataset<span class="sc">$</span>data</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 3</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt;   events                   vars       df             </span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                    &lt;list&gt;     &lt;list&gt;         </span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt; 1 baseline_visit_arm_1     &lt;chr [31]&gt; &lt;df [190 × 36]&gt;</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; 2 follow_up_visit_da_arm_1 &lt;chr [4]&gt;  &lt;df [152 × 9]&gt;</span></span></code></pre></div>
+</div>
+<div id="by-form" class="section level2" number="2.3">
+<h2><span class="header-section-number">2.3</span> <strong>By
+form</strong></h2>
+<p>Or, alternatively, it can be split by form:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican,</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>                        <span class="at">final_format =</span> <span class="st">&quot;by_form&quot;</span>)</span></code></pre></div>
+<p>Where the tibble object is composed by data frames corresponding to
+each form in the <a href="https://www.project-redcap.org/">REDCap</a>
+project.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>dataset<span class="sc">$</span>data</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 7 × 4</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt;   form                        events    vars        df             </span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                       &lt;list&gt;    &lt;list&gt;      &lt;list&gt;         </span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; 1 inclusionexclusion_criteria &lt;chr [1]&gt; &lt;glue [7]&gt;  &lt;df [190 × 11]&gt;</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; 2 demographics                &lt;chr [1]&gt; &lt;glue [4]&gt;  &lt;df [190 × 9]&gt; </span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; 3 comorbidities               &lt;chr [1]&gt; &lt;glue [5]&gt;  &lt;df [190 × 10]&gt;</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; 4 cancer                      &lt;chr [1]&gt; &lt;glue [11]&gt; &lt;df [190 × 16]&gt;</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt; 5 vital_signs                 &lt;chr [2]&gt; &lt;glue [2]&gt;  &lt;df [342 × 7]&gt; </span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; 6 laboratory_findings         &lt;chr [2]&gt; &lt;glue [2]&gt;  &lt;df [342 × 7]&gt; </span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; 7 microbiological_studies     &lt;chr [1]&gt; &lt;glue [1]&gt;  &lt;df [190 × 6]&gt;</span></span></code></pre></div>
+<p><br> <br></p>
+<p><strong>For more information, consult the complete vignette available
+at: <a href="https://ubidi.github.io/REDCapDM/articles/REDCapDM.html" class="uri">https://ubidi.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+<p><br> <br></p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,3 +1,15 @@
+# REDCapDM 0.8-0
+
+## Changes to functions
+
+- The _redcap_data()_ function can now read data from xlsx files.
+
+## Minor Changes
+
+- Small bugs fixed in some of the functions
+
+- Added new vignettes for a simpler use of the functions
+
 # REDCapDM 0.7-0
 
 2023-06-02

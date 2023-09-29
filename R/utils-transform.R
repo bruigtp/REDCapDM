@@ -29,12 +29,12 @@ recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
     dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude_recalc) %>%
     dplyr::mutate(
       calc = purrr::map(.data$field_name, function(x) {
-          val <- data[, x]
-          if(is.numeric(val)){
-            as.numeric(val)
-          } else {
-            val
-          }
+        val <- data[, x]
+        if(is.numeric(val)){
+          as.numeric(val)
+        } else {
+          val
+        }
       }),
       rlogic = purrr::map2(.data$choices_calculations_or_slider_labels, .data$field_name, function(x, y) {
         rlogic <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = x, var = y), silent = TRUE)
@@ -50,7 +50,7 @@ recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
         }else{
           NA
         }
-        }),
+      }),
       recalc = purrr::map(.data$rlogic, function(x){
         if(!is.null(x)){
           x$eval
@@ -86,13 +86,13 @@ recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
       name <- stringr::str_glue("{calc_change$field_name[i]}_recalc")
 
       data <- data %>%
-        tibble::add_column("{name}" := calc_change$recalc[[i]], .after = calc_change$field_name[i])
+        tibble::add_column("{name}" := calc_change$recalc[[i]], .after = as.character(calc_change$field_name[i]))
 
       add_row <- dic %>%
         dplyr::filter(.data$field_name == calc_change$field_name[i]) %>%
         dplyr::mutate(
-               field_name = stringr::str_glue("{field_name}_recalc"),
-               field_label = stringr::str_glue("{field_label} (Recalculate)")
+          field_name = stringr::str_glue("{field_name}_recalc"),
+          field_label = stringr::str_glue("{field_label} (Recalculate)")
         )
 
       dic <- rbind(dic, add_row)
@@ -112,7 +112,7 @@ recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
       no_equal = sum(!.data$is_equal, na.rm = TRUE),
     ) %>%
     dplyr::mutate(text1 = stringr::str_glue("{no_trans} ({round(no_trans*100/N, 2)}%)"),
-           text2 = stringr::str_glue("{no_equal} ({round(no_equal*100/trans, 2)}%)")
+                  text2 = stringr::str_glue("{no_equal} ({round(no_equal*100/trans, 2)}%)")
     ) %>%
     dplyr::select("Total calculated fields" = "N", "Non-transcribed fields" = "text1", "Recalculated different fields" = "text2")
 
@@ -166,7 +166,7 @@ transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FAL
       logic <- dic$branching_logic_show_field_only_if[dic$field_name==vars[i]]
 
       #If there is one
-      if(!logic %in% ""){
+      if(!is.na(logic) & !logic %in% ""){
 
         #Translate the REDCap logic to r language using rd_rlogic function
 
@@ -625,6 +625,7 @@ fill_data <- function(which_event, which_var, data){
 
     fill_values <- data %>%
       dplyr::select("record_id", "redcap_event_name", tidyselect::all_of(which_var)) %>%
+      dplyr::rename(var = which_var) %>%
       dplyr::group_by(.data$record_id) %>%
       dplyr::mutate(
         var = dplyr::case_when(
@@ -634,7 +635,7 @@ fill_data <- function(which_event, which_var, data){
         #Only the first value if the event is repeated
         var = stats::na.exclude(unique(.data$var))[1]
       ) %>%
-      tidyr::fill(.data$var, .direction = "downup") %>%
+      tidyr::fill("var", .direction = "downup") %>%
       dplyr::pull("var")
 
     data[,which_var] <- fill_values

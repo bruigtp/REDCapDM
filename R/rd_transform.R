@@ -91,6 +91,16 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     warning("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
   }
 
+  #Check if the project has repeated instruments
+  if("redcap_repeat_instrument" %in% names(data)) {
+    repeat_instrument <- dplyr::case_when(
+      any(!is.na(data$redcap_repeat_instrument)) ~ TRUE,
+      TRUE ~ FALSE
+    )
+  } else {
+    repeat_instrument <- FALSE
+  }
+
   message("Transformation in progress...")
 
   labels <- purrr::map_chr(data, function(x) {
@@ -134,7 +144,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     dplyr::mutate(branching_logic_show_field_only_if = dplyr::case_when(is.na(branching_logic_show_field_only_if) ~ "",
                                                                         TRUE ~ branching_logic_show_field_only_if))
 
-  if (!"redcap_repeat_instrument" %in% names(data)) {
+  if (!repeat_instrument) {
     #Recalculate calculated fields (previous to transforming factors and other preprocessing)
     #It wil create duplicate variables of each calculated field with "_recalc" in the end and the recalculated value
 
@@ -159,7 +169,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
   }
 
 
-  if (!"redcap_repeat_instrument" %in% names(data)) {
+  if (!repeat_instrument) {
     if(checkbox_na){
       results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing\n\n"))
     }else{
@@ -204,7 +214,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
     } else {
 
-      if (!"redcap_repeat_instrument" %in% names(data)) {
+      if (!repeat_instrument) {
 
         #Transform missings of checkboxes with branching logic:
         trans <- transform_checkboxes(data = data, dic = dic, event_form = event_form, checkbox_na = checkbox_na)
@@ -260,7 +270,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     #Fix factors:
     dplyr::mutate_if(is.factor,function(x){levels(x)[levels(x)==""] <- NA; x})
 
-  if (!"redcap_repeat_instrument" %in% names(data)) {
+  if (!repeat_instrument) {
     # Transform the branching logic from the dictionary which is in REDCap logic (raw) into R logic
     results <- c(results, stringr::str_glue("\n\n{ind}. Converting every branching logic in the dictionary into R logic"))
     ind <- ind + 1
@@ -354,7 +364,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
       if(is.null(which_event)){
 
-        data <- split_event(data,dic,event_form)
+        data <- split_event(data, dic, event_form)
 
       }else{
 

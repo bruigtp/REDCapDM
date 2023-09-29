@@ -103,7 +103,7 @@ vars <- data.frame("Name" = names(covican$data %>% dplyr::select(record_id:acute
                    "Categories" = descr[seq(2, length(descr), 2)])
 
 kable(vars) %>% 
-  kableExtra::row_spec(0,bold=TRUE) %>% 
+  kableExtra::row_spec(0, bold=TRUE) %>% 
   kableExtra::kable_styling(full_width = F)
 ```
 
@@ -395,8 +395,7 @@ First, we will examine the output of this function. When the `rd_query()` functi
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 example <- rd_query(covican_transformed,
                     variables = "copd",
-                    expression = "is.na(x)",
-                    event = "baseline_visit_arm_1")
+                    expression = "is.na(x)")
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
@@ -817,7 +816,7 @@ check <- check_queries(old = example$queries,
 check$results
 ```
 
-There are 7 unchanged queries, 3 corrected queries, 1 modified query, and 1 new query between the previous and the new query dataset.
+There are 7 queries pending resolution, 4 solved queries, 1 miscorrected query, and 1 new query between the previous and the new query dataset.
 
 Note: The "Miscorrected" category includes queries that belong to the same combination of record identifier and variable in both the old and new reports, but with a different reason. For instance, if a variable had a missing value in the old report, but in the new report shows a value outside the established range, it would be classified as "Miscorrected".
 
