@@ -132,7 +132,8 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     # First read the labels
     labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label_headers = "label")$data)
 
-    labels <- gsub("\\)(.*\\))", "\\1", gsub("(\\(.*)\\(", "\\1", names(labels)))
+    labels <- gsub("\\)(.*\\))", "\\1",
+                   gsub("(\\(.*)\\(", "\\1", names(labels)))
 
     # Read data using the API connection
     data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label")$data
@@ -216,11 +217,6 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     if(is.character(data_def$data[, i])){
       suppressWarnings(data_def$data[, i] <- stringr::str_conv(data_def$data[, i], "UTF-8"))
     }
-  }
-
-  # Apply labels (just in API cases)
-  if(all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)){
-    data_def$data <- as.data.frame(purrr::map2(data_def$data, labels, ~ labelled::set_variable_labels(.x, .y)))
   }
 
   # Output
