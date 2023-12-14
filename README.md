@@ -9,7 +9,7 @@ Type: Package
 
 Title: REDCap Data Management
 
-Version: 0.8.0
+Version: 0.9.0
 
 Authors: João Carmezim, Judith Peñafiel, Pau Satorra, Esther García, Natàlia Pallarés, Naiara Santos, Cristian Tebé.
 
