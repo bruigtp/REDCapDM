@@ -12,13 +12,14 @@
 #' @param event_path Character string with the pathname of the file containing the correspondence between each event and each form (it can be downloaded through the `Designate Instruments for My Events` tab inside the `Project Setup` section of REDCap)
 #' @param uri The URI (Uniform Resource Identification) of the REDCap project.
 #' @param token Character vector with the generated token.
+#' @param filter_field Character vector with the fields of the REDCap project desired to import into R.
 #' @return List containing the dataset and the dictionary of the REDCap project. If the event_path is specified, it will also contain a third element with the correspondence of the events & forms of the project.
 #'
 #' @note To read exported data, you must first use REDCap's 'Export Data' function and select the 'R Statistical Software' format. It will then generate a CSV file with all the observations and an R file with the necessary code to complete each variable's information.
 #'
 #' @export
 
-redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA)
+redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NA)
   {
   oldwd <- getwd()
   on.exit(setwd(oldwd))
@@ -130,13 +131,27 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
   if(all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)){
 
     # First read the labels
-    labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label_headers = "label")$data)
+    if (all(filter_field %in% NA)) {
+
+    labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label_headers = "label", export_data_access_groups = TRUE)$data)
+
+    } else {
+
+      labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
+
+    }
 
     labels <- gsub("\\)(.*\\))", "\\1",
                    gsub("(\\(.*)\\(", "\\1", names(labels)))
 
     # Read data using the API connection
-    data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label")$data
+
+    if (all(filter_field %in% NA)) {
+      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", export_data_access_groups = TRUE)$data
+    } else {
+      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", export_data_access_groups = TRUE, fields = filter_field)$data
+    }
+
 
     if (nrow(data_api) > 0) {
       names(data_api)[1] <- "record_id"

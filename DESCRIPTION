@@ -1,11 +1,11 @@
 Package: REDCapDM
 Type: Package
 Title: 'REDCap' Data Management
-Version: 0.8.0
+Version: 0.9.0
 Authors@R: c(
     person("João", "Carmezim", email = "jcarmezim@igtp.cat", role = c("aut", "cre")),
-    person("Judith", "Peñafiel", role = c("aut")),
     person("Pau", "Satorra", role = c("aut")),
+    person("Judith", "Peñafiel", role = c("aut")),
     person("Esther", "García", role = c("aut")),
     person("Natàlia", "Pallarés", role = c("aut")),
     person("Cristian", "Tebé", role = c("aut"))
@@ -31,7 +31,8 @@ Imports:
     tidyselect,
     utils,
     stringi,
-    labelled
+    labelled,
+    cli
 Suggests: 
     knitr,
     rmarkdown,

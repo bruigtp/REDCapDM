@@ -1,3 +1,20 @@
+# REDCapDM 0.9-0
+
+## Changes to functions
+
+- Added a new argument (filter_field) to the _redcap_data()_ function that allows the user to select which fields to import into R, instead of having to import all fields of the project.
+
+## Bug fixes
+
+- Fixed an error when transforming data imported through an API connection (rd_transform).
+
+
+# REDCapDM 0.8-5
+
+## Bug fixes
+
+- Fixed a major error when importing data through an API connection.
+
 # REDCapDM 0.8-0
 
 ## Changes to functions

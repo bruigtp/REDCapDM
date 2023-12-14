@@ -9,7 +9,8 @@ redcap_data(
   dic_path = NA,
   event_path = NA,
   uri = NA,
-  token = NA
+  token = NA,
+  filter_field = NA
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ redcap_data(
 \item{uri}{The URI (Uniform Resource Identification) of the REDCap project.}
 
 \item{token}{Character vector with the generated token.}
+
+\item{filter_field}{Character vector with the fields of the REDCap project desired to import into R.}
 }
 \value{
 List containing the dataset and the dictionary of the REDCap project. If the event_path is specified, it will also contain a third element with the correspondence of the events & forms of the project.

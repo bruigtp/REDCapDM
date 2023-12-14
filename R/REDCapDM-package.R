@@ -1,5 +1,6 @@
 #' @docType package
 #' @name REDCapDM-package
+#' @keywords internal
 #' @aliases REDCapDM
 #' @title Managing REDCap Data: The R package REDCapDM
 #' @description

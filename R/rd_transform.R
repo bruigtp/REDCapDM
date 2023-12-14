@@ -330,8 +330,13 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
 
   #Arrange our dataset by record_id and event (will keep the same order of events as in redcap)
   if(longitudinal) {
-    data <- data %>%
-      dplyr::arrange(factor(.data$record_id, levels = unique(.data$record_id)), .data$redcap_event_name.factor)
+    if("redcap_event_name.factor" %in% names(data)) {
+      data <- data %>%
+        dplyr::arrange(factor(.data$record_id, levels = unique(.data$record_id)), .data$redcap_event_name.factor)
+    } else {
+      data <- data %>%
+        dplyr::arrange(factor(.data$record_id, levels = unique(.data$record_id)), .data$redcap_event_name)
+    }
   }
 
 
