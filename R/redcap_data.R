@@ -12,7 +12,7 @@
 #' @param event_path Character string with the pathname of the file containing the correspondence between each event and each form (it can be downloaded through the `Designate Instruments for My Events` tab inside the `Project Setup` section of REDCap)
 #' @param uri The URI (Uniform Resource Identification) of the REDCap project.
 #' @param token Character vector with the generated token.
-#' @param filter_field Character vector with the fields of the REDCap project desired to import into R.
+#' @param filter_field Character vector with the fields of the REDCap project desired to import into R (API connection only)<.
 #' @return List containing the dataset and the dictionary of the REDCap project. If the event_path is specified, it will also contain a third element with the correspondence of the events & forms of the project.
 #'
 #' @note To read exported data, you must first use REDCap's 'Export Data' function and select the 'R Statistical Software' format. It will then generate a CSV file with all the observations and an R file with the necessary code to complete each variable's information.
@@ -130,26 +130,51 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
   # Read data, dictionary and event-form mapping in case of an API connection.
   if(all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)){
 
+    # Message
+    message("Importing in progress...")
+
     # First read the labels
     if (all(filter_field %in% NA)) {
 
-    labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label_headers = "label", export_data_access_groups = TRUE)$data)
+    labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE)$data)
 
     } else {
 
-      labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
+      labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
 
     }
 
-    labels <- gsub("\\)(.*\\))", "\\1",
-                   gsub("(\\(.*)\\(", "\\1", names(labels)))
+    # Save the factor version of the default variables of redcap
+    redcap_names <- names(labels %>%
+                            dplyr::select(dplyr::any_of(c("Event Name", "Repeat Instrument", "Data Access Group"))))
+
+    default_names <- data.frame(fac = redcap_names) %>%
+      dplyr::mutate(corres = dplyr::case_when(fac %in% "Event Name" ~ "redcap_event_name.factor",
+                                              fac %in% "Repeat Instrument" ~ "redcap_repeat_instrument.factor",
+                                              fac %in% "Data Access Group" ~ "redcap_data_access_group.factor"))
+
+    rename_redcap <- default_names$fac
+    names(rename_redcap) <- default_names$corres
+
+    main_vars <- labels %>%
+      dplyr::mutate_at(redcap_names[!redcap_names %in% "Repeat Instrument"], ~forcats::fct_inorder(.)) %>%
+      dplyr::rename("record_id" = "Record ID",
+                    dplyr::all_of(rename_redcap)) %>%
+      dplyr::select("record_id", default_names$corres)
+
+    # Remove the "...number" suffixes from the labels
+    labels <- gsub("\\.{3}\\d+$", "", names(labels))
+
+
+    # Message
+    message("Almost done...")
 
     # Read data using the API connection
 
     if (all(filter_field %in% NA)) {
-      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", export_data_access_groups = TRUE)$data
+      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE)$data
     } else {
-      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", export_data_access_groups = TRUE, fields = filter_field)$data
+      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, fields = filter_field)$data
     }
 
 
@@ -159,19 +184,64 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       stop("No observational data is available for reading. Please ensure that you add records to your REDCap project.", call. = F)
     }
 
-    # Apply labels
-    data_api <- as.data.frame(purrr::map2(data_api, labels, ~labelled::set_variable_labels(.x, .y)))
-
     # Read dictionary using the API connection
     dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
 
     ## Making sure the names of both dictionaries(exported data and API connection) match
     names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
 
+    # Apply labels
+    data_api <- as.data.frame(purrr::map2(data_api, labels, ~labelled::set_variable_labels(.x, .y, .strict = FALSE)))
+
     # Remove descriptive variables from dictionary
     if ("descriptive" %in% dic_api$field_type) {
       dic_api <- dic_api %>% dplyr::filter(!.data$field_type %in% "descriptive")
     }
+
+    # If filter_field is described, filter the variables in the dictionary
+    if (!all(filter_field %in% NA)) {
+      dic_api <- dic_api %>% dplyr::filter(.data$field_name %in% filter_field)
+    }
+
+    # Identify checkboxes fields and convert them to factor using the dictionary as guide
+
+    if (sum(dic_api$field_type %in% "checkbox") > 0) {
+
+      var_check <- names(data_api)[grep("___", names(data_api))]
+
+      data_api <- data_api %>%
+        dplyr::mutate(dplyr::across(dplyr::all_of(var_check), ~ factor(., levels = c("0", "1"), labels = c("Unchecked", "Checked")), .names = "{col}.factor"))
+
+    }
+
+    # Identify radio buttons and dropdown fields and convert them to factor using the dictionary as guide
+
+    if (sum(dic_api$field_type %in% c("radio", "dropdown")) > 0) {
+
+      var_radio <- dic_api %>%
+        dplyr::filter(.data$field_type %in% c("radio", "dropdown")) %>%
+        dplyr::select("field_name", "field_type", "choices_calculations_or_slider_labels") %>%
+        dplyr::mutate(labels = paste0(gsub("^\\d+, ", "'", gsub("\\| ?\\d+, ?", "', '", .data$choices_calculations_or_slider_labels)), "'"),
+                      levels = c(stringr::str_extract_all(.data$choices_calculations_or_slider_labels, "(\\d+),"))) %>%
+        dplyr::rowwise() %>%
+        dplyr::mutate(dplyr::across(levels, ~ gsub(", ?$", "", gsub(",, ", ", ", toString(unique(unlist(.))))))) %>%
+        dplyr::ungroup()
+
+      for (i in var_radio$field_name) {
+        eval(parse(text = paste0("data_api <- data_api %>%
+      dplyr::mutate(dplyr::across(dplyr::all_of(i), ~factor(.,
+                                      levels = ", parse(text = paste0("c(", var_radio[var_radio$field_name %in% i, "levels"] %>% as.character, ")")),",
+                                      labels = ", parse(text = paste0("c(", var_radio[var_radio$field_name %in% i, "labels"] %>% as.character, ")")), '),
+                           .names = "{col}.factor"))')))
+      }
+
+    }
+
+    # Join the main_vars to the imported data
+
+    data_api <- data_api %>%
+      dplyr::bind_cols(main_vars %>% dplyr::select(-"record_id"))
+
 
     # Indicator of longitudinal projects
     longitudinal <- ifelse("redcap_event_name" %in% names(data_api), TRUE, FALSE)
@@ -225,6 +295,9 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       }
 
     }
+
+    # Message
+    message("Done!")
   }
 
   # Specifying the "UTF-8" encoding to each character column of the data

@@ -137,6 +137,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
         x == "" ~ NA,
         TRUE ~ x
       )
+      x <- as.numeric(as.character(x))
       as.POSIXct(x)
     })
 

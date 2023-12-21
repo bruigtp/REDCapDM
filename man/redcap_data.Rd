@@ -24,7 +24,7 @@ redcap_data(
 
 \item{token}{Character vector with the generated token.}
 
-\item{filter_field}{Character vector with the fields of the REDCap project desired to import into R.}
+\item{filter_field}{Character vector with the fields of the REDCap project desired to import into R (API connection only)<.}
 }
 \value{
 List containing the dataset and the dictionary of the REDCap project. If the event_path is specified, it will also contain a third element with the correspondence of the events & forms of the project.

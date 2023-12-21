@@ -1,3 +1,10 @@
+# REDCapDM 0.9-5
+
+## Changes 
+
+- Huge improvement in reading and transforming data through the API connection. Now the final output will be the same as the one resulting from using the default files exported from REDCap.
+
+
 # REDCapDM 0.9-0
 
 ## Changes to functions
