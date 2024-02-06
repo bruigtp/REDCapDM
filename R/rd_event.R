@@ -19,8 +19,8 @@
 #' example <- rd_event(covican,
 #'                     event = "follow_up_visit_da_arm_1")
 #' example
-#' @importFrom rlang .data
 #' @export
+#' @importFrom rlang .data
 
 rd_event <- function(..., data = NULL, dic = NULL, event, filter = NA, query_name = NA, addTo = NA, report_title = NA, report_zeros = FALSE, link = list())
   {

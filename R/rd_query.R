@@ -44,8 +44,8 @@
 #'                     event = "baseline_visit_arm_1",
 #'                     filter = "available_analytics=='1'")
 #' example
-#' @importFrom rlang .data
 #' @export
+#' @importFrom rlang .data
 
 rd_query <- function(..., variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, addTo = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list(), data = NULL, dic = NULL, event_form = NULL)
   {

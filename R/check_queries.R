@@ -16,7 +16,6 @@
 #' # Control of queries
 #' check <- check_queries(old = data_old$queries,
 #'                        new = data_new)
-#' @importFrom rlang .data
 #' @export
 
 check_queries <-function(old, new, report_title = NULL)

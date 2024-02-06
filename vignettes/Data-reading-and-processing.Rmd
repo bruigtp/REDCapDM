@@ -26,13 +26,13 @@ library(purrr)
 
 <br>
 
-This vignette provides a summary of the straightforward and common use of [REDCapDM](https://github.com/ubidi/REDCapDM) to interact with [REDCap](https://www.project-redcap.org/) data.
+This vignette provides a summary of the straightforward and common use of [REDCapDM](https://github.com/bruigtp/REDCapDM) to interact with [REDCap](https://www.project-redcap.org/) data.
 
 <br>
 
 # **Read data**
 
-To import data from [REDCap](https://www.project-redcap.org/), you can use the [`redcap_data()`](https://ubidi.github.io/REDCapDM/reference/redcap_data.html) function, which provides two primary methods: importing data from local files or establishing an API connection.
+To import data from [REDCap](https://www.project-redcap.org/), you can use the [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html) function, which provides two primary methods: importing data from local files or establishing an API connection.
 
 ## **Local files**
 
@@ -59,7 +59,7 @@ dataset_api <- redcap_data(uri = "https://redcap.idibell.cat/api/",
 
 ## **Output**
 
-The [`redcap_data()`](https://ubidi.github.io/REDCapDM/reference/redcap_data.html) function returns a list with three elements:
+The [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html) function returns a list with three elements:
 
 -   Imported data: Contains the data from your [REDCap](https://www.project-redcap.org/) project
 
@@ -72,7 +72,7 @@ The [`redcap_data()`](https://ubidi.github.io/REDCapDM/reference/redcap_data.htm
 
 # **Process data**
 
-Having successfully imported our data into R, you can now use the [`rd_transform()`](https://ubidi.github.io/REDCapDM/reference/rd_transform.html) function to start processing the data.
+Having successfully imported our data into R, you can now use the [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.html) function to start processing the data.
 
 This function performs several transformations:
 
@@ -88,7 +88,7 @@ This function performs several transformations:
 
 ## **Standard**
 
-The only essential elements that must be supplied are the dataset to be transformed and the corresponding dictionary. In the case of a longitudinal project, it is advisable to also specify the event form dataset to take full advantage of this function. These elements can be directly specified using the output of the [`redcap_data()`](https://ubidi.github.io/REDCapDM/reference/redcap_data.html) function or separately using distinct arguments:
+The only essential elements that must be supplied are the dataset to be transformed and the corresponding dictionary. In the case of a longitudinal project, it is advisable to also specify the event form dataset to take full advantage of this function. These elements can be directly specified using the output of the [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html) function or separately using distinct arguments:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 #Option A: list object 
@@ -140,7 +140,7 @@ dataset$data
 <br>
 <br>
 
-**For more information, consult the complete vignette available at: https://ubidi.github.io/REDCapDM/articles/REDCapDM.html**
+**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html**
 
 <br>
 <br>

@@ -28,14 +28,14 @@ covican_transformed <- rd_transform(covican)
 
 <br>
 
-This vignette provides a summary of the simple and common use of [REDCapDM](https://github.com/ubidi/REDCapDM) to identify discrepancies in [REDCap](https://www.project-redcap.org/) data imported into R.
+This vignette provides a summary of the simple and common use of [REDCapDM](https://github.com/bruigtp/REDCapDM) to identify discrepancies in [REDCap](https://www.project-redcap.org/) data imported into R.
 
 <br>
 
 
 # **Queries**
 
-Queries are crucial for the accuracy and reliability of a [REDCap](https://www.project-redcap.org/) dataset. They help identify missing values, inconsistencies, and potential errors in the collected data. The [`rd_query()`](https://ubidi.github.io/REDCapDM/reference/rd_query.html) function allows you to generate queries using a specific expression.
+Queries are crucial for the accuracy and reliability of a [REDCap](https://www.project-redcap.org/) dataset. They help identify missing values, inconsistencies, and potential errors in the collected data. The [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.html) function allows you to generate queries using a specific expression.
 
 To identify missing values in certain variables, simply provide the relevant information to the `variables` and `expression` arguments. In this scenario, the expression would be 'is.na(x)', where 'x' represents the variable itself:
 
@@ -80,7 +80,7 @@ example$results
 
 <br>
 
-For longitudinal projects, the [`rd_event()`](https://ubidi.github.io/REDCapDM/reference/rd_event.html) allows you to check if a particular event is missing from a record in the exported data. This happens in REDCap when there is no collected data in a particular event from a record, as REDCap will not export the corresponding row. To identify these cases, you can use the following code:
+For longitudinal projects, the [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.html) allows you to check if a particular event is missing from a record in the exported data. This happens in REDCap when there is no collected data in a particular event from a record, as REDCap will not export the corresponding row. To identify these cases, you can use the following code:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_event(covican_transformed,
@@ -94,7 +94,7 @@ example <- rd_event(covican_transformed,
 
 After identifying queries, it is common practice to correct the original dataset in [REDCap](https://www.project-redcap.org/) and re-run the query process for a new query dataset.
 
-The [`check_queries()`](https://ubidi.github.io/REDCapDM/reference/check_queries.html) functiona allows you to compare the previous query dataset with the new one:
+The [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.html) functiona allows you to compare the previous query dataset with the new one:
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 example <- rd_query(covican_transformed,
@@ -157,7 +157,7 @@ In both cases, a message will be generated in the console informing you that the
 <br>
 <br>
 
-**For more information, consult the complete vignette available at: https://ubidi.github.io/REDCapDM/articles/REDCapDM.html**
+**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html**
 
 <br>
 <br>

@@ -572,7 +572,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 </div>
 
 <p><br></p>
-<p>This vignette provides a summary of the simple and common use of <a href="https://github.com/ubidi/REDCapDM">REDCapDM</a> to identify
+<p>This vignette provides a summary of the simple and common use of <a href="https://github.com/bruigtp/REDCapDM">REDCapDM</a> to identify
 discrepancies in <a href="https://www.project-redcap.org/">REDCap</a>
 data imported into R.</p>
 <p><br></p>
@@ -581,7 +581,7 @@ data imported into R.</p>
 <strong>Queries</strong></h1>
 <p>Queries are crucial for the accuracy and reliability of a <a href="https://www.project-redcap.org/">REDCap</a> dataset. They help
 identify missing values, inconsistencies, and potential errors in the
-collected data. The <a href="https://ubidi.github.io/REDCapDM/reference/rd_query.html"><code>rd_query()</code></a>
+collected data. The <a href="https://bruigtp.github.io/REDCapDM/reference/rd_query.html"><code>rd_query()</code></a>
 function allows you to generate queries using a specific expression.</p>
 <p>To identify missing values in certain variables, simply provide the
 relevant information to the <code>variables</code> and
@@ -766,7 +766,7 @@ The value should not be greater than 4.2 and less than 4.3
 </tbody>
 </table>
 <p><br></p>
-<p>For longitudinal projects, the <a href="https://ubidi.github.io/REDCapDM/reference/rd_event.html"><code>rd_event()</code></a>
+<p>For longitudinal projects, the <a href="https://bruigtp.github.io/REDCapDM/reference/rd_event.html"><code>rd_event()</code></a>
 allows you to check if a particular event is missing from a record in
 the exported data. This happens in REDCap when there is no collected
 data in a particular event from a record, as REDCap will not export the
@@ -782,7 +782,7 @@ code:</p>
 <p>After identifying queries, it is common practice to correct the
 original dataset in <a href="https://www.project-redcap.org/">REDCap</a>
 and re-run the query process for a new query dataset.</p>
-<p>The <a href="https://ubidi.github.io/REDCapDM/reference/check_queries.html"><code>check_queries()</code></a>
+<p>The <a href="https://bruigtp.github.io/REDCapDM/reference/check_queries.html"><code>check_queries()</code></a>
 functiona allows you to compare the previous query dataset with the new
 one:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>check <span class="ot">&lt;-</span> <span class="fu">check_queries</span>(<span class="at">old =</span> example<span class="sc">$</span>queries, </span>
@@ -868,7 +868,7 @@ customise this exported file:</p>
 you that the file has been created and where it is located.</p>
 <p><br> <br></p>
 <p><strong>For more information, consult the complete vignette available
-at: <a href="https://ubidi.github.io/REDCapDM/articles/REDCapDM.html" class="uri">https://ubidi.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
 <p><br> <br></p>
 </div>
 

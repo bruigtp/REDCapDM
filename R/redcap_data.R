@@ -140,7 +140,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
     } else {
 
-      labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
+      labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = F, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
 
     }
 
@@ -184,8 +184,11 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       stop("No observational data is available for reading. Please ensure that you add records to your REDCap project.", call. = F)
     }
 
+
     # Read dictionary using the API connection
     dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
+
+    names(dic_api)[1] <- "field_name"
 
     ## Making sure the names of both dictionaries(exported data and API connection) match
     names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
@@ -220,19 +223,16 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
       var_radio <- dic_api %>%
         dplyr::filter(.data$field_type %in% c("radio", "dropdown")) %>%
-        dplyr::select("field_name", "field_type", "choices_calculations_or_slider_labels") %>%
-        dplyr::mutate(labels = paste0(gsub("^\\d+, ", "'", gsub("\\| ?\\d+, ?", "', '", .data$choices_calculations_or_slider_labels)), "'"),
-                      levels = c(stringr::str_extract_all(.data$choices_calculations_or_slider_labels, "(\\d+),"))) %>%
-        dplyr::rowwise() %>%
-        dplyr::mutate(dplyr::across(levels, ~ gsub(", ?$", "", gsub(",, ", ", ", toString(unique(unlist(.))))))) %>%
-        dplyr::ungroup()
+        dplyr::select("field_name", "field_type", "choices_calculations_or_slider_labels")%>%
+        dplyr::mutate(factor = purrr::map(choices_calculations_or_slider_labels, ~stringr::str_split(.x, "\\|") %>% unlist %>% trimws),
+                      levels = purrr::map(factor, ~gsub("^(\\d+),.*", "\\1", .x) %>% as.numeric),
+                      labels = purrr::map(factor, ~gsub("^\\d+, ?", "", .x)))
+
 
       for (i in var_radio$field_name) {
-        eval(parse(text = paste0("data_api <- data_api %>%
-      dplyr::mutate(dplyr::across(dplyr::all_of(i), ~factor(.,
-                                      levels = ", parse(text = paste0("c(", var_radio[var_radio$field_name %in% i, "levels"] %>% as.character, ")")),",
-                                      labels = ", parse(text = paste0("c(", var_radio[var_radio$field_name %in% i, "labels"] %>% as.character, ")")), '),
-                           .names = "{col}.factor"))')))
+        data_api[[stringr::str_glue("{i}.factor")]] <- factor(data_api[[i]],
+                                                     levels = c(var_radio$levels[[which(var_radio$field_name %in% i)]]),
+                                                     labels = c(var_radio$labels[[which(var_radio$field_name %in% i)]]))
       }
 
     }
@@ -241,7 +241,6 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
     data_api <- data_api %>%
       dplyr::bind_cols(main_vars %>% dplyr::select(-"record_id"))
-
 
     # Indicator of longitudinal projects
     longitudinal <- ifelse("redcap_event_name" %in% names(data_api), TRUE, FALSE)

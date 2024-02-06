@@ -360,14 +360,14 @@ connection</strong></a></li>
 
 <p><br></p>
 <p>This vignette provides a summary of the straightforward and common
-use of <a href="https://github.com/ubidi/REDCapDM">REDCapDM</a> to
+use of <a href="https://github.com/bruigtp/REDCapDM">REDCapDM</a> to
 interact with <a href="https://www.project-redcap.org/">REDCap</a>
 data.</p>
 <p><br></p>
 <div id="read-data" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> <strong>Read
 data</strong></h1>
-<p>To import data from <a href="https://www.project-redcap.org/">REDCap</a>, you can use the <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
+<p>To import data from <a href="https://www.project-redcap.org/">REDCap</a>, you can use the <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
 function, which provides two primary methods: importing data from local
 files or establishing an API connection.</p>
 <div id="local-files" class="section level2" number="1.1">
@@ -402,7 +402,7 @@ data:</p>
 <div id="output" class="section level2" number="1.3">
 <h2><span class="header-section-number">1.3</span>
 <strong>Output</strong></h2>
-<p>The <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
+<p>The <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
 function returns a list with three elements:</p>
 <ul>
 <li><p>Imported data: Contains the data from your <a href="https://www.project-redcap.org/">REDCap</a> project</p></li>
@@ -418,7 +418,7 @@ project.</p></li>
 <div id="process-data" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> <strong>Process
 data</strong></h1>
-<p>Having successfully imported our data into R, you can now use the <a href="https://ubidi.github.io/REDCapDM/reference/rd_transform.html"><code>rd_transform()</code></a>
+<p>Having successfully imported our data into R, you can now use the <a href="https://bruigtp.github.io/REDCapDM/reference/rd_transform.html"><code>rd_transform()</code></a>
 function to start processing the data.</p>
 <p>This function performs several transformations:</p>
 <ul>
@@ -440,7 +440,7 @@ logic.</p></li>
 be transformed and the corresponding dictionary. In the case of a
 longitudinal project, it is advisable to also specify the event form
 dataset to take full advantage of this function. These elements can be
-directly specified using the output of the <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
+directly specified using the output of the <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
 function or separately using distinct arguments:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co">#Option A: list object </span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>covican_transformed <span class="ot">&lt;-</span> <span class="fu">rd_transform</span>(covican)</span>
@@ -520,7 +520,7 @@ project.</p>
 <span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; 7 microbiological_studies     &lt;chr [1]&gt; &lt;glue [1]&gt;  &lt;df [190 × 6]&gt;</span></span></code></pre></div>
 <p><br> <br></p>
 <p><strong>For more information, consult the complete vignette available
-at: <a href="https://ubidi.github.io/REDCapDM/articles/REDCapDM.html" class="uri">https://ubidi.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
 <p><br> <br></p>
 </div>
 </div>

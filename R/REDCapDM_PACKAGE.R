@@ -1,0 +1,34 @@
+#' @name REDCapDM-package
+#' @keywords internal
+#' @aliases REDCapDM
+#' @title Managing REDCap Data: The R package REDCapDM
+#' @description
+#' The REDCapDM package facilitates the importing of data from REDCap into R through either an API connection or directly from exported files. It encompasses various functions dedicated to data processing and transformation, aiding in the generation and administration of queries to address any discrepancies or uncertainties encountered within the dataset.
+#'
+#' REDCapDM functions:
+#'
+#' - redcap_data: used to read data exported from REDCap or through an API connection.
+#'
+#' - rd_transform: pre-processing a dataset.
+#'
+#' - rd_rlogic: transcribes redcap logic to R logic.
+#'
+#' - rd_insert_na: manually input a missing value for specified variables using a filter.
+#'
+#' - rd_query: identification of queries.
+#'
+#' - rd_event: identification of missing events per record identifier.
+#'
+#' - check_queries: used to compare current queries with an old report to determine which ones have been modified, which remain unchanged, and if there are any new queries.
+#'
+#' - rd_export: used to export all identified queries into a xlsx file.
+#'
+#' @examples
+#' \dontrun{
+#' # Install REDCapDM from CRAN:
+#' install.packages('REDCapR')
+#'
+#' # Install REDCapDM from GitHub:
+#' remotes::install_github('bruigtp/REDCapDM')
+#' }
+NULL

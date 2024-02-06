@@ -19,7 +19,6 @@ core <- c("dplyr", "janitor", "magrittr", "openxlsx", "purrr", "REDCapR", "rlang
   }
 
   # Attach the package from the same package library it was
-  # loaded from before. https://github.com/REDCapDM/REDCapDM/issues/171
   same_library <- function(pkg) {
     loc <-
       if (pkg %in% loadedNamespaces())
