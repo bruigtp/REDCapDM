@@ -33,7 +33,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.7</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,7 +65,7 @@
 
       <ul class="navbar-nav">
 <li class="nav-item">
-  <a class="external-link nav-link" href="https://github.com/ubidi/REDCapDM/" aria-label="github">
+  <a class="external-link nav-link" href="https://github.com/bruigtp/REDCapDM/" aria-label="github">
     <span class="fab fa fab fa-github fa-lg"></span>
      
   </a>
@@ -85,7 +85,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>REDCapDM - Data reading and processing</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ubidi/REDCapDM/blob/HEAD/vignettes/Data-reading-and-processing.Rmd" class="external-link"><code>vignettes/Data-reading-and-processing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bruigtp/REDCapDM/blob/HEAD/vignettes/Data-reading-and-processing.Rmd" class="external-link"><code>vignettes/Data-reading-and-processing.Rmd</code></a></small>
       <div class="d-none name"><code>Data-reading-and-processing.Rmd</code></div>
     </div>
 
@@ -93,7 +93,7 @@
     
 <p><br></p>
 <p>This vignette provides a summary of the straightforward and common
-use of <a href="https://github.com/ubidi/REDCapDM" class="external-link">REDCapDM</a> to
+use of <a href="https://github.com/bruigtp/REDCapDM" class="external-link">REDCapDM</a> to
 interact with <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>
 data.</p>
 <p><br></p>
@@ -101,7 +101,7 @@ data.</p>
 <h2 id="read-data">
 <strong>Read data</strong><a class="anchor" aria-label="anchor" href="#read-data"></a>
 </h2>
-<p>To import data from <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>, you can use the <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
+<p>To import data from <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>, you can use the <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
 function, which provides two primary methods: importing data from local
 files or establishing an API connection.</p>
 <div class="section level3">
@@ -141,7 +141,7 @@ data:</p>
 <h3 id="output">
 <strong>Output</strong><a class="anchor" aria-label="anchor" href="#output"></a>
 </h3>
-<p>The <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
+<p>The <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
 function returns a list with three elements:</p>
 <ul>
 <li><p>Imported data: Contains the data from your <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project</p></li>
@@ -158,7 +158,7 @@ project.</p></li>
 <h2 id="process-data">
 <strong>Process data</strong><a class="anchor" aria-label="anchor" href="#process-data"></a>
 </h2>
-<p>Having successfully imported our data into R, you can now use the <a href="https://ubidi.github.io/REDCapDM/reference/rd_transform.html" class="external-link"><code>rd_transform()</code></a>
+<p>Having successfully imported our data into R, you can now use the <a href="https://bruigtp.github.io/REDCapDM/reference/rd_transform.html" class="external-link"><code>rd_transform()</code></a>
 function to start processing the data.</p>
 <p>This function performs several transformations:</p>
 <ul>
@@ -181,7 +181,7 @@ logic.</p></li>
 be transformed and the corresponding dictionary. In the case of a
 longitudinal project, it is advisable to also specify the event form
 dataset to take full advantage of this function. These elements can be
-directly specified using the output of the <a href="https://ubidi.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
+directly specified using the output of the <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
 function or separately using distinct arguments:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Option A: list object </span></span>
@@ -269,7 +269,7 @@ project.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> microbiological_studies     <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [1]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 6]&gt;</span></span></span></code></pre></div>
 <p><br><br></p>
 <p><strong>For more information, consult the complete vignette available
-at: <a href="https://ubidi.github.io/REDCapDM/articles/REDCapDM.html" class="external-link uri">https://ubidi.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="external-link uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
 <p><br><br></p>
 </div>
 </div>

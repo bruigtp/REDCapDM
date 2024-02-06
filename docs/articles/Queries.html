@@ -33,7 +33,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.7</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,7 +65,7 @@
 
       <ul class="navbar-nav">
 <li class="nav-item">
-  <a class="external-link nav-link" href="https://github.com/ubidi/REDCapDM/" aria-label="github">
+  <a class="external-link nav-link" href="https://github.com/bruigtp/REDCapDM/" aria-label="github">
     <span class="fab fa fab fa-github fa-lg"></span>
      
   </a>
@@ -85,14 +85,14 @@
       <img src="../logo.png" class="logo" alt=""><h1>REDCapDM - Queries</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ubidi/REDCapDM/blob/HEAD/vignettes/Queries.Rmd" class="external-link"><code>vignettes/Queries.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bruigtp/REDCapDM/blob/HEAD/vignettes/Queries.Rmd" class="external-link"><code>vignettes/Queries.Rmd</code></a></small>
       <div class="d-none name"><code>Queries.Rmd</code></div>
     </div>
 
     
     
 <p><br></p>
-<p>This vignette provides a summary of the simple and common use of <a href="https://github.com/ubidi/REDCapDM" class="external-link">REDCapDM</a> to identify
+<p>This vignette provides a summary of the simple and common use of <a href="https://github.com/bruigtp/REDCapDM" class="external-link">REDCapDM</a> to identify
 discrepancies in <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>
 data imported into R.</p>
 <p><br></p>
@@ -102,7 +102,7 @@ data imported into R.</p>
 </h2>
 <p>Queries are crucial for the accuracy and reliability of a <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> dataset. They help
 identify missing values, inconsistencies, and potential errors in the
-collected data. The <a href="https://ubidi.github.io/REDCapDM/reference/rd_query.html" class="external-link"><code>rd_query()</code></a>
+collected data. The <a href="https://bruigtp.github.io/REDCapDM/reference/rd_query.html" class="external-link"><code>rd_query()</code></a>
 function allows you to generate queries using a specific expression.</p>
 <p>To identify missing values in certain variables, simply provide the
 relevant information to the <code>variables</code> and
@@ -285,7 +285,7 @@ The value should not be greater than 4.2 and less than 4.3
 </tbody>
 </table>
 <p><br></p>
-<p>For longitudinal projects, the <a href="https://ubidi.github.io/REDCapDM/reference/rd_event.html" class="external-link"><code>rd_event()</code></a>
+<p>For longitudinal projects, the <a href="https://bruigtp.github.io/REDCapDM/reference/rd_event.html" class="external-link"><code>rd_event()</code></a>
 allows you to check if a particular event is missing from a record in
 the exported data. This happens in REDCap when there is no collected
 data in a particular event from a record, as REDCap will not export the
@@ -303,7 +303,7 @@ code:</p>
 <p>After identifying queries, it is common practice to correct the
 original dataset in <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>
 and re-run the query process for a new query dataset.</p>
-<p>The <a href="https://ubidi.github.io/REDCapDM/reference/check_queries.html" class="external-link"><code>check_queries()</code></a>
+<p>The <a href="https://bruigtp.github.io/REDCapDM/reference/check_queries.html" class="external-link"><code>check_queries()</code></a>
 functiona allows you to compare the previous query dataset with the new
 one:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -392,7 +392,7 @@ customise this exported file:</p>
 you that the file has been created and where it is located.</p>
 <p><br><br></p>
 <p><strong>For more information, consult the complete vignette available
-at: <a href="https://ubidi.github.io/REDCapDM/articles/REDCapDM.html" class="external-link uri">https://ubidi.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="external-link uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
 <p><br><br></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
