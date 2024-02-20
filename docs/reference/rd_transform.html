@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.8</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,8 @@
 <span>  checkbox_na <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  exclude_recalc <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  exclude_to_factor <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  delete_vars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"_complete"</span>, <span class="st">"_timestamp"</span><span class="op">)</span>,</span>
+<span>  delete_vars <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  delete_pattern <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"_complete"</span>, <span class="st">"_timestamp"</span><span class="op">)</span>,</span>
 <span>  final_format <span class="op">=</span> <span class="st">"raw"</span>,</span>
 <span>  which_event <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  which_form <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -113,6 +114,10 @@
 
 
 <dt>delete_vars</dt>
+<dd><p>Character vector specifying the variables to exclude.</p></dd>
+
+
+<dt>delete_pattern</dt>
 <dd><p>Character vector specifying the regex pattern that will contain the variables to exclude. By default, variables ending up with `_complete` and `_timestamp` will be removed.</p></dd>
 
 
@@ -6321,8 +6326,11 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9       1 follow_up_visit_da_arm_1         laboratory_findings</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $results</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1. Recalculating calculated fields and saving them as '[field_name]_recalc'</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1. Removing selected variables</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2. Deleting variables that contain some patterns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3. Recalculating calculated fields and saving them as '[field_name]_recalc'</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> | Total calculated fields | Non-transcribed fields | Recalculated different fields |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> |:-----------------------:|:----------------------:|:-----------------------------:|</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> |            2            |         0 (0%)         |            1 (50%)            |</span>
@@ -6333,7 +6341,7 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> |         age         |     Yes      |   FALSE   |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> | screening_fail_crit |     Yes      |   TRUE    |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Table: Checkbox variables advisable to be reviewed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -6341,11 +6349,9 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> |:-------------------------------------:|</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> |        type_underlying_disease        |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3. Replacing original variables for their factor version</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5. Replacing original variables for their factor version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4. Converting every branching logic in the dictionary into R logic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5. Deleting variables that contain some patterns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6. Converting every branching logic in the dictionary into R logic</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># For customization of checkbox labels</span></span></span>
@@ -12530,8 +12536,11 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9       1 follow_up_visit_da_arm_1         laboratory_findings</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $results</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1. Recalculating calculated fields and saving them as '[field_name]_recalc'</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1. Removing selected variables</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2. Deleting variables that contain some patterns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3. Recalculating calculated fields and saving them as '[field_name]_recalc'</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> | Total calculated fields | Non-transcribed fields | Recalculated different fields |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> |:-----------------------:|:----------------------:|:-----------------------------:|</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> |            2            |         0 (0%)         |            1 (50%)            |</span>
@@ -12542,7 +12551,7 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> |         age         |     Yes      |   FALSE   |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> | screening_fail_crit |     Yes      |   TRUE    |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Table: Checkbox variables advisable to be reviewed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -12550,11 +12559,9 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> |:-------------------------------------:|</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> |        type_underlying_disease        |</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3. Replacing original variables for their factor version</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5. Replacing original variables for their factor version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4. Converting every branching logic in the dictionary into R logic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5. Deleting variables that contain some patterns</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6. Converting every branching logic in the dictionary into R logic</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
