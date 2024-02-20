@@ -25,21 +25,3 @@ covican_transformed <- rd_transform(data = covican$data,
                                     dic = covican$dictionary, 
                                     event_form = covican$event_form)
 
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-#Print the results of the transformation
-covican_transformed$results
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-dataset <- rd_transform(covican,
-                        final_format = "by_event")
-
-## ----message=FALSE, warning=FALSE, comment="#>", collapse = TRUE--------------
-dataset$data
-
-## ----message=FALSE, warning=FALSE, comment=NA---------------------------------
-dataset <- rd_transform(covican,
-                        final_format = "by_form")
-
-## ----message=FALSE, warning=FALSE, comment="#>", collapse = TRUE--------------
-dataset$data
-

@@ -178,9 +178,15 @@ covican_transformed$results
 
 This function will return a list with the transformed dataset, dictionary, event_form and the output of the results of the transformation.
 
-As we can see, there are 5 steps in the transformation:
+As we can see, there are several steps in the transformation:
 
 <ol>
+<li><u>Elimination of variables:</u> we can specify any variable in the dataset which we want to remove using the argument `delete_vars`, as explained later.</li>
+
+<li><u>Elimination of variables containing some pattern:</u> by default, the pattern that the function looks for is '_complete' and '_timestamp'. We can specify any other pattern using the argument `delete_pattern`, as explained later.</li>
+
+In this case, we do not have any variable with the pattern '_complete' and '_timestamp' since the built-in dataset only contains a sample of the variables of the project. All REDCap projects, when downloaded, contain one variable with the pattern '_complete' for each form indicating if the form has been marked as incomplete/unverified/completed. Also, if the project contains some survey then variables ending with '_timestamp' are also generated automatically. In general, we do not need this information so these variables are removed by default.
+
 <li><u>Recalculation of REDCap calculated fields:</u> it finds all the calculated fields and recalculates them using the REDCap logic specified in the calculation field translated into R. The recalculated variable is saved as the original name adding '_recalc' at the end. It can happen that the logic found contains some specific smart-variables or other complex structures which the function is not able to transcribe. With the summary found in `results` we can see how many calculated fields have been found, if they have been transcribed and, if that is the case, if the recalculated variable is equal to the original one. </li>
 
 Note: If the REDCap project is longitudinal and the event-form is not specified, this step will not be executed.
@@ -198,9 +204,6 @@ For example, let's explain the transformation that undergo the variables corresp
 
 <li><u>Transformation of the branching logic:</u> by default, every branching logic contained in the dictionary is presented in REDCap logic. In this step, we will convert each branching logic into R logic in order to apply this information when needed. For example, we will use it to properly identify missing values in variables with a branching logic, as we will see later in the vignette.</li>
 
-<li><u>Elimination of variables containing some pattern:</u> by default, the pattern that the function looks for is '_complete' and '_timestamp'. We can specify any other pattern using the argument `delete_vars`, as explained later.</li>
-
-In this case, we do not have any variable with the pattern '_complete' and '_timestamp' since the built-in dataset only contains a sample of the variables of the project. All REDCap projects, when downloaded, contain one variable with the pattern '_complete' for each form indicating if the form has been marked as incomplete/unverified/completed. Also, if the project contains some survey then variables ending with '_timestamp' are also generated automatically. In general, we do not need this information so these variables are removed by default.
 
 </ol>
 
@@ -290,11 +293,20 @@ dataset <- rd_transform(covican,
 
 <br>
 
-<u>delete_vars</u>: every variable containing the strings specified in this argument will be removed from the dataset. By default, the value of `delete_vars` is '\_complete'. For example, we can change the argument to remove the inclusion and exclusion criteria variables from the dataset (variables that contain 'inc\_' and 'exc\_' in their names):
+<u>delete_vars</u>: every variable specified in this argument will be removed from the dataset. For example, we can change the argument to remove the date of birth variable from the dataset:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 dataset <- rd_transform(covican,
-                        delete_vars = c("inc_", "exc_"))
+                        delete_vars = "d_birth")
+```
+
+<br>
+
+<u>delete_pattern</u>: every variable containing the strings specified in this argument will be removed from the dataset. By default, the value of `delete_pattern` is '\_complete'. For example, we can change the argument to remove the inclusion and exclusion criteria variables from the dataset (variables that contain 'inc\_' and 'exc\_' in their names):
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+dataset <- rd_transform(covican,
+                        delete_pattern = c("inc_", "exc_"))
 ```
 
 <br>

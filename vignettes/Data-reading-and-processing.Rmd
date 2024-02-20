@@ -76,6 +76,10 @@ Having successfully imported our data into R, you can now use the [`rd_transform
 
 This function performs several transformations:
 
+-   Elimination of selected variables
+
+-   Elimination of variables containing certain patterns such as '_complete' and '_timestamp'
+
 -   Recalculation of [REDCap](https://www.project-redcap.org/) calculated fields
 
 -   Checkbox transformation by changing their names to the names of their options
@@ -84,7 +88,6 @@ This function performs several transformations:
 
 -   Branching logic transformation, converting [REDCap](https://www.project-redcap.org/) logic to R logic.
 
--   Elimination of variables containing certain patterns such as '_complete' and '_timestamp'
 
 ## **Standard**
 

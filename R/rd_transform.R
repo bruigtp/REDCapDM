@@ -9,7 +9,8 @@
 #' @param checkbox_na Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.
 #' @param exclude_recalc Character vector with the names of the variables that do not have to be recalculated. Might be useful for projects were there are some calculated fields that have a time consuming recalculation.
 #' @param exclude_to_factor Character vector with the names of the variables that do not have to be transformed to factors.
-#' @param delete_vars Character vector specifying the regex pattern that will contain the variables to exclude. By default, variables ending up with `_complete` and `_timestamp` will be removed.
+#' @param delete_vars Character vector specifying the variables to exclude.
+#' @param delete_pattern Character vector specifying the regex pattern that will contain the variables to exclude. By default, variables ending up with `_complete` and `_timestamp` will be removed.
 #' @param final_format Character string indicating the final arrangement format of the data that the function will return. Choose one of `raw`, `by_event` or `by_form`. `raw` (default) will return the transformed data with the original structure. `by_event` will return the transformed data as a nested data frame by event. `by_form` will return the transformed data as a nested data frame by form.
 #' @param which_event Character string indicating if only one event has to be returned if the final format selected is `by_event`.
 #' @param which_form Character string indicating if only one form has to be returned if the final format selected is `by_form`.
@@ -25,7 +26,7 @@
 #'
 #' @export
 
-rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_recalc = NULL, exclude_to_factor = NULL, delete_vars = c("_complete", "_timestamp"), final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL){
+rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_recalc = NULL, exclude_to_factor = NULL, delete_vars = NULL, delete_pattern = c("_complete", "_timestamp"), final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL){
 
   project <- c(...)
 
@@ -119,6 +120,54 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
       x
     })
 
+  # Delete selected variables
+  results <- c(results, stringr::str_glue("{ind}. Removing selected variables\n"))
+  ind <- ind + 1
+
+  if(!is.null(delete_vars)){
+
+    for(i in 1:length(delete_vars)) {
+      data <- data %>%
+        dplyr::select(!delete_vars[i])
+
+      if (paste0(delete_vars[i], ".factor") %in% names(data)) {
+        data <- data %>%
+          dplyr::select(!paste0(delete_vars[i], ".factor"))
+      }
+
+      dic <- dic %>%
+        dplyr::filter(.data$field_name != delete_vars[i])
+
+    }
+
+  }
+
+  # Delete variables that contain specific patterns
+  results <- c(results, stringr::str_glue("\n\n{ind}. Deleting variables that contain some patterns\n"))
+  ind <- ind + 1
+
+  if(!is.null(delete_pattern)){
+
+    for(i in 1:length(delete_pattern)){
+
+      if(delete_pattern[i] == "_complete"){
+        data <- data %>%
+          dplyr::select(!tidyselect::ends_with(c("_complete", "_complete.factor")))
+      }else if(delete_pattern[i] == "_timestamp"){
+        data <- data %>%
+          dplyr::select(!tidyselect::ends_with(c("_timestamp", "timestamp.factor")))
+      }else{
+        data <- data %>%
+          dplyr::select(!tidyselect::contains(delete_pattern[i]))
+        dic <- dic %>%
+          dplyr::filter(!grepl(delete_pattern[i], .data$field_name))
+      }
+
+    }
+
+  }
+
+
   #Change the format of dates
   #Identify dates that have the tag "date_"/"datetime_"/"datetime_seconds_" in redcap. It will have always the format "Y-M-D" in any case
   var_date <- dic %>%
@@ -149,7 +198,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     #Recalculate calculated fields (previous to transforming factors and other preprocessing)
     #It wil create duplicate variables of each calculated field with "_recalc" in the end and the recalculated value
 
-    results <- c(results, stringr::str_glue("{ind}. Recalculating calculated fields and saving them as '[field_name]_recalc'\n\n"))
+    results <- c(results, stringr::str_glue("\n\n{ind}. Recalculating calculated fields and saving them as '[field_name]_recalc'\n"))
     ind <- ind + 1
 
     #If the project is longitudinal and the event hasn't been specified no recalculation is possible
@@ -300,32 +349,6 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
       results <- c(results, "\n", knitr::kable(tabla, "pipe", align = c("ccc"), caption = "Variables with unconverted branching logic"))
 
     }
-  }
-
-
-  # Delete variables that contain specific patterns
-  results <- c(results, stringr::str_glue("\n\n{ind}. Deleting variables that contain some patterns"))
-  ind <- ind + 1
-
-  if(!is.null(delete_vars)){
-
-    for(i in 1:length(delete_vars)){
-
-      if(delete_vars[i] == "_complete"){
-        data <- data %>%
-          dplyr::select(!tidyselect::ends_with("_complete"))
-      }else if(delete_vars[i] == "_timestamp"){
-        data <- data %>%
-          dplyr::select(!tidyselect::ends_with("_timestamp"))
-      }else{
-        data <- data %>%
-          dplyr::select(!tidyselect::contains(delete_vars[i]))
-        dic <- dic %>%
-          dplyr::filter(!grepl(delete_vars[i], .data$field_name))
-      }
-
-    }
-
   }
 
 

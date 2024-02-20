@@ -13,7 +13,8 @@ rd_transform(
   checkbox_na = FALSE,
   exclude_recalc = NULL,
   exclude_to_factor = NULL,
-  delete_vars = c("_complete", "_timestamp"),
+  delete_vars = NULL,
+  delete_pattern = c("_complete", "_timestamp"),
   final_format = "raw",
   which_event = NULL,
   which_form = NULL,
@@ -37,7 +38,9 @@ rd_transform(
 
 \item{exclude_to_factor}{Character vector with the names of the variables that do not have to be transformed to factors.}
 
-\item{delete_vars}{Character vector specifying the regex pattern that will contain the variables to exclude. By default, variables ending up with `_complete` and `_timestamp` will be removed.}
+\item{delete_vars}{Character vector specifying the variables to exclude.}
+
+\item{delete_pattern}{Character vector specifying the regex pattern that will contain the variables to exclude. By default, variables ending up with `_complete` and `_timestamp` will be removed.}
 
 \item{final_format}{Character string indicating the final arrangement format of the data that the function will return. Choose one of `raw`, `by_event` or `by_form`. `raw` (default) will return the transformed data with the original structure. `by_event` will return the transformed data as a nested data frame by event. `by_form` will return the transformed data as a nested data frame by form.}
 

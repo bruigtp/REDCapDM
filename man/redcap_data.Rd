@@ -39,3 +39,18 @@ If you will give further use to the package, we advise you to use the argument '
 
 To read exported data, you must first use REDCap's 'Export Data' function and select the 'R Statistical Software' format. It will then generate a CSV file with all the observations and an R file with the necessary code to complete each variable's information.
 }
+\examples{
+\dontrun{
+# Exported files from REDCap
+
+dataset <- redcap_data(data_path = "C:/Users/username/example.r",
+                       dic_path = "C:/Users/username/example_dictionary.csv",
+                       event_path = "C:/Users/username/events.csv")
+
+# API connection
+
+dataset_api <- redcap_data(uri = "https://redcap.idibell.cat/api/",
+                           token = "55E5C3D1E83213ADA2182A4BFDEA") # This token is fictitious
+
+}
+}

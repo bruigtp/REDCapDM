@@ -422,6 +422,9 @@ data</strong></h1>
 function to start processing the data.</p>
 <p>This function performs several transformations:</p>
 <ul>
+<li><p>Elimination of selected variables</p></li>
+<li><p>Elimination of variables containing certain patterns such as
+’_complete’ and ’_timestamp’</p></li>
 <li><p>Recalculation of <a href="https://www.project-redcap.org/">REDCap</a> calculated
 fields</p></li>
 <li><p>Checkbox transformation by changing their names to the names of
@@ -430,8 +433,6 @@ their options</p></li>
 version</p></li>
 <li><p>Branching logic transformation, converting <a href="https://www.project-redcap.org/">REDCap</a> logic to R
 logic.</p></li>
-<li><p>Elimination of variables containing certain patterns such as
-’_complete’ and ’_timestamp’</p></li>
 </ul>
 <div id="standard" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span>
@@ -455,8 +456,11 @@ retrieve the results of the transformation, use the following code
 block:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co">#Print the results of the transformation</span></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>covican_transformed<span class="sc">$</span>results</span></code></pre></div>
-<pre><code>1. Recalculating calculated fields and saving them as &#39;[field_name]_recalc&#39;
+<pre><code>1. Removing selected variables
 
+2. Deleting variables that contain some patterns
+
+3. Recalculating calculated fields and saving them as &#39;[field_name]_recalc&#39;
 | Total calculated fields | Non-transcribed fields | Recalculated different fields |
 |:-----------------------:|:----------------------:|:-----------------------------:|
 |            2            |         0 (0%)         |            1 (50%)            |
@@ -467,7 +471,7 @@ block:</p>
 |         age         |     Yes      |   FALSE   |
 | screening_fail_crit |     Yes      |   TRUE    |
 
-2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
+4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
 
 Table: Checkbox variables advisable to be reviewed
 
@@ -475,11 +479,9 @@ Table: Checkbox variables advisable to be reviewed
 |:-------------------------------------:|
 |        type_underlying_disease        |
 
-3. Replacing original variables for their factor version
+5. Replacing original variables for their factor version
 
-4. Converting every branching logic in the dictionary into R logic
-
-5. Deleting variables that contain some patterns</code></pre>
+6. Converting every branching logic in the dictionary into R logic</code></pre>
 </div>
 <div id="by-event" class="section level2" number="2.2">
 <h2><span class="header-section-number">2.2</span> <strong>By

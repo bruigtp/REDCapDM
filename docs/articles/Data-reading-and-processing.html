@@ -33,7 +33,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.8</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -162,6 +162,9 @@ project.</p></li>
 function to start processing the data.</p>
 <p>This function performs several transformations:</p>
 <ul>
+<li><p>Elimination of selected variables</p></li>
+<li><p>Elimination of variables containing certain patterns such as
+’_complete’ and ’_timestamp’</p></li>
 <li><p>Recalculation of <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> calculated
 fields</p></li>
 <li><p>Checkbox transformation by changing their names to the names of
@@ -170,8 +173,6 @@ their options</p></li>
 version</p></li>
 <li><p>Branching logic transformation, converting <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> logic to R
 logic.</p></li>
-<li><p>Elimination of variables containing certain patterns such as
-’_complete’ and ’_timestamp’</p></li>
 </ul>
 <div class="section level3">
 <h3 id="standard">
@@ -198,8 +199,11 @@ block:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Print the results of the transformation</span></span>
 <span><span class="va">covican_transformed</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
-<pre><code>1. Recalculating calculated fields and saving them as '[field_name]_recalc'
+<pre><code>1. Removing selected variables
 
+2. Deleting variables that contain some patterns
+
+3. Recalculating calculated fields and saving them as '[field_name]_recalc'
 | Total calculated fields | Non-transcribed fields | Recalculated different fields |
 |:-----------------------:|:----------------------:|:-----------------------------:|
 |            2            |         0 (0%)         |            1 (50%)            |
@@ -210,7 +214,7 @@ block:</p>
 |         age         |     Yes      |   FALSE   |
 | screening_fail_crit |     Yes      |   TRUE    |
 
-2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
+4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
 
 Table: Checkbox variables advisable to be reviewed
 
@@ -218,11 +222,9 @@ Table: Checkbox variables advisable to be reviewed
 |:-------------------------------------:|
 |        type_underlying_disease        |
 
-3. Replacing original variables for their factor version
+5. Replacing original variables for their factor version
 
-4. Converting every branching logic in the dictionary into R logic
-
-5. Deleting variables that contain some patterns</code></pre>
+6. Converting every branching logic in the dictionary into R logic</code></pre>
 </div>
 <div class="section level3">
 <h3 id="by-event">

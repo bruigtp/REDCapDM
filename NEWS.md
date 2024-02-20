@@ -1,3 +1,13 @@
+# REDCapDM 0.9-8
+
+## Bug fixes
+
+- Added an informative message to the _redcap_data()_ function when someone tries to use a URI without specifying the token or vice versa. [Issue #6 in github]
+- Added an informative message to the _redcap_data()_ function when it is unable to establish a secure connection due to an SSL certificate problem. [Issue #6 in github]
+- Added examples to the _redcap_data()_ function. [Issue #6 in github]
+- Modification of the argument `delete_vars` in the _redcap_data()_ function to `delete_pattern` to accurately describe its purpose. [Issue #6 in github]
+- Added a new argument to the _redcap_data()_ function named `delete_vars` which allows users to specify variables to be removed. [Issue #6 in github]
+
 # REDCapDM 0.9-7
 
 ## Bug fixes

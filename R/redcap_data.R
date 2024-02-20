@@ -17,6 +17,20 @@
 #'
 #' @note To read exported data, you must first use REDCap's 'Export Data' function and select the 'R Statistical Software' format. It will then generate a CSV file with all the observations and an R file with the necessary code to complete each variable's information.
 #'
+#' @examples
+#' \dontrun{
+#' # Exported files from REDCap
+#'
+#' dataset <- redcap_data(data_path = "C:/Users/username/example.r",
+#'                        dic_path = "C:/Users/username/example_dictionary.csv",
+#'                        event_path = "C:/Users/username/events.csv")
+#'
+#' # API connection
+#'
+#' dataset_api <- redcap_data(uri = "https://redcap.idibell.cat/api/",
+#'                            token = "55E5C3D1E83213ADA2182A4BFDEA") # This token is fictitious
+#'
+#' }
 #' @export
 
 redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NA)
@@ -32,6 +46,11 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
   # Warning: token, uri and another argument are specified.
   if(all(!c(token, uri) %in% NA) & any(!c(data_path, dic_path) %in% NA)){
     stop("Too many arguments, if you want to read data from REDCap through an API connection use only the arguments uri and token.", call. = FALSE)
+  }
+
+  # Warning: either uri or token is specified alone
+  if ((!is.na(uri) & is.na(token)) | (is.na(uri) & !is.na(token))) {
+    stop("If you want to read data from REDCap through an API connection, both 'uri' and 'token' arguments must be provided.", call. = FALSE)
   }
 
   # Read data, dictionary and event-form mapping in case of exported data.
@@ -134,14 +153,32 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     message("Importing in progress...")
 
     # First read the labels
-    if (all(filter_field %in% NA)) {
 
-    labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE)$data)
+    ## Error SSL peer certificate (Github issue #6)
 
+    tryCatch({
+      if (all(filter_field %in% NA)) {
+
+        labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE)$data)
+
+      } else {
+
+        labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = F, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
+
+      }
+    },
+    error = function(e) {
+      if (grepl("SSL peer certificate", e$message)) {
+        stop("Unable to establish a secure connection due to an SSL certificate problem.\nConsider adding the following line of code to bypass SSL certificate verification: httr::set_config(httr::config(ssl_verifypeer = FALSE)).\nPlease note that this introduces a security risk, as R will no longer verify the authenticity of SSL certificates when making HTTPS requests.\n", call. = F)
+      } else {
+        stop(e)
+      }
+    })
+
+    if (nrow(labels) > 0) {
+      names(labels)[1] <- "record_id"
     } else {
-
-      labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = F, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
-
+      stop("Observational data retrieval is currently unavailable. Please verify the status of the REDCap server or confirm the existence of records within the project.", call. = F)
     }
 
     # Save the factor version of the default variables of redcap
@@ -158,8 +195,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
     main_vars <- labels %>%
       dplyr::mutate_at(redcap_names[!redcap_names %in% "Repeat Instrument"], ~forcats::fct_inorder(.)) %>%
-      dplyr::rename("record_id" = "Record ID",
-                    dplyr::all_of(rename_redcap)) %>%
+      dplyr::rename(dplyr::all_of(rename_redcap)) %>%
       dplyr::select("record_id", default_names$corres)
 
     # Remove the "...number" suffixes from the labels
@@ -177,13 +213,11 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, fields = filter_field)$data
     }
 
-
     if (nrow(data_api) > 0) {
       names(data_api)[1] <- "record_id"
     } else {
-      stop("No observational data is available for reading. Please ensure that you add records to your REDCap project.", call. = F)
+      stop("Observational data retrieval is currently unavailable. Please verify the status of the REDCap server or confirm the existence of records within the project.", call. = F)
     }
-
 
     # Read dictionary using the API connection
     dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
@@ -224,7 +258,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       var_radio <- dic_api %>%
         dplyr::filter(.data$field_type %in% c("radio", "dropdown")) %>%
         dplyr::select("field_name", "field_type", "choices_calculations_or_slider_labels")%>%
-        dplyr::mutate(factor = purrr::map(choices_calculations_or_slider_labels, ~stringr::str_split(.x, "\\|") %>% unlist %>% trimws),
+        dplyr::mutate(factor = purrr::map(.data$choices_calculations_or_slider_labels, ~stringr::str_split(.x, "\\|") %>% unlist %>% trimws),
                       levels = purrr::map(factor, ~gsub("^(\\d+),.*", "\\1", .x) %>% as.numeric),
                       labels = purrr::map(factor, ~gsub("^\\d+, ?", "", .x)))
 
