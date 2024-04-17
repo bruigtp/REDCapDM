@@ -1,0 +1,10 @@
+arm_num,unique_event_name,form
+1,baseline_visit_arm_1,inclusionexclusion_criteria
+1,baseline_visit_arm_1,demographics
+1,baseline_visit_arm_1,comorbidities
+1,baseline_visit_arm_1,cancer
+1,baseline_visit_arm_1,vital_signs
+1,baseline_visit_arm_1,laboratory_findings
+1,baseline_visit_arm_1,microbiological_studies
+1,follow_up_visit_da_arm_1,vital_signs
+1,follow_up_visit_da_arm_1,laboratory_findings

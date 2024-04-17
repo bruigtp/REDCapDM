@@ -1,0 +1,163 @@
+---
+title: "REDCapDM - Queries"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 5
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{REDCapDM - Queries}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+rm(list = ls())
+library(REDCapDM) 
+library(kableExtra)
+library(knitr)
+library(dplyr)
+library(magrittr)
+library(purrr)
+
+covican_transformed <- rd_transform(covican)
+```
+
+<br>
+
+This vignette provides a summary of the simple and common use of [REDCapDM](https://github.com/bruigtp/REDCapDM) to identify discrepancies in [REDCap](https://www.project-redcap.org/) data imported into R.
+
+<br>
+
+
+# **Queries**
+
+Queries are crucial for the accuracy and reliability of a [REDCap](https://www.project-redcap.org/) dataset. They help identify missing values, inconsistencies, and potential errors in the collected data. The [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.html) function allows you to generate queries using a specific expression.
+
+To identify missing values in certain variables, simply provide the relevant information to the `variables` and `expression` arguments. In this scenario, the expression would be 'is.na(x)', where 'x' represents the variable itself:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+example <- rd_query(covican_transformed,
+                    variables = "copd",
+                    expression = "is.na(x)")
+```
+
+Note: For variables with branching logic, the function will automatically apply the associated branching logic or at least report it.
+
+<br>
+
+Alternatively, to identify outliers or observations that meet a certain condition (for example, range):
+
+```{r message=FALSE, warning=TRUE, comment=NA}
+example <- rd_query(covican_transformed,
+                    variables = c("age", "potassium"),
+                    expression = c("x > 80", "x > 4.2 & x < 4.3"),
+                    event = "baseline_visit_arm_1")
+```
+
+<br>
+
+In both cases, the function returns a list containing a data frame designed to aid you to locate each query in the [REDCap](https://www.project-redcap.org/) project:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='hide'}
+example$queries
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
+kable(head(example$queries, 2)) %>% 
+  kableExtra::row_spec(0, bold = TRUE) %>% 
+  kableExtra::kable_styling()
+```
+
+And a summary of the generated queries per specified variable for each applied expression:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, comment=NA}
+example$results
+```
+
+<br>
+
+For longitudinal projects, the [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.html) allows you to check if a particular event is missing from a record in the exported data. This happens in REDCap when there is no collected data in a particular event from a record, as REDCap will not export the corresponding row. To identify these cases, you can use the following code:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+example <- rd_event(covican_transformed,
+                    event = "follow_up_visit_da_arm_1")
+```
+
+<br>
+<br>
+
+# **Control**
+
+After identifying queries, it is common practice to correct the original dataset in [REDCap](https://www.project-redcap.org/) and re-run the query process for a new query dataset.
+
+The [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.html) functiona allows you to compare the previous query dataset with the new one:
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+example <- rd_query(covican_transformed,
+                    variables = c("copd", "age"),
+                    expression = c("is.na(x)", "is.na(x)"),
+                    event = "baseline_visit_arm_1")
+new_example <- example
+new_example$queries <- as.data.frame(new_example$queries)
+new_example$queries <- new_example$queries[c(1:5, 10:11),] # We take only some of the previously created queries
+new_example$queries[nrow(new_example$queries) + 1,] <- c("100-79", "Hospital 11", "Baseline visit", "Comorbidities", "copd", "-", "Chronic obstructive pulmonary disease", "The value is NA and it should not be missing", "100-79-4") # we create a new query
+new_example$queries[nrow(new_example$queries) + 1, ] <- c("105-56", "Hospital 5", "Baseline visit", "Demographics", "age", "-", "Age", "The value is 80 and it should not be >70", "105-56-2")
+```
+
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+check <- check_queries(old = example$queries, 
+                       new = new_example$queries)
+```
+
+The output, in addition to the query data frame, now includes a summary with the number of new, miscorrected, solved and pending queries:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+# Print results
+check$results
+```
+
+Note: The "Miscorrected" category includes queries that belong to the same combination of record identifier and variable in both the old and new reports, but with a different reason. For instance, if a variable had a missing value in the old report, but in the new report shows a value outside the established range, it would be classified as "Miscorrected".
+
+<br>
+<br>
+
+# **Export**
+
+With the help of the `rd_export()` function, you can export the identified queries to a `.xlsx` file of your choice:
+
+```{r message=FALSE, warning=FALSE, comment=NA, include=FALSE}
+example <- rd_query(covican_transformed,
+                    variables = c("copd", "age"),
+                    expression = c("is.na(x)", "is.na(x)"),
+                    event = "baseline_visit_arm_1")
+```
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+rd_export(example)
+```
+
+This is the simplets way to use the function and will create a file named "example.xlsx" in your current working directory, but you can customise this exported file:
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+rd_export(queries = example$queries,
+          column = "Link",
+          sheet_name = "Queries - Proyecto",
+          path = "C:/User/Desktop/queries.xlsx",
+          password = "123") 
+```
+
+In both cases, a message will be generated in the console informing you that the file has been created and where it is located.
+
+
+<br>
+<br>
+
+**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html**
+
+<br>
+<br>

@@ -1,0 +1,44 @@
+Package: REDCapDM
+Type: Package
+Title: 'REDCap' Data Management
+Version: 0.9.8
+Authors@R: c(
+    person("João", "Carmezim", email = "jcarmezim@igtp.cat", role = c("aut", "cre")),
+    person("Pau", "Satorra", role = c("aut")),
+    person("Judith", "Peñafiel", role = c("aut")),
+    person("Esther", "García", role = c("aut")),
+    person("Natàlia", "Pallarès", role = c("aut")),
+    person("Cristian", "Tebé", role = c("aut"))
+    )
+Maintainer: João Carmezim <jcarmezim@igtp.cat>
+Description: REDCap Data Management - REDCapDM is a comprehensive package that enables users to seamlessly handle data exported directly from REDCap or through API connections. This tool facilitates various functions, including data preprocessing, report generation for queries such as outliers or missing values, and tracking of identified queries. 'REDCap' (Research Electronic Data CAPture; <https://projectredcap.org>) is a web application developed at Vanderbilt University, designed for creating and managing online surveys and databases. The API connection provides users with the capability to programmatically access both data and project metadata, including the data dictionary, from the web.
+License: MIT + file LICENSE
+URL: https://bruigtp.github.io/REDCapDM/
+BugReports: https://github.com/bruigtp/REDCapDM/issues
+Encoding: UTF-8
+RoxygenNote: 7.3.1
+Imports:
+    dplyr,
+    janitor,
+    magrittr,
+    openxlsx,
+    purrr,
+    REDCapR,
+    rlang,
+    stringr,
+    tibble,
+    tidyr,
+    tidyselect,
+    utils,
+    stringi,
+    labelled,
+    cli,
+    forcats
+Suggests: 
+    knitr,
+    rmarkdown,
+    kableExtra
+VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)
+LazyData: true

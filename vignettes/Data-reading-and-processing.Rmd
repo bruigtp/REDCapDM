@@ -1,0 +1,149 @@
+---
+title: "REDCapDM - Data reading and processing"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 5
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{REDCapDM - Data reading and processing}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+rm(list = ls())
+library(REDCapDM) 
+library(kableExtra)
+library(knitr)
+library(dplyr)
+library(magrittr)
+library(purrr)
+```
+
+<br>
+
+This vignette provides a summary of the straightforward and common use of [REDCapDM](https://github.com/bruigtp/REDCapDM) to interact with [REDCap](https://www.project-redcap.org/) data.
+
+<br>
+
+# **Read data**
+
+To import data from [REDCap](https://www.project-redcap.org/), you can use the [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html) function, which provides two primary methods: importing data from local files or establishing an API connection.
+
+## **Local files**
+
+Before starting, ensure you have the required R and CSV files exported from [REDCap](https://www.project-redcap.org/), including the instrument-event mappings file. All these files should be in the same directory for the package to work correctly.
+
+Use the `data_path` and `dic_path` arguments to indicate the paths to your R data file and [REDCap](https://www.project-redcap.org/) project's dictionary file, respectively. If your [REDCap](https://www.project-redcap.org/) project is longitudinal, you'll additionally need to supply the event-form mapping file using the `event_path` argument.
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+dataset <- redcap_data(data_path = "C:/Users/username/example.r",
+                       dic_path = "C:/Users/username/example_dictionary.csv",
+                       event_path = "C:/Users/username/events.csv")
+```
+
+## **API connection**
+
+If you opt for an API connection, you can provide the `uri` (uniform resource identifier) and `token` (user-specific password) for your [REDCap](https://www.project-redcap.org/) project. This method will automatically retrieve the event-form mapping if your project is longitudinal.
+
+Use both arguments to set up the API connection and import the data:
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, comment=NA}
+dataset_api <- redcap_data(uri = "https://redcap.idibell.cat/api/",
+                           token = "55E5C3D1E83213ADA2182A4BFDEA")
+```
+
+## **Output**
+
+The [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html) function returns a list with three elements:
+
+-   Imported data: Contains the data from your [REDCap](https://www.project-redcap.org/) project
+
+-   Dictionary: Provides information about variables and their associated labels.
+
+-   Event-form mapping (only available for longitudinal projects): Describes the correspondence between events and forms in your project.
+
+<br>
+<br>
+
+# **Process data**
+
+Having successfully imported our data into R, you can now use the [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.html) function to start processing the data.
+
+This function performs several transformations:
+
+-   Elimination of selected variables
+
+-   Elimination of variables containing certain patterns such as '_complete' and '_timestamp'
+
+-   Recalculation of [REDCap](https://www.project-redcap.org/) calculated fields
+
+-   Checkbox transformation by changing their names to the names of their options
+
+-   Replacement of the original variables with their factor version
+
+-   Branching logic transformation, converting [REDCap](https://www.project-redcap.org/) logic to R logic.
+
+
+## **Standard**
+
+The only essential elements that must be supplied are the dataset to be transformed and the corresponding dictionary. In the case of a longitudinal project, it is advisable to also specify the event form dataset to take full advantage of this function. These elements can be directly specified using the output of the [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html) function or separately using distinct arguments:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+#Option A: list object 
+covican_transformed <- rd_transform(covican)
+
+#Option B: separately with different arguments
+covican_transformed <- rd_transform(data = covican$data, 
+                                    dic = covican$dictionary, 
+                                    event_form = covican$event_form)
+```
+
+This function returns a list containing the transformed dataset, dictionary, event_form and the results of each transformation. To retrieve the results of the transformation, use the following code block:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+#Print the results of the transformation
+covican_transformed$results
+```
+
+## **By event**
+
+If the [REDCap](https://www.project-redcap.org/) project is longitudinal, you can further adjust the structure of the transformed dataset. For example, it can be split by event:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+dataset <- rd_transform(covican,
+                        final_format = "by_event")
+```
+
+Where the transformed dataset is a tibble object, containing data frames for each event in the [REDCap](https://www.project-redcap.org/) project.
+
+```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
+dataset$data
+```
+
+## **By form**
+
+Or, alternatively, it can be split by form:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+dataset <- rd_transform(covican,
+                        final_format = "by_form")
+```
+
+Where the tibble object is composed by data frames corresponding to each form in the [REDCap](https://www.project-redcap.org/) project.
+
+```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
+dataset$data
+```
+
+<br>
+<br>
+
+**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html**
+
+<br>
+<br>

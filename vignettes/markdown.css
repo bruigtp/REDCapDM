@@ -1,0 +1,52 @@
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 16px;
+
+  }
+td {  /* Table  */
+  font-size: 12px;
+
+}
+th {  /* Table  rownames*/
+  font-size: 12.5px;
+
+}
+h1.title {
+  font-size: 28px;
+}
+
+
+h1 { /* Header 1 */
+  font-size: 22px;
+ 
+}
+h2 { /* Header 2 */
+    font-size: 20px;
+}
+
+h3 { /* Header 3 */
+  font-size: 18px;
+}
+
+h4 { /* Header 4 */
+  font-size: 16px;
+}
+
+
+code.r{ /* Code block */
+    font-size: 12px;
+}
+
+
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+
+
+h6 {
+    font-size: 28px;
+ 
+}
+
+</style>
