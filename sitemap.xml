@@ -1,90 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>/404.html</loc>
+    <loc>https://brui.github.io/REDCapDM/404.html</loc>
   </url>
   <url>
-    <loc>/LICENSE-text.html</loc>
+    <loc>https://brui.github.io/REDCapDM/LICENSE-text.html</loc>
   </url>
   <url>
-    <loc>/LICENSE.html</loc>
+    <loc>https://brui.github.io/REDCapDM/LICENSE.html</loc>
   </url>
   <url>
-    <loc>/articles/Data-reading-and-processing.html</loc>
+    <loc>https://brui.github.io/REDCapDM/articles/Data-reading-and-processing.html</loc>
   </url>
   <url>
-    <loc>/articles/Queries.html</loc>
+    <loc>https://brui.github.io/REDCapDM/articles/Queries.html</loc>
   </url>
   <url>
-    <loc>/articles/REDCapDM.html</loc>
+    <loc>https://brui.github.io/REDCapDM/articles/REDCapDM.html</loc>
   </url>
   <url>
-    <loc>/articles/index.html</loc>
+    <loc>https://brui.github.io/REDCapDM/articles/index.html</loc>
   </url>
   <url>
-    <loc>/authors.html</loc>
+    <loc>https://brui.github.io/REDCapDM/authors.html</loc>
   </url>
   <url>
-    <loc>/index.html</loc>
+    <loc>https://brui.github.io/REDCapDM/index.html</loc>
   </url>
   <url>
-    <loc>/news/index.html</loc>
+    <loc>https://brui.github.io/REDCapDM/news/index.html</loc>
   </url>
   <url>
-    <loc>/reference/REDCapDM-package.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/REDCapDM-package.html</loc>
   </url>
   <url>
-    <loc>/reference/check_queries.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/check_queries.html</loc>
   </url>
   <url>
-    <loc>/reference/checkbox_names.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/checkbox_names.html</loc>
   </url>
   <url>
-    <loc>/reference/covican.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/covican.html</loc>
   </url>
   <url>
-    <loc>/reference/fill_data.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/fill_data.html</loc>
   </url>
   <url>
-    <loc>/reference/index.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/index.html</loc>
   </url>
   <url>
-    <loc>/reference/pipe.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/pipe.html</loc>
   </url>
   <url>
-    <loc>/reference/rd_event.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/rd_event.html</loc>
   </url>
   <url>
-    <loc>/reference/rd_export.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/rd_export.html</loc>
   </url>
   <url>
-    <loc>/reference/rd_insert_na.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/rd_insert_na.html</loc>
   </url>
   <url>
-    <loc>/reference/rd_query.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/rd_query.html</loc>
   </url>
   <url>
-    <loc>/reference/rd_rlogic.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/rd_rlogic.html</loc>
   </url>
   <url>
-    <loc>/reference/rd_transform.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/rd_transform.html</loc>
   </url>
   <url>
-    <loc>/reference/recalculate.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/recalculate.html</loc>
   </url>
   <url>
-    <loc>/reference/redcap_data.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/redcap_data.html</loc>
   </url>
   <url>
-    <loc>/reference/split_event.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/split_event.html</loc>
   </url>
   <url>
-    <loc>/reference/split_form.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/split_form.html</loc>
   </url>
   <url>
-    <loc>/reference/to_factor.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/to_factor.html</loc>
   </url>
   <url>
-    <loc>/reference/transform_checkboxes.html</loc>
+    <loc>https://brui.github.io/REDCapDM/reference/transform_checkboxes.html</loc>
   </url>
 </urlset>
