@@ -4,10 +4,10 @@ template:
   bootswatch: minty
   bslib:
     pkgdown-nav-height: 100px
-    primary: "#BA2B34"
+    primary: "#bb5b04"
     link-color: "#fa8011"
     link-hover-color: "#f8a85f"
-    dropdown-link-hover-bg: "#BA2B34"
+    dropdown-link-hover-bg: "#bb5b04"
 
 reference:
 - title: "Import data"
