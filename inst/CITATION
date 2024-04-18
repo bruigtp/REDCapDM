@@ -1,0 +1,11 @@
+bibentry(
+  bibtype  = "Article",
+  title    = "REDCapDM: An R package with a set of data management tools for a REDCap project",
+  author   = "João Carmezim, Pau Satorra, Judith Peñafiel, Esther García, Natàlia Pallarès, "Naiara Santos", Cristian Tebé",
+  journal  = "BMC Medical Research Methodology",
+  year     = "2024",
+  volume   = "24",
+  number   = "1",
+  pages    = "55",
+  doi      = "10.1186/s12874-024-02178-6"
+)
