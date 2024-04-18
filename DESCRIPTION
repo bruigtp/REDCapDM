@@ -11,7 +11,7 @@ Authors@R: c(
     person("Cristian", "Tebé", role = c("aut"))
     )
 Maintainer: João Carmezim <jcarmezim@igtp.cat>
-Description: REDCap Data Management - REDCapDM is a comprehensive package that enables users to seamlessly handle data exported directly from REDCap or through API connections. This tool facilitates various functions, including data preprocessing, report generation for queries such as outliers or missing values, and tracking of identified queries. 'REDCap' (Research Electronic Data CAPture; <https://projectredcap.org>) is a web application developed at Vanderbilt University, designed for creating and managing online surveys and databases. The API connection provides users with the capability to programmatically access both data and project metadata, including the data dictionary, from the web.
+Description: REDCap Data Management - REDCapDM is an R package that allows users to manage data exported directly from REDCap or using an API connection. This package includes several functions designed for pre-processing data, generating reports of queries such as outliers or missing values, and following up on the identified queries. 'REDCap' (Research Electronic Data CAPture; <https://projectredcap.org>) is a web application developed at Vanderbilt University, designed for creating and managing online surveys and databases and the REDCap API is an interface that allows external applications to connect to REDCap remotely, and is used to programmatically retrieve or modify project data or settings within REDCap, such as importing or exporting data.
 License: MIT + file LICENSE
 URL: https://bruigtp.github.io/REDCapDM/
 BugReports: https://github.com/bruigtp/REDCapDM/issues
@@ -40,5 +40,5 @@ Suggests:
     kableExtra
 VignetteBuilder: knitr
 Depends: 
-    R (>= 2.10)
+    R (>= 3.6)
 LazyData: true
