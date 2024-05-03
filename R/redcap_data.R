@@ -56,6 +56,13 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
   # Read data, dictionary and event-form mapping in case of exported data.
   if(all(!c(data_path, dic_path) %in% NA) & all(c(token, uri) %in% NA)){
 
+    # Evaluate the extension of the data_path
+    extension_data <- tools::file_ext(data_path)
+
+    if (extension_data != "R") {
+      stop("Unsupported file format. Only R files are supported. Please specify the downloaded R file from REDCap within this argument.")
+    }
+
     # Read data
     tmp_env <- new.env()
     file.lines <- scan(data_path, what = character(), skip = 2, sep = '\n', quiet = TRUE)
@@ -71,15 +78,15 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     # Read dictionary
     setwd(oldwd)
 
-    # Evaluate the extension
-    extension <- tools::file_ext(dic_path)
+    # Evaluate the extension of the dictionary_path
+    extension_dic <- tools::file_ext(dic_path)
 
-    if (extension == "xlsx") {
+    if (extension_dic == "xlsx") {
 
       # Read XLSX file
       dic <- openxlsx::read.xlsx(dic_path, colNames = F, detectDates = T)
 
-    } else if (extension == "csv") {
+    } else if (extension_dic == "csv") {
 
       # Read CSV file
       dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE)
@@ -169,7 +176,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     },
     error = function(e) {
       if (grepl("SSL peer certificate", e$message)) {
-        stop("Unable to establish a secure connection due to an SSL certificate problem.\nConsider adding the following line of code to bypass SSL certificate verification: httr::with_config(httr::config(ssl_verifypeer = FALSE), datax <- readcap_data(...)).\n", call. = F)
+        stop("Unable to establish a secure connection due to an SSL certificate problem.\nConsider adding the following line of code to bypass SSL certificate verification: httr::with_config(httr::config(ssl_verifypeer = FALSE), ... <- readcap_data(...)).\n", call. = F)
       } else {
         stop(e)
       }
@@ -259,16 +266,21 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
         dplyr::filter(.data$field_type %in% c("radio", "dropdown")) %>%
         dplyr::select("field_name", "field_type", "choices_calculations_or_slider_labels")%>%
         dplyr::mutate(factor = purrr::map(.data$choices_calculations_or_slider_labels, ~stringr::str_split(.x, "\\|") %>% unlist %>% trimws),
-                      levels = purrr::map(factor, ~gsub("^(\\d+),.*", "\\1", .x) %>% as.numeric),
-                      labels = purrr::map(factor, ~gsub("^\\d+, ?", "", .x)))
-
+                      levels = purrr::map(factor, ~gsub(",.*", "", .x)),
+                      labels = purrr::map(factor, ~gsub("^[^,]*,\\s*", "", .x)))
 
       for (i in var_radio$field_name) {
-        data_api[[stringr::str_glue("{i}.factor")]] <- factor(data_api[[i]],
-                                                     levels = c(var_radio$levels[[which(var_radio$field_name %in% i)]]),
-                                                     labels = c(var_radio$labels[[which(var_radio$field_name %in% i)]]))
+        tryCatch(
+          {
+            data_api[[stringr::str_glue("{i}.factor")]] <- factor(data_api[[i]],
+                                                                  levels = c(var_radio$levels[[which(var_radio$field_name %in% i)]]),
+                                                                  labels = c(var_radio$labels[[which(var_radio$field_name %in% i)]]))
+          },
+          error = function(e) {
+            warning(stringr::str_glue("The following variable could not be replicated in its factor version: {i}. Please manually create a factor version of this variable named '{i}.factor' to properly execute the rd_transform() function."), call. = F)
+          }
+        )
       }
-
     }
 
     # Join the main_vars to the imported data
