@@ -6,7 +6,6 @@
 <!-- badges: end -->
 
 
-
 `REDCapDM` is an R package that allows users to manage data exported directly from REDCap or through an API connection. This package includes several functions designed for preprocessing data, generating reports on queries like outliers or missing values, and performing a follow-up of each identified query. 'REDCap' (Research Electronic Data CAPture; <https://projectredcap.org>) is a web application developed at Vanderbilt University, designed for creating and managing online surveys and databases. The REDCap API serves as an interface allowing external applications to connect to REDCap remotely, and is used to programmatically retrieve or modify project data or settings within REDCap, such as importing or exporting data.
 
 The [REDCapDM website](https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html) has a description of the package functions as well as access to the package vignettes.
