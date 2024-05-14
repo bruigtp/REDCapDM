@@ -1,4 +1,4 @@
-[REDCapDM](https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html)  <img src="man/figures/logo.png" align="right" width="350"/>
+[REDCapDM](https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html)  <img src="man/figures/logo.png" align="right" width="250"/>
 =======
 
 <!-- badges: start -->
