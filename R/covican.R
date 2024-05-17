@@ -6,7 +6,7 @@
 #' @keywords datasets
 #' @usage data(covican)
 #'
-#' @note List containing three dataframes: the first one with the data, the second one with the dictionary (`codebook`) of the REDCap project and the final one with the instrument-event mappings of the REDCap project.
+#' @note List containing three data frames: the first one with the data, the second one with the dictionary (`codebook`) of the REDCap project and the last one with the instrument-event mappings of the REDCap project.
 #'
 #' @format A data frame with 342 rows and 56 columns
 #'  \describe{

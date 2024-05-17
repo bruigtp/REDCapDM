@@ -40,7 +40,7 @@ data(covican)
 A random sample of the COVICAN study. An international, multicentre cohort study of cancer patients with COVID-19 to describe the epidemiology, risk factors, and clinical outcomes of co-infections and superinfections in onco-hematological patients with COVID-19.
 }
 \note{
-List containing three dataframes: the first one with the data, the second one with the dictionary (`codebook`) of the REDCap project and the final one with the instrument-event mappings of the REDCap project.
+List containing three data frames: the first one with the data, the second one with the dictionary (`codebook`) of the REDCap project and the last one with the instrument-event mappings of the REDCap project.
 }
 \references{
 Gudiol, C., Durà-Miralles, X., Aguilar-Company, J., Hernández-Jiménez, P., Martínez-Cutillas, M., Fernandez-Avilés, F., Machado, M., Vázquez, L., Martín-Dávila, P., de Castro, N., Abdala, E., Sorli, L., Andermann, T. M., Márquez-Gómez, I., Morales, H., Gabilán, F., Ayaz, C. M., Kayaaslan, B., Aguilar-Guisado, M., Herrera, F. Royo-Cebrecos C, Peghin M, González-Rico C, Goikoetxea J, Salgueira S, Silva-Pinto A, Gutiérrez-Gutiérrez B, Cuellar S, Haidar G, Maluquer C, Marin M, Pallarès N, Carratalà J. (2021). Co-infections and superinfections complicating COVID-19 in cancer patients: A multicentre, international study. The Journal of infection, 83(3), 306–313. https://doi.org/10.1016/j.jinf.2021.07.014

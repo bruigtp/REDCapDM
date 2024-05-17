@@ -1,27 +1,30 @@
 #' @name REDCapDM-package
 #' @keywords internal
 #' @aliases REDCapDM
+#'
 #' @title Managing REDCap Data: The R package REDCapDM
+#'
 #' @description
-#' The REDCapDM package facilitates the importing of data from REDCap into R through either an API connection or directly from exported files. It encompasses various functions dedicated to data processing and transformation, aiding in the generation and administration of queries to address any discrepancies or uncertainties encountered within the dataset.
+#'
+#' The REDCapDM package facilitates the importing of data from REDCap into R through either an API connection or directly from exported files. It includes a range of data processing and transformation functions, and supports the creation and management of queries to address any discrepancies or uncertainties within the dataset.
 #'
 #' REDCapDM functions:
 #'
-#' - redcap_data: used to read data exported from REDCap or through an API connection.
+#' * *`redcap_data`: reads data exported directly from REDCap or via an API connection.
 #'
-#' - rd_transform: pre-processing a dataset.
+#' * *`rd_transform`: processes the raw dataset.
 #'
-#' - rd_rlogic: transcribes redcap logic to R logic.
+#' * *`rd_rlogic`: translates REDCap logic into R logic.
 #'
-#' - rd_insert_na: manually input a missing value for specified variables using a filter.
+#' * *`rd_insert_na`: manually inserts a missing value for specified variables using a filter.
 #'
-#' - rd_query: identification of queries.
+#' * *`rd_query`: identifies discrepancies in the dataset (queries).
 #'
-#' - rd_event: identification of missing events per record identifier.
+#' * *`rd_event`: identifies missing events in each record of the dataset.
 #'
-#' - check_queries: used to compare current queries with an old report to determine which ones have been modified, which remain unchanged, and if there are any new queries.
+#' * *`check_queries`: compares a current report of queries with an older one to determine which queries have been modified, which remain unchanged, and which are new.
 #'
-#' - rd_export: used to export all identified queries into a xlsx file.
+#' * *`rd_export`: exports a report of identified queries to an .xlsx file.
 #'
 #' @examples
 #' \dontrun{

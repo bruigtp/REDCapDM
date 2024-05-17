@@ -7,17 +7,17 @@
 rd_rlogic(..., data = NULL, dic = NULL, event_form = NULL, logic, var)
 }
 \arguments{
-\item{...}{List containing the data and the dictionary and the event if it's needed. Can be the output of the function `redcap_data`.}
+\item{...}{List containing the data, dictionary and event mapping (if needed) of the REDCap project. This should be the output of the `redcap_data` function.}
 
-\item{data}{Data frame containing data from REDCap. If the list is specified this argument is not needed.}
+\item{data}{Data frame containing data from REDCap. If the list is specified, this argument is not required.}
 
-\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not needed.}
+\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not required.}
 
-\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified this argument is not needed.}
+\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not required.}
 
 \item{logic}{String containing a logic in REDCap format.}
 
-\item{var}{string with the name of the variable that contains the logic.}
+\item{var}{String with the name of the variable containing the logic.}
 }
 \value{
 List containing the logic in R format and its evaluation.

@@ -54,7 +54,7 @@ rd_transform(
 List with the transformed dataset, dictionary, event_form and the results
 }
 \description{
-Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns the transformed data and dictionary along with the summary of the results of each step.
+Function that transforms the raw REDCap data read by the `redcap_data` function. It returns the transformed data and dictionary along with a summary of the results of each step.
 }
 \examples{
 rd_transform(covican)

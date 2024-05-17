@@ -14,21 +14,21 @@ rd_export(
 )
 }
 \arguments{
-\item{...}{List containing the data frame of queries. It may be the output of the `rd_query` or `rd_event` functions.}
+\item{...}{List containing the data frame of queries. This list must be the output of the `rd_query` or `rd_event` functions.}
 
-\item{queries}{Data frame containing the identified queries. If the list is given, this argument is not required.}
+\item{queries}{Data frame containing the identified queries. If the list is specified, this argument is not required.}
 
-\item{column}{Character element specifying the column containing the link of each query.}
+\item{column}{Character element specifying the column containing the link for each query.}
 
 \item{sheet_name}{Character element specifying the sheet name of the resulting xlsx file.}
 
-\item{path}{Character element specifying the file path to save the xlsx file. If `NULL`, the file is created in the current working directory.}
+\item{path}{Character element specifying the file path to save the xlsx file. If `NULL`, the file will be created in the current working directory.}
 
 \item{password}{String with the password to protect the worksheet and prevent others from making changes.}
 }
 \value{
-An xlsx file containing all the queries and, if available, hyperlinks to each one of them.
+An xlsx file containing all the queries and, if available, hyperlinks to each of them.
 }
 \description{
-This function allows you to export the previously identified queries to an xlsx file.
+This function exports a query report, generated using `rd_query` or `rd_event` functions, to an .xlsx file.
 }

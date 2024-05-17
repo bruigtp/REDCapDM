@@ -1,14 +1,14 @@
 #' Identification of missing event(s)
 #'
-#' When working with a longitudinal REDCap project, the exported data has a structure where each row represents one event per record. However, by default, REDCap does not export events for which there is no information available.
-#' This function allows you to identify which record identifiers do not contain information about a particular event.
+#' When working with a longitudinal REDCap project, the exported data has a structure where each row represents one event per record. However, by default REDCap does not export events for which there is no information available.
+#' This function allows you to identify which records do not contain information about a particular event.
 #'
-#' @param ... List containing the data, the dictionary and the event (if required). It may be the output of the `redcap_data` function.
-#' @param data Data frame containing the data read from REDCap. If the list is given, this argument is not required.
-#' @param dic Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.
+#' @param ... List containing the data, dictionary and event mapping (if required) of the REDCap project. This should be the output of the `redcap_data` function.
+#' @param data Data frame containing the data read from REDCap. If the list is specified, this argument is not required.
+#' @param dic Data frame containing the dictionary read from REDCap. If the list is specified, this argument is not required.
 #' @param event Character vector with the name of the REDCap event(s) to be analyzed.
 #' @param filter A filter to be applied to the dataset. This argument can be used to identify the missing events on a subset of the dataset.
-#' @param query_name Description of the query. It can be defined as the same one for all the variables, or you can define a different one for each variable. By default, the function defines it as `The event [event] is missing' for each event`.
+#' @param query_name Description of the query. It can be the same for all variables, or you can define a different one for each variable. By default, the function defines it as `The event [event] is missing' for each event`.
 #' @param addTo Data frame corresponding to a previous query data frame to which you can add the new query data frame. By default, the function always generates a new data frame without taking into account previous reports.
 #' @param report_title Character string specifying the title of the report.
 #' @param report_zeros Logical. If `TRUE`, the function returns a report containing variables with zero queries.

@@ -1,14 +1,14 @@
 #' Exporting the dataset of the queries
 #'
-#' This function allows you to export the previously identified queries to an xlsx file.
+#' This function exports a query report, generated using `rd_query` or `rd_event` functions, to an .xlsx file.
 #'
-#' @param ... List containing the data frame of queries. It may be the output of the `rd_query` or `rd_event` functions.
-#' @param queries Data frame containing the identified queries. If the list is given, this argument is not required.
-#' @param column Character element specifying the column containing the link of each query.
+#' @param ... List containing the data frame of queries. This list must be the output of the `rd_query` or `rd_event` functions.
+#' @param queries Data frame containing the identified queries. If the list is specified, this argument is not required.
+#' @param column Character element specifying the column containing the link for each query.
 #' @param sheet_name Character element specifying the sheet name of the resulting xlsx file.
-#' @param path Character element specifying the file path to save the xlsx file. If `NULL`, the file is created in the current working directory.
+#' @param path Character element specifying the file path to save the xlsx file. If `NULL`, the file will be created in the current working directory.
 #' @param password String with the password to protect the worksheet and prevent others from making changes.
-#' @return An xlsx file containing all the queries and, if available, hyperlinks to each one of them.
+#' @return An xlsx file containing all the queries and, if available, hyperlinks to each of them.
 #'
 #' @export
 

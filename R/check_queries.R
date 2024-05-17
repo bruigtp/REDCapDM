@@ -1,10 +1,10 @@
 #' Check for changes between two reports of the queries
 #'
-#' This function compares a previous report of queries with a new one and allows you to check which queries are new, which have been modified, and which remain unchanged.
+#' This function compares a previous report of queries with a new one, allowing you to check which queries are new, which have been modified, and which remain unchanged.
 #' @param old Previous version of the queries report.
 #' @param new New version of the queries report. The status of each query is determined using this object.
 #' @param report_title Character string specifying the title of the report.
-#' @return A list consisting of a dataframe with every single query of both reports and a column containing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. There is also a summary of the total number of queries per category in addition to this dataframe.
+#' @return A list consisting of a dataframe containing each individual query from both reports and a column showing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. In addition to this dataframe, there is also a summary of the total number of queries per category.
 #' @examples
 #' # Example of a query
 #' data_old <- rd_query(covican,

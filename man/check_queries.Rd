@@ -14,10 +14,10 @@ check_queries(old, new, report_title = NULL)
 \item{report_title}{Character string specifying the title of the report.}
 }
 \value{
-A list consisting of a dataframe with every single query of both reports and a column containing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. There is also a summary of the total number of queries per category in addition to this dataframe.
+A list consisting of a dataframe containing each individual query from both reports and a column showing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. In addition to this dataframe, there is also a summary of the total number of queries per category.
 }
 \description{
-This function compares a previous report of queries with a new one and allows you to check which queries are new, which have been modified, and which remain unchanged.
+This function compares a previous report of queries with a new one, allowing you to check which queries are new, which have been modified, and which remain unchanged.
 }
 \examples{
 # Example of a query

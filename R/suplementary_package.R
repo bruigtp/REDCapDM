@@ -63,7 +63,7 @@ core <- c("dplyr", "janitor", "magrittr", "openxlsx", "purrr", "REDCapR", "rlang
     if (length(packages) %% 2 == 1) {
       packages <- append(packages, "")
     }
-    col1 <- seq_len(length(packages) / 2)
+    col1 <- seq_len(length(packages))
     info <- paste0(packages[col1], "     ", packages[-col1])
 
     paste0(header, "\n", paste(info, collapse = "\n"))

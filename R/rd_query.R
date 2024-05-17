@@ -1,24 +1,24 @@
 #' Identification of queries
 #'
-#' This function allows you to identify queries by the use a specific expression.
-#' It can be used to identify missing values or to identify values that are outside the lower and upper limits of a variable.
+#' This function allows you to identify queries using a particular expression/filter.
+#' It can be used to identify missing values or to identify values outside the lower and upper limits of a variable.
 #'
-#' @param ... List containing the data, the dictionary and the event (if required). It may be the output of the `redcap_data` function.
+#' @param ... List containing the data, dictionary and event mapping (if required) of the REDCap project. This should be the output of the `redcap_data` function.
 #' @param data Data frame containing the data read from REDCap. If the list is given, this argument is not required.
 #' @param dic Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.
-#' @param event_form Data frame containing the correspondence of each event with each form. If the list is specified this argument is not necessary.
-#' @param variables Character vector of the names of the database variables to be checked.
-#' @param expression Character vector of expressions to be applied to the selected variables.
-#' @param negate Logical value which indicates whether the defined expression should be negated. Defaults to `FALSE`.
-#' @param variables_names Character vector containing the description of each selected variable. By default, the function automatically takes the description of each variable from the dictionary of the REDCap project.
-#' @param query_name Description of the query. It can be defined as the same one for all the variables, or you can define a different one for each variable. By default, the function defines it as `The value is [value] and it should not be [expression]'`.
-#' @param instrument REDCap's instrument to which the variables belong. It can be defined as the same one for all the variables, or you can define a different one for each variable. By default, the function automatically selects the corresponding instrument of each variable from the dictionary of the REDCap project.
-#' @param event The name of the REDCap event to be analyzed. If there are events in your REDCap project, you should use this argument in order to name the event to which the defined variables belong.
-#' @param filter A filter to be applied to the dataset. For example, the branching logic of a determined variable can be applied using this argument.
-#' @param addTo Data frame corresponding to a previous query data frame to which you can add the new query data frame. By default, the function always generates a new data frame without taking into account previous reports.
+#' @param event_form Data frame containing the correspondence of each event with each form. If the list is specified, this argument is not required.
+#' @param variables Character vector containing the names of the database variables to be checked.
+#' @param expression Character vector of expressions to apply to the selected variables.
+#' @param negate Logical value indicating whether the defined expression should be negated. Default value is `FALSE`.
+#' @param variables_names Character vector containing the description of each selected variable. By default, the function automatically takes the description of each variable from of the REDCap project dictionary.
+#' @param query_name Description of the query. It can be the same for all variables, or you can define a different one for each variable. By default, this function defines it as `The value is [value] and it should not be [expression]'`.
+#' @param instrument REDCap instrument to which the variables belong. It can be the same for all variables, or you can define a different one for each variable. By default, the function automatically selects the corresponding instrument of each variable from the REDCap project dictionary.
+#' @param event The name of the REDCap event to analyze. If there are events in your REDCap project, you should use this argument to name the event to which the defined variables belong.
+#' @param filter A filter to be applied to the dataset. For example, this argument can be used to apply the branching logic of a defined variable.
+#' @param addTo Data frame corresponding to a previous query data frame to which you can add the new query data frame. By default, this function always creates a new data frame regardless previous reports.
 #' @param report_title Character string specifying the title of the report.
 #' @param report_zeros Logical. If `TRUE`, the function returns a report containing variables with zero queries.
-#' @param by_dag Logical. If `TRUE`, both elements of the output are grouped by the data access groups (DAGs) of the REDCap project.
+#' @param by_dag Logical. If `TRUE`, both elements of the output will be grouped by the Data Access Groups (DAGs) of the REDCap project.
 #' @param link List containing project information used to create a web link to each query.
 #' @return A list with a data frame of 9 columns (10 columns, if the link argument is specified) meant to help the user identify each query and a table with the total number of queries per variable.
 #'

@@ -373,7 +373,7 @@ split_event <- function(data,dic,event_form,which=NULL){
   basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor")
 
   #It can happen that one of these variables are not in the database for some projects
-  basic_redcap_vars <- basic_redcap_vars[basic_redcap_vars%in%names(data)]
+  basic_redcap_vars <- basic_redcap_vars[basic_redcap_vars %in% names(data)]
 
   var_event_add <- data.frame(redcap_event_name = NA, field_name = basic_redcap_vars)
 

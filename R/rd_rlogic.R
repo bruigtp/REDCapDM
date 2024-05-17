@@ -2,12 +2,12 @@
 #'
 #' This function allows you to transcribe REDCap logic to R logic. WARNING: If the REDCap logic involves some smart-variables this function will not be able to transform it.
 #'
-#' @param ... List containing the data and the dictionary and the event if it's needed. Can be the output of the function `redcap_data`.
-#' @param data Data frame containing data from REDCap. If the list is specified this argument is not needed.
-#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not needed.
-#' @param event_form Data frame  containing the correspondence of each event with each form. If the list is specified this argument is not needed.
+#' @param ... List containing the data, dictionary and event mapping (if needed) of the REDCap project. This should be the output of the `redcap_data` function.
+#' @param data Data frame containing data from REDCap. If the list is specified, this argument is not required.
+#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not required.
+#' @param event_form Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not required.
 #' @param logic String containing a logic in REDCap format.
-#' @param var string with the name of the variable that contains the logic.
+#' @param var String with the name of the variable containing the logic.
 #' @return List containing the logic in R format and its evaluation.
 #' @examples
 #' rd_rlogic(covican,

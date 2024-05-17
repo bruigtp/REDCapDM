@@ -1,6 +1,6 @@
 #' Transformation of the raw data
 #'
-#' Function that transforms the raw data from REDCap read by the function `redcap_data`. It returns the transformed data and dictionary along with the summary of the results of each step.
+#' Function that transforms the raw REDCap data read by the `redcap_data` function. It returns the transformed data and dictionary along with a summary of the results of each step.
 #' @param ... Output of the function `redcap_data`, that is a list containing the data frames of the data, he dictionary and the event_form (if it's needed) of the REDCap project.
 #' @param data Data frame containing the data read from REDCap. If the list is specified this argument is not necessary.
 #' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not necessary.
