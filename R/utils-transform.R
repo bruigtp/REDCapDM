@@ -385,14 +385,28 @@ split_event <- function(data,dic,event_form,which=NULL){
 
   if(length(vars_more)>0){
     # print(vars_more)
-    stop("There're more variables in the dictionary than in the data base so it's not possible to split by event. Transformation stops.", call. = FALSE)
+    stop("There are more variables in the dictionary than in the data base so it's not possible to split by event. Transformation stops.", call. = FALSE)
   }
 
   vars_less <- names(data)[!names(data)%in%var_event$field_name]
 
+
+
   if(length(vars_less)>0){
-    # print(vars_less)
-    stop("There're more variables in the data base than in the dictionary so it's not possible to split by event. Transformation stops.", call. = FALSE)
+
+    if (any(grepl("_complete$|_timestamp$", vars_less))) {
+      mss <- dplyr::case_when(
+        any(grepl("_complete$", vars_less)) & any(grepl("_timestamp$", vars_less)) ~ "c('_complete', '_timestamp')",
+        any(grepl("_complete$", vars_less)) ~ "'_complete'",
+        any(grepl("_timestamp$", vars_less)) ~ "'_timestamp'"
+      )
+
+      stop(str_glue("Transformation stops. Please use the argument `delete_pattern = {mss}` to delete the default variables created by REDCap and continue the transformation."), call. = FALSE)
+
+    } else {
+      # print(vars_less)
+      stop("There are more variables in the data base than in the dictionary so it's not possible to split by event. Transformation stops.", call. = FALSE)
+    }
   }
 
   #Let's create a database for every event filtering variables found in every event
@@ -465,7 +479,20 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   vars_less <- vars_less[!vars_less %in% basic_redcap_vars]
 
   if(length(vars_less)>0){
-    stop("There're more variables in the data base than in the dictionary. Transformation stops", call. = FALSE)
+
+    if (any(grepl("_complete$|_timestamp$", vars_less))) {
+      mss <- dplyr::case_when(
+        any(grepl("_complete$", vars_less)) & any(grepl("_timestamp$", vars_less)) ~ "c('_complete', '_timestamp')",
+        any(grepl("_complete$", vars_less)) ~ "'_complete'",
+        any(grepl("_timestamp$", vars_less)) ~ "'_timestamp'"
+      )
+
+      stop(str_glue("Transformation stops. Please use the argument `delete_pattern = {mss}` to delete the default variables created by REDCap and continue the transformation."), call. = FALSE)
+
+    } else {
+      # print(vars_less)
+      stop("There are more variables in the data base than in the dictionary so it's not possible to split by form. Transformation stops.", call. = FALSE)
+    }
   }
 
   form <- unique(dic$form_name)
