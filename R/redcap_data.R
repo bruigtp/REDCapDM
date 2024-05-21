@@ -193,7 +193,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     if (nrow(labels) > 0) {
       names(labels)[1] <- "record_id"
     } else {
-      stop("Observational data retrieval is currently unavailable. Please verify the status of the REDCap server or confirm the existence of records within the project.", call. = F)
+      stop("Data retrieval is currently unavailable. Please check the status of the REDCap server, confirm the existence of records within the project and verify that you have the necessary data export and API permissions to perform this operation.", call. = F)
     }
 
     # Save the factor version of the default variables of redcap
