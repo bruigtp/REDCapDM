@@ -151,14 +151,26 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     for(i in 1:length(delete_pattern)){
 
       if(delete_pattern[i] == "_complete"){
+
         data <- data %>%
           dplyr::select(!tidyselect::ends_with(c("_complete", "_complete.factor")))
+
+        dic <- dic %>%
+          dplyr::filter(!grepl("_complete$", .data$field_name))
+
       }else if(delete_pattern[i] == "_timestamp"){
+
         data <- data %>%
           dplyr::select(!tidyselect::ends_with(c("_timestamp", "timestamp.factor")))
+
+        dic <- dic %>%
+          dplyr::filter(!grepl("_timestamp$", .data$field_name))
+
       }else{
+
         data <- data %>%
           dplyr::select(!tidyselect::contains(delete_pattern[i]))
+
         dic <- dic %>%
           dplyr::filter(!grepl(delete_pattern[i], .data$field_name))
       }
