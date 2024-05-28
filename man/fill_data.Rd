@@ -2,17 +2,17 @@
 % Please edit documentation in R/utils-transform.R
 \name{fill_data}
 \alias{fill_data}
-\title{Fill rows with the values in one event}
+\title{Fill Rows with Values from One Event}
 \usage{
 fill_data(which_event, which_var, data)
 }
 \arguments{
-\item{which_event}{String with the name of the event}
+\item{which_event}{String specifying the name of the event.}
 
-\item{which_var}{String with the name of the variable}
+\item{which_var}{String specifying the name of the variable.}
 
 \item{data}{Dataset containing the REDCap data.}
 }
 \description{
-Function that with one particular variable and event it fills all the rows in the data with the value in that particular event. Auxiliar to rd_rlogic function
+This function fills all rows in the dataset with the value of a particular variable in a specified event. It is an auxiliary function used in the `rd_rlogic` function.
 }

@@ -3,26 +3,31 @@
 #' @description
 #' This function allows users to read datasets from a REDCap project into R for analysis, either by exporting the data or via an API connection.
 #'
-#' The REDCap API is an interface that allows communication with REDCap and the server without going through the interactive REDCap interface.
+#' The REDCap API serves as an interface for communication with REDCap and the server without requiring interaction through the REDCap interface.
 #'
-#' [Important] In order to read the exported data from REDCap, please follow these steps:
+#' [Important] To read exported data from REDCap, please follow these steps:
 #'
-#' * * Use REDCap's 'Export Data' function
-#' * * Select the 'R Statistical Software' format.
-#' * * REDCap will then generate two files:
-#' * * * * A CSV file containing all the observations of the REDCap project.
-#' * * * * An R file containing the necessary R code to complete each variable's information and import them.
-#' * * These files, along with the dictionary and event-mapping, must be located in the same directory.
+#' - Use REDCap's 'Export Data' function.
 #'
-#' @note If you will give further use to the package, we advise you to use the argument `dic_path` to read your dictionary, as all other functions need it in order to run properly.
+#' - Select the 'R Statistical Software' format.
 #'
-#' @param data_path Character string with the path of the R file from which the dataset will be read (.
+#' - REDCap will then generate two files:
+#'
+#'    - A CSV file containing all observations of the REDCap project.
+#'
+#'    - An R file with the necessary code to complete each variable's information and import them.
+#'
+#' - Ensure these files, along with the dictionary and event-mapping, are in the same directory.
+#'
+#' @note For further use of the package, it's recommended to use the `dic_path` argument to read the dictionary, as all other functions require it for proper functioning.
+#'
+#' @param data_path Character string specifying the path of the R file from which the dataset will be read.
 #' @param dic_path Character string with the path of the dictionary.
-#' @param event_path Character string with the pathname of the file containing the correspondence between each event and each form (it can be downloaded through the `Designate Instruments for My Events` tab inside the `Project Setup` section of REDCap)
+#' @param event_path Character string specifying the path of the file containing the correspondence between each event and each form (downloadable via the `Designate Instruments for My Events` tab within the `Project Setup` section of REDCap).
 #' @param uri The URI (Uniform Resource Identification) of the REDCap project.
 #' @param token Character vector containing the generated token.
-#' @param filter_field Character vector with the fields of the REDCap project desired to be imported into R (import via API connection only).
-#' @return List containing the dataset and the dictionary of the REDCap project. If the event_path is specified, it will also contain a third element with the correspondence of the events & forms of the project.
+#' @param filter_field Character vector specifying the fields of the REDCap project desired to be imported into R (via API connection only).
+#' @return  A list containing the dataset and the dictionary of the REDCap project. If `event_path` is specified, it will also contain a third element with the correspondence of the events and forms of the project.
 #'
 #'
 #' @examples
@@ -41,18 +46,18 @@
 #' }
 #' @export
 
-redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NA)
+redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NA)
   {
   oldwd <- getwd()
   on.exit(setwd(oldwd))
 
   # Warning: data_path, dic_path and another argument are specified.
-  if(all(!c(data_path, dic_path) %in% NA) & any(!c(token, uri) %in% NA)){
+  if (all(!c(data_path, dic_path) %in% NA) & any(!c(token, uri) %in% NA)) {
     stop("Too many arguments, if you want to read exported data from REDCap use only the arguments data_path and dic_path", call. = FALSE)
   }
 
   # Warning: token, uri and another argument are specified.
-  if(all(!c(token, uri) %in% NA) & any(!c(data_path, dic_path) %in% NA)){
+  if (all(!c(token, uri) %in% NA) & any(!c(data_path, dic_path) %in% NA)) {
     stop("Too many arguments, if you want to read data from REDCap through an API connection use only the arguments uri and token.", call. = FALSE)
   }
 
@@ -62,10 +67,11 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
   }
 
   # Read data, dictionary and event-form mapping in case of exported data.
-  if(all(!c(data_path, dic_path) %in% NA) & all(c(token, uri) %in% NA)){
+  if (all(!c(data_path, dic_path) %in% NA) & all(c(token, uri) %in% NA)) {
 
     # Evaluate the extension of the data_path
     extension_data <- tools::file_ext(data_path)
+
 
     if (!extension_data %in% c("R", "r")) {
       stop("Unsupported file format. Only R files are supported. Please specify the downloaded R file from REDCap within this argument.")
@@ -79,7 +85,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     setwd(eval(parse(text = command)))
     source(textConnection(file.lines.collapsed), local = tmp_env, encoding = "UTF-8")
     data <- get("data", envir = tmp_env)
-    if (names(data)[1]!="record_id") {
+    if (names(data)[1] != "record_id") {
       names(data)[1] <- "record_id"
     }
 
@@ -92,7 +98,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     if (extension_dic == "xlsx") {
 
       # Read XLSX file
-      dic <- openxlsx::read.xlsx(dic_path, colNames = F, detectDates = T)
+      dic <- openxlsx::read.xlsx(dic_path, colNames = F, detectDates = T, sheet = 1)
 
     } else if (extension_dic == "csv") {
 
@@ -110,13 +116,14 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     dic <- dic[-1,]
     names(dic) <- janitor::make_clean_names(names(dic))
     names(dic)[1] <- "field_name"
-    if (dic[1,1]!="record_id") {
+    if (dic[1, 1] != "record_id") {
       dic[1,1] <- "record_id"
     }
 
     # Remove descriptive variables from dictionary
     if ("descriptive" %in% dic$field_type) {
-      dic <- dic %>% dplyr::filter(!.data$field_type %in% "descriptive")
+      dic <- dic %>%
+        dplyr::filter(!.data$field_type %in% "descriptive")
     }
 
 
@@ -124,7 +131,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
     #Read event file
-    if(!is.na(event_path)){
+    if (!is.na(event_path)) {
 
       setwd(oldwd)
 
@@ -134,7 +141,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       if (extension == "xlsx") {
 
         # Read XLSX file
-        event_form <- openxlsx::read.xlsx(event_path, detectDates = T)
+        event_form <- openxlsx::read.xlsx(event_path, detectDates = T, sheet = 1)
 
       } else if (extension == "csv") {
 
@@ -152,7 +159,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     }else{
 
       #If no event is specified and the project is longitudinal
-      if(longitudinal){
+      if (longitudinal) {
         warning("The project contains more than one event. You might want to load the event-form correspondence using the argument event_path.")
       }
 
@@ -162,7 +169,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
   }
 
   # Read data, dictionary and event-form mapping in case of an API connection.
-  if(all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)){
+  if (all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)) {
 
     # Message
     message("Importing in progress...")
@@ -242,8 +249,15 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     ## Making sure the names of both dictionaries(exported data and API connection) match
     names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
 
-    # Apply labels
-    data_api <- as.data.frame(purrr::map2(data_api, labels, ~labelled::set_variable_labels(.x, .y, .strict = FALSE)))
+
+    # Apply labels to data_api
+    data_api <- purrr::map2(data_api, as.list(labels), ~{
+      if (!is.null(.y)) {
+        attr(.x, "label") <- .y
+      }
+      .x
+    }) %>%
+      as.data.frame()
 
     # Remove descriptive variables from dictionary
     if ("descriptive" %in% dic_api$field_type) {
@@ -272,7 +286,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
       var_radio <- dic_api %>%
         dplyr::filter(.data$field_type %in% c("radio", "dropdown")) %>%
-        dplyr::select("field_name", "field_type", "choices_calculations_or_slider_labels")%>%
+        dplyr::select("field_name", "field_type", "choices_calculations_or_slider_labels") %>%
         dplyr::mutate(factor = purrr::map(.data$choices_calculations_or_slider_labels, ~stringr::str_split(.x, "\\|") %>% unlist %>% trimws),
                       levels = purrr::map(factor, ~gsub(",.*", "", .x)),
                       labels = purrr::map(factor, ~gsub("^[^,]*,\\s*", "", .x)))
@@ -300,7 +314,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     longitudinal <- ifelse("redcap_event_name" %in% names(data_api), TRUE, FALSE)
 
     # Read event file
-    if(!is.na(event_path)){
+    if (!is.na(event_path)) {
 
       # Warning: event_path not necessary while using API connection
       warning("The event_path argument is not necessary as the event-form correspondence can be automatically read with the API connection")
@@ -313,7 +327,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
       if (extension == "xlsx") {
 
         # Read XLSX file
-        event_form <- openxlsx::read.xlsx(event_path, detectDates = T)
+        event_form <- openxlsx::read.xlsx(event_path, detectDates = T, sheet = 1)
 
       } else if (extension == "csv") {
 
@@ -332,7 +346,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
     } else {
 
       # If the event file is not specified, the function reads it using the API connection (in case of longitudinal projects)
-      if(longitudinal){
+      if (longitudinal) {
 
         event_form <- as.data.frame(REDCapR::redcap_event_instruments(redcap_uri = uri, token = token, verbose = FALSE)$data)
 
@@ -355,7 +369,7 @@ redcap_data<-function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, 
 
   # Specifying the "UTF-8" encoding to each character column of the data
   for (i in 1:length(data_def$data)) {
-    if(is.character(data_def$data[, i])){
+    if (is.character(data_def$data[, i])) {
       suppressWarnings(data_def$data[, i] <- stringr::str_conv(data_def$data[, i], "UTF-8"))
     }
   }

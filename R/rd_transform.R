@@ -1,26 +1,27 @@
-#' Transformation of the raw data
+#' Transformation of the Raw Data
 #'
-#' Function that transforms the raw REDCap data read by the `redcap_data` function. It returns the transformed data and dictionary along with a summary of the results of each step.
-#' @param ... Output of the function `redcap_data`, that is a list containing the data frames of the data, he dictionary and the event_form (if it's needed) of the REDCap project.
-#' @param data Data frame containing the data read from REDCap. If the list is specified this argument is not necessary.
-#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not necessary.
-#' @param event_form Data frame containing the correspondence of each event with each form. If the list is specified this argument is not necessary.
-#' @param checkbox_labels Character vector with the names that will have the two options of every checkbox variable. Default is `c('No', 'Yes')`.
-#' @param checkbox_na Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.
-#' @param exclude_recalc Character vector with the names of the variables that do not have to be recalculated. Might be useful for projects were there are some calculated fields that have a time consuming recalculation.
-#' @param exclude_to_factor Character vector with the names of the variables that do not have to be transformed to factors.
+#' This function transforms the raw REDCap data read by the `redcap_data` function. It returns the transformed data and dictionary, along with a summary of the results of each step.
+#' @param ... Output of the `redcap_data` function, which is a list containing the data frames of the data, dictionary and event_form (if needed) of the REDCap project.
+#' @param data Data frame containing the data read from REDCap. If the list is specified, this argument is not necessary.
+#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not necessary.
+#' @param event_form Data frame containing the correspondence of each event with each form. If the list is specified, this argument is not necessary.
+#' @param checkbox_labels Character vector with the names for the two options of every checkbox variable. Default is `c('No', 'Yes')`.
+#' @param checkbox_na Logical indicating if checkboxes values with branching logic should be set to missing only when the branching logic is missing (`FALSE`), or also when the branching logic isn't satisfied (`TRUE`). The default is `FALSE`.
+#' @param exclude_recalc Character vector with the names of variables that should not be recalculated. Useful for projects with time-consuming recalculations of certain calculated fields.
+#' @param exclude_to_factor Character vector with the names of variables that should not be transformed to factors.
 #' @param delete_vars Character vector specifying the variables to exclude.
-#' @param delete_pattern Character vector specifying the regex pattern that will contain the variables to exclude. By default, variables ending up with `_complete` and `_timestamp` will be removed.
-#' @param final_format Character string indicating the final arrangement format of the data that the function will return. Choose one of `raw`, `by_event` or `by_form`. `raw` (default) will return the transformed data with the original structure. `by_event` will return the transformed data as a nested data frame by event. `by_form` will return the transformed data as a nested data frame by form.
-#' @param which_event Character string indicating if only one event has to be returned if the final format selected is `by_event`.
-#' @param which_form Character string indicating if only one form has to be returned if the final format selected is `by_form`.
-#' @param wide Logical indicating if the data split by form (if selected) has to be in a wide format or in a long one.
-#' @return List with the transformed dataset, dictionary, event_form and the results
+#' @param delete_pattern Character vector specifying the regex pattern for variables to be excluded. By default, variables ending with `_complete` and `_timestamp` will be removed.
+#' @param final_format Character string indicating the final format of the data. Options are `raw`, `by_event` or `by_form`. `raw` (default) returns the transformed data in its original structure, `by_event` returns it as a nested data frame by event, and `by_form` returns it as a nested data frame by form.
+#' @param which_event Character string indicating a specific event to return if the final format is  `by_event`.
+#' @param which_form Character string indicating a specific form to return if the final format is `by_form`.
+#' @param wide Logical indicating if the data split by form (if selected) should be in a wide format (`TRUE`) or a long format (`FALSE`).
+#' @return A list with the transformed dataset, dictionary, event_form, and the results of each transformation step.
 #'
 #' @examples
+#' # Basic transformation
 #' rd_transform(covican)
 #'
-#' # For customization of checkbox labels
+#' # For customization of checkbox labels (example)
 #' rd_transform(covican,
 #'              checkbox_labels = c("Not present", "Present"))
 #'

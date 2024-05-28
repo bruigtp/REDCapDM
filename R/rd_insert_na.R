@@ -1,13 +1,14 @@
-#' Insert missing using a filter
+#' Insert Missing Values Using a Filter
 #'
-#' Function that allows you to manually insert a missing value to some variables (`vars`) if a filter/s (`filter`) are satisfied. Useful for checkboxes without a gatekeeper question in the branching logic. Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+#' This function allows you to manually insert a missing value into certain variables (`vars`) if the specified filter/s (`filter`) are satisfied. It's particularly useful for checkboxes without a gatekeeper question in the branching logic. Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+#'
 #' @param ... List containing the data, the dictionary and the event if it's needed. Should be the output of the function `redcap_data`.
-#' @param data Data frame containing data from REDCap. If the list is specified this argument is not needed.
-#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not needed.
-#' @param event_form Data frame  containing the correspondence of each event with each form. If the list is specified this argument is not needed.
+#' @param data Data frame containing data from REDCap. If the list is specified, this argument is not needed.
+#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not needed.
+#' @param event_form Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not needed.
 #' @param vars Character vector containing the names of the variables to be transformed.
 #' @param filter Character vector containing the logic to be evaluated directly. If each logic is TRUE, the corresponding variable in `vars` is set to missing.
-#' @return transformed data with the specified variables converted.
+#' @return Transformed data with the specified variables converted.
 #' @examples
 #' table(is.na(covican$data$potassium))
 #' data <- rd_insert_na(covican,

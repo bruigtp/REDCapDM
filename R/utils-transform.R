@@ -1,14 +1,14 @@
-# Internal functions used for the pre-processing of 'rd_transform' function:
+# Internal Functions for rd_transform Pre-processing
 #'
-#' Recalculate REDCap calculated fields
+#' Recalculate REDCap Calculated Fields
 #' @description
-#' Function that recalculates every calculated field if the logic can be transcribed to R. Recall that calculated fields with smart-variables in the logic or variables in other events cannot be transcribed.
+#' This function recalculates each calculated field if the logic can be transcribed to R. Note that calculated fields containing smart-variables or variables from other events cannot be transcribed.
 #'
-#' The function will return the dataset and dictionary with the added recalculated variables (the name of the calculated field + `_recalc`) along with a table that shows the summary of the results.
+#' The function returns the dataset and dictionary with the recalculated variables appended (named as the original field plus `_recalc`), along with a summary table of the recalculation results.
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
-#' @param exclude_recalc Character vector with the names of the variables that do not have to be recalculated. Might be useful for projects were there are some calculated fields that have a time consuming recalculation.
+#' @param exclude_recalc Character vector with the names of the variables that should not be recalculated. Useful for projects with time-consuming recalculations for certain calculated fields.
 #' @importFrom rlang :=
 #'
 ############Calculated functions############
@@ -136,16 +136,16 @@ recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
 
 ############Checkbox functions############
 
-#' Transformation of checkboxes in case of having a branching logic
+#' Transformation of Checkboxes with Branching Logic
 #'
 #' @description
-#' Inspects all the checkboxes of the study and looks if there is a branching logic. If there is one, when the logic of the branching logic is missing it directly inputs a missing to the checkbox. If checkbox_na is TRUE additionally it will put a missing when the branching logic isn't satisfied and not only when the logic is missing. If a branching logic cannot be found or the logic cannot be transcribed because of the presence of some smart variables, the variable is added in the list of the reviewable ones that will be printed.
+#' This function inspects all the checkboxes in the study to determine if they have a branching logic. If a branching logic is present and its result is missing, the function will input a missing value into the checkbox. If `checkbox_na` is `TRUE`, the function will additionally input a missing value when the branching logic isn't satisfied, not just when it is missing. If a branching logic cannot be found or the logic cannot be transcribed due to the presence of smart variables, the variable is added to a list of reviewable variables that will be printed.
 #'
-#' The function will return the dataset with the transformed checkboxes along with a table that shows a summary of the results.
+#' The function returns the dataset with the transformed checkboxes and a table summarizing the results.
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
-#' @param checkbox_na Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.
+#' @param checkbox_na Logical indicating if values of checkboxes with branching logic should be set to missing only when the branching logic is missing (`FALSE`), or also when the branching logic is not satisfied (`TRUE`). The default is `FALSE`.
 
 transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FALSE){
 
@@ -226,13 +226,13 @@ transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FAL
        results = results)
 }
 
-#' Change checkboxes names into the name of their options
+#' Change Checkboxes Names to Option Names
 #' @description
-#' Function that returns both data and dictionary with the name of the checkboxes transformed by the name of their options.
+#' This function updates the names of checkboxes in the dataset and dictionary to reflect the names of their options.
 #' @param data Dataset containing the REDCap data.
 #' @param dic Dataset containing the REDCap dictionary.
-#' @param labels Named character vector with the name of the variables in the data and the REDCap label in its name.
-#' @param checkbox_labels Character vector with the names that will have the two options of every checkbox variable. Default is c('No', 'Yes').
+#' @param labels Named character vector with the names of the variables in the data and their corresponding REDCap labels.
+#' @param checkbox_labels Character vector specifying the names for the two options of each checkbox variable. The default is `c('No', 'Yes')`.
 
 checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
 
@@ -351,13 +351,14 @@ checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
 
 ############Structural functions##################
 
-#' Creation of a data frame with variables of all the forms of a specified event
+#' Creation of a Data Frame with Variables from All Forms of a Specified Event
 #' @description
-#' Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets filtered by each event and containing only the variables found in the event. It can be chosen to return only the data from the specified event.
+#' This function generates a nested dataset filtered by each event, containing only the variables associated with each event. It uses the provided data, dictionary, and event-form mapping. You can choose to return data for a specific event.
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
-#' @param event_form Data frame  containing the correspondence of each event with each form.
-#' @param which Specify an event if only data for the desired event is wanted.
+#' @param event_form Data frame containing the correspondence of each event with each form.
+#' @param which Character string specifying an event if only data for that event is desired.
+
 split_event <- function(data,dic,event_form,which=NULL){
 
   #We create event-variable correspondence from the variables in the dictionary:
@@ -440,14 +441,14 @@ split_event <- function(data,dic,event_form,which=NULL){
 
 }
 
-#' Creation of a data frame with variables of a specified form
+#' Creation of a Data Frame with Variables from a Specified Form
 #' @description
-#' Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets having only the variables in each form. It can be chosen to return only the data from the specified form
+#' This function generates a nested dataset containing only the variables associated with each form, using the provided data, dictionary, and event-form mapping. You can choose to return data for a specific form.
 #' @param data Data frame containing data from REDCap.
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
-#' @param which Specify a form if only data for the desired form is wanted.
-#' @param wide If the dataset needs to be in a wide format or not (long).
+#' @param which Character string specifying a form if only data for that form is desired.
+#' @param wide Logical indicating if the dataset should be returned in a wide format (`TRUE`) or long format (`FALSE`).
 
 split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 
@@ -557,12 +558,13 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 
 ###############Other functions###############
 
-#' Convert variables to factors
+#' Convert Variables to Factors
 #' @description
-#' Function that converts every variable except those specified to factor.
-#' @param data Dataset containing the REDCap data.
-#' @param dic Dataset containing the REDCap dictionary.
-#' @param exclude Character vector containing the names of those variables that will not be converted to factors. If `NULL`, all variables will be converted.
+#' This function converts all variables in the dataset to factors, except those specified in the `exclude` parameter.
+#' @param data Data frame containing the REDCap data.
+#' @param dic Data frame containing the REDCap dictionary.
+#' @param exclude Character vector specifying the names of variables that should not be converted to factors. If `NULL`, all variables will be converted.
+
 to_factor <- function(data, dic, exclude = NULL){
 
   #We need redcap_event_name to have the original values so we exclude of the conversion the variable redcap_event_name.factor. Also for redcap_data_access_group if present
@@ -639,11 +641,11 @@ to_factor <- function(data, dic, exclude = NULL){
   }
 }
 
-#' Fill rows with the values in one event
+#' Fill Rows with Values from One Event
 #' @description
-#' Function that with one particular variable and event it fills all the rows in the data with the value in that particular event. Auxiliar to rd_rlogic function
-#' @param which_event String with the name of the event
-#' @param which_var String with the name of the variable
+#' This function fills all rows in the dataset with the value of a particular variable in a specified event. It is an auxiliary function used in the `rd_rlogic` function.
+#' @param which_event String specifying the name of the event.
+#' @param which_var String specifying the name of the variable.
 #' @param data Dataset containing the REDCap data.
 
 fill_data <- function(which_event, which_var, data){

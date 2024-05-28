@@ -1,4 +1,4 @@
-#' Identification of missing event(s)
+#' Identification of Missing Event(s)
 #'
 #' When working with a longitudinal REDCap project, the exported data has a structure where each row represents one event per record. However, by default REDCap does not export events for which there is no information available.
 #' This function allows you to identify which records do not contain information about a particular event.
@@ -12,8 +12,8 @@
 #' @param addTo Data frame corresponding to a previous query data frame to which you can add the new query data frame. By default, the function always generates a new data frame without taking into account previous reports.
 #' @param report_title Character string specifying the title of the report.
 #' @param report_zeros Logical. If `TRUE`, the function returns a report containing variables with zero queries.
-#' @param link List containing project information used to create a web link to each missing event.
-#' @return A list with a data frame of 9 columns (10 columns, if the link argument is specified) meant to help the user identify each missing event and a table with the total number of missing events per event analyzed.
+#' @param link List of project information used to create a web link for each missing event.
+#' @return A list with a data frame of 9 columns (10 columns if the link argument is specified) to help the user identify each missing event and a table with the total number of missing events per event analyzed.
 #'
 #' @examples
 #' example <- rd_event(covican,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-transform.R
 \name{recalculate}
 \alias{recalculate}
-\title{Recalculate REDCap calculated fields}
+\title{Recalculate REDCap Calculated Fields}
 \usage{
 recalculate(data, dic, event_form = NULL, exclude_recalc = NULL)
 }
@@ -13,10 +13,10 @@ recalculate(data, dic, event_form = NULL, exclude_recalc = NULL)
 
 \item{event_form}{Data frame  containing the correspondence of each event with each form.}
 
-\item{exclude_recalc}{Character vector with the names of the variables that do not have to be recalculated. Might be useful for projects were there are some calculated fields that have a time consuming recalculation.}
+\item{exclude_recalc}{Character vector with the names of the variables that should not be recalculated. Useful for projects with time-consuming recalculations for certain calculated fields.}
 }
 \description{
-Function that recalculates every calculated field if the logic can be transcribed to R. Recall that calculated fields with smart-variables in the logic or variables in other events cannot be transcribed.
+This function recalculates each calculated field if the logic can be transcribed to R. Note that calculated fields containing smart-variables or variables from other events cannot be transcribed.
 
-The function will return the dataset and dictionary with the added recalculated variables (the name of the calculated field + `_recalc`) along with a table that shows the summary of the results.
+The function returns the dataset and dictionary with the recalculated variables appended (named as the original field plus `_recalc`), along with a summary table of the recalculation results.
 }

@@ -2,12 +2,12 @@
 % Please edit documentation in R/rd_rlogic.R
 \name{rd_rlogic}
 \alias{rd_rlogic}
-\title{REDCap logic into R logic}
+\title{Translate REDCap Logic to R Logic}
 \usage{
 rd_rlogic(..., data = NULL, dic = NULL, event_form = NULL, logic, var)
 }
 \arguments{
-\item{...}{List containing the data, dictionary and event mapping (if needed) of the REDCap project. This should be the output of the `redcap_data` function.}
+\item{...}{List containing the data, dictionary and event mapping (if applicable) of the REDCap project. This should be the output of the `redcap_data` function.}
 
 \item{data}{Data frame containing data from REDCap. If the list is specified, this argument is not required.}
 
@@ -15,7 +15,7 @@ rd_rlogic(..., data = NULL, dic = NULL, event_form = NULL, logic, var)
 
 \item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not required.}
 
-\item{logic}{String containing a logic in REDCap format.}
+\item{logic}{String containing logic in REDCap format.}
 
 \item{var}{String with the name of the variable containing the logic.}
 }
@@ -23,7 +23,7 @@ rd_rlogic(..., data = NULL, dic = NULL, event_form = NULL, logic, var)
 List containing the logic in R format and its evaluation.
 }
 \description{
-This function allows you to transcribe REDCap logic to R logic. WARNING: If the REDCap logic involves some smart-variables this function will not be able to transform it.
+This function allows you to convert REDCap logic into R logic. WARNING: Please note that if the REDCap logic involves smart variables, this function may not be able to transform it accurately.
 }
 \examples{
 rd_rlogic(covican,

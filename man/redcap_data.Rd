@@ -14,37 +14,42 @@ redcap_data(
 )
 }
 \arguments{
-\item{data_path}{Character string with the path of the R file from which the dataset will be read (.}
+\item{data_path}{Character string specifying the path of the R file from which the dataset will be read.}
 
 \item{dic_path}{Character string with the path of the dictionary.}
 
-\item{event_path}{Character string with the pathname of the file containing the correspondence between each event and each form (it can be downloaded through the `Designate Instruments for My Events` tab inside the `Project Setup` section of REDCap)}
+\item{event_path}{Character string specifying the path of the file containing the correspondence between each event and each form (downloadable via the `Designate Instruments for My Events` tab within the `Project Setup` section of REDCap).}
 
 \item{uri}{The URI (Uniform Resource Identification) of the REDCap project.}
 
 \item{token}{Character vector containing the generated token.}
 
-\item{filter_field}{Character vector with the fields of the REDCap project desired to be imported into R (import via API connection only).}
+\item{filter_field}{Character vector specifying the fields of the REDCap project desired to be imported into R (via API connection only).}
 }
 \value{
-List containing the dataset and the dictionary of the REDCap project. If the event_path is specified, it will also contain a third element with the correspondence of the events & forms of the project.
+A list containing the dataset and the dictionary of the REDCap project. If `event_path` is specified, it will also contain a third element with the correspondence of the events and forms of the project.
 }
 \description{
 This function allows users to read datasets from a REDCap project into R for analysis, either by exporting the data or via an API connection.
 
-The REDCap API is an interface that allows communication with REDCap and the server without going through the interactive REDCap interface.
+The REDCap API serves as an interface for communication with REDCap and the server without requiring interaction through the REDCap interface.
 
-[Important] In order to read the exported data from REDCap, please follow these steps:
+[Important] To read exported data from REDCap, please follow these steps:
 
-* * Use REDCap's 'Export Data' function
-* * Select the 'R Statistical Software' format.
-* * REDCap will then generate two files:
-* * * * A CSV file containing all the observations of the REDCap project.
-* * * * An R file containing the necessary R code to complete each variable's information and import them.
-* * These files, along with the dictionary and event-mapping, must be located in the same directory.
+- Use REDCap's 'Export Data' function.
+
+- Select the 'R Statistical Software' format.
+
+- REDCap will then generate two files:
+
+   - A CSV file containing all observations of the REDCap project.
+
+   - An R file with the necessary code to complete each variable's information and import them.
+
+- Ensure these files, along with the dictionary and event-mapping, are in the same directory.
 }
 \note{
-If you will give further use to the package, we advise you to use the argument `dic_path` to read your dictionary, as all other functions need it in order to run properly.
+For further use of the package, it's recommended to use the `dic_path` argument to read the dictionary, as all other functions require it for proper functioning.
 }
 \examples{
 \dontrun{

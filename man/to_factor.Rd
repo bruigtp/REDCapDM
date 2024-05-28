@@ -2,17 +2,17 @@
 % Please edit documentation in R/utils-transform.R
 \name{to_factor}
 \alias{to_factor}
-\title{Convert variables to factors}
+\title{Convert Variables to Factors}
 \usage{
 to_factor(data, dic, exclude = NULL)
 }
 \arguments{
-\item{data}{Dataset containing the REDCap data.}
+\item{data}{Data frame containing the REDCap data.}
 
-\item{dic}{Dataset containing the REDCap dictionary.}
+\item{dic}{Data frame containing the REDCap dictionary.}
 
-\item{exclude}{Character vector containing the names of those variables that will not be converted to factors. If `NULL`, all variables will be converted.}
+\item{exclude}{Character vector specifying the names of variables that should not be converted to factors. If `NULL`, all variables will be converted.}
 }
 \description{
-Function that converts every variable except those specified to factor.
+This function converts all variables in the dataset to factors, except those specified in the `exclude` parameter.
 }

@@ -1,8 +1,8 @@
-#' Check for changes between two reports of the queries
+#' Check for Changes Between Two Query Reports
 #'
-#' This function compares a previous report of queries with a new one, allowing you to check which queries are new, which have been modified, and which remain unchanged.
+#' This function compares an old report of queries with a new one. It allows you to identify which queries are new, which have been modified, and which remain unchanged.
 #' @param old Previous version of the queries report.
-#' @param new New version of the queries report. The status of each query is determined using this object.
+#' @param new New version of the queries report. This object is used to determine the status of each query.
 #' @param report_title Character string specifying the title of the report.
 #' @return A list consisting of a dataframe containing each individual query from both reports and a column showing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. In addition to this dataframe, there is also a summary of the total number of queries per category.
 #' @examples

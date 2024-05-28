@@ -2,7 +2,7 @@
 % Please edit documentation in R/rd_event.R
 \name{rd_event}
 \alias{rd_event}
-\title{Identification of missing event(s)}
+\title{Identification of Missing Event(s)}
 \usage{
 rd_event(
   ...,
@@ -36,10 +36,10 @@ rd_event(
 
 \item{report_zeros}{Logical. If `TRUE`, the function returns a report containing variables with zero queries.}
 
-\item{link}{List containing project information used to create a web link to each missing event.}
+\item{link}{List of project information used to create a web link for each missing event.}
 }
 \value{
-A list with a data frame of 9 columns (10 columns, if the link argument is specified) meant to help the user identify each missing event and a table with the total number of missing events per event analyzed.
+A list with a data frame of 9 columns (10 columns if the link argument is specified) to help the user identify each missing event and a table with the total number of missing events per event analyzed.
 }
 \description{
 When working with a longitudinal REDCap project, the exported data has a structure where each row represents one event per record. However, by default REDCap does not export events for which there is no information available.

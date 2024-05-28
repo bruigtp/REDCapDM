@@ -2,28 +2,28 @@
 % Please edit documentation in R/rd_insert_na.R
 \name{rd_insert_na}
 \alias{rd_insert_na}
-\title{Insert missing using a filter}
+\title{Insert Missing Values Using a Filter}
 \usage{
 rd_insert_na(..., data = NULL, dic = NULL, event_form = NULL, vars, filter)
 }
 \arguments{
 \item{...}{List containing the data, the dictionary and the event if it's needed. Should be the output of the function `redcap_data`.}
 
-\item{data}{Data frame containing data from REDCap. If the list is specified this argument is not needed.}
+\item{data}{Data frame containing data from REDCap. If the list is specified, this argument is not needed.}
 
-\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified this argument is not needed.}
+\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not needed.}
 
-\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified this argument is not needed.}
+\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not needed.}
 
 \item{vars}{Character vector containing the names of the variables to be transformed.}
 
 \item{filter}{Character vector containing the logic to be evaluated directly. If each logic is TRUE, the corresponding variable in `vars` is set to missing.}
 }
 \value{
-transformed data with the specified variables converted.
+Transformed data with the specified variables converted.
 }
 \description{
-Function that allows you to manually insert a missing value to some variables (`vars`) if a filter/s (`filter`) are satisfied. Useful for checkboxes without a gatekeeper question in the branching logic. Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+This function allows you to manually insert a missing value into certain variables (`vars`) if the specified filter/s (`filter`) are satisfied. It's particularly useful for checkboxes without a gatekeeper question in the branching logic. Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
 }
 \examples{
 table(is.na(covican$data$potassium))

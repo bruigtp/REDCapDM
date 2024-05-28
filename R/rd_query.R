@@ -1,4 +1,4 @@
-#' Identification of queries
+#' Identification of Queries
 #'
 #' This function allows you to identify queries using a particular expression/filter.
 #' It can be used to identify missing values or to identify values outside the lower and upper limits of a variable.

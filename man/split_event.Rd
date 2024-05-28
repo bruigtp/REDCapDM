@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-transform.R
 \name{split_event}
 \alias{split_event}
-\title{Creation of a data frame with variables of all the forms of a specified event}
+\title{Creation of a Data Frame with Variables from All Forms of a Specified Event}
 \usage{
 split_event(data, dic, event_form, which = NULL)
 }
@@ -11,10 +11,10 @@ split_event(data, dic, event_form, which = NULL)
 
 \item{dic}{Data frame  containing the dictionary read from REDCap.}
 
-\item{event_form}{Data frame  containing the correspondence of each event with each form.}
+\item{event_form}{Data frame containing the correspondence of each event with each form.}
 
-\item{which}{Specify an event if only data for the desired event is wanted.}
+\item{which}{Character string specifying an event if only data for that event is desired.}
 }
 \description{
-Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets filtered by each event and containing only the variables found in the event. It can be chosen to return only the data from the specified event.
+This function generates a nested dataset filtered by each event, containing only the variables associated with each event. It uses the provided data, dictionary, and event-form mapping. You can choose to return data for a specific event.
 }

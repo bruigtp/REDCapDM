@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-transform.R
 \name{checkbox_names}
 \alias{checkbox_names}
-\title{Change checkboxes names into the name of their options}
+\title{Change Checkboxes Names to Option Names}
 \usage{
 checkbox_names(data, dic, labels, checkbox_labels = c("No", "Yes"))
 }
@@ -11,10 +11,10 @@ checkbox_names(data, dic, labels, checkbox_labels = c("No", "Yes"))
 
 \item{dic}{Dataset containing the REDCap dictionary.}
 
-\item{labels}{Named character vector with the name of the variables in the data and the REDCap label in its name.}
+\item{labels}{Named character vector with the names of the variables in the data and their corresponding REDCap labels.}
 
-\item{checkbox_labels}{Character vector with the names that will have the two options of every checkbox variable. Default is c('No', 'Yes').}
+\item{checkbox_labels}{Character vector specifying the names for the two options of each checkbox variable. The default is `c('No', 'Yes')`.}
 }
 \description{
-Function that returns both data and dictionary with the name of the checkboxes transformed by the name of their options.
+This function updates the names of checkboxes in the dataset and dictionary to reflect the names of their options.
 }

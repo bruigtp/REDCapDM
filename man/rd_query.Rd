@@ -2,7 +2,7 @@
 % Please edit documentation in R/rd_query.R
 \name{rd_query}
 \alias{rd_query}
-\title{Identification of queries}
+\title{Identification of Queries}
 \usage{
 rd_query(
   ...,

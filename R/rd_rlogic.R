@@ -1,12 +1,12 @@
-#' REDCap logic into R logic
+#' Translate REDCap Logic to R Logic
 #'
-#' This function allows you to transcribe REDCap logic to R logic. WARNING: If the REDCap logic involves some smart-variables this function will not be able to transform it.
+#' This function allows you to convert REDCap logic into R logic. WARNING: Please note that if the REDCap logic involves smart variables, this function may not be able to transform it accurately.
 #'
-#' @param ... List containing the data, dictionary and event mapping (if needed) of the REDCap project. This should be the output of the `redcap_data` function.
+#' @param ... List containing the data, dictionary and event mapping (if applicable) of the REDCap project. This should be the output of the `redcap_data` function.
 #' @param data Data frame containing data from REDCap. If the list is specified, this argument is not required.
 #' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not required.
 #' @param event_form Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not required.
-#' @param logic String containing a logic in REDCap format.
+#' @param logic String containing logic in REDCap format.
 #' @param var String with the name of the variable containing the logic.
 #' @return List containing the logic in R format and its evaluation.
 #' @examples

@@ -2,7 +2,7 @@
 % Please edit documentation in R/rd_export.R
 \name{rd_export}
 \alias{rd_export}
-\title{Exporting the dataset of the queries}
+\title{Exporting Query Dataset}
 \usage{
 rd_export(
   ...,
@@ -27,8 +27,8 @@ rd_export(
 \item{password}{String with the password to protect the worksheet and prevent others from making changes.}
 }
 \value{
-An xlsx file containing all the queries and, if available, hyperlinks to each of them.
+An .xlsx file containing all the queries and, if available, hyperlinks to each of them.
 }
 \description{
-This function exports a query report, generated using `rd_query` or `rd_event` functions, to an .xlsx file.
+This function exports a query report, generated using the `rd_query` or `rd_event` functions, to an .xlsx file.
 }

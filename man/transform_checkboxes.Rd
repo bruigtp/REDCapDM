@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-transform.R
 \name{transform_checkboxes}
 \alias{transform_checkboxes}
-\title{Transformation of checkboxes in case of having a branching logic}
+\title{Transformation of Checkboxes with Branching Logic}
 \usage{
 transform_checkboxes(data, dic, event_form = NULL, checkbox_na = FALSE)
 }
@@ -13,10 +13,10 @@ transform_checkboxes(data, dic, event_form = NULL, checkbox_na = FALSE)
 
 \item{event_form}{Data frame  containing the correspondence of each event with each form.}
 
-\item{checkbox_na}{Logical indicating if values of checkboxes that have a branching logic have to set to missing only when the branching logic is missing (if set to false) or also when the branching logic isn't satisfied (if set to true). The default is false.}
+\item{checkbox_na}{Logical indicating if values of checkboxes with branching logic should be set to missing only when the branching logic is missing (`FALSE`), or also when the branching logic is not satisfied (`TRUE`). The default is `FALSE`.}
 }
 \description{
-Inspects all the checkboxes of the study and looks if there is a branching logic. If there is one, when the logic of the branching logic is missing it directly inputs a missing to the checkbox. If checkbox_na is TRUE additionally it will put a missing when the branching logic isn't satisfied and not only when the logic is missing. If a branching logic cannot be found or the logic cannot be transcribed because of the presence of some smart variables, the variable is added in the list of the reviewable ones that will be printed.
+This function inspects all the checkboxes in the study to determine if they have a branching logic. If a branching logic is present and its result is missing, the function will input a missing value into the checkbox. If `checkbox_na` is `TRUE`, the function will additionally input a missing value when the branching logic isn't satisfied, not just when it is missing. If a branching logic cannot be found or the logic cannot be transcribed due to the presence of smart variables, the variable is added to a list of reviewable variables that will be printed.
 
-The function will return the dataset with the transformed checkboxes along with a table that shows a summary of the results.
+The function returns the dataset with the transformed checkboxes and a table summarizing the results.
 }

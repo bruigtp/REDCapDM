@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-transform.R
 \name{split_form}
 \alias{split_form}
-\title{Creation of a data frame with variables of a specified form}
+\title{Creation of a Data Frame with Variables from a Specified Form}
 \usage{
 split_form(data, dic, event_form = NULL, which = NULL, wide = FALSE)
 }
@@ -13,10 +13,10 @@ split_form(data, dic, event_form = NULL, which = NULL, wide = FALSE)
 
 \item{event_form}{Data frame  containing the correspondence of each event with each form.}
 
-\item{which}{Specify a form if only data for the desired form is wanted.}
+\item{which}{Character string specifying a form if only data for that form is desired.}
 
-\item{wide}{If the dataset needs to be in a wide format or not (long).}
+\item{wide}{Logical indicating if the dataset should be returned in a wide format (`TRUE`) or long format (`FALSE`).}
 }
 \description{
-Function that given the data, the dictionary and the mapping between forms and events it creates a nested dataset containing all the datasets having only the variables in each form. It can be chosen to return only the data from the specified form
+This function generates a nested dataset containing only the variables associated with each form, using the provided data, dictionary, and event-form mapping. You can choose to return data for a specific form.
 }
