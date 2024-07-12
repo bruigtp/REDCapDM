@@ -70,10 +70,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   if (all(!c(data_path, dic_path) %in% NA) & all(c(token, uri) %in% NA)) {
 
     # Evaluate the extension of the data_path
-    extension_data <- tools::file_ext(data_path)
 
-
-    if (!extension_data %in% c("R", "r")) {
+    if (!grepl("\\.R$", data_path) & !grepl("\\.r$", data_path)) {
       stop("Unsupported file format. Only R files are supported. Please specify the downloaded R file from REDCap within this argument.")
     }
 
