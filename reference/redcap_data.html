@@ -74,7 +74,8 @@ The REDCap API serves as an interface for communication with REDCap and the serv
 <span>  event_path <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  uri <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  token <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  filter_field <span class="op">=</span> <span class="cn">NA</span></span>
+<span>  filter_field <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  survey_fields <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -104,6 +105,10 @@ The REDCap API serves as an interface for communication with REDCap and the serv
 
 <dt id="arg-filter-field">filter_field<a class="anchor" aria-label="anchor" href="#arg-filter-field"></a></dt>
 <dd><p>Character vector specifying the fields of the REDCap project desired to be imported into R (via API connection only).</p></dd>
+
+
+<dt id="arg-survey-fields">survey_fields<a class="anchor" aria-label="anchor" href="#arg-survey-fields"></a></dt>
+<dd><p>Logical indicating whether the function should download all the survey-related fields of the REDCap project (via API connection only).</p></dd>
 
 </dl></div>
     <div class="section level2">
