@@ -25,7 +25,7 @@ The *development* version can be installed from [GitHub](https://github.com/brui
 
 ```r
 install.packages("remotes") # Run this line if the 'remotes' package isn't installed already.
-remotes::install_github("OuhscBbmc/REDCapR")
+remotes::install_github("bruigtp/REDCapDM")
 ```
 
 ## Getting help

@@ -364,14 +364,14 @@ split_event <- function(data,dic,event_form,which=NULL){
   #We create event-variable correspondence from the variables in the dictionary:
   var_event <- event_form %>%
     dplyr::select("form_name"="form","redcap_event_name"="unique_event_name") %>%
-    dplyr::right_join(dic[,c("form_name","field_name","field_type","branching_logic_show_field_only_if")],by="form_name", multiple = "all") %>%
+    dplyr::right_join(dic[, c("form_name","field_name","field_type","branching_logic_show_field_only_if")], by = "form_name", multiple = "all") %>%
     #Remove variables that are not in the database (the descriptive type)
     dplyr::filter(.data$field_type!="descriptive", .data$field_name != "record_id") %>%
     tibble::as_tibble() %>%
     dplyr::select("redcap_event_name", "field_name")
 
   #Let's add the basic variables from redcap that are found in the data but not in the dictionary:
-  basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor")
+  basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")
 
   #It can happen that one of these variables are not in the database for some projects
   basic_redcap_vars <- basic_redcap_vars[basic_redcap_vars %in% names(data)]
@@ -402,7 +402,7 @@ split_event <- function(data,dic,event_form,which=NULL){
         any(grepl("_timestamp$", vars_less)) ~ "'_timestamp'"
       )
 
-      stop(str_glue("Transformation stops. Please use the argument `delete_pattern = {mss}` to delete the default variables created by REDCap and continue the transformation."), call. = FALSE)
+      stop(stringr::str_glue("Transformation stops. Please use the argument `delete_pattern = {mss}` to delete the default variables created by REDCap and continue the transformation."), call. = FALSE)
 
     } else {
       # print(vars_less)
@@ -488,7 +488,7 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
         any(grepl("_timestamp$", vars_less)) ~ "'_timestamp'"
       )
 
-      stop(str_glue("Transformation stops. Please use the argument `delete_pattern = {mss}` to delete the default variables created by REDCap and continue the transformation."), call. = FALSE)
+      stop(stringr::str_glue("Transformation stops. Please use the argument `delete_pattern = {mss}` to delete the default variables created by REDCap and continue the transformation."), call. = FALSE)
 
     } else {
       # print(vars_less)

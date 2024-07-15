@@ -16,7 +16,7 @@ License: MIT + file LICENSE
 URL: https://bruigtp.github.io/REDCapDM/, https://doi.org/10.1186/s12874-024-02178-6
 BugReports: https://github.com/bruigtp/REDCapDM/issues
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
     dplyr,
     janitor,
@@ -31,7 +31,6 @@ Imports:
     tidyselect,
     utils,
     stringi,
-    labelled,
     cli,
     forcats
 Suggests: 

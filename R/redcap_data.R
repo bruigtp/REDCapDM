@@ -27,6 +27,7 @@
 #' @param uri The URI (Uniform Resource Identification) of the REDCap project.
 #' @param token Character vector containing the generated token.
 #' @param filter_field Character vector specifying the fields of the REDCap project desired to be imported into R (via API connection only).
+#' @param survey_fields Logical indicating whether the function should download all the survey-related fields of the REDCap project (via API connection only).
 #' @return  A list containing the dataset and the dictionary of the REDCap project. If `event_path` is specified, it will also contain a third element with the correspondence of the events and forms of the project.
 #'
 #'
@@ -46,7 +47,7 @@
 #' }
 #' @export
 
-redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NA)
+redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NULL, survey_fields = FALSE)
   {
   oldwd <- getwd()
   on.exit(setwd(oldwd))
@@ -176,19 +177,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     ## Error SSL peer certificate (Github issue #6)
 
-    tryCatch({
-      if (all(filter_field %in% NA)) {
-
-        labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE)$data)
-
-      } else {
-
-        labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = F, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, fields = filter_field)$data)
-
-      }
-    },
+    tryCatch({labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field)$data)},
     error = function(e) {
-      if (grepl("SSL peer certificate", e$message)) {
+      if(grepl("REDCap's PHP code is likely trying to process too much text in one bite", e$message) & !is.null(filter_field)) {
+        stop("The `record_id` or equivalent variable is missing on the `filter_field` argument.", call. = F)
+      } else if (grepl("SSL peer certificate", e$message)) {
         stop("Unable to establish a secure connection due to an SSL certificate problem.\nConsider adding the following line of code to bypass SSL certificate verification: httr::with_config(httr::config(ssl_verifypeer = FALSE), ... <- readcap_data(...)).\n", call. = F)
       } else {
         stop(e)
@@ -214,24 +207,20 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     names(rename_redcap) <- default_names$corres
 
     main_vars <- labels %>%
-      dplyr::mutate_at(redcap_names[!redcap_names %in% "Repeat Instrument"], ~forcats::fct_inorder(.)) %>%
+      dplyr::mutate_at(redcap_names[!redcap_names %in% "Repeat Instrument"],
+                       ~ifelse(all(is.na(.)), ., forcats::fct_inorder(.))) %>%
       dplyr::rename(dplyr::all_of(rename_redcap)) %>%
       dplyr::select("record_id", default_names$corres)
 
     # Remove the "...number" suffixes from the labels
     labels <- gsub("\\.{3}\\d+$", "", names(labels))
 
-
     # Message
     message("Almost done...")
 
     # Read data using the API connection
 
-    if (all(filter_field %in% NA)) {
-      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE)$data
-    } else {
-      data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, fields = filter_field)$data
-    }
+    data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field)$data
 
     if (nrow(data_api) > 0) {
       names(data_api)[1] <- "record_id"
@@ -243,6 +232,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     dic_api <- REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data
 
     names(dic_api)[1] <- "field_name"
+
+    if (dic_api[1, 1] != "record_id") {
+      dic_api[1,1] <- "record_id"
+    }
 
     ## Making sure the names of both dictionaries(exported data and API connection) match
     names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
@@ -259,12 +252,14 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     # Remove descriptive variables from dictionary
     if ("descriptive" %in% dic_api$field_type) {
-      dic_api <- dic_api %>% dplyr::filter(!.data$field_type %in% "descriptive")
+      dic_api <- dic_api %>%
+        dplyr::filter(!.data$field_type %in% "descriptive")
     }
 
     # If filter_field is described, filter the variables in the dictionary
     if (!all(filter_field %in% NA)) {
-      dic_api <- dic_api %>% dplyr::filter(.data$field_name %in% filter_field)
+      dic_api <- dic_api %>%
+        dplyr::filter(.data$field_name %in% filter_field)
     }
 
     # Identify checkboxes fields and convert them to factor using the dictionary as guide
@@ -291,11 +286,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       for (i in var_radio$field_name) {
         tryCatch(
-          {
-            data_api[[stringr::str_glue("{i}.factor")]] <- factor(data_api[[i]],
-                                                                  levels = c(var_radio$levels[[which(var_radio$field_name %in% i)]]),
-                                                                  labels = c(var_radio$labels[[which(var_radio$field_name %in% i)]]))
-          },
+          {data_api[[stringr::str_glue("{i}.factor")]] <- factor(data_api[[i]],
+                                                                 levels = c(var_radio$levels[[which(var_radio$field_name %in% i)]]),
+                                                                 labels = c(var_radio$labels[[which(var_radio$field_name %in% i)]]))},
           error = function(e) {
             warning(stringr::str_glue("The following variable could not be replicated in its factor version: {i}. Please manually create a factor version of this variable named '{i}.factor' to properly execute the rd_transform() function."), call. = F)
           }
@@ -334,7 +327,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       } else {
 
-        stop("Unsupported file format. Only XLSX and CSV are supported.")
+        stop("Unsupported file format. Only XLSX and CSV formats are supported.")
 
       }
 

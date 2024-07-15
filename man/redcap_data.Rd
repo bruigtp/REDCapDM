@@ -10,7 +10,8 @@ redcap_data(
   event_path = NA,
   uri = NA,
   token = NA,
-  filter_field = NA
+  filter_field = NULL,
+  survey_fields = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ redcap_data(
 \item{token}{Character vector containing the generated token.}
 
 \item{filter_field}{Character vector specifying the fields of the REDCap project desired to be imported into R (via API connection only).}
+
+\item{survey_fields}{Logical indicating whether the function should download all the survey-related fields of the REDCap project (via API connection only).}
 }
 \value{
 A list containing the dataset and the dictionary of the REDCap project. If `event_path` is specified, it will also contain a third element with the correspondence of the events and forms of the project.
