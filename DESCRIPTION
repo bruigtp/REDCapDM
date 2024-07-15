@@ -29,6 +29,7 @@ Imports:
     tibble,
     tidyr,
     tidyselect,
+    labelled,
     utils,
     stringi,
     cli,
