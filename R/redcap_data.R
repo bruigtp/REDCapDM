@@ -220,7 +220,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     # Read data using the API connection
 
-    data_api <- REDCapR::redcap_read_oneshot(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field)$data
+    data_api <- REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field)$data
 
     if (nrow(data_api) > 0) {
       names(data_api)[1] <- "record_id"
