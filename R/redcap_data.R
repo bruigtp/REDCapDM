@@ -87,6 +87,15 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     if (names(data)[1] != "record_id") {
       names(data)[1] <- "record_id"
     }
+    
+    labels <- purrr::map_chr(data, function(x) {
+      lab <- attr(x, "label")
+      if (!is.null(lab)) {
+        lab
+      } else {
+        ""
+      }
+    })
 
     # Read dictionary
     setwd(oldwd)
@@ -357,13 +366,17 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # Message
     message("Done!")
   }
-
+  
   # Specifying the "UTF-8" encoding to each character column of the data
   for (i in 1:length(data_def$data)) {
     if (is.character(data_def$data[, i])) {
       suppressWarnings(data_def$data[, i] <- stringr::str_conv(data_def$data[, i], "UTF-8"))
     }
   }
+  
+  # Reapply labels to the modified dataset
+  data_def$data <- data_def$data |>
+    labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
 
   # Output
   return(data_def)

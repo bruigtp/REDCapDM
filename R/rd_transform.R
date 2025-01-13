@@ -375,6 +375,10 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
         dplyr::arrange(factor(.data$record_id, levels = unique(.data$record_id)), .data$redcap_event_name)
     }
   }
+  
+  # Reapply labels to the modified dataset
+  data <- data |>
+    labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
 
 
   #If an event_form is specified or if the project has only one event and by_form has been specified
