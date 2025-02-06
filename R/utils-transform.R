@@ -458,9 +458,19 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   if(longitudinal & is.null(event_form)){
     stop("To split the data by form the event_form has to be provided in a longitudinal project", call. = FALSE)
   }
+  
+  #Check if the project has repeated instruments
+  if("redcap_repeat_instrument" %in% names(data)) {
+    repeat_instrument <- dplyr::case_when(
+      any(!is.na(data$redcap_repeat_instrument)) ~ TRUE,
+      TRUE ~ FALSE
+    )
+  } else {
+    repeat_instrument <- FALSE
+  }
 
   #Find basic REDCap variables found in the database
-  basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")
+  basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument", "redcap_repeat_instrument.factor","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")
 
   basic_redcap_vars <- basic_redcap_vars[basic_redcap_vars%in%names(data)]
 
@@ -497,6 +507,9 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   }
 
   form <- unique(dic$form_name)
+  
+  form_check <- data %>%
+    dplyr::distinct(redcap_repeat_instrument, redcap_repeat_instrument.factor)
 
   if(longitudinal){
     ndata <- tibble::tibble("form"=form) %>%
@@ -524,6 +537,23 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
       dplyr::mutate(df = purrr::map(.data$vars,  ~ data %>%
                                       dplyr::select(tidyselect::all_of(unique(c(basic_redcap_vars, .x))))))
   }
+  
+  if(repeat_instrument)  {
+    ndata <- ndata %>%
+      dplyr::left_join(form_check, by = dplyr::join_by("form" == "redcap_repeat_instrument")) %>%
+      dplyr::relocate("form_factor" = "redcap_repeat_instrument.factor", .after = form) %>%
+      dplyr::mutate(df = purrr::map2(.data$form_factor, .data$df, ~ {
+        if (is.na(.x)) {
+          .y %>%
+            dplyr::filter(is.na(redcap_repeat_instrument.factor))
+        } else {
+          .y %>%
+            dplyr::filter(redcap_repeat_instrument.factor == .x)
+        }
+      })) %>%
+      dplyr::select(-"form_factor")
+  } 
+    
 
 
   if(wide){
@@ -569,12 +599,13 @@ to_factor <- function(data, dic, exclude = NULL){
 
   #We need redcap_event_name to have the original values so we exclude of the conversion the variable redcap_event_name.factor. Also for redcap_data_access_group if present
 
-  keep <- c("redcap_event_name.factor", "redcap_data_access_group.factor")
+  keep <- c("redcap_event_name.factor", "redcap_data_access_group.factor", "redcap_repeat_instrument.factor")
   keep_factors <- data %>%
     dplyr::select(keep[keep %in% names(data)])
 
   data$redcap_event_name.factor <- NULL
   data$redcap_data_access_group.factor <- NULL
+  data$redcap_repeat_instrument.factor <- NULL
 
   factors <- names(data)[grep("\\.factor$",names(data))]
   factors <- gsub("\\.factor$","",factors)
@@ -586,7 +617,8 @@ to_factor <- function(data, dic, exclude = NULL){
     #Assign to the non factor variable the factor one and remove the later
     dplyr::mutate(dplyr::across(tidyselect::all_of(factors), ~ get(stringr::str_glue("{dplyr::cur_column()}.factor")))) %>%
     dplyr::select(-tidyselect::ends_with(".factor")) %>%
-    tibble::add_column("redcap_event_name.factor" = keep_factors$redcap_event_name.factor, .after = "redcap_event_name")
+    tibble::add_column("redcap_event_name.factor" = keep_factors$redcap_event_name.factor, .after = "redcap_event_name") %>%
+    tibble::add_column("redcap_repeat_instrument.factor" = keep_factors$redcap_repeat_instrument.factor, .after = "redcap_repeat_instrument")
 
   if (length(factors) > 0) {
 
