@@ -507,9 +507,6 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   }
 
   form <- unique(dic$form_name)
-  
-  form_check <- data %>%
-    dplyr::distinct(redcap_repeat_instrument, redcap_repeat_instrument.factor)
 
   if(longitudinal){
     ndata <- tibble::tibble("form"=form) %>%
@@ -539,6 +536,9 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   }
   
   if(repeat_instrument)  {
+    form_check <- data %>%
+    dplyr::distinct(redcap_repeat_instrument, redcap_repeat_instrument.factor)
+    
     ndata <- ndata %>%
       dplyr::left_join(form_check, by = dplyr::join_by("form" == "redcap_repeat_instrument")) %>%
       dplyr::relocate("form_factor" = "redcap_repeat_instrument.factor", .after = form) %>%
