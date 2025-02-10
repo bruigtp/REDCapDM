@@ -545,10 +545,13 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
       dplyr::mutate(df = purrr::map2(.data$form_factor, .data$df, ~ {
         if (is.na(.x)) {
           .y %>%
-            dplyr::filter(is.na(redcap_repeat_instrument.factor))
+            dplyr::filter(is.na(redcap_repeat_instrument.factor)) %>%
+            dplyr::select(-dplyr::starts_with("redcap_repeat_instrument"))
         } else {
           .y %>%
-            dplyr::filter(redcap_repeat_instrument.factor == .x)
+            dplyr::filter(redcap_repeat_instrument.factor == .x) %>%
+            dplyr::mutate(redcap_repeat_instrument = redcap_repeat_instrument.factor) %>%
+            dplyr::select(-redcap_repeat_instrument.factor)
         }
       })) %>%
       dplyr::select(-"form_factor")
