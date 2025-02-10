@@ -371,7 +371,7 @@ split_event <- function(data,dic,event_form,which=NULL){
     dplyr::select("redcap_event_name", "field_name")
 
   #Let's add the basic variables from redcap that are found in the data but not in the dictionary:
-  basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")
+  basic_redcap_vars <- c("record_id","redcap_event_name","redcap_repeat_instrument","redcap_repeat_instrument.factor","redcap_repeat_instance","redcap_data_access_group","redcap_event_name.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")
 
   #It can happen that one of these variables are not in the database for some projects
   basic_redcap_vars <- basic_redcap_vars[basic_redcap_vars %in% names(data)]
