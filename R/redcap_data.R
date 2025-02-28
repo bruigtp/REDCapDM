@@ -217,7 +217,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     main_vars <- labels %>%
       dplyr::mutate_at(redcap_names[!redcap_names %in% "Repeat Instrument"],
-                       ~ifelse(all(is.na(.)), ., forcats::fct_inorder(.))) %>%
+                       ~if (all(is.na(.))) . else forcats::fct_inorder(.)) %>%
       dplyr::rename(dplyr::all_of(rename_redcap)) %>%
       dplyr::select("record_id", default_names$corres)
 
