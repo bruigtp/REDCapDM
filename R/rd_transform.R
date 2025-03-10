@@ -297,6 +297,10 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
         ~ factor(.x, levels = 0:1, labels = checkbox_labels)
       ))
 
+    # Reapply the original labels after transforming the checkboxes to factors
+    data <- data |>
+      labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
+
     #Change the variable names and their branching logic:
 
     data_dic <- checkbox_names(data, dic, labels, checkbox_labels)
