@@ -187,25 +187,35 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
     dplyr::filter(grepl("^date_", .data$text_validation_type_or_show_slider_number)) %>%
     dplyr::pull(.data$field_name)
 
+  var_date_valid <- dplyr::select(data, dplyr::all_of(var_date)) |> 
+    purrr::keep(~ inherits(.x, "Date")) |> 
+    names()
+
+  var_date <- setdiff(var_date, var_date_valid)
+
   var_datetime <- dic %>%
     dplyr::filter(grepl("^datetime_", .data$text_validation_type_or_show_slider_number)) %>%
     dplyr::pull(.data$field_name)
 
+  var_datetime_valid <- dplyr::select(data, dplyr::all_of(var_datetime)) |> 
+    purrr::keep(~ inherits(.x, "POSIXct")) |> 
+    names()
+
+  var_datetime <- setdiff(var_datetime, var_datetime_valid)
+
   data <- data %>%
     dplyr::mutate_at(var_date, as.Date) %>%
-    # '' values don't know how to convert the posicxt function
     dplyr::mutate_at(var_datetime, function(x) {
       x <- dplyr::case_when(
         x == "" ~ NA,
         TRUE ~ x
       )
-      x <- as.numeric(as.character(x))
-      as.POSIXct(x)
+      as.POSIXct(x, origin = "1970-01-01", tz = "UTC")
     })
 
-  dic <- dic %>%
-    dplyr::mutate(branching_logic_show_field_only_if = dplyr::case_when(is.na(branching_logic_show_field_only_if) ~ "",
-                                                                        TRUE ~ branching_logic_show_field_only_if))
+    dic <- dic %>%
+      dplyr::mutate(branching_logic_show_field_only_if = dplyr::case_when(is.na(branching_logic_show_field_only_if) ~ "",
+                                                                          TRUE ~ branching_logic_show_field_only_if))
 
   if (!repeat_instrument) {
     #Recalculate calculated fields (previous to transforming factors and other preprocessing)
