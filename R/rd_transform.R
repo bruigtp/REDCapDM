@@ -170,7 +170,7 @@ rd_transform <- function(..., data = NULL, dic = NULL, event_form = NULL, checkb
       }else{
 
         data <- data %>%
-          dplyr::select(!tidyselect::contains(delete_pattern[i]))
+          dplyr::select(-dplyr::matches(delete_pattern[i]))
 
         dic <- dic %>%
           dplyr::filter(!grepl(delete_pattern[i], .data$field_name))
