@@ -38,7 +38,7 @@
 #' print(result)
 #'
 #' @export
-#'
+#' @importFrom stats na.omit
 
 rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, which = NULL, by = "form", wide = FALSE) {
 
@@ -96,7 +96,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
     if (length(check_vars) > 0) {
       # actions <- c(actions, "There are variables in the dictionary that are not present in the dataset.\nSince some of these variables are checkboxes, please use the `rd_checkbox` function\nwith `checkbox_names = TRUE` to resolve this issue before proceeding.")
-      actions <- c(actions, "Missing checkbox vars from dictionary — run: rd_checkbox(..., checkbox_names = TRUE)")
+      actions <- c(actions, "Missing checkbox vars from dictionary. Please, run: rd_checkbox(..., checkbox_names = TRUE)")
     }
 
     other_check_vars <- setdiff(vars_more, check_vars)
@@ -125,7 +125,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       )
 
       # actions <- c(actions, stringr::str_glue("Transformation halted. Default REDCap variables ({mss}) are present in the dataset but not in the dictionary.\nTo proceed, use the `rd_delete_vars` function with `pattern = {mss}` to remove these variables before continuing."))
-      actions <- c(actions, stringr::str_glue("Default REDCap variables ({mss}) detected in the dataset — run: rd_delete_vars(..., pattern = {mss})"))
+      actions <- c(actions, stringr::str_glue("Default REDCap variables ({mss}) detected in the dataset. Please, run: rd_delete_vars(..., pattern = {mss})"))
     }
 
     fact_vars <- grep(".factor$", vars_less, value = TRUE)
@@ -230,24 +230,31 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
               dplyr::pull(max_id) |>
               max()
           ),
-          df = purrr::pmap(list(.data$vars, .data$df, .data$events), function(x, y, z) {
-
-            y <- y |>
-              dplyr::select(dplyr::all_of(c("record_id", x)))
-
-            if(n_distinct(z) > 1) {
+          df = if (longitudinal) {
+            purrr::pmap(list(.data$vars, .data$df, .data$events), function(x, y, z) {
 
               y <- y |>
-                dplyr::group_by(.data$record_id) |>
-                dplyr::mutate(id = seq_along(.data$record_id)) |>
-                dplyr::ungroup() |>
-                tidyr::pivot_wider(names_from = "id", values_from = -c("record_id", "id"))
-            }
+                dplyr::select(dplyr::all_of(c("record_id", x)))
 
-            return(y)
-          })
+              if(dplyr::n_distinct(z) > 1) {
+
+                y <- y |>
+                  dplyr::group_by(.data$record_id) |>
+                  dplyr::mutate(id = seq_along(.data$record_id)) |>
+                  dplyr::ungroup() |>
+                  tidyr::pivot_wider(names_from = "id", values_from = -c("record_id", "id"))
+              }
+
+              return(y)
+            })
+          } else {
+            purrr::map2(.data$vars, .data$df, function(x, y) {
+              y |>
+                dplyr::select(dplyr::all_of(c("record_id", x)))
+            })
+          }
         ) |>
-        dplyr::relocate(max_repeated_instance, .after = events)
+        dplyr::relocate(.data$max_repeated_instance, .before = .data$vars)
     }
   } else if (by == "event") {
     # Handle splitting by event

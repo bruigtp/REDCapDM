@@ -43,7 +43,7 @@
 #' results <- rd_checkbox(covican, checkbox_names = FALSE)
 #'
 #' @export
-#' @importFrom stats setNames
+#' @importFrom stats setNames na.omit
 
 rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, checkbox_names = TRUE) {
   results <- NULL

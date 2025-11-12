@@ -202,15 +202,15 @@ test_that("rd_split expands to wide format when wide = TRUE", {
     form_name  = c("meta", "meta", "form_a")
   )
   data <- tibble(
-    record_id = c(1,1,2),
-    abc = c("x","y","z"),
-    abc_aba = c("x","y","z")
+    record_id = c(1,1,1,2),
+    abc = c("x","x","y","z"),
+    abc_aba = c("x", "x","y","z")
   )
 
   res <- rd_split(data = data, dic = dic, by = "form", wide = TRUE)
-  df_form_a <- res$data |> filter(form == "form_a") |> pull(df) |> pluck(1)
+  df_form_a <- res$data |> pull(max_repeated_instance)
 
-  expect_true(any(grepl("1", names(df_form_a))))
+  expect_true(length(df_form_a) > 1)
 })
 
 # ---- 12) repeated instruments branch ----

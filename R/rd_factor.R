@@ -32,6 +32,7 @@
 #' transformed_data <- result$data
 #'
 #' @export
+#' @importFrom stats na.omit
 
 rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, exclude = NULL) {
 

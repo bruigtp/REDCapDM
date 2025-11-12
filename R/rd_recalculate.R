@@ -47,6 +47,7 @@
 #'
 #' @export
 #' @importFrom rlang :=
+#' @importFrom stats na.omit
 
 rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, exclude_recalc = NULL) {
   results <- NULL

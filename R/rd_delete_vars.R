@@ -46,6 +46,7 @@
 #' )
 #'
 #' @export
+#' @importFrom stats na.omit
 
 rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, vars = NULL, pattern = NULL) {
   results <- NULL

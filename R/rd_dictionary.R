@@ -25,7 +25,7 @@
 #' print(result$results)
 #'
 #' @export
-#' @importFrom stats setNames
+#' @importFrom stats setNames na.omit
 
 
 rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL) {

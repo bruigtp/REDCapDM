@@ -32,6 +32,7 @@
 #' result <- covican |> rd_dates()
 #'
 #' @export
+#' @importFrom stats na.omit
 
 rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL) {
   results <- NULL
