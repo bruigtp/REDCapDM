@@ -4,30 +4,43 @@
 \alias{check_queries}
 \title{Check for Changes Between Two Query Reports}
 \usage{
-check_queries(old, new, report_title = NULL)
+check_queries(old, new, report_title = NULL, return_viewer = TRUE)
 }
 \arguments{
-\item{old}{Previous version of the queries report.}
+\item{old}{Dataframe containing the previous version of the query report.}
 
-\item{new}{New version of the queries report. This object is used to determine the status of each query.}
+\item{new}{Dataframe containing the new version of the query report.\cr
+This is compared against the \code{old} report to determine query statuses.}
 
-\item{report_title}{Character string specifying the title of the report.}
+\item{report_title}{(Optional) A character string specifying the title for the generated report.\cr
+If not provided, the default title will be "Comparison report".}
+
+\item{return_viewer}{logical, whether to return the HTML viewer (default TRUE)}
 }
 \value{
-A list consisting of a dataframe containing each individual query from both reports and a column showing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. In addition to this dataframe, there is also a summary of the total number of queries per category.
+A list containing:
+\item{queries}{A dataframe with all individual queries from both reports and a status column (\code{new}, \code{solved}, \code{pending}, or \code{miscorrected}).}
+\item{results}{A styled HTML summary table showing the total number of queries in each status category.}
 }
 \description{
-This function compares an old report of queries with a new one. It allows you to identify which queries are new, which have been modified, and which remain unchanged.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
+
+This function compares an old query report with a new one to identify the status of each query.
+Queries are categorized as \code{new}, \code{solved}, \code{pending}, or \code{miscorrected}.
+The function generates a detailed comparison dataframe and a summary report.
 }
 \examples{
 # Example of a query
 data_old <- rd_query(covican,
-                     variables = "copd",
-                     expression = "is.na(x)",
-                     event = "baseline_visit_arm_1")
-data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
+  variables = "copd",
+  expression = "is.na(x)",
+  event = "baseline_visit_arm_1"
+)
+data_new <- rbind(data_old$queries[1:5, ], c("100-20", rep("abc", 8)))
 
-# Control of queries
-check <- check_queries(old = data_old$queries,
-                       new = data_new)
+# Compare the two query reports
+check <- check_queries(
+  old = data_old$queries,
+  new = data_new
+)
 }

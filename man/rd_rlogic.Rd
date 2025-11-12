@@ -4,29 +4,57 @@
 \alias{rd_rlogic}
 \title{Translate REDCap Logic to R Logic}
 \usage{
-rd_rlogic(..., data = NULL, dic = NULL, event_form = NULL, logic, var)
+rd_rlogic(
+  project = NULL,
+  data = NULL,
+  dic = NULL,
+  event_form = NULL,
+  logic,
+  var
+)
 }
 \arguments{
-\item{...}{List containing the data, dictionary and event mapping (if applicable) of the REDCap project. This should be the output of the `redcap_data` function.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
 
-\item{data}{Data frame containing data from REDCap. If the list is specified, this argument is not required.}
+\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
 
-\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not required.}
+\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
 
-\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not required.}
+\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
 
-\item{logic}{String containing logic in REDCap format.}
+\item{logic}{SA string representing the logic in REDCap format (e.g., \code{"if([exc_1]='1' or [inc_1]='0', 1, 0)"}).}
 
-\item{var}{String with the name of the variable containing the logic.}
+\item{var}{A string containing the name of the variable that holds the logic. This is typically the outcome variable to which the logic applies.}
 }
 \value{
-List containing the logic in R format and its evaluation.
+A list containing:
+\itemize{
+\item \code{rlogic}: The translated REDCap logic in R format.
+\item \code{eval}: The evaluation result of the R logic applied to the provided dataset. If applicable, the result is filtered by event-specific logic.
+}
 }
 \description{
-This function allows you to convert REDCap logic into R logic. WARNING: Please note that if the REDCap logic involves smart variables, this function may not be able to transform it accurately.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
+
+This function converts REDCap logic into R-compatible logic. The function processes common REDCap operators (such as \code{and}, \code{or}, \code{=}, \code{<}, \code{>}, etc.) and formats them into their R equivalents. It also handles event-specific logic in longitudinal REDCap projects.
+Please note that this function may not be able to accurately transform REDCap logic involving smart variables or certain field types that require specialized handling.
+}
+\details{
+The function performs several transformations to convert the REDCap logic into R logic:
+\itemize{
+\item It translates REDCap-specific operators (e.g., \code{=} to \code{==}, \code{and} to \code{&}, \code{or} to \code{|}).
+\item It removes or replaces certain REDCap-specific syntax that does not directly translate to R (e.g., removing \code{true} values).
+\item It handles event-specific variables and ensures that logic is correctly adjusted when the data has multiple events.
+\item It also allows for handling of missing values by transforming empty strings (\code{''}) to \code{NA} in R.
+}
+
+Please be aware that REDCap logic that references smart variables or involves complex field relationships might require manual intervention for an accurate translation.
 }
 \examples{
-rd_rlogic(covican,
-          logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
-          var = "screening_fail_crit")
+# Example: Translating a REDCap logic expression into R logic for the variable `screening_fail_crit`
+covican |>
+  rd_rlogic(
+    logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
+    var = "screening_fail_crit"
+  )
 }

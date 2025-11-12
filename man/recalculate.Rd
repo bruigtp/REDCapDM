@@ -18,5 +18,5 @@ recalculate(data, dic, event_form = NULL, exclude_recalc = NULL)
 \description{
 This function recalculates each calculated field if the logic can be transcribed to R. Note that calculated fields containing smart-variables or variables from other events cannot be transcribed.
 
-The function returns the dataset and dictionary with the recalculated variables appended (named as the original field plus `_recalc`), along with a summary table of the recalculation results.
+The function returns the dataset and dictionary with the recalculated variables appended (named as the original field plus \verb{_recalc}), along with a summary table of the recalculation results.
 }

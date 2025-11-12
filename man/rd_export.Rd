@@ -2,10 +2,10 @@
 % Please edit documentation in R/rd_export.R
 \name{rd_export}
 \alias{rd_export}
-\title{Exporting Query Dataset}
+\title{Export Queries to an Excel File}
 \usage{
 rd_export(
-  ...,
+  project = NULL,
   queries = NULL,
   column = NULL,
   sheet_name = NULL,
@@ -14,21 +14,38 @@ rd_export(
 )
 }
 \arguments{
-\item{...}{List containing the data frame of queries. This list must be the output of the `rd_query` or `rd_event` functions.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
 
-\item{queries}{Data frame containing the identified queries. If the list is specified, this argument is not required.}
+\item{queries}{A data frame containing the identified queries. If \code{...} is provided, this argument is ignored.}
 
-\item{column}{Character element specifying the column containing the link for each query.}
+\item{column}{A string specifying the column in the dataset that contains hyperlinks. If not specified,
+hyperlinks will not be added unless a column named \code{Link} is detected.}
 
-\item{sheet_name}{Character element specifying the sheet name of the resulting xlsx file.}
+\item{sheet_name}{A string specifying the name of the sheet in the resulting \code{.xlsx} file. Defaults to \code{"Sheet1"}.}
 
-\item{path}{Character element specifying the file path to save the xlsx file. If `NULL`, the file will be created in the current working directory.}
+\item{path}{A string specifying the file path to save the \code{.xlsx} file. If \code{NULL}, the file is saved in the
+current working directory with the name \code{example.xlsx}.}
 
-\item{password}{String with the password to protect the worksheet and prevent others from making changes.}
+\item{password}{An optional string to password-protect the worksheet, preventing unauthorized edits.}
 }
 \value{
-An .xlsx file containing all the queries and, if available, hyperlinks to each of them.
+An \code{.xlsx} file saved to the specified path, containing the query data and hyperlinks if specified.
 }
 \description{
-This function exports a query report, generated using the `rd_query` or `rd_event` functions, to an .xlsx file.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+This function exports a query dataset, typically generated using \code{rd_query} or \code{rd_event}, into an \code{.xlsx} file.
+It supports adding hyperlinks to specified columns and optional password protection for the worksheet.
+}
+\examples{
+\dontrun{
+# Export queries to an Excel file
+rd_export(
+  queries = my_queries,
+  column = "Link",
+  sheet_name = "My Queries",
+  path = "queries.xlsx"
+)
+}
+
 }

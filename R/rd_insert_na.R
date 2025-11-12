@@ -1,124 +1,126 @@
 #' Insert Missing Values Using a Filter
 #'
-#' This function allows you to manually insert a missing value into certain variables (`vars`) if the specified filter/s (`filter`) are satisfied. It's particularly useful for checkboxes without a gatekeeper question in the branching logic. Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+#' @description
+#' `r lifecycle::badge('stable')`
 #'
-#' @param ... List containing the data, the dictionary and the event if it's needed. Should be the output of the function `redcap_data`.
-#' @param data Data frame containing data from REDCap. If the list is specified, this argument is not needed.
-#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not needed.
-#' @param event_form Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not needed.
-#' @param vars Character vector containing the names of the variables to be transformed.
-#' @param filter Character vector containing the logic to be evaluated directly. If each logic is TRUE, the corresponding variable in `vars` is set to missing.
-#' @return Transformed data with the specified variables converted.
+#' This function allows you to manually insert a missing value into certain variables (`vars`) if the specified filter/s (`filter`) are satisfied.
+#' It's particularly useful for managing checkboxes without explicit gatekeeper questions in their branching logic.
+#' Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+#'
+#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
+#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
+#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
+#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
+#' @param vars A character vector with the names of the variables to be transformed.
+#' @param filter A character vector of logical expressions to evaluate. If the evaluation is `TRUE`, the corresponding variable in `vars` is set to `NA`.
+#'
+#' @return The modified data frame with the specified variables updated.
+#'
 #' @examples
+#'
+#' # Example usage:
 #' table(is.na(covican$data$potassium))
-#' data <- rd_insert_na(covican,
-#'              vars = "potassium",
-#'              filter = "age < 65")
+#'
+#' data <- covican |>
+#'   rd_insert_na(
+#'     vars = "potassium",
+#'     filter = "age < 65"
+#'   )
+#'
 #' table(data$potassium)
+#'
 #' @export
 #' @importFrom rlang .data
 
-rd_insert_na <- function(..., data = NULL, dic = NULL, event_form = NULL, vars, filter){
+rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, vars, filter) {
 
-  project <- c(...)
-
-  if(!is.null(project)){
-    if(!is.null(data)){
-      warning("Data has been specified twice so the function will not use the information in the data argument.")
-    }
-
-    if(!is.null(dic)){
-      warning("Dictionary has been specified twice so the function will not use the information in the dic argument.")
-    }
-
-    data <- project$data
-    dic <- project$dictionary
-
-    if("event_form" %in% names(project)){
-      if(!is.null(event_form)){
-        warning("Event has been specified twice so the function will not use the information in the event argument.")
-      }
-      event_form <- project$event_form
-    }
+  # Handle potential overwriting when both `project` and other arguments are provided
+  if (!is.null(project)) {
+    env_vars <- check_proj(project, data, dic, event_form)
+    # browser()
+    list2env(env_vars, envir = environment())
   }
 
-  if(is.null(data) | is.null(dic)){
-    stop("No data/dictionary was provided")
+  # Ensure both `data` and `dic` are provided; stop if either is missing
+  if (is.null(data) | is.null(dic)) {
+    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
 
-  #Check if the project is longitudinal (has more than one event) or not:
+  # Determine if the dataset is longitudinal
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
-  if(is.null(event_form) & longitudinal){
-    stop("There is more than one event in the data and the event-form correspondence hasn't been specified")
+  # Error: For longitudinal data, ensure `event_form` is specified
+  if (is.null(event_form) & longitudinal) {
+    stop("The dataset contains multiple events, but the `event_form` mapping was not provided. Please specify it.")
   }
 
-  if(length(filter) != length(vars)){
-
-    stop("The number of filter variables specified doesn't match with the number of variables specified", call. = FALSE)
-
-  }else{
-
-    for(i in 1:length(filter)){
-
-      #For every filter & variable get the variables specified in the filter and their events (if there is more than one event)
-      if(longitudinal){
-        #First, let's get the variables in the filter:
+  # Validate matching lengths of `vars` and `filter`
+  if (length(filter) != length(vars)) {
+    stop("The number of variables (`vars`) does not match the number of filters (`filter`). Ensure both have equal length.")
+  } else {
+    # Loop through variables and filters to apply transformations
+    for (i in seq_along(filter)) {
+      # For every filter & variable get the variables specified in the filter and their events (if there is more than one event)
+      if (longitudinal) {
+        # Parse variables within the filter expression
         vars_filter <- trimws(unlist(stringr::str_split(filter[i], "[&|]")))
         vars_filter <- gsub("!?is.na\\(", "", vars_filter)
         vars_filter <- unlist(stringr::str_extract_all(vars_filter, "^\\w+"))
 
-        #Get the events of these variables:
-        event_filter <- tibble::tibble(vars_filter = vars_filter) %>%
-          dplyr::mutate(form = purrr::map_chr(.data$vars_filter, ~dic %>%
-                                                dplyr::filter(.data$field_name %in% .x) %>%
-                                                dplyr::pull(.data$form_name)),
-                        event = purrr::map(.data$form, ~event_form %>%
-                                             dplyr::filter(.data$form %in% .x) %>%
-                                             dplyr::pull(.data$unique_event_name)))
+        # Extract corresponding events for filter variables
+        event_filter <- tibble::tibble(vars_filter = vars_filter) |>
+          dplyr::mutate(
+            form = purrr::map_chr(.data$vars_filter, ~ dic |>
+              dplyr::filter(.data$field_name %in% .x) |>
+              dplyr::pull(.data$form_name)),
+            event = purrr::map(.data$form, ~ event_form |>
+              dplyr::filter(.data$form %in% .x) |>
+              dplyr::pull(.data$unique_event_name))
+          )
 
-        #Get the events in common of all the filter variables:
-        events <- Reduce(intersect,  event_filter$event)
+        # Identify common events for filter variables
+        events <- Reduce(intersect, event_filter$event)
 
-        #If the filter variables have no events in common:
-        if(length(events) == 0){
-          stop("Variables included in the filter are in different events.")
+        # Stop if there are no common events
+        if (length(events) == 0) {
+          stop("The variables in the filter belong to different events.")
         }
 
-        #Now let's get the event of the variable to be transformed:
-        form_var <- dic %>%
-          dplyr::filter(.data$field_name == vars[i]) %>%
+        # Identify events for the variable to be transformed
+        form_var <- dic |>
+          dplyr::filter(.data$field_name == vars[i]) |>
           dplyr::pull(.data$form_name)
 
-        event_var <- event_form %>%
-          dplyr::filter(.data$form == form_var) %>%
+        event_var <- event_form |>
+          dplyr::filter(.data$form == form_var) |>
           dplyr::pull(.data$unique_event_name)
 
+        # Ensure the variable's events overlap with filter events
         match_events <- intersect(events, event_var)
 
-        #If the filter variables are in different events with respect to the variable to be transformed it will give an error:
-        if(length(match_events) == 0){
-          stop("The variable to be transformed is in a different event than the filter to be evaluated.")
-        }else{
-          #If there is some event of the variable to be transformed that is not present in the filter it will give a warning:
+        # Error: filter variables are in different events from the variable to be transformed
+        if (length(match_events) == 0) {
+          stop("The variable `{vars[i]}` and the filter do not overlap in any events.")
+        } else {
+          # Warn: one of the events of the variable is not present in the filter
           if (!all(event_var %in% match_events)) {
-            warning(stringr::str_glue("The variable to be transformed ({vars[i]}) is present in more events than the events where the corresponding filter is evaluated. Only the rows of those events in common will be transformed ({match_events})."))
+            warning(stringr::str_glue(
+              "The variable `{vars[i]}` is present in more events than the filter. ",
+              "Only rows in common events ({paste(match_events, collapse = ', ')}) will be transformed."
+            ))
           }
         }
       }
 
-      #Transform the data:
-      id <- data %>%
-        dplyr::mutate(id = dplyr::row_number()) %>%
-        dplyr::filter(eval(parse(text = filter[i]))) %>%
+      # Apply transformation: set specified variable to NA if filter is true
+      id <- data |>
+        dplyr::mutate(id = dplyr::row_number()) |>
+        dplyr::filter(eval(parse(text = filter[i]))) |>
         dplyr::pull(id)
 
-      data[id, vars[i]] <-  NA
-
+      data[id, vars[i]] <- NA
     }
 
     data
-
   }
-
 }

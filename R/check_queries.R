@@ -1,104 +1,122 @@
 #' Check for Changes Between Two Query Reports
 #'
-#' This function compares an old report of queries with a new one. It allows you to identify which queries are new, which have been modified, and which remain unchanged.
-#' @param old Previous version of the queries report.
-#' @param new New version of the queries report. This object is used to determine the status of each query.
-#' @param report_title Character string specifying the title of the report.
-#' @return A list consisting of a dataframe containing each individual query from both reports and a column showing the status of the queries (new, solved, miscorrected or pending) compared to the previous query report. In addition to this dataframe, there is also a summary of the total number of queries per category.
+#' @description
+#' `r lifecycle::badge('stable')`
+#'
+#' This function compares an old query report with a new one to identify the status of each query.
+#' Queries are categorized as `new`, `solved`, `pending`, or `miscorrected`.
+#' The function generates a detailed comparison dataframe and a summary report.
+#'
+#' @param old Dataframe containing the previous version of the query report.
+#' @param new Dataframe containing the new version of the query report.\cr
+#' This is compared against the `old` report to determine query statuses.
+#' @param report_title (Optional) A character string specifying the title for the generated report.\cr
+#' If not provided, the default title will be "Comparison report".
+#' @param return_viewer logical, whether to return the HTML viewer (default TRUE)
+#'
+#' @return A list containing:
+#' \item{queries}{A dataframe with all individual queries from both reports and a status column (`new`, `solved`, `pending`, or `miscorrected`).}
+#' \item{results}{A styled HTML summary table showing the total number of queries in each status category.}
+#'
 #' @examples
 #' # Example of a query
 #' data_old <- rd_query(covican,
-#'                      variables = "copd",
-#'                      expression = "is.na(x)",
-#'                      event = "baseline_visit_arm_1")
-#' data_new <- rbind(data_old$queries[1:5,], c("100-20",rep("abc",8)))
+#'   variables = "copd",
+#'   expression = "is.na(x)",
+#'   event = "baseline_visit_arm_1"
+#' )
+#' data_new <- rbind(data_old$queries[1:5, ], c("100-20", rep("abc", 8)))
 #'
-#' # Control of queries
-#' check <- check_queries(old = data_old$queries,
-#'                        new = data_new)
+#' # Compare the two query reports
+#' check <- check_queries(
+#'   old = data_old$queries,
+#'   new = data_new
+#' )
 #' @export
 
-check_queries <-function(old, new, report_title = NULL)
-  {
+check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
+  # Ensure both objects provided are dataframes
+  if (!is.data.frame(old) | !is.data.frame(new)) {
+    stop("The 'old' and 'new' arguments must be a data frame.", call. = FALSE)
+  }
+  if (!is.null(report_title) && length(report_title) > 1) {
+    stop("There is more than one title for the report, please choose only one.", call. = FALSE)
+  }
 
-  # Creation of the merged dataset
-  new <- new %>% dplyr::select(-"Code")
-  old[,"comp"] <- paste0(old$Identifier, old$Description, old$Query)
-  new[,"comp"] <- paste0(new$Identifier, new$Description, new$Query)
+  # Merge old and new datasets
+  new <- new |> dplyr::select(-dplyr::any_of("Code"))
+  old[, "comp"] <- paste0(old$Identifier, old$Description, old$Query)
+  new[, "comp"] <- paste0(new$Identifier, new$Description, new$Query)
   check <- merge(old, new, by = intersect(names(old), names(new)), all = TRUE)
 
-  # Checking each type of query
-  check[,"comp"] <- paste0(check$Identifier, check$Description, check$Query)
-  check[,"comp2"] <- paste0(check$Identifier, check$Description)
-  check[,"Modification"] <- NA
-  check[,"Modification"][check$comp %in% old$comp & check$comp %in% new$comp] <- "Pending"
-  check[,"Modification"][check$comp %in% old$comp & !check$comp %in% new$comp] <- "Solved"
-  check[,"Modification"][!check$comp %in% old$comp & check$comp %in% new$comp] <- "New"
+  # Add columns for comparisons and determine statuses
+  check[, "comp"] <- paste0(check$Identifier, check$Description, check$Query)
+  check[, "comp2"] <- paste0(check$Identifier, check$Description)
+  check[, "Modification"] <- NA
+  check[, "Modification"][check$comp %in% old$comp & check$comp %in% new$comp] <- "Pending"
+  check[, "Modification"][check$comp %in% old$comp & !check$comp %in% new$comp] <- "Solved"
+  check[, "Modification"][!check$comp %in% old$comp & check$comp %in% new$comp] <- "New"
 
-  # Adding the new category of miscorrected if a query is not present in the old report but there is a new query from the same variable with the same identifier
-  check <- check %>%
-              dplyr::group_by(.data$comp2) %>%
-              dplyr::mutate(n = dplyr::n())
+  # Identify miscorrected queries: If a query does not exist in the old report, but there is a new query from the same variable with the same identifier
+  check <- check |>
+    dplyr::group_by(.data$comp2) |>
+    dplyr::mutate(n = dplyr::n())
   check <- as.data.frame(check)
 
-  # The duplicated queries are the ones that were miscorrected
   if (any(check[, "n"] > 1)) {
-    dups <- check %>%
-              dplyr::filter(.data$n > 1 & .data$Modification %in% "New")
+    dups <- check |>
+      dplyr::filter(.data$n > 1 & .data$Modification %in% "New")
     if (nrow(dups) > 0) {
       dups[, "Modification"] <- "Miscorrected"
 
-      check <- check %>%
+      check <- check |>
         dplyr::filter(!(.data$n > 1 & .data$Modification %in% "New"))
 
       check <- rbind(check, dups)
     }
   }
 
-  # Convert the column Modification in a factor
+  # Convert the "Modification" column to a factor
   check[, "Modification"] <- factor(check[, "Modification"],
-                                   levels = c("Pending", "Solved", "Miscorrected", "New"))
+    levels = c("Pending", "Solved", "Miscorrected", "New")
+  )
 
-  # Remove exceeding columns
-  check <- check %>%
-              dplyr::select(-"comp", -"comp2", -"n")
+  # Clean up unnecessary columns
+  check <- check |>
+    dplyr::select(-dplyr::any_of(c("comp", "comp2", "n")))
 
-  # Arrange the dataset
+  # Arrange the dataset by specific fields
   if (any(stringr::str_detect(check$Identifier, "-"))) {
-
-    check <- check %>% tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
+    check <- check |> tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
     check[, "center"] <- as.numeric(check[, "center"])
     check[, "id"] <- as.numeric(check[, "id"])
     check <- check[order(check[, "center"], check[, "id"], check[, "Code"], na.last = TRUE), ]
     rownames(check) <- NULL
-    check <- check %>%
-              dplyr::select(-"center", -"id")
-
+    check <- check |>
+      dplyr::select(-dplyr::any_of(c("center", "id")))
   } else {
-
     check$Identifier <- as.numeric(check$Identifier)
     check <- check[order(check$Identifier, check$Code), ]
-
   }
 
-  # We update the code of each query in order to match the old dataset
-  check <- data.frame(check %>%
-                          dplyr::group_by(.data$Identifier) %>%
-                          dplyr::mutate(cod = 1:dplyr::n()))
+  # Assign new codes to each query to match the old dataset
+  check <- data.frame(check |>
+    dplyr::group_by(.data$Identifier) |>
+    dplyr::mutate(cod = 1:dplyr::n()))
   check$Code <- paste0(as.character(check$Identifier), "-", check$cod)
-  check <- check %>%
-              dplyr::select(-"cod")
+  check <- check |>
+    dplyr::select(-dplyr::any_of("cod"))
 
-  # Creation of the report indicating the variables checked
-  report <- check %>%
-                dplyr::group_by(.data$Modification, .drop = FALSE) %>%
-                dplyr::summarise("total" = dplyr::n())
+  # Summarize query statuses
+  report <- check |>
+    dplyr::group_by(.data$Modification, .drop = FALSE) |>
+    dplyr::summarise("total" = dplyr::n())
   report <- as.data.frame(report)
   report <- report[order(as.numeric(report$total), decreasing = TRUE), ]
   names(report) <- c("State", "Total")
   rownames(report) <- NULL
 
-  # Before starting we check if there is more than one report_title and if it isn't the case we stabilish the caption for the report_title
+  # Handle report title
   if (all(is.na(report_title))) {
     report_title <- "Comparison report"
   } else {
@@ -107,13 +125,17 @@ check_queries <-function(old, new, report_title = NULL)
     }
   }
 
-  # Adaptation to viewer
-  viewer <- knitr::kable(report, align = c("cc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
-  viewer <- kableExtra::kable_styling(viewer, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-  viewer <- kableExtra::row_spec(viewer, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+  # Generate styled HTML summary
+  viewer <- NULL
+  if (isTRUE(return_viewer)) {
+    viewer <- knitr::kable(report, align = c("cc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
+    viewer <- kableExtra::kable_styling(viewer, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
+    viewer <- kableExtra::row_spec(viewer, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+  }
 
-  # Return the final product
-  list(queries = check,
-       results = viewer)
+  # Return results
+  list(
+    queries = check,
+    results = viewer
+  )
 }
-
