@@ -2,7 +2,7 @@
 #'
 #' @description
 #' `r lifecycle::badge('stable')`
-#' This function transforms the raw REDCap data read by the `redcap_data` function. It returns the transformed data and dictionary, along with a summary of the results of each step.
+#' This function transforms the raw REDCap data read by the `redcap_data` function. It runs in one-step pipeline all the functions dedicated to processing the data. It returns the transformed data and dictionary, along with a summary of the results of each step.
 #'
 #' @param project Output of the `redcap_data` function, which is a list containing the data frames of the data, dictionary and event_form (if needed) of the REDCap project.
 #' @param data Data frame containing the data read from REDCap. If the list is specified, this argument is not necessary.
