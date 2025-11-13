@@ -15,7 +15,7 @@ inform_startup <- function(msg, ...) {
   rlang::inform(msg, ..., class = "packageStartupMessage")
 }
 
-core <- c("REDCapR", "openxlsx", "labelled", "dplyr", "janitor", "purrr", "rlang", "stringr", "forcats", "tibble", "tidyr", "tidyselect", "utils", "stringi", "cli")
+core <- c("REDCapR", "openxlsx", "labelled", "dplyr", "janitor", "purrr", "rlang", "stringr", "forcats", "tibble", "tidyr", "tidyselect", "utils", "stringi", "cli", "lifecycle")
 
 core_unloaded <- function() {
   search <- paste0("package:", core)
