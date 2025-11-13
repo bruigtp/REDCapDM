@@ -49,7 +49,6 @@ fill_data <- function(which_event, which_var, data) {
 #' @param event_form An optional event-form object that may be overridden if provided in the `project`.
 #'
 #'
-#' @export
 check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL) {
   # Ensure 'project' is a list
   if (!is.list(project)) {
@@ -105,7 +104,6 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL) {
 #' round(3.14159, 2)
 #' round(c(-2.718, 3.14159), 1)
 #'
-#' @export
 round <- function(x, digits) {
   posneg <- sign(x)
   z <- abs(x) * 10^digits
