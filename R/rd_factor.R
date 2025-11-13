@@ -144,7 +144,7 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     results <- c(results, stringr::str_glue("\n\n{last_val_res + 1}. Replacing original variables for their factor version. (rd_factor)\n"))
   }
 
-  # Return the results: the transformed data, updated dictionary, event_form, and results
+  # Return the results: the transformed data, event_form, and results
   list(
     data = data,
     dictionary = dic,

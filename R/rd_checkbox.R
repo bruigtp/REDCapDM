@@ -98,9 +98,6 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   # Remove factor-type checkbox variables from the data
   if (length(var_check_factors) > 0) {
-    data <- data |>
-      dplyr::select(-tidyselect::all_of(var_check_factors))
-
     var_check <- var_check[!grepl(".factor$", var_check)]
   } else {
     if (any(purrr::map_lgl(var_check, ~ "Unchecked" %in% levels(data[[.x]])))) {
@@ -167,6 +164,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       for (i in seq_along(var_check_dic)) {
         # Identify variables associated with each checkbox option
         vars_data <- names(data)[grep(stringr::str_glue("{var_check_dic[i]}___"), names(data))]
+        vars_data <- vars_data[!grepl(".factor$", vars_data)]
 
         # Retrieve branching logic for the checkbox field
         logic <- dic$branching_logic_show_field_only_if[dic$field_name == var_check_dic[i]]
@@ -225,12 +223,21 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     }
   }
 
-  # Transform checkbox variables into "No"/"Yes" labels
-  data <- data |>
-    dplyr::mutate(dplyr::across(
-      tidyselect::all_of(var_check),
-      ~ factor(.x, levels = 0:1, labels = checkbox_labels)
-    ))
+  # Transform checkbox variables into the defined labels
+  if (length(var_check_factors) > 0) {
+    data <- data |>
+      dplyr::mutate(dplyr::across(
+        tidyselect::all_of(var_check_factors),
+        ~ factor(.x, levels = c("Unchecked", "Checked"), labels = checkbox_labels)
+      ))
+  } else {
+    data <- data |>
+      dplyr::mutate(dplyr::across(
+        tidyselect::all_of(var_check),
+        ~ factor(as.character(.x), levels = c(0, 1), labels = checkbox_labels)
+      ))
+  }
+
 
   # Identify checkbox variables
   var_check <- names(data)[grep("___", names(data))]
@@ -244,6 +251,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   for (i in seq_along(names_trim)) {
     # Find variable names in `var_check` that start with the current name in `names_trim`
     svar_check <- grep(stringr::str_glue("^{names_trim[i]}___"), var_check, value = TRUE)
+    svar_check <- svar_check[!grepl(".factor$", svar_check)]
 
     # Extract labels corresponding to the found variables
     label <- labels[svar_check]
@@ -272,6 +280,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     label_name <- gsub("^x(\\d)", "\\1", label_name)
 
     if (checkbox_names) {
+
       # Generate new variable names by appending the cleaned labels to the original variable names
       out <- stringr::str_glue("{names_trim[i]}_{label_name}")
 
@@ -299,10 +308,14 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
         }
 
         # Update the variable names in the data and dictionary
-        names(data) <- dplyr::case_when(names(data) == svar_check[j] ~ out[j], TRUE ~ names(data))
+        names(data) <- dplyr::case_when(names(data) == svar_check[j] ~ out[j],
+                                        names(data) == paste0(svar_check[j], ".factor") ~ paste0(out[j], ".factor"),
+                                        .default = names(data))
 
         # Update the labels to match the new variable names
-        names(labels) <- dplyr::case_when(names(labels) == svar_check[j] ~ out[j], TRUE ~ names(labels))
+        names(labels) <- dplyr::case_when(names(labels) == svar_check[j] ~ out[j],
+                                          names(labels) == paste0(svar_check[j], ".factor") ~ paste0(out[j], ".factor"),
+                                          .default = names(labels))
 
         # Update the dictionary with the new variable name
         dic <- dic |>
@@ -363,6 +376,12 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace),
       branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace2)
     )
+
+  # Returning checkboxes to numeric version
+  if (length(var_check_factors) > 0) {
+    data <- data |>
+      dplyr::mutate(dplyr::across(correspondence$out, ~ as.numeric(.x)))
+  }
 
   # Apply the labels to the data
   data <- data |>

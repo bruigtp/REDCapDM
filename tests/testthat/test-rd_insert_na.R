@@ -39,7 +39,7 @@ test_that("rd_insert_na inserts NA when filter condition is met (using event_for
   expected <- df[[v2]]
   expected[which(df[[v1]] < threshold_value)] <- NA
 
-  expect_equal(result[[v2]], expected)
+  expect_equal(result$data[[v2]], expected)
 })
 
 test_that("rd_insert_na errors if data or dic missing", {
@@ -103,7 +103,7 @@ test_that("rd_insert_na leaves data unchanged when filter matches no rows (with 
     event_form = covican$event_form
   )
 
-  expect_equal(result, df)  # nothing should change
+  expect_equal(result$data, df)  # nothing should change
 })
 
 test_that("rd_insert_na errors if longitudinal but event_form missing", {

@@ -34,6 +34,8 @@
 
 rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, vars, filter) {
 
+  results <- NULL
+
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
     env_vars <- check_proj(project, data, dic, event_form)
@@ -121,6 +123,31 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       data[id, vars[i]] <- NA
     }
 
-    data
+    # Reapply variable labels to the data after transformation
+    data <- data |>
+      labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
+
+    # Update results with the this transformation
+    if (is.null(results)) {
+      results <- c(results, stringr::str_glue("1. Inserting missing values into certain variables. (rd_insert_na)\n"))
+    } else {
+      last_val_res <- results |>
+        stringr::str_extract("^(\n)?\\d+\\.") |>
+        na.omit() |>
+        dplyr::last() |>
+        stringr::str_remove("\\.") |>
+        as.numeric()
+
+      results <- c(results, stringr::str_glue("\n\n{last_val_res + 1}. Inserting missing values into certain variables. (rd_insert_na)\n"))
+    }
+
+    # Return the updated data, dictionary, event_form, and results (if present)
+    list(
+      data = data,
+      dictionary = dic,
+      event_form = event_form,
+      results = stringr::str_glue("{results}")
+    ) |>
+      purrr::compact() # Remove NULL elements from the list
   }
 }

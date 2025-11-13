@@ -6,8 +6,9 @@ test_that("rd_checkbox converts checkbox variables to factors with specified lab
   expect_true(all(levels(result$data$inc_1.factor) == c("No", "Yes")))
 
   # Check another checkbox
-  expect_true(is.factor(result$data$type_underlying_disease_haematological_cancer))
-  expect_true(all(levels(result$data$type_underlying_disease_haematological_cancer) == c("No", "Yes")))
+  expect_true(is.numeric(result$data$type_underlying_disease_haematological_cancer))
+  expect_true(is.factor(result$data$type_underlying_disease_haematological_cancer.factor))
+  expect_true(all(levels(result$data$type_underlying_disease_haematological_cancer.factor) == c("No", "Yes")))
 })
 
 test_that("rd_checkbox renames checkbox variables when checkbox_names = TRUE", {
@@ -50,7 +51,8 @@ test_that("long checkbox labels are truncated to 60 characters", {
   )
 
   result <- rd_checkbox(data = covican_test$data, dic = covican_test$dictionary) |> suppressWarnings()
-  expect_true(all(nchar(names(result$data)) <= 60))
+  # we have to account for the '.factor' so the limit is 67
+  expect_true(all(nchar(names(result$data)) <= 67))
 })
 
 
