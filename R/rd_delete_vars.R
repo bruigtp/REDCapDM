@@ -139,8 +139,13 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
   # Update results with the this transformation
   if (is.null(results)) {
-    results <- c(results, stringr::str_glue("1. Removing selected variables (rd_delete_vars)\n"))
+    results <- c(results, stringr::str_glue("Removing selected variables (rd_delete_vars)\n"))
   } else {
+
+    if(grepl("^[A-Z]", results[1])) {
+      results[1] <- paste("1.", results[1])
+    }
+
     last_val_res <- results |>
       stringr::str_extract("^(\n)?\\d+\\.") |>
       na.omit() |>

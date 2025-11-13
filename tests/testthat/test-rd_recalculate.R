@@ -33,8 +33,8 @@ test_that("recalculate returns updated data and dictionary", {
   expect_true("glue" %in% class(res$results))
 })
 
-test_that("recalculate respects exclude_recalc argument", {
-  res <- rd_recalculate(data = cov_data, dic = cov_dic_test, event_form = cov_event_form, exclude_recalc = calc_fields[1])
+test_that("recalculate respects exclude argument", {
+  res <- rd_recalculate(data = cov_data, dic = cov_dic_test, event_form = cov_event_form, exclude = calc_fields[1])
 
   # First calc field _recalc should NOT exist
   expect_false(any(grepl(paste0(calc_fields[1], "_recalc"), names(res$data))))

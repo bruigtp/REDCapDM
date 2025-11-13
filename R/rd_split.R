@@ -94,11 +94,6 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       dplyr::filter(.data$field_name %in% vars_more & .data$field_type == "checkbox") |>
       dplyr::pull(.data$field_name)
 
-    if (length(check_vars) > 0) {
-      # actions <- c(actions, "There are variables in the dictionary that are not present in the dataset.\nSince some of these variables are checkboxes, please use the `rd_checkbox` function\nwith `checkbox_names = TRUE` to resolve this issue before proceeding.")
-      actions <- c(actions, "Missing checkbox vars from dictionary. Please, run: rd_checkbox(..., checkbox_names = TRUE)")
-    }
-
     other_check_vars <- setdiff(vars_more, check_vars)
 
     if (length(other_check_vars) > 0) {
@@ -130,12 +125,6 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
     fact_vars <- grep(".factor$", vars_less, value = TRUE)
 
-    # Special handling for factor versions of variables
-    if (length(fact_vars) > 0) {
-      # actions <- c(actions, "Some variables in the dataset are factor versions of other variables and are not present in the dictionary.\nUse the `rd_factor` function to resolve this issue before proceeding.")
-      actions <- c(actions, "Detected both versions of variables (numerical and factor) - run: rd_factor(...)")
-    }
-
     # Checkbox vars already identified in the previous step (vars_more)
     less_check <- grep("___", vars_less, value = TRUE)
 
@@ -157,7 +146,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       ""
     )
     body <- unlist(lapply(seq_along(actions), function(i) paste0(i, ". ", actions[i])))
-    footer <- c("", "Suggested order: list(dataset, dic, ...) |> rd_checkbox(...) |> rd_delete_vars(...) |> rd_factor(...) -> rd_split(...)")
+    footer <- c("", "Suggested order: list(data, dic, ...) |> rd_delete_vars(delete_pattern = ...) |> rd_split(...)")
     stop(paste(c(header, body, footer), collapse = "\n"), call. = FALSE)
   }
 
@@ -174,7 +163,24 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       ndata <- tibble::tibble("form" = form) |>
         dplyr::mutate(
           events = purrr::map(.data$form, ~ event_form$unique_event_name[event_form$form == .x]),
-          vars = purrr::map(.data$form, ~ dic$field_name[dic$form_name == .x])
+          vars = purrr::map(.data$form, ~{
+            posible_vars <- dic$field_name[dic$form_name == .x]
+            posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"))
+
+            check_df <- tibble::tibble(check_data = names(data)[grep("___", names(data))]) |>
+              dplyr::mutate(check_dic = gsub("___.*$", "", check_data)) |>
+              dplyr::distinct_all() |>
+              dplyr::filter(check_dic %in% posible_vars)
+
+            if (nrow(check_df) > 0) {
+              vars_dic <- c(unique(check_df$check_dic), paste0(unique(check_df$check_dic), ".factor"))
+              posible_vars <- setdiff(posible_vars, vars_dic)
+              posible_vars <- c(posible_vars, check_df$check_data)
+            }
+
+            intersect(names(data), posible_vars)
+          }
+          )
         ) |>
         dplyr::mutate(df = purrr::map2(
           .data$events,
@@ -188,7 +194,23 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     } else {
       ndata <- tibble::tibble("form" = form) |>
         dplyr::mutate(
-          vars = purrr::map(.data$form, ~ dic$field_name[dic$form_name == .x]),
+          vars = purrr::map(.data$form, ~ {
+            posible_vars <- dic$field_name[dic$form_name == .x]
+            posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"))
+
+            check_df <- tibble::tibble(check_data = names(data)[grep("___", names(data))]) |>
+              dplyr::mutate(check_dic = gsub("___.*$", "", check_data)) |>
+              dplyr::distinct_all() |>
+              dplyr::filter(check_dic %in% posible_vars)
+
+            if (nrow(check_df) > 0) {
+              vars_dic <- c(unique(check_df$check_dic), paste0(unique(check_df$check_dic), ".factor"))
+              posible_vars <- setdiff(posible_vars, vars_dic)
+              posible_vars <- c(posible_vars, check_df$check_data)
+            }
+
+            intersect(names(data), posible_vars)
+          }),
           vars = purrr::map(.data$vars, ~ unique(c(basic_redcap_vars, .x)))
         ) |>
         dplyr::mutate(df = purrr::map(.data$vars, ~ data |>
@@ -218,6 +240,14 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     }
 
     if (wide) {
+      ndata <- ndata |>
+        dplyr::mutate(df = purrr::map(.data$df, ~{
+          order_cols <- intersect(names(data), names(.x))
+
+          .x |>
+            dplyr::select(dplyr::any_of(c(basic_redcap_vars, order_cols)))
+        }))
+
       ndata <- ndata |>
         dplyr::mutate(
           max_repeated_instance = purrr::map_dbl(
@@ -257,18 +287,35 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
         dplyr::relocate(.data$max_repeated_instance, .before = .data$vars)
     }
   } else if (by == "event") {
+
     # Handle splitting by event
-    var_event <- event_form |>
-      dplyr::select("form_name" = "form", "redcap_event_name" = "unique_event_name") |>
-      dplyr::right_join(
-        dic |>
-          dplyr::select("form_name", "field_name", "field_type", "branching_logic_show_field_only_if"),
-        by = "form_name",
-        relationship = "many-to-many"
+    var_event <- tibble::tibble("form_name" = event_form$form) |>
+      dplyr::mutate(
+        redcap_event_name = purrr::map(.data$form_name, ~ event_form$unique_event_name[event_form$form == .x]),
+        vars = purrr::map(.data$form_name, ~{
+          posible_vars <- dic$field_name[dic$form_name == .x]
+          posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"))
+
+          check_df <- tibble::tibble(check_data = names(data)[grep("___", names(data))]) |>
+            dplyr::mutate(check_dic = gsub("___.*$", "", check_data)) |>
+            dplyr::distinct_all() |>
+            dplyr::filter(check_dic %in% posible_vars)
+
+          if (nrow(check_df) > 0) {
+            vars_dic <- c(unique(check_df$check_dic), paste0(unique(check_df$check_dic), ".factor"))
+            posible_vars <- setdiff(posible_vars, vars_dic)
+            posible_vars <- c(posible_vars, check_df$check_data)
+          }
+
+          intersect(names(data), posible_vars)
+        }
+        )
       ) |>
+      tidyr::unnest(.data$redcap_event_name) |>
+      tidyr::unnest(.data$vars) |>
+      dplyr::distinct(.data$redcap_event_name, field_name = .data$vars) |>
       dplyr::filter(.data$field_name != "record_id") |>
-      tibble::as_tibble() |>
-      dplyr::select("redcap_event_name", "field_name")
+      tibble::as_tibble()
 
     var_event_add <- data.frame(redcap_event_name = NA, field_name = basic_redcap_vars)
     var_event <- rbind(var_event_add, var_event)
@@ -291,8 +338,20 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
             dplyr::select(dplyr::all_of(c(basic_redcap_vars, .y)))
         )
       )
+
   } else {
     stop("Invalid `by` argument. Please specify either 'form' or 'event'.")
+  }
+
+  # Order columns
+  if (!wide) {
+    ndata <- ndata |>
+      dplyr::mutate(df = purrr::map(.data$df, ~{
+        order_cols <- intersect(names(data), names(.x))
+
+        .x |>
+          dplyr::select(dplyr::any_of(c(basic_redcap_vars, order_cols)))
+      }))
   }
 
   # Handle the `which` argument if provided
@@ -329,8 +388,13 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
   # Update results with the this transformation
   if (is.null(results)) {
-    results <- c(results, stringr::str_glue("1. Final arrangment of the data by {by}. (rd_split)\n"))
+    results <- c(results, stringr::str_glue("Final arrangment of the data by {by}. (rd_split)\n"))
   } else {
+
+    if(grepl("^[A-Z]", results[1])) {
+      results[1] <- paste("1.", results[1])
+    }
+
     last_val_res <- results |>
       stringr::str_extract("^(\n)?\\d+\\.") |>
       na.omit() |>

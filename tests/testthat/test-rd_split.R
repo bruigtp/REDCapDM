@@ -7,10 +7,8 @@ test_that("rd_split errors with missing dictionary vars that are checkbox type",
     form_name  = c("form1", "form1")
   )
 
-  expect_error(
-    rd_split(data = data, dic = dic),
-    regexp = "rd_checkbox",
-    fixed = FALSE
+  expect_no_error(
+    rd_split(data = data, dic = dic)
   )
 })
 
@@ -40,10 +38,8 @@ test_that("rd_split errors when .factor versions of variables are present but no
   data <- tibble(record_id = 1, var1.factor = "A")
   dic  <- tibble(field_name = "record_id", field_type = "text", form_name = "meta")
 
-  expect_error(
-    rd_split(data = data, dic = dic),
-    regexp = "rd_factor",
-    ignore.case = TRUE
+  expect_no_error(
+    rd_split(data = data, dic = dic)
   )
 })
 

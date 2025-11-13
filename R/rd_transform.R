@@ -2,7 +2,8 @@
 #'
 #' @description
 #' `r lifecycle::badge('stable')`
-#' This function transforms the raw REDCap data read by the `redcap_data` function. It returns the transformed data and dictionary, along with a summary of the results of each step.
+#'
+#' This function transforms the raw REDCap data read by the `redcap_data` function. It runs in one-step pipeline all the functions dedicated to processing the data. It returns the transformed data and dictionary, along with a summary of the results of each step.
 #'
 #' @param project Output of the `redcap_data` function, which is a list containing the data frames of the data, dictionary and event_form (if needed) of the REDCap project.
 #' @param data Data frame containing the data read from REDCap. If the list is specified, this argument is not necessary.
@@ -11,9 +12,9 @@
 #' @param checkbox_labels Character vector with the names for the two options of every checkbox variable. Default is `c('No', 'Yes')`.
 #' @param checkbox_na Logical indicating if checkboxes values with branching logic should be set to missing only when the branching logic is missing (`FALSE`), or also when the branching logic isn't satisfied (`TRUE`). The default is `FALSE`.
 #' @param exclude_recalc Character vector with the names of variables that should not be recalculated. Useful for projects with time-consuming recalculations of certain calculated fields.
-#' @param exclude_to_factor Character vector with the names of variables that should not be transformed to factors.
+#' @param exclude_factor Character vector with the names of variables that should not be transformed to factors.
 #' @param delete_vars Character vector specifying the variables to exclude.
-#' @param delete_pattern Character vector specifying the regex pattern for variables to be excluded. By default, variables ending with `_complete` and `_timestamp` will be removed.
+#' @param delete_pattern Character vector specifying the regex pattern for variables to be excluded.
 #' @param final_format Character string indicating the final format of the data. Options are `raw`, `by_event` or `by_form`. `raw` (default) returns the transformed data in its original structure, `by_event` returns it as a nested data frame by event, and `by_form` returns it as a nested data frame by form.
 #' @param which_event Character string indicating a specific event to return if the final format is  `by_event`.
 #' @param which_form Character string indicating a specific form to return if the final format is `by_form`.
@@ -32,7 +33,7 @@
 #' @export
 #'
 
-rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_recalc = NULL, exclude_to_factor = NULL, delete_vars = NULL, delete_pattern = NULL, final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL) {
+rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_recalc = NULL, exclude_factor = NULL, delete_vars = NULL, delete_pattern = NULL, final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL) {
 
   results <- NULL
   ind <- 1
@@ -163,7 +164,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     if (longitudinal & is.null(event_form)) {
       results <- c(results, "\nNo recalculation is possible as the project has more than one event and the event-form correspondence has not been specified\n")
     } else {
-      recalc <- rd_recalculate(data = data, dic = dic, event_form = event_form, exclude_recalc = exclude_recalc)
+      recalc <- rd_recalculate(data = data, dic = dic, event_form = event_form, exclude = exclude_recalc)
 
       data <- recalc$data
       dic <- recalc$dictionary
@@ -213,7 +214,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     results <- c(results, stringr::str_glue("\n\n{ind}. Replacing original variables for their factor version"))
     ind <- ind + 1
 
-    data_dic <- rd_factor(data = data, dic = dic, exclude = exclude_to_factor)
+    data_dic <- rd_factor(data = data, dic = dic, exclude = exclude_factor)
 
     data <- data_dic$data
     dic <- data_dic$dictionary
@@ -238,7 +239,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
     dic <- dic_trans$dictionary
 
-    results <- c(results, dic_trans$results[-2])
+    results <- c(results, dic_trans$results[-1])
   }
 
 

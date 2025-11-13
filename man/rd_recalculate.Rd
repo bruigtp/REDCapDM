@@ -9,7 +9,7 @@ rd_recalculate(
   data = NULL,
   dic = NULL,
   event_form = NULL,
-  exclude_recalc = NULL
+  exclude = NULL
 )
 }
 \arguments{
@@ -21,7 +21,7 @@ rd_recalculate(
 
 \item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
 
-\item{exclude_recalc}{(Optional) A character vector of field names to exclude from recalculation.}
+\item{exclude}{(Optional) A character vector of field names to exclude from recalculation.}
 }
 \value{
 A list containing the following elements:
@@ -64,6 +64,6 @@ results <- rd_recalculate(
 
 # Example usage with a project object, excluding variables from the recalculation
 results <- covican |>
-  rd_recalculate(exclude_recalc = c("age", "screening_fail_crit"))
+  rd_recalculate(exclude = c("age", "screening_fail_crit"))
 
 }

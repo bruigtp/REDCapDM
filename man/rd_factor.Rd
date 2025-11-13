@@ -26,16 +26,14 @@ rd_factor(
 \value{
 A list containing:
 \item{data}{The transformed dataset with factor variables applied.}
-\item{dictionary}{The dictionary with updated branching logic for the transformed variables.}
+\item{dictionary}{The dictionary used.}
 \item{event_form}{The event-form mapping used (if provided).}
 \item{results}{A string summarizing the changes made during the transformation.}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function converts variables in a REDCap dataset that have associated \code{.factor} columns into actual factor variables, while also updating branching logic in the associated dictionary.
-
-It also allows for the exclusion of specific variables from being converted into factors.
+This function converts variables in a REDCap dataset that have associated \code{.factor} columns into actual factor variables. It also allows for the exclusion of specific variables from being converted into factors.
 }
 \details{
 This function searches for columns in the data that have a \code{.factor} suffix (indicating that they can be converted into factors) and converts them into factors based on their labels.

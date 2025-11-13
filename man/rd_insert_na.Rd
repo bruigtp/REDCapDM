@@ -34,7 +34,9 @@ The modified data frame with the specified variables updated.
 
 This function allows you to manually insert a missing value into certain variables (\code{vars}) if the specified filter/s (\code{filter}) are satisfied.
 It's particularly useful for managing checkboxes without explicit gatekeeper questions in their branching logic.
-Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+}
+\note{
+Each variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
 }
 \examples{
 

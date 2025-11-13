@@ -132,8 +132,13 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   }
 
   if (is.null(results)) {
-    results <- c(results, stringr::str_glue("1. {transf_message} (rd_checkbox)\n"))
+    results <- c(results, stringr::str_glue("{transf_message} (rd_checkbox)\n"))
   } else {
+
+    if(grepl("^[A-Z]", results[1])) {
+      results[1] <- paste("1.", results[1])
+    }
+
     last_val_res <- results |>
       stringr::str_extract("^(\n)?\\d+\\.") |>
       na.omit() |>

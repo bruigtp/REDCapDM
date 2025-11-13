@@ -4,8 +4,6 @@
 #' `r lifecycle::badge('experimental')`
 #'
 #' This function processes and transforms date and datetime fields in a REDCap dataset.
-#' It ensures proper handling of data, dictionary (metadata), and event-form mapping,
-#' and applies labels to the dataset for better usability.
 #'
 #' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
 #' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
@@ -40,7 +38,7 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
     env_vars <- check_proj(project, data, dic, event_form)
-    # browser()
+
     list2env(env_vars, envir = environment())
   }
 
@@ -103,8 +101,13 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
 
   # Update results with the this transformation
   if (is.null(results)) {
-    results <- c(results, stringr::str_glue("1. Transforming date and datetime fields. (rd_dates)\n"))
+    results <- c(results, stringr::str_glue("Transforming date and datetime fields. (rd_dates)\n"))
   } else {
+
+    if(grepl("^[A-Z]", results[1])) {
+      results[1] <- paste("1.", results[1])
+    }
+
     last_val_res <- results |>
       stringr::str_extract("^(\n)?\\d+\\.") |>
       na.omit() |>

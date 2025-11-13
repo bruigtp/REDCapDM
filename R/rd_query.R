@@ -474,8 +474,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       # Adding each identified query to the queries data frame
       queries <- rbind(queries, excel)
     } else {
+
       # Handle cases with zero queries
-      excel <- data.frame(
+      excel <- tibble::tibble(
         DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data)) & nrow(data) > 0) {
           if ("redcap_data_access_group.factor" %in% names(data)) {
             if (all(is.na(event))) {
@@ -542,7 +543,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           }
         },
         stringsAsFactors = FALSE
-      )
+      ) |>
+        as.data.frame()
 
       # Adding each variable with zero queries to the data frame
       excel_zero <- rbind(excel_zero, excel)

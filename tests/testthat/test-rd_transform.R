@@ -105,12 +105,12 @@ test_that("deleting variables by pattern works", {
   expect_false(any(grepl("_complete$", names(res$data))))
 })
 
-test_that("exclude_to_factor prevents conversion", {
+test_that("exclude_factor prevents conversion", {
   var_to_exclude <- covican$dictionary$field_name[1]
   res <- rd_transform(
     data = covican$data,
     dic = covican$dictionary,
-    exclude_to_factor = var_to_exclude
+    exclude_factor = var_to_exclude
   ) |>
     suppressMessages() |>
     suppressWarnings()

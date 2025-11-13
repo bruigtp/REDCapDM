@@ -5,7 +5,7 @@
 #'
 #' This function allows you to manually insert a missing value into certain variables (`vars`) if the specified filter/s (`filter`) are satisfied.
 #' It's particularly useful for managing checkboxes without explicit gatekeeper questions in their branching logic.
-#' Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+#'
 #'
 #' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
 #' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
@@ -13,6 +13,9 @@
 #' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
 #' @param vars A character vector with the names of the variables to be transformed.
 #' @param filter A character vector of logical expressions to evaluate. If the evaluation is `TRUE`, the corresponding variable in `vars` is set to `NA`.
+#'
+#' @note
+#' Each variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
 #'
 #' @return The modified data frame with the specified variables updated.
 #'
@@ -129,8 +132,13 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
     # Update results with the this transformation
     if (is.null(results)) {
-      results <- c(results, stringr::str_glue("1. Inserting missing values into certain variables. (rd_insert_na)\n"))
+      results <- c(results, stringr::str_glue("Inserting missing values into certain variables. (rd_insert_na)\n"))
     } else {
+
+      if(grepl("^[A-Z]", results[1])) {
+        results[1] <- paste("1.", results[1])
+      }
+
       last_val_res <- results |>
         stringr::str_extract("^(\n)?\\d+\\.") |>
         na.omit() |>

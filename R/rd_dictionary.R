@@ -185,8 +185,13 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
 
   # Update results with the this transformation
   if (is.null(results)) {
-    results <- c(results, stringr::str_glue("1. Converting every branching logic in the dictionary into R logic. (rd_dictionary)\n"))
+    results <- c(results, stringr::str_glue("Converting every branching logic in the dictionary into R logic. (rd_dictionary)\n"))
   } else {
+
+    if(grepl("^[A-Z]", results[1])) {
+      results[1] <- paste("1.", results[1])
+    }
+
     last_val_res <- results |>
       stringr::str_extract("^(\n)?\\d+\\.") |>
       na.omit() |>

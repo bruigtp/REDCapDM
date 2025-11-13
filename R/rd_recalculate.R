@@ -11,7 +11,7 @@
 #' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
 #' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
 #' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
-#' @param exclude_recalc (Optional) A character vector of field names to exclude from recalculation.
+#' @param exclude (Optional) A character vector of field names to exclude from recalculation.
 #'
 #' @return A list containing the following elements:
 #'   \item{data}{The updated dataset with recalculated fields (if applicable).}
@@ -43,19 +43,19 @@
 #'
 #' # Example usage with a project object, excluding variables from the recalculation
 #' results <- covican |>
-#'   rd_recalculate(exclude_recalc = c("age", "screening_fail_crit"))
+#'   rd_recalculate(exclude = c("age", "screening_fail_crit"))
 #'
 #' @export
 #' @importFrom rlang :=
 #' @importFrom stats na.omit
 
-rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, exclude_recalc = NULL) {
+rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, exclude = NULL) {
   results <- NULL
 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
     env_vars <- check_proj(project, data, dic, event_form)
-    # browser()
+
     list2env(env_vars, envir = environment())
   }
 
@@ -113,7 +113,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     # Process calculated fields: evaluate, transcribe logic, and compare results
     calc <- tibble::tibble(dic) |>
-      dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude_recalc) |>
+      dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude) |>
       dplyr::mutate(
         calc = purrr::map(.data$field_name, function(x) {
           val <- data[, x]
@@ -180,7 +180,9 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
             field_label = stringr::str_glue("{field_label} (Recalculate)")
           )
 
-        dic <- rbind(dic, add_row)
+        pos <- which(dic$field_name == calc_change$field_name[i])
+
+        dic <- dic |> tibble::add_row(!!!as.list(add_row), .after = pos)
       }
     }
 
@@ -188,10 +190,15 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     data <- data |>
       labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
 
-    # Update results with the this transformation
+    # Update results with this transformation
     if (is.null(results)) {
-      results <- c(results, stringr::str_glue("1. Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)\n"))
+      results <- c(results, stringr::str_glue("Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)\n"))
     } else {
+
+      if(grepl("^[A-Z]", results[1])) {
+        results[1] <- paste("1.", results[1])
+      }
+
       last_val_res <- results |>
         stringr::str_extract("^(\n)?\\d+\\.") |>
         na.omit() |>

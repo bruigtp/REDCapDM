@@ -25,8 +25,6 @@ A list containing the following elements:
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 This function processes and transforms date and datetime fields in a REDCap dataset.
-It ensures proper handling of data, dictionary (metadata), and event-form mapping,
-and applies labels to the dataset for better usability.
 }
 \details{
 The function performs the following tasks:

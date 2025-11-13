@@ -3,9 +3,7 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function converts variables in a REDCap dataset that have associated `.factor` columns into actual factor variables, while also updating branching logic in the associated dictionary.
-#'
-#' It also allows for the exclusion of specific variables from being converted into factors.
+#' This function converts variables in a REDCap dataset that have associated `.factor` columns into actual factor variables. It also allows for the exclusion of specific variables from being converted into factors.
 #'
 #' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
 #' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
@@ -15,7 +13,7 @@
 #'
 #' @return A list containing:
 #' \item{data}{The transformed dataset with factor variables applied.}
-#' \item{dictionary}{The dictionary with updated branching logic for the transformed variables.}
+#' \item{dictionary}{The dictionary used.}
 #' \item{event_form}{The event-form mapping used (if provided).}
 #' \item{results}{A string summarizing the changes made during the transformation.}
 #'
@@ -71,13 +69,15 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Identify the columns ending with '.factor' (these are the potential factor variables)
   factors <- data |>
-    dplyr::select(dplyr::ends_with(".factor")) |>
+    dplyr::select(dplyr::matches("\\.factor$")) |>
     names() |>
     stringr::str_remove("\\.factor$")
 
+  factors <- setdiff(factors, stringr::str_remove(keep, "\\.factor$"))
+
   # If there are no factor variables, stop the function
   if (length(factors) == 0) {
-    warning("There are no variables in the data which can be converted to factors.")
+    warning("There are no variables in the data which can be converted to factors.", call. = FALSE)
   } else {
     if (!is.null(exclude)) {
       bad_vars <- exclude[grepl("\\.factor$", exclude)]
@@ -98,13 +98,15 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     if (length(factors) == 0) {
       stop("All variables in the data which can be converted to factors are specified in the `exclude` argument. Please, review the `exclude` argument.", call. = FALSE)
     }
-  }
 
-  # Perform the transformation of factor columns into actual factor variables
-  data <- data |>
-    # Assign the values from the factor columns to the original columns and remove the '.factor' versions
-    dplyr::mutate(dplyr::across(tidyselect::all_of(factors), ~ get(stringr::str_glue("{dplyr::cur_column()}.factor")))) |>
-    dplyr::select(-stringr::str_glue("{factors}.factor"))
+    # Perform the transformation of factor columns into actual factor variables
+    data <- data |>
+      # Assign the values from the factor columns to the original columns and remove the '.factor' versions
+      dplyr::mutate(dplyr::across(tidyselect::all_of(factors), ~ get(
+        stringr::str_glue("{dplyr::cur_column()}.factor")
+      ))) |>
+      dplyr::select(-stringr::str_glue("{factors}.factor"))
+  }
 
   # If there were any variables that were excluded from conversion, reattach them to the data
   if (length(keep_factors) > 0) {
@@ -132,8 +134,13 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Update results with the this transformation
   if (is.null(results)) {
-    results <- c(results, stringr::str_glue("1. Replacing original variables for their factor version. (rd_factor)\n"))
+    results <- c(results, stringr::str_glue("Replacing original variables for their factor version. (rd_factor)\n"))
   } else {
+
+    if(grepl("^[A-Z]", results[1])) {
+      results[1] <- paste("1.", results[1])
+    }
+
     last_val_res <- results |>
       stringr::str_extract("^(\n)?\\d+\\.") |>
       na.omit() |>

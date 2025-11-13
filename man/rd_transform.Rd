@@ -12,7 +12,7 @@ rd_transform(
   checkbox_labels = c("No", "Yes"),
   checkbox_na = FALSE,
   exclude_recalc = NULL,
-  exclude_to_factor = NULL,
+  exclude_factor = NULL,
   delete_vars = NULL,
   delete_pattern = NULL,
   final_format = "raw",
@@ -36,11 +36,11 @@ rd_transform(
 
 \item{exclude_recalc}{Character vector with the names of variables that should not be recalculated. Useful for projects with time-consuming recalculations of certain calculated fields.}
 
-\item{exclude_to_factor}{Character vector with the names of variables that should not be transformed to factors.}
+\item{exclude_factor}{Character vector with the names of variables that should not be transformed to factors.}
 
 \item{delete_vars}{Character vector specifying the variables to exclude.}
 
-\item{delete_pattern}{Character vector specifying the regex pattern for variables to be excluded. By default, variables ending with \verb{_complete} and \verb{_timestamp} will be removed.}
+\item{delete_pattern}{Character vector specifying the regex pattern for variables to be excluded.}
 
 \item{final_format}{Character string indicating the final format of the data. Options are \code{raw}, \code{by_event} or \code{by_form}. \code{raw} (default) returns the transformed data in its original structure, \code{by_event} returns it as a nested data frame by event, and \code{by_form} returns it as a nested data frame by form.}
 
@@ -55,7 +55,8 @@ A list with the transformed dataset, dictionary, event_form, and the results of 
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
-This function transforms the raw REDCap data read by the \code{redcap_data} function. It returns the transformed data and dictionary, along with a summary of the results of each step.
+
+This function transforms the raw REDCap data read by the \code{redcap_data} function. It runs in one-step pipeline all the functions dedicated to processing the data. It returns the transformed data and dictionary, along with a summary of the results of each step.
 }
 \examples{
 # Basic transformation
