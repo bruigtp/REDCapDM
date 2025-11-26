@@ -1,3 +1,32 @@
+# REDCapDM 1.0-0
+
+## Bug fixes
+
+- Addressed multiple bugs across various functions to enhance stability and reliability.
+
+- Improved error handling to provide clearer messages when issues arise.
+
+- Fixed inconsistencies in data transformation outputs for certain edge cases.
+
+## Changes & New features
+
+- The `rd_transform` function has been split into several smaller subprocess functions. This allows users to:
+
+    - Apply each transformation step independently.
+
+    - Inspect intermediate results at each stage.
+
+    - Have precise control over every change made to their data.
+
+- By exposing the individual steps as separate functions, users can now customize the data transformation pipeline to better fit their REDCap datasets.
+
+- Updated function descriptions and examples illustrate how to use the subprocesses effectively, making it easier to integrate REDCapDM into data management workflows.
+
+- Some older functions related to data transformation have now been deprecated. Users are encouraged to transition to the new subprocess functions for more flexibility and maintainability.
+
+<br>
+<br>
+
 # REDCapDM 0.9-9
 
 ## Bug fixes
