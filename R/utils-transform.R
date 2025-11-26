@@ -468,6 +468,16 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   if(longitudinal & is.null(event_form)){
     stop("To split the data by form the event_form has to be provided in a longitudinal project", call. = FALSE)
   }
+  
+  #Check if the project has repeated instruments
+  if("redcap_repeat_instrument" %in% names(data)) {
+    repeat_instrument <- dplyr::case_when(
+      any(!is.na(data$redcap_repeat_instrument)) ~ TRUE,
+      TRUE ~ FALSE
+    )
+  } else {
+    repeat_instrument <- FALSE
+  }
 
   #Check if the project has repeated instruments
   if("redcap_repeat_instrument" %in% names(data)) {
@@ -544,6 +554,29 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
       dplyr::mutate(df = purrr::map(.data$vars,  ~ data |>
                                       dplyr::select(tidyselect::all_of(unique(c(basic_redcap_vars, .x))))))
   }
+  
+  if(repeat_instrument)  {
+    form_check <- data %>%
+    dplyr::distinct(redcap_repeat_instrument, redcap_repeat_instrument.factor)
+    
+    ndata <- ndata %>%
+      dplyr::left_join(form_check, by = dplyr::join_by("form" == "redcap_repeat_instrument")) %>%
+      dplyr::relocate("form_factor" = "redcap_repeat_instrument.factor", .after = form) %>%
+      dplyr::mutate(df = purrr::map2(.data$form_factor, .data$df, ~ {
+        if (is.na(.x)) {
+          .y %>%
+            dplyr::filter(is.na(redcap_repeat_instrument.factor)) %>%
+            dplyr::select(-dplyr::starts_with("redcap_repeat_instrument"))
+        } else {
+          .y %>%
+            dplyr::filter(redcap_repeat_instrument.factor == .x) %>%
+            dplyr::mutate(redcap_repeat_instrument = redcap_repeat_instrument.factor) %>%
+            dplyr::select(-redcap_repeat_instrument.factor)
+        }
+      })) %>%
+      dplyr::select(-"form_factor")
+  } 
+    
 
   if(repeat_instrument)  {
     form_check <- data |>
