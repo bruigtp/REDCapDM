@@ -27,7 +27,6 @@ install.packages("remotes") # Run this line if the 'remotes' package isn't insta
 remotes::install_github("bruigtp/REDCapDM")
 ```
 
-
 ### Getting Started
 
 To learn more about the package’s functionality, visit the [**REDCapDM website**](https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html). The site includes detailed descriptions of the package's functions and access to vignettes that demonstrate how to use REDCapDM effectively in your projects.
