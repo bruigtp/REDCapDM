@@ -38,6 +38,28 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.0-0" id="redcapdm-10-0">REDCapDM 1.0-0<a class="anchor" aria-label="anchor" href="#redcapdm-10-0"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-1-0-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-0-0"></a></h3>
+<ul><li><p>Addressed multiple bugs across various functions to enhance stability and reliability.</p></li>
+<li><p>Improved error handling to provide clearer messages when issues arise.</p></li>
+<li><p>Fixed inconsistencies in data transformation outputs for certain edge cases.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="changes--new-features-1-0-0">Changes &amp; New features<a class="anchor" aria-label="anchor" href="#changes--new-features-1-0-0"></a></h3>
+<ul><li>
+<p>The <code>rd_transform</code> function has been split into several smaller subprocess functions. This allows users to:</p>
+<ul><li><p>Apply each transformation step independently.</p></li>
+<li><p>Inspect intermediate results at each stage.</p></li>
+<li><p>Have precise control over every change made to their data.</p></li>
+</ul></li>
+<li><p>By exposing the individual steps as separate functions, users can now customize the data transformation pipeline to better fit their REDCap datasets.</p></li>
+<li><p>Updated function descriptions and examples illustrate how to use the subprocesses effectively, making it easier to integrate REDCapDM into data management workflows.</p></li>
+<li><p>Some older functions related to data transformation have now been deprecated. Users are encouraged to transition to the new subprocess functions for more flexibility and maintainability.</p></li>
+</ul><p><br><br></p>
+</div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9-9" id="redcapdm-09-9">REDCapDM 0.9-9<a class="anchor" aria-label="anchor" href="#redcapdm-09-9"></a></h2>
 <div class="section level3">
 <h3 id="bug-fixes-0-9-9">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-9-9"></a></h3>
