@@ -1,0 +1,184 @@
+---
+title: "Data reading and processing"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 5
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Data reading and processing}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+rm(list = ls())
+
+library(REDCapDM)
+library(dplyr)
+library(purrr)
+library(knitr)
+library(kableExtra)
+```
+
+<br>
+
+This vignette provides a summary of the straightforward and common use of [REDCapDM](https://github.com/bruigtp/REDCapDM) to interact with [REDCap](https://www.project-redcap.org/) data.
+
+<br>
+
+# **Read REDCap data into R**
+
+`REDCapDM` allows you to import REDCap data either from local files or via an API connection. Both methods return a structured list containing your dataset, dictionary, and event-form mapping (for longitudinal projects).
+
+## **1. Using local files**
+
+Ensure you have exported the following files from REDCap and placed them in the same directory:
+
+1. **R data file** – contains your REDCap dataset (`.rds` or `.RData`)
+
+2. **Dictionary file** – CSV file containing variable metadata
+
+3. **Event-form mapping file** (only for longitudinal projects) – CSV describing which forms belong to each event
+
+Then, provide the paths to these files using the `redcap_data()` function:
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+dataset <- redcap_data(
+  data_path = "C:/Users/username/example.r",
+  dic_path = "C:/Users/username/example_dictionary.csv",
+  event_path = "C:/Users/username/events.csv" # optional for longitudinal projects
+)
+```
+
+⚠️ Tip: If your project is not longitudinal, you can omit `event_path`.
+
+
+## **2. Using API connection**
+
+You can also import data directly from REDCap using your project’s **API token** and **URL**:
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, comment=NA}
+dataset_api <- redcap_data(
+  uri = "https://redcap.com/api/",
+  token = "YOUR_API_TOKEN_HERE"
+)
+```
+
+This method automatically retrieves the event-form mapping for longitudinal projects.
+
+⚠️ Tip: Keep your API token secure and do not share it publicly.
+
+## **3. Understanding the output**
+
+[`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html) returns a list with three elements:
+
+| Element      | Description                                                              |
+| ------------ | ------------------------------------------------------------------------ |
+| `data`       | Imported dataset containing all REDCap variables                         |
+| `dictionary` | Metadata for each variable, including labels, types, and branching logic |
+| `event_form` | Mapping between events and forms (only for longitudinal projects)        |
+
+
+<br>
+<br>
+
+# **Process and transform REDCap data**
+
+After importing your dataset into R, `REDCapDM` provides several functions to **process and transform your data** efficiently. The main function is [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.html), which performs multiple operations in one step.
+
+## **1. Core transformations**
+
+`rd_transform()` performs the following actions:
+
+| Transformation | Description |
+|----------------|-------------|
+| Variable deletion | Remove specific variables or patterns |
+| Recalculate fields | Update REDCap calculated fields |
+| Checkbox transformation | Convert checkbox variables into separate variables with option names |
+| Factor conversion | Replace original variables with their factor version |
+| Branching logic conversion | Translate REDCap logic into R logic for easier processing |
+
+
+## **2. Basic usage**
+
+The minimum required inputs are the dataset and dictionary. For longitudinal projects, include the event-form mapping for full functionality.
+
+You can provide these inputs either as a **single list** (output of `redcap_data()`) or as **separate arguments**:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+#Option A: Provide the full project list
+covican_transformed <- rd_transform(covican)
+
+#Option B: Provide individual arguments
+covican_transformed <- rd_transform(
+  data = covican$data, 
+  dic = covican$dictionary, 
+  event_form = covican$event_form
+)
+```
+
+The output is a list containing:
+
+- **data**: Transformed dataset
+
+- **dictionary**: Updated variable dictionary
+
+- **event_form**: Event-form mapping (if applicable)
+
+- **results**: Summary of all transformations
+
+You can view the transformation results:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+#Print the results of the transformation
+covican_transformed$results
+```
+
+## **3. Splitting by event**
+
+For longitudinal projects, you can split the transformed dataset by event using the `final_format = "by_event"` argument:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+dataset <- rd_transform(covican,
+                        final_format = "by_event")
+```
+
+Where the transformed dataset is a tibble object, containing data frames for each event in the REDCap project.
+
+```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
+dataset$data
+```
+
+## **4. Splitting by form**
+
+Or, alternatively, it can be split by form using `final_format = "by_form"` argument:
+
+```{r message=FALSE, warning=FALSE, comment=NA}
+dataset <- rd_transform(covican,
+                        final_format = "by_form")
+```
+
+Where the tibble object is composed by data frames corresponding to each form in the REDCap project.
+
+```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
+dataset$data
+```
+
+<br>
+<br>
+
+# **Quick troubleshooting checklist**
+
+1. Did you export the variable dictionary from REDCap? Without it, label
+   conversions and checkbox expansions are error-prone.
+2. Are API calls failing? Verify `uri`, `token` and your project's export
+   permissions.
+
+**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html**
+
+<br>
+<br>

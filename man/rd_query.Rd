@@ -5,7 +5,7 @@
 \title{Identification of Queries}
 \usage{
 rd_query(
-  ...,
+  project = NULL,
   variables = NA,
   expression = NA,
   negate = FALSE,
@@ -25,67 +25,96 @@ rd_query(
 )
 }
 \arguments{
-\item{...}{List containing the data, dictionary and event mapping (if required) of the REDCap project. This should be the output of the `redcap_data` function.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{variables}{Character vector containing the names of the database variables to be checked.}
+\item{variables}{Character vector of variable names to check for queries.}
 
-\item{expression}{Character vector of expressions to apply to the selected variables.}
+\item{expression}{Character vector of R expressions to evaluate for each variable.}
 
-\item{negate}{Logical value indicating whether the defined expression should be negated. Default value is `FALSE`.}
+\item{negate}{Logical, if \code{TRUE}, identifies values that \strong{do not} meet the condition. Default is \code{FALSE}.}
 
-\item{event}{The name of the REDCap event to analyze. If there are events in your REDCap project, you should use this argument to name the event to which the defined variables belong.}
+\item{event}{Required for longitudinal projects to avoid overestimation. REDCap event(s) to analyze.}
 
-\item{filter}{A filter to be applied to the dataset. For example, this argument can be used to apply the branching logic of a defined variable.}
+\item{filter}{Optional string of filters to apply to the dataset, such as the branching logic of a variable.}
 
-\item{addTo}{Data frame corresponding to a previous query data frame to which you can add the new query data frame. By default, this function always creates a new data frame regardless previous reports.}
+\item{addTo}{Optional data frame from a previous query report to which the new results can be appended.}
 
-\item{variables_names}{Character vector containing the description of each selected variable. By default, the function automatically takes the description of each variable from of the REDCap project dictionary.}
+\item{variables_names}{Optional character vector of descriptions for each variable. Defaults to the variables labels in the dictionary.}
 
-\item{query_name}{Description of the query. It can be the same for all variables, or you can define a different one for each variable. By default, this function defines it as `The value is [value] and it should not be [expression]'`.}
+\item{query_name}{Optional character vector describing each query. Defaults to a standard format: \verb{The value is [value] and it should not be [expression]}.}
 
-\item{instrument}{REDCap instrument to which the variables belong. It can be the same for all variables, or you can define a different one for each variable. By default, the function automatically selects the corresponding instrument of each variable from the REDCap project dictionary.}
+\item{instrument}{Optional REDCap instrument(s) for each variable. Defaults to the instrument reported in the dictionary.}
 
-\item{report_title}{Character string specifying the title of the report.}
+\item{report_title}{Optional string specifying the title of the final report. Defaults to \code{"Report of queries"}.}
 
-\item{report_zeros}{Logical. If `TRUE`, the function returns a report containing variables with zero queries.}
+\item{report_zeros}{Logical, include variables with zero queries in the report. Default is \code{FALSE}.}
 
-\item{by_dag}{Logical. If `TRUE`, both elements of the output will be grouped by the Data Access Groups (DAGs) of the REDCap project.}
+\item{by_dag}{Logical, split results by Data Access Group (DAG). Default is \code{FALSE}.}
 
-\item{link}{List containing project information used to create a web link to each query.}
+\item{link}{Optional list containing project information (\code{domain}, \code{redcap_version}, \code{proj_id}, \code{event_id}) to generate clickable links for each query.}
 
-\item{data}{Data frame containing the data read from REDCap. If the list is given, this argument is not required.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{Data frame containing the dictionary read from REDCap. If the list is given, this argument is not required.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{Data frame containing the correspondence of each event with each form. If the list is specified, this argument is not required.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 }
 \value{
-A list with a data frame of 9 columns (10 columns, if the link argument is specified) meant to help the user identify each query and a table with the total number of queries per variable.
+A list containing:
+\describe{
+\item{queries}{A data frame or a list of data frames (if \code{by_dag = TRUE}) with detailed query information for each record.}
+\item{results}{A formatted report (HTML table) summarizing total queries per variable, event, and DAG if applicable.}
+}
 }
 \description{
-This function allows you to identify queries using a particular expression/filter.
-It can be used to identify missing values or to identify values outside the lower and upper limits of a variable.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
+
+Detects and summarizes queries in a REDCap dataset based on specified expressions, filters, or a defined branching logic. Useful for identifying missing values, out-of-range values, or values that do not meet predefined criteria.
+}
+\details{
+The function performs the following steps:
+\itemize{
+\item Applies user-specified expressions to the selected variables to detect queries.
+\item Optionally negates the expressions to find values that \strong{do not} satisfy the condition.
+\item Handles REDCap branching logic, converting it into R-compatible expressions for evaluation.
+\item Applies additional user-specified filters before identifying queries.
+\item Generates structured query results with metadata including:
+\itemize{
+\item Identifier (record_id)
+\item DAG (if present)
+\item Event and Instrument
+\item Field, Repetition, Description, Query statement
+\item Optional link to REDCap entry
+}
+\item Optionally combines results with previous query outputs using \code{addTo}.
+\item Produces a summarized report, optionally including variables with zero queries.
+\item Provides warnings for variables with branching logic that could not be automatically evaluated.
+}
 }
 \examples{
-# Missing values
-example <- rd_query(covican,
-                    variables = c("copd", "age"),
-                    expression = c("is.na(x)", "x \%in\% NA"),
-                    event = "baseline_visit_arm_1")
-example
+\dontrun{
+# Identify missing values for multiple variables
+result <- rd_query(covican,
+  variables = c("copd", "age"),
+  expression = c("is.na(x)", "x \%in\% NA"),
+  event = "baseline_visit_arm_1"
+)
+result$results
 
-# Expression
-example <- rd_query(covican,
-                    variables="age",
-                    expression="x>20",
-                    event="baseline_visit_arm_1")
-example
+# Identify values exceeding a threshold
+result <- rd_query(covican,
+  variables = "age",
+  expression = "x > 20",
+  event = "baseline_visit_arm_1"
+)
 
-# Using the filter argument
-example <- rd_query(covican,
-                    variables = "potassium",
-                    expression = "is.na(x)",
-                    event = "baseline_visit_arm_1",
-                    filter = "available_analytics=='1'")
-example
+# Apply a filter to select subset of data
+result <- rd_query(covican,
+  variables = "potassium",
+  expression = "is.na(x)",
+  event = "baseline_visit_arm_1",
+  filter = "available_analytics == '1'"
+)
+}
+
 }

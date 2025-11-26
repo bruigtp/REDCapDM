@@ -13,7 +13,7 @@ checkbox_names(data, dic, labels, checkbox_labels = c("No", "Yes"))
 
 \item{labels}{Named character vector with the names of the variables in the data and their corresponding REDCap labels.}
 
-\item{checkbox_labels}{Character vector specifying the names for the two options of each checkbox variable. The default is `c('No', 'Yes')`.}
+\item{checkbox_labels}{Character vector specifying the names for the two options of each checkbox variable. The default is \code{c('No', 'Yes')}.}
 }
 \description{
 This function updates the names of checkboxes in the dataset and dictionary to reflect the names of their options.

@@ -4,31 +4,60 @@
 \alias{rd_insert_na}
 \title{Insert Missing Values Using a Filter}
 \usage{
-rd_insert_na(..., data = NULL, dic = NULL, event_form = NULL, vars, filter)
+rd_insert_na(
+  project = NULL,
+  data = NULL,
+  dic = NULL,
+  event_form = NULL,
+  vars,
+  filter
+)
 }
 \arguments{
-\item{...}{List containing the data, the dictionary and the event if it's needed. Should be the output of the function `redcap_data`.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{Data frame containing data from REDCap. If the list is specified, this argument is not needed.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not needed.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{Data frame  containing the correspondence of each event with each form. If the list is specified, this argument is not needed.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{vars}{Character vector containing the names of the variables to be transformed.}
+\item{vars}{Character vector of variable names to set to \code{NA}.}
 
-\item{filter}{Character vector containing the logic to be evaluated directly. If each logic is TRUE, the corresponding variable in `vars` is set to missing.}
+\item{filter}{A single logical expression (as string). Rows where the filter evaluates to \code{TRUE} will have the corresponding \code{vars} set to \code{NA}.}
 }
 \value{
-Transformed data with the specified variables converted.
+A list with:
+\describe{
+\item{data}{The dataset with \code{NA} inserted where the filter applies.}
+\item{dictionary}{The unchanged dictionary.}
+\item{event_form}{The \code{event_form} passed in (if applicable).}
+\item{results}{Summary message of the changes applied.}
+}
 }
 \description{
-This function allows you to manually insert a missing value into certain variables (`vars`) if the specified filter/s (`filter`) are satisfied. It's particularly useful for checkboxes without a gatekeeper question in the branching logic. Note that the variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
+
+Sets selected variables to \code{NA} when a filter condition is satisfied. Useful for managing checkboxes or other fields without explicit gatekeeper questions.
+}
+\details{
+\itemize{
+\item Each variable is only updated in rows/events where both the variable and filter are present.
+\item For longitudinal projects, \code{event_form} must be provided for proper event-level filtering.
+\item Only one filter expression is allowed.
+\item Variables and filter columns must exist in both \code{data} and \code{dictionary}.
+}
 }
 \examples{
-table(is.na(covican$data$potassium))
-data <- rd_insert_na(covican,
-             vars = "potassium",
-             filter = "age < 65")
+# Set 'potassium' to NA where age < 65
+\dontrun{
+data <- rd_insert_na(
+  data = covican$data,
+  dic = covican$dictionary,
+  vars = "potassium",
+  filter = "age < 65"
+)
 table(data$potassium)
+}
+
 }

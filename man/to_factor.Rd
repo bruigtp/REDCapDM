@@ -11,8 +11,8 @@ to_factor(data, dic, exclude = NULL)
 
 \item{dic}{Data frame containing the REDCap dictionary.}
 
-\item{exclude}{Character vector specifying the names of variables that should not be converted to factors. If `NULL`, all variables will be converted.}
+\item{exclude}{Character vector specifying the names of variables that should not be converted to factors. If \code{NULL}, all variables will be converted.}
 }
 \description{
-This function converts all variables in the dataset to factors, except those specified in the `exclude` parameter.
+This function converts all variables in the dataset to factors, except those specified in the \code{exclude} parameter.
 }
