@@ -5,12 +5,17 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>REDCapDM - Data reading and processing • REDCapDM</title>
+<title>Data reading and processing • REDCapDM</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="REDCapDM - Data reading and processing">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Data reading and processing">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9.2000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +39,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">REDCapDM - Data reading and processing</a></li>
+<li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul>
 </li>
@@ -57,10 +62,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>REDCapDM - Data reading and processing</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Data reading and processing</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bruigtp/REDCapDM/blob/main/vignettes/Data-reading-and-processing.Rmd" class="external-link"><code>vignettes/Data-reading-and-processing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bruigtp/REDCapDM/blob/main/vignettes/articles/Data-reading-and-processing.Rmd" class="external-link"><code>vignettes/articles/Data-reading-and-processing.Rmd</code></a></small>
       <div class="d-none name"><code>Data-reading-and-processing.Rmd</code></div>
     </div>
 
@@ -73,104 +78,164 @@ interact with <a href="https://www.project-redcap.org/" class="external-link">RE
 data.</p>
 <p><br></p>
 <div class="section level2">
-<h2 id="read-data">
-<strong>Read data</strong><a class="anchor" aria-label="anchor" href="#read-data"></a>
+<h2 id="read-redcap-data-into-r">
+<strong>Read REDCap data into R</strong><a class="anchor" aria-label="anchor" href="#read-redcap-data-into-r"></a>
 </h2>
-<p>To import data from <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>, you can use the <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
-function, which provides two primary methods: importing data from local
-files or establishing an API connection.</p>
+<p><code>REDCapDM</code> allows you to import REDCap data either from
+local files or via an API connection. Both methods return a structured
+list containing your dataset, dictionary, and event-form mapping (for
+longitudinal projects).</p>
 <div class="section level3">
-<h3 id="local-files">
-<strong>Local files</strong><a class="anchor" aria-label="anchor" href="#local-files"></a>
+<h3 id="using-local-files">
+<strong>1. Using local files</strong><a class="anchor" aria-label="anchor" href="#using-local-files"></a>
 </h3>
-<p>Before starting, ensure you have the required R and CSV files
-exported from <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>,
-including the instrument-event mappings file. All these files should be
-in the same directory for the package to work correctly.</p>
-<p>Use the <code>data_path</code> and <code>dic_path</code> arguments to
-indicate the paths to your R data file and <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project’s dictionary
-file, respectively. If your <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project is
-longitudinal, you’ll additionally need to supply the event-form mapping
-file using the <code>event_path</code> argument.</p>
+<p>Ensure you have exported the following files from REDCap and placed
+them in the same directory:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>R data file</strong> – contains your REDCap dataset
+(<code>.rds</code> or <code>.RData</code>)</p></li>
+<li><p><strong>Dictionary file</strong> – CSV file containing variable
+metadata</p></li>
+<li><p><strong>Event-form mapping file</strong> (only for longitudinal
+projects) – CSV describing which forms belong to each event</p></li>
+</ol>
+<p>Then, provide the paths to these files using the
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> function:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
-<span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span>,</span>
-<span>                       event_path <span class="op">=</span> <span class="st">"C:/Users/username/events.csv"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span></span>
+<span>  data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
+<span>  dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span>,</span>
+<span>  event_path <span class="op">=</span> <span class="st">"C:/Users/username/events.csv"</span> <span class="co"># optional for longitudinal projects</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>⚠️ Tip: If your project is not longitudinal, you can omit
+<code>event_path</code>.</p>
 </div>
 <div class="section level3">
-<h3 id="api-connection">
-<strong>API connection</strong><a class="anchor" aria-label="anchor" href="#api-connection"></a>
+<h3 id="using-api-connection">
+<strong>2. Using API connection</strong><a class="anchor" aria-label="anchor" href="#using-api-connection"></a>
 </h3>
-<p>If you opt for an API connection, you can provide the
-<code>uri</code> (uniform resource identifier) and <code>token</code>
-(user-specific password) for your <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project. This method
-will automatically retrieve the event-form mapping if your project is
-longitudinal.</p>
-<p>Use both arguments to set up the API connection and import the
-data:</p>
+<p>You can also import data directly from REDCap using your project’s
+<strong>API token</strong> and <strong>URL</strong>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset_api</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>uri <span class="op">=</span> <span class="st">"https://redcap.idibell.cat/api/"</span>,</span>
-<span>                           token <span class="op">=</span> <span class="st">"55E5C3D1E83213ADA2182A4BFDEA"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">dataset_api</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span></span>
+<span>  uri <span class="op">=</span> <span class="st">"https://redcap.com/api/"</span>,</span>
+<span>  token <span class="op">=</span> <span class="st">"YOUR_API_TOKEN_HERE"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>This method automatically retrieves the event-form mapping for
+longitudinal projects.</p>
+<p>⚠️ Tip: Keep your API token secure and do not share it publicly.</p>
 </div>
 <div class="section level3">
-<h3 id="output">
-<strong>Output</strong><a class="anchor" aria-label="anchor" href="#output"></a>
+<h3 id="understanding-the-output">
+<strong>3. Understanding the output</strong><a class="anchor" aria-label="anchor" href="#understanding-the-output"></a>
 </h3>
-<p>The <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
-function returns a list with three elements:</p>
-<ul>
-<li><p>Imported data: Contains the data from your <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project</p></li>
-<li><p>Dictionary: Provides information about variables and their
-associated labels.</p></li>
-<li><p>Event-form mapping (only available for longitudinal projects):
-Describes the correspondence between events and forms in your
-project.</p></li>
-</ul>
+<p><a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
+returns a list with three elements:</p>
+<table class="table">
+<colgroup>
+<col width="14%">
+<col width="85%">
+</colgroup>
+<thead><tr class="header">
+<th>Element</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>data</code></td>
+<td>Imported dataset containing all REDCap variables</td>
+</tr>
+<tr class="even">
+<td><code>dictionary</code></td>
+<td>Metadata for each variable, including labels, types, and branching
+logic</td>
+</tr>
+<tr class="odd">
+<td><code>event_form</code></td>
+<td>Mapping between events and forms (only for longitudinal
+projects)</td>
+</tr>
+</tbody>
+</table>
 <p><br><br></p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="process-data">
-<strong>Process data</strong><a class="anchor" aria-label="anchor" href="#process-data"></a>
+<h2 id="process-and-transform-redcap-data">
+<strong>Process and transform REDCap data</strong><a class="anchor" aria-label="anchor" href="#process-and-transform-redcap-data"></a>
 </h2>
-<p>Having successfully imported our data into R, you can now use the <a href="https://bruigtp.github.io/REDCapDM/reference/rd_transform.html" class="external-link"><code>rd_transform()</code></a>
-function to start processing the data.</p>
-<p>This function performs several transformations:</p>
-<ul>
-<li><p>Elimination of selected variables</p></li>
-<li><p>Elimination of variables containing certain patterns such as
-’_complete’ and ’_timestamp’</p></li>
-<li><p>Recalculation of <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> calculated
-fields</p></li>
-<li><p>Checkbox transformation by changing their names to the names of
-their options</p></li>
-<li><p>Replacement of the original variables with their factor
-version</p></li>
-<li><p>Branching logic transformation, converting <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> logic to R
-logic.</p></li>
-</ul>
+<p>After importing your dataset into R, <code>REDCapDM</code> provides
+several functions to <strong>process and transform your data</strong>
+efficiently. The main function is <a href="https://bruigtp.github.io/REDCapDM/reference/rd_transform.html"><code>rd_transform()</code></a>,
+which performs multiple operations in one step.</p>
 <div class="section level3">
-<h3 id="standard">
-<strong>Standard</strong><a class="anchor" aria-label="anchor" href="#standard"></a>
+<h3 id="core-transformations">
+<strong>1. Core transformations</strong><a class="anchor" aria-label="anchor" href="#core-transformations"></a>
 </h3>
-<p>The only essential elements that must be supplied are the dataset to
-be transformed and the corresponding dictionary. In the case of a
-longitudinal project, it is advisable to also specify the event form
-dataset to take full advantage of this function. These elements can be
-directly specified using the output of the <a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html" class="external-link"><code>redcap_data()</code></a>
-function or separately using distinct arguments:</p>
+<p><code><a href="../reference/rd_transform.html">rd_transform()</a></code> performs the following actions:</p>
+<table class="table">
+<colgroup>
+<col width="55%">
+<col width="44%">
+</colgroup>
+<thead><tr class="header">
+<th>Transformation</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Variable deletion</td>
+<td>Remove specific variables or patterns</td>
+</tr>
+<tr class="even">
+<td>Recalculate fields</td>
+<td>Update REDCap calculated fields</td>
+</tr>
+<tr class="odd">
+<td>Checkbox transformation</td>
+<td>Convert checkbox variables into separate variables with option
+names</td>
+</tr>
+<tr class="even">
+<td>Factor conversion</td>
+<td>Replace original variables with their factor version</td>
+</tr>
+<tr class="odd">
+<td>Branching logic conversion</td>
+<td>Translate REDCap logic into R logic for easier processing</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="basic-usage">
+<strong>2. Basic usage</strong><a class="anchor" aria-label="anchor" href="#basic-usage"></a>
+</h3>
+<p>The minimum required inputs are the dataset and dictionary. For
+longitudinal projects, include the event-form mapping for full
+functionality.</p>
+<p>You can provide these inputs either as a <strong>single list</strong>
+(output of <code><a href="../reference/redcap_data.html">redcap_data()</a></code>) or as <strong>separate
+arguments</strong>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Option A: list object </span></span>
+<code class="sourceCode R"><span><span class="co">#Option A: Provide the full project list</span></span>
 <span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co">#Option B: separately with different arguments</span></span>
-<span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">data</span>, </span>
-<span>                                    dic <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">dictionary</span>, </span>
-<span>                                    event_form <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">event_form</span><span class="op">)</span></span></code></pre></div>
-<p>This function returns a list containing the transformed dataset,
-dictionary, event_form and the results of each transformation. To
-retrieve the results of the transformation, use the following code
-block:</p>
+<span><span class="co">#Option B: Provide individual arguments</span></span>
+<span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">data</span>, </span>
+<span>  dic <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">dictionary</span>, </span>
+<span>  event_form <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">event_form</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The output is a list containing:</p>
+<ul>
+<li><p><strong>data</strong>: Transformed dataset</p></li>
+<li><p><strong>dictionary</strong>: Updated variable dictionary</p></li>
+<li><p><strong>event_form</strong>: Event-form mapping (if
+applicable)</p></li>
+<li><p><strong>results</strong>: Summary of all transformations</p></li>
+</ul>
+<p>You can view the transformation results:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Print the results of the transformation</span></span>
 <span><span class="va">covican_transformed</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
@@ -179,6 +244,8 @@ block:</p>
 2. Deleting variables that contain some patterns
 
 3. Recalculating calculated fields and saving them as '[field_name]_recalc'
+
+
 | Total calculated fields | Non-transcribed fields | Recalculated different fields |
 |:-----------------------:|:----------------------:|:-----------------------------:|
 |            2            |         0 (0%)         |            1 (50%)            |
@@ -189,7 +256,7 @@ block:</p>
 |         age         |     Yes      |   FALSE   |
 | screening_fail_crit |     Yes      |   TRUE    |
 
-4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
+4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options.
 
 Table: Checkbox variables advisable to be reviewed
 
@@ -202,53 +269,63 @@ Table: Checkbox variables advisable to be reviewed
 6. Converting every branching logic in the dictionary into R logic</code></pre>
 </div>
 <div class="section level3">
-<h3 id="by-event">
-<strong>By event</strong><a class="anchor" aria-label="anchor" href="#by-event"></a>
+<h3 id="splitting-by-event">
+<strong>3. Splitting by event</strong><a class="anchor" aria-label="anchor" href="#splitting-by-event"></a>
 </h3>
-<p>If the <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project
-is longitudinal, you can further adjust the structure of the transformed
-dataset. For example, it can be split by event:</p>
+<p>For longitudinal projects, you can split the transformed dataset by
+event using the <code>final_format = "by_event"</code> argument:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
 <span>                        final_format <span class="op">=</span> <span class="st">"by_event"</span><span class="op">)</span></span></code></pre></div>
 <p>Where the transformed dataset is a tibble object, containing data
-frames for each event in the <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project.</p>
+frames for each event in the REDCap project.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span><span class="op">$</span><span class="va">data</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   events                   vars       df             </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> baseline_visit_arm_1     <span style="color: #949494;">&lt;chr [31]&gt;</span> <span style="color: #949494;">&lt;df [190 × 36]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> follow_up_visit_da_arm_1 <span style="color: #949494;">&lt;chr [4]&gt;</span>  <span style="color: #949494;">&lt;df [152 × 9]&gt;</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
+<span><span class="co">#&gt;   events                   df             </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> baseline_visit_arm_1     <span style="color: #949494;">&lt;df [190 × 35]&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> follow_up_visit_da_arm_1 <span style="color: #949494;">&lt;df [152 × 9]&gt;</span></span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="by-form">
-<strong>By form</strong><a class="anchor" aria-label="anchor" href="#by-form"></a>
+<h3 id="splitting-by-form">
+<strong>4. Splitting by form</strong><a class="anchor" aria-label="anchor" href="#splitting-by-form"></a>
 </h3>
-<p>Or, alternatively, it can be split by form:</p>
+<p>Or, alternatively, it can be split by form using
+<code>final_format = "by_form"</code> argument:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
 <span>                        final_format <span class="op">=</span> <span class="st">"by_form"</span><span class="op">)</span></span></code></pre></div>
 <p>Where the tibble object is composed by data frames corresponding to
-each form in the <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>
-project.</p>
+each form in the REDCap project.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span><span class="op">$</span><span class="va">data</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 7 × 4</span></span></span>
-<span><span class="co">#&gt;   form                        events    vars        df             </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                       <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> inclusionexclusion_criteria <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [7]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 11]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> demographics                <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [4]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 9]&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> comorbidities               <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [5]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 10]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> cancer                      <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [11]&gt;</span> <span style="color: #949494;">&lt;df [190 × 16]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> vital_signs                 <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;glue [2]&gt;</span>  <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> laboratory_findings         <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;glue [2]&gt;</span>  <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> microbiological_studies     <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [1]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 6]&gt;</span></span></span></code></pre></div>
-<p><br><br></p>
-<p><strong>For more information, consult the complete vignette available
-at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="external-link uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 7 × 3</span></span></span>
+<span><span class="co">#&gt;   form                        events    df             </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                       <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> inclusionexclusion_criteria <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 10]&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> demographics                <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 9]&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> comorbidities               <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 10]&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> cancer                      <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 16]&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> vital_signs                 <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> laboratory_findings         <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> microbiological_studies     <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 6]&gt;</span></span></span></code></pre></div>
 <p><br><br></p>
 </div>
+</div>
+<div class="section level2">
+<h2 id="quick-troubleshooting-checklist">
+<strong>Quick troubleshooting checklist</strong><a class="anchor" aria-label="anchor" href="#quick-troubleshooting-checklist"></a>
+</h2>
+<ol style="list-style-type: decimal">
+<li>Did you export the variable dictionary from REDCap? Without it,
+label conversions and checkbox expansions are error-prone.</li>
+<li>Are API calls failing? Verify <code>uri</code>, <code>token</code>
+and your project’s export permissions.</li>
+</ol>
+<p><strong>For more information, consult the complete vignette available
+at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+<p><br><br></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -261,7 +338,7 @@ at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="e
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

@@ -6,6 +6,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>REDCapDM - Queries • REDCapDM</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -20,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9.2000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +39,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">REDCapDM - Data reading and processing</a></li>
+<li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul>
 </li>
@@ -60,7 +65,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>REDCapDM - Queries</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bruigtp/REDCapDM/blob/main/vignettes/Queries.Rmd" class="external-link"><code>vignettes/Queries.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bruigtp/REDCapDM/blob/main/vignettes/articles/Queries.Rmd" class="external-link"><code>vignettes/articles/Queries.Rmd</code></a></small>
       <div class="d-none name"><code>Queries.Rmd</code></div>
     </div>
 
@@ -77,8 +82,12 @@ data imported into R.</p>
 </h2>
 <p>Queries are crucial for the accuracy and reliability of a <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> dataset. They help
 identify missing values, inconsistencies, and potential errors in the
-collected data. The <a href="https://bruigtp.github.io/REDCapDM/reference/rd_query.html" class="external-link"><code>rd_query()</code></a>
+collected data. The <a href="https://bruigtp.github.io/REDCapDM/reference/rd_query.html"><code>rd_query()</code></a>
 function allows you to generate queries using a specific expression.</p>
+<div class="section level3">
+<h3 id="find-missing-values-for-a-single-variable">
+<strong>1. Find missing values for a single variable</strong><a class="anchor" aria-label="anchor" href="#find-missing-values-for-a-single-variable"></a>
+</h3>
 <p>To identify missing values in certain variables, simply provide the
 relevant information to the <code>variables</code> and
 <code>expression</code> arguments. In this scenario, the expression
@@ -87,10 +96,17 @@ would be ‘is.na(x)’, where ‘x’ represents the variable itself:</p>
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="st">"copd"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span><span class="op">)</span></span></code></pre></div>
+<blockquote>
 <p>Note: For variables with branching logic, the function will
 automatically apply the associated branching logic or at least report
 it.</p>
+</blockquote>
 <p><br></p>
+</div>
+<div class="section level3">
+<h3 id="find-out-of-range-values">
+<strong>2. Find out-of-range values</strong><a class="anchor" aria-label="anchor" href="#find-out-of-range-values"></a>
+</h3>
 <p>Alternatively, to identify outliers or observations that meet a
 certain condition (for example, range):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -98,11 +114,16 @@ certain condition (for example, range):</p>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"potassium"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x &gt; 80"</span>, <span class="st">"x &gt; 4.2 &amp; x &lt; 4.3"</span><span class="op">)</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span><span class="op">)</span></span></code></pre></div>
-<pre><code>Warning: The branching logic of the following variable was applied
+<pre><code>Warning: The branching logic of the following variables were applied
 automatically: potassium</code></pre>
+<blockquote>
+<p>Note: if you supply fewer <code>expression</code> entries than
+<code>variables</code>, the first expression is repeated for all
+variables (the function warns you).</p>
+</blockquote>
 <p><br></p>
 <p>In both cases, the function returns a list containing a data frame
-designed to aid you to locate each query in the <a href="https://www.project-redcap.org/" class="external-link">REDCap</a> project:</p>
+designed to aid you to locate each query in the REDCap project:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span><span class="op">$</span><span class="va">queries</span></span></code></pre></div>
 <table class="table table" style="margin-left: auto; margin-right: auto;">
@@ -260,7 +281,12 @@ The value should not be greater than 4.2 and less than 4.3
 </tbody>
 </table>
 <p><br></p>
-<p>For longitudinal projects, the <a href="https://bruigtp.github.io/REDCapDM/reference/rd_event.html" class="external-link"><code>rd_event()</code></a>
+</div>
+<div class="section level3">
+<h3 id="longitudinal-projects-and-branching-logic">
+<strong>3. Longitudinal projects and branching logic</strong><a class="anchor" aria-label="anchor" href="#longitudinal-projects-and-branching-logic"></a>
+</h3>
+<p>For longitudinal projects, the <a href="https://bruigtp.github.io/REDCapDM/reference/rd_event.html"><code>rd_event()</code></a>
 allows you to check if a particular event is missing from a record in
 the exported data. This happens in REDCap when there is no collected
 data in a particular event from a record, as REDCap will not export the
@@ -271,15 +297,16 @@ code:</p>
 <span>                    event <span class="op">=</span> <span class="st">"follow_up_visit_da_arm_1"</span><span class="op">)</span></span></code></pre></div>
 <p><br><br></p>
 </div>
+</div>
 <div class="section level2">
-<h2 id="control">
-<strong>Control</strong><a class="anchor" aria-label="anchor" href="#control"></a>
+<h2 id="practical-workflow-find-fix-re-check">
+<strong>Practical workflow: Find → Fix → Re-check</strong><a class="anchor" aria-label="anchor" href="#practical-workflow-find-fix-re-check"></a>
 </h2>
 <p>After identifying queries, it is common practice to correct the
-original dataset in <a href="https://www.project-redcap.org/" class="external-link">REDCap</a>
-and re-run the query process for a new query dataset.</p>
-<p>The <a href="https://bruigtp.github.io/REDCapDM/reference/check_queries.html" class="external-link"><code>check_queries()</code></a>
-functiona allows you to compare the previous query dataset with the new
+original dataset in REDCap and re-run the query process for a new query
+dataset.</p>
+<p>The <a href="https://bruigtp.github.io/REDCapDM/reference/check_queries.html"><code>check_queries()</code></a>
+function allows you to compare the previous query dataset with the new
 one:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/check_queries.html">check_queries</a></span><span class="op">(</span>old <span class="op">=</span> <span class="va">example</span><span class="op">$</span><span class="va">queries</span>, </span>
@@ -337,24 +364,26 @@ New
 </tr>
 </tbody>
 </table>
+<blockquote>
 <p>Note: The “Miscorrected” category includes queries that belong to the
 same combination of record identifier and variable in both the old and
 new reports, but with a different reason. For instance, if a variable
 had a missing value in the old report, but in the new report shows a
 value outside the established range, it would be classified as
 “Miscorrected”.</p>
+</blockquote>
 <p><br><br></p>
 </div>
 <div class="section level2">
-<h2 id="export">
-<strong>Export</strong><a class="anchor" aria-label="anchor" href="#export"></a>
+<h2 id="exporting-query-lists">
+<strong>Exporting query lists</strong><a class="anchor" aria-label="anchor" href="#exporting-query-lists"></a>
 </h2>
 <p>With the help of the <code><a href="../reference/rd_export.html">rd_export()</a></code> function, you can
 export the identified queries to a <code>.xlsx</code> file of your
 choice:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rd_export.html">rd_export</a></span><span class="op">(</span><span class="va">example</span><span class="op">)</span></span></code></pre></div>
-<p>This is the simplets way to use the function and will create a file
+<p>This is the simplest way to use the function and will create a file
 named “example.xlsx” in your current working directory, but you can
 customise this exported file:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -367,7 +396,7 @@ customise this exported file:</p>
 you that the file has been created and where it is located.</p>
 <p><br><br></p>
 <p><strong>For more information, consult the complete vignette available
-at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="external-link uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
+at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="uri">https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</a></strong></p>
 <p><br><br></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -381,7 +410,7 @@ at: <a href="https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html" class="e
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

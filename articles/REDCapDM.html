@@ -6,6 +6,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>REDCapDM • REDCapDM</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -20,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9.2000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +39,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">REDCapDM - Data reading and processing</a></li>
+<li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul>
 </li>
@@ -71,29 +76,86 @@
 <h2 id="introduction">
 <strong>Introduction</strong><a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>The REDCapDM package allows users to read data exported directly from
-REDCap or via API connection. It also allows users to process the
-previously downloaded data, create reports of queries such as outliers
-or missing values and track the identified queries.</p>
+<p>The REDCapDM package provides a comprehensive toolkit for managing
+data exported from REDCap. It supports both importing REDCap data (from
+files or via API), transforming and cleaning the data according to the
+project’s dictionary and logic, and generating query reports for data
+validation. In particular, REDCapDM can identify missing or out-of-range
+values and track changes in identified queries across data versions.</p>
 <p><br><br></p>
 </div>
 <div class="section level2">
 <h2 id="functions">
 <strong>Functions</strong><a class="anchor" aria-label="anchor" href="#functions"></a>
 </h2>
-<p>Functions included in the package:</p>
+<p>All main functions are listed below (and described in detail in the
+examples):</p>
+<div class="section level3">
+<h3 id="import-data">Import data<a class="anchor" aria-label="anchor" href="#import-data"></a>
+</h3>
 <ul>
-<li><p><code><a href="../reference/redcap_data.html">redcap_data()</a></code>: reads data.</p></li>
-<li><p><code><a href="../reference/rd_transform.html">rd_transform()</a></code>: processes data.</p></li>
-<li><p><code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code>: transforms REDCap logic into R
+<li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code>: Read REDCap data into R.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="process-data">Process data<a class="anchor" aria-label="anchor" href="#process-data"></a>
+</h3>
+<ul>
+<li><p><code><a href="../reference/rd_dates.html">rd_dates()</a></code>: Standardize date and datetime
+fields.</p></li>
+<li><p><code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code>: Remove specified variables (by
+name or pattern).</p></li>
+<li><p><code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>: Recompute calculated fields and
+compare with REDCap values.</p></li>
+<li><p><code><a href="../reference/rd_factor.html">rd_factor()</a></code>: Replace numeric multiple-choice columns
+with their factor version.</p></li>
+<li><p><code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code>: Expand checkbox responses with custom
+labels and rename <code>var___1</code> columns (REDCap style) to
+<code>var_option</code>.</p></li>
+<li><p><code><a href="../reference/rd_split.html">rd_split()</a></code>: Split dataset by form or event.</p></li>
+<li><p><code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code>: Manually set specified variables to
+missing based on a logical filter.</p></li>
+<li><p><code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code>: Translate REDCap branching or
+calculation logic into R syntax.</p></li>
+<li><p><code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>: Update dictionary (translation of
+REDCap logic into R syntax) to reflect transformed data and
 logic.</p></li>
-<li><p><code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code>: allows a manual entry of a missing
-value in specific variables using a filter.</p></li>
-<li><p><code><a href="../reference/rd_query.html">rd_query()</a></code>: identifies queries.</p></li>
-<li><p><code><a href="../reference/rd_event.html">rd_event()</a></code>: identifies missing events.</p></li>
-<li><p><code><a href="../reference/check_queries.html">check_queries()</a></code>: tracks queries.</p></li>
+</ul>
+<p>Or we can use all these functions at once:</p>
+<ul>
+<li>
+<code><a href="../reference/rd_transform.html">rd_transform()</a></code>: One-step pipeline to clean and
+preprocess the raw REDCap data.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="queries">Queries<a class="anchor" aria-label="anchor" href="#queries"></a>
+</h3>
+<ul>
+<li><p><code><a href="../reference/rd_query.html">rd_query()</a></code>: Apply expressions to identify data
+queries/issues.</p></li>
+<li><p><code><a href="../reference/rd_event.html">rd_event()</a></code>: Report missing/incomplete events per
+record (longitudinal).</p></li>
+<li><p><code><a href="../reference/check_queries.html">check_queries()</a></code>: Compare two query reports to track
+changes made.</p></li>
+<li><p><code>rd_export</code>: Export query/report tables to an Excel
+(.xlsx) file.</p></li>
 </ul>
 <p><br><br></p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="installation">
+<strong>Installation</strong><a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>The release version can be installed from CRAN:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"REDCapDM"</span><span class="op">)</span></span></code></pre></div>
+<p>The development version can be installed from GitHub:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span> <span class="co"># Run this line if the 'remotes' package isn't installed already.</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"bruigtp/REDCapDM"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="built-in-dataset">
@@ -106,8 +168,10 @@ to describe the epidemiology, risk factors, and clinical outcomes of
 co-infections and superinfections in onco-hematological patients with
 COVID-19.</p>
 <p>We can load the built-in dataset by typing:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">covican</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bruigtp.github.io/REDCapDM/">REDCapDM</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">covican</span><span class="op">)</span></span></code></pre></div>
 <p>The structure of this dataset is:</p>
 <pre><code>List of 3
  $ data      :'data.frame': 342 obs. of  56 variables:
@@ -348,17 +412,17 @@ No ; Yes
 <p><br></p>
 </div>
 <div class="section level2">
-<h2 id="examples">
-<strong>Examples</strong><a class="anchor" aria-label="anchor" href="#examples"></a>
+<h2 id="usage">
+<strong>Usage</strong><a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
 <p>The package structure can be divided into three main components:
 reading raw data, processing data and identifying queries. Typically,
-after collecting data in REDCap, we will have to follow this three
+after collecting data in REDCap, we will have to follow these three
 components in order to have a final validated dataset for analysis. We
-will provide a complete user guide on how to perform each one of these
-steps using the package’s functions. For the processing of the data and
-query identification, we will use the built-in dataset as an
-example.</p>
+will provide a complete basic user guide on how to perform each one of
+these steps using the package’s functions. For the processing of the
+data and query identification, we will use the <code>covican</code>
+built-in dataset as an example.</p>
 <div class="section level3">
 <h3 id="read-data">
 <strong>Read data</strong><a class="anchor" aria-label="anchor" href="#read-data"></a>
@@ -368,80 +432,541 @@ example.</p>
 <strong>redcap_data</strong><a class="anchor" aria-label="anchor" href="#redcap_data"></a>
 </h4>
 <p>The <code><a href="../reference/redcap_data.html">redcap_data()</a></code> function allows users to easily import
-data from a REDCap project into R for analysis.</p>
-<p>To read exported data from REDCap, use the arguments
-<code>data_path</code> and <code>dic_path</code> to, respectively,
-describe the path of the R file and the REDCap project’s dictionary:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+data from a REDCap project into R.</p>
+<p>In order to read exported data from REDCap, we first need to download
+the data and dictionary from the REDCap project in R format. We can then
+use the arguments <code>data_path</code> and <code>dic_path</code> to
+designate the local path where we have stored the R file and the
+dictionary from the REDCap project:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
 <span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span><span class="op">)</span></span></code></pre></div>
-<p>Note: The R and CSV files exported from REDCap must be located in the
-same directory.</p>
+<blockquote>
+<p>Note: The R and data CSV file exported from REDCap must be located in
+the same directory.</p>
+</blockquote>
 <p>If the REDCap project is longitudinal (contains more than one event)
 then a third element should be specified with the correspondence of each
 event with each form of the project. This csv file can be downloaded in
 the REDCap of the project following these steps: <em>Project Setup</em>
 &lt; <em>Designate Instruments for My Events</em> &lt; <em>Download
-instrument-event mappings (CSV)</em>.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+instrument-event mappings (CSV)</em>. Then, it has to be specified using
+the argument <code>event_path</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
 <span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span>,</span>
 <span>                       event_path <span class="op">=</span> <span class="st">"C:/Users/username/events.csv"</span><span class="op">)</span></span></code></pre></div>
+<blockquote>
 <p>Note: if the project is longitudinal and the event-form file is not
 provided using the <code>event_path</code> argument, some steps of the
 processment can not be performed.</p>
+</blockquote>
 <p>Another way to read data exported from a REDCap project is using an
 API connection. To do this, we can use the arguments <code>uri</code>
 and <code>token</code> which respectively refer to the uniform resource
 identifier of the REDCap project and the user-specific string that
 serves as the password:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset_api</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>uri <span class="op">=</span> <span class="st">"https://redcap.idibell.cat/api/"</span>,</span>
 <span>                           token <span class="op">=</span> <span class="st">"55E5C3D1E83213ADA2182A4BFDEA"</span><span class="op">)</span></span></code></pre></div>
 <p>In this case, there is no need to specify the event-form file since
 the function will download it automatically using the API connection, if
 the project is longitudinal.</p>
+<blockquote>
 <p><strong>Warning</strong>: Please keep in mind that the API token
 gives you special access to the REDCap project and that it should not be
 shared with other people.</p>
-<p>This function returns a list with 3 elements (imported data,
-dictionary and event-form mapping) which can then be used for further
-analysis or visualization.</p>
+</blockquote>
+<p>The <code><a href="../reference/redcap_data.html">redcap_data()</a></code> function returns a list with three
+elements: imported data, dictionary and event-form mapping(if
+included).</p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="process">
 <strong>Process</strong><a class="anchor" aria-label="anchor" href="#process"></a>
 </h3>
+<p>Given any data imported from REDCap with <code><a href="../reference/redcap_data.html">redcap_data()</a></code>,
+this would be the pipeline of an entire processing workflow:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>data <span class="sc">|&gt;</span> </span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>    <span class="fu">rd_delete_vars</span>(<span class="at">delete_pattern =</span> <span class="fu">c</span>(<span class="st">"_complete"</span>, <span class="st">"_timestamp"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>    <span class="fu">rd_dates</span>() <span class="sc">|&gt;</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    <span class="fu">rd_recalculate</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    <span class="fu">rd_checkbox</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    <span class="fu">rd_factor</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>    <span class="fu">rd_dictionary</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>    <span class="fu">rd_split</span>(<span class="at">by =</span> <span class="st">"event"</span>) <span class="co"># use "form" if not longitudinal</span></span></code></pre></div>
+<p>All functions are optional and should only be used at the user’s
+discretion when necessary. The order of some functions can also be
+exchanged. For example, for <code>covican</code> there are no variables
+to delete and dates are already processed, so the pipeline would be
+simplified:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="../reference/rd_recalculate.html">rd_recalculate</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="../reference/rd_factor.html">rd_factor</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="../reference/rd_dictionary.html">rd_dictionary</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"event"</span><span class="op">)</span> </span>
+<span></span>
+<span><span class="va">covican_transformed</span><span class="op">$</span><span class="va">results</span></span>
+<span><span class="co">#&gt; 1. Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; | Total calculated fields | Non-transcribed fields | Recalculated different fields |</span></span>
+<span><span class="co">#&gt; |:-----------------------:|:----------------------:|:-----------------------------:|</span></span>
+<span><span class="co">#&gt; |            2            |         0 (0%)         |            1 (50%)            |</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; |     field_name      | Transcribed? | Is equal? |</span></span>
+<span><span class="co">#&gt; |:-------------------:|:------------:|:---------:|</span></span>
+<span><span class="co">#&gt; |         age         |     Yes      |   FALSE   |</span></span>
+<span><span class="co">#&gt; | screening_fail_crit |     Yes      |   TRUE    |</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. (rd_checkbox)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Table: Checkbox variables advisable to be reviewed</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; | Variables without any branching logic |</span></span>
+<span><span class="co">#&gt; |:-------------------------------------:|</span></span>
+<span><span class="co">#&gt; |        type_underlying_disease        |</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 3. Replacing original variables for their factor version. (rd_factor)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 4. Converting every branching logic in the dictionary into R logic. (rd_dictionary)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 5. Final arrangment of the data by event. (rd_split)</span></span></code></pre></div>
+<p>All the functions that can be used in each step of a processing
+workflow are detailed below:</p>
+<div class="section level4">
+<h4 id="rd_delete_vars">
+<strong>rd_delete_vars</strong><a class="anchor" aria-label="anchor" href="#rd_delete_vars"></a>
+</h4>
+<p>This function removes unwanted variables from both a REDCap dataset
+and its dictionary. This is especially useful for eliminating
+automatically generated fields such as form completion flags
+(<code>*_complete</code>) or timestamps (<code>*_timestamp</code>).</p>
+<p>You can delete variables either by specifying their exact names or by
+using regular expression patterns:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Option A: delete by variable name</span></span>
+<span><span class="va">covican_deleted</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_delete_vars.html">rd_delete_vars</a></span><span class="op">(</span>vars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"potassium"</span>, <span class="st">"leuk_lymph"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Option B: delete by regex pattern</span></span>
+<span><span class="va">covican_deleted</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_delete_vars.html">rd_delete_vars</a></span><span class="op">(</span>pattern <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"_complete$"</span>, <span class="st">"_timestamp$"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>When variables are deleted:</p>
+<ul>
+<li><p>They are removed from both the dataset and dictionary.</p></li>
+<li><p>Factor versions of deleted variables (if present) are also
+removed.</p></li>
+</ul>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_dates">
+<strong>rd_dates</strong><a class="anchor" aria-label="anchor" href="#rd_dates"></a>
+</h4>
+<p>This function is designed to process and standardize
+<code>date</code> and <code>datetime</code> fields in a REDCap dataset.
+In REDCap projects, date and datetime fields can sometimes be stored as
+character strings, which can make analyses difficult. This function
+detects which fields should be dates/datetimes from the REDCap
+dictionary and converts them to <code>Date</code> and
+<code>POSIXct</code>, respectively.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">covican_dates</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_dates.html">rd_dates</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>Quick verification example:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Simulate a character date since covican already has the dates in the correct format</span></span>
+<span><span class="va">covican_dates</span> <span class="op">&lt;-</span> <span class="va">covican</span></span>
+<span><span class="va">covican_dates</span><span class="op">$</span><span class="va">data</span> <span class="op">&lt;-</span> <span class="va">covican_dates</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>d_birth <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">d_birth</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># Check class before conversion</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">covican_dates</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">d_birth</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "character"</span></span>
+<span></span>
+<span><span class="co"># Check class after conversion</span></span>
+<span><span class="va">covican_dates</span> <span class="op">&lt;-</span> <span class="va">covican_dates</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_dates.html">rd_dates</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">covican_dates</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">d_birth</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Date"</span></span></code></pre></div>
+<p>After this transformation, all <code>date</code> and
+<code>datetime</code> variables are standardized and ready for analysis
+in R.</p>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_recalculate">
+<strong>rd_recalculate</strong><a class="anchor" aria-label="anchor" href="#rd_recalculate"></a>
+</h4>
+<p>This function identifies calculated fields in a REDCap project,
+translates their calculation logic into R, recalculates the values, and
+compares the results with the values stored in REDCap.</p>
+<p>It then produces a structured report that helps users detect
+discrepancies between REDCap’s stored calculations and the values
+recalculated in R.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">covican_recalc</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_recalculate.html">rd_recalculate</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Print recalculation results</span></span>
+<span><span class="va">covican_recalc</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
+<pre><code><span><span class="co">## Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## | Total calculated fields | Non-transcribed fields | Recalculated different fields |</span></span>
+<span><span class="co">## |:-----------------------:|:----------------------:|:-----------------------------:|</span></span>
+<span><span class="co">## |            2            |         0 (0%)         |            1 (50%)            |</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## |     field_name      | Transcribed? | Is equal? |</span></span>
+<span><span class="co">## |:-------------------:|:------------:|:---------:|</span></span>
+<span><span class="co">## |         age         |     Yes      |   FALSE   |</span></span>
+<span><span class="co">## | screening_fail_crit |     Yes      |   TRUE    |</span></span></code></pre>
+<p>The <code>results</code> object includes:</p>
+<ul>
+<li><p>A summary report outlining the total number of calculated fields,
+how many were successfully transcribed into R, and how many showed
+differences between the REDCap values and the recalculated
+ones.</p></li>
+<li><p>A field-level report listing each calculated field, whether the
+logic was successfully converted to R, and whether the recalculated
+values match the originals.</p></li>
+</ul>
+<p>You can also exclude specific fields from recalculation (e.g.,
+complex multi-event calculations) to reduce computation time and avoid
+unnecessary warnings.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Exclude specific variables from recalculation</span></span>
+<span><span class="va">covican_recalc</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_recalculate.html">rd_recalculate</a></span><span class="op">(</span>exclude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"screening_fail_crit"</span>, <span class="st">"resp_rate"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">covican_recalc</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
+<pre><code><span><span class="co">## Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## | Total calculated fields | Non-transcribed fields | Recalculated different fields |</span></span>
+<span><span class="co">## |:-----------------------:|:----------------------:|:-----------------------------:|</span></span>
+<span><span class="co">## |            1            |         0 (0%)         |           1 (100%)            |</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## | field_name | Transcribed? | Is equal? |</span></span>
+<span><span class="co">## |:----------:|:------------:|:---------:|</span></span>
+<span><span class="co">## |    age     |     Yes      |   FALSE   |</span></span></code></pre>
+<p>After running this function:</p>
+<ul>
+<li><p>A new variable with the suffix <code>_recalc</code> is added to
+the dataset, placed immediately after the original variable and
+containing the recalculated values.</p></li>
+<li><p>The data dictionary is updated with a corresponding entry, where
+the original variable label is extended with
+<code>"(Recalculated)"</code> to make these fields easy to
+identify.</p></li>
+</ul>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_checkbox">
+<strong>rd_checkbox</strong><a class="anchor" aria-label="anchor" href="#rd_checkbox"></a>
+</h4>
+<p>This function cleans and restructures REDCap checkbox fields. It
+converts the default <code>"Unchecked/Checked"</code> categories of
+checkbox responses created by REDCap into user-specified labels (default
+<code>"No"/"Yes"</code>) and renames the <code>varname___code</code>
+variables (original REDCap structure) to readable names based on the
+text of the checkbox options. Additionally, it updates the dictionary to
+match the new variable names. This includes choices, calculations, and
+branching logic.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Default transformation: "No"/"Yes" labels &amp; renamed variables</span></span>
+<span><span class="va">cb</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">cb</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">underlying_disease_hemato_acute_myeloid_leukemia</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##  num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</span></span>
+<span><span class="co">##  - attr(*, "label")= chr "Specify underlying disease (choice=Acute myeloid leukemia)"</span></span></code></pre>
+<p>For example, consider the checkbox field of the type of underlying
+disease present in the <code>covican</code> dataset. Originally, the
+variables were named <code>type_underlying_disease__0</code> and
+<code>type_underlying_disease__1</code>, while the option labels were
+‘Haematological cancer’ and ‘Solid tumour’. After running the function,
+the variables are renamed to
+<code>type_underlying_disease_haematological_cancer</code> and
+<code>type_underlying_disease_solid_tumour</code>, reflecting the option
+text in a readable format..</p>
+<p>To preserve the original REDCap-style names (e.g.,
+<code>varname___1</code>, <code>varname___2</code>) instead of renaming
+variables based on option text:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># use the argument checkbox_names to choose the final format of the variable names</span></span>
+<span><span class="va">cb</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span>checkbox_names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">cb</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">underlying_disease_hemato___1</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##  num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</span></span>
+<span><span class="co">##  - attr(*, "label")= chr "Specify underlying disease (choice=Acute myeloid leukemia)"</span></span></code></pre>
+<p>If a checkbox field has a branching logic, the function will not
+modify any values. However, you can use the <code>na_logic</code>
+argument, which accepts the following options:</p>
+<ul>
+<li><p><code>"none"</code> (default): do not set <code>NA</code> based
+on branching logic during transform.</p></li>
+<li><p><code>"missing"</code>: set <code>NA</code> only where the
+branching logic evaluation is <code>NA</code>.</p></li>
+<li><p><code>"eval"</code>: set <code>NA</code> where the branching
+logic evaluates to <code>FALSE</code> (i.e., logic not satisfied or
+missing).</p></li>
+</ul>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cb</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span>na_logic <span class="op">=</span> <span class="st">"eval"</span><span class="op">)</span></span></code></pre></div>
+<p>By default, checkbox factors are labeled <code>"No"</code> and
+<code>"Yes"</code>, but you can specify alternative labels:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cb</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span>checkbox_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Absent"</span>, <span class="st">"Present"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">cb</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">underlying_disease_hemato_acute_myeloid_leukemia</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##  num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</span></span>
+<span><span class="co">##  - attr(*, "label")= chr "Specify underlying disease (choice=Acute myeloid leukemia)"</span></span></code></pre>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_factor">
+<strong>rd_factor</strong><a class="anchor" aria-label="anchor" href="#rd_factor"></a>
+</h4>
+<p>This function converts categorical variables in a REDCap dataset into
+R factors by replacing each original variable (numeric version) with its
+corresponding <code>.factor</code> version created by REDCap.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">factored</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_factor.html">rd_factor</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Checking class of the variable</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">factored</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">available_analytics</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##  Factor w/ 2 levels "No","Yes": 2 2 2 2 2 1 2 NA 2 1 ...</span></span>
+<span><span class="co">##  - attr(*, "label")= chr "Blood test available? (+/- 72h)"</span></span></code></pre>
+<p>If you need to keep certain variables in their raw form, you can list
+them in the <code>exclude</code> argument. This prevents those variables
+from being replaced (including their <code>.factor</code> version) while
+still allowing the rest of the dataset to be converted.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">factored</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_factor.html">rd_factor</a></span><span class="op">(</span>exclude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"available_analytics"</span>, <span class="st">"urine_culture"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Checking class of both versions of the variable</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">covican</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">available_analytics</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##  'labelled' int [1:342] 1 1 1 1 1 0 1 NA 1 0 ...</span></span>
+<span><span class="co">##  - attr(*, "label")= chr "Blood test available? (+/- 72h)"</span></span></code></pre>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">covican</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">available_analytics.factor</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##  Factor w/ 2 levels "No","Yes": 2 2 2 2 2 1 2 NA 2 1 ...</span></span></code></pre>
+<blockquote>
+<p>Note: the function automatically excludes these system variables from
+conversion: <code>redcap_event_name</code>,
+<code>redcap_repeat_instrument</code>,
+<code>redcap_data_access_group</code>. These variables are retained
+as-is to avoid interfering with longitudinal event mappings or user
+access groups.</p>
+</blockquote>
+<p>After conversion only the cleaned factor variables remain in the
+dataset, the original numeric version of those variables is dropped.</p>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_dictionary">
+<strong>rd_dictionary</strong><a class="anchor" aria-label="anchor" href="#rd_dictionary"></a>
+</h4>
+<p>When working with REDCap exports, the data dictionary contains field
+metadata, branching logic, and calculation rules written in REDCap
+logic. The <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> function refreshes branching
+logic and calculations, translating them from REDCap logic into R logic,
+and ensures the dictionary remains consistent with the cleaned
+dataset.</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Update dictionary after cleaning</span></span>
+<span><span class="va">dict_result</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/rd_factor.html">rd_factor</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/rd_dictionary.html">rd_dictionary</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>When we transform the dictionary:</p>
+<ul>
+<li><p>Updates branching logic expressions so they match factor labels
+rather than numeric codes.</p></li>
+<li><p>Converts calculations and logic into R-friendly
+expressions.</p></li>
+<li><p>Reports any fields where branching logic or calculations could
+not be converted.</p></li>
+</ul>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_split">
+<strong>rd_split</strong><a class="anchor" aria-label="anchor" href="#rd_split"></a>
+</h4>
+<p>After preparing your dataset, you may want to work with only one form
+or one event at a time. The <code><a href="../reference/rd_split.html">rd_split()</a></code> function separates
+your dataset accordingly.</p>
+<ul>
+<li><strong>By form</strong></li>
+</ul>
+<p>For non-longitudinal projects (or longitudinal projects with an
+<code>event_form</code> mapping), you can split the dataset into smaller
+datasets based on forms.</p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">forms_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"form"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">forms_data</span><span class="op">$</span><span class="va">data</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 7 × 3</span></span></span>
+<span><span class="co">##   form                        events    df             </span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                       <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> inclusionexclusion_criteria <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 14]&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> demographics                <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 8]&gt;</span> </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> comorbidities               <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 15]&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> cancer                      <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 27]&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span> vital_signs                 <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">6</span> laboratory_findings         <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;df [342 × 8]&gt;</span> </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">7</span> microbiological_studies     <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 7]&gt;</span></span></span></code></pre>
+<p>If repeated entries exist, you can reshape the data into wide
+format:</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">forms_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"form"</span>, wide <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<blockquote>
+<p>Note: For longitudinal projects, the column events shows the number
+of events in each form.</p>
+</blockquote>
+<ul>
+<li><strong>By event</strong></li>
+</ul>
+<p>For longitudinal projects, you can also split the data by event. The
+function uses the <code>event_form</code> mapping to assign variables
+correctly to each event:</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">events_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"event"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">events_data</span><span class="op">$</span><span class="va">data</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
+<span><span class="co">##   events                   df             </span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> baseline_visit_arm_1     <span style="color: #949494;">&lt;df [190 × 56]&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> follow_up_visit_da_arm_1 <span style="color: #949494;">&lt;df [152 × 10]&gt;</span></span></span></code></pre>
+<p>If you want to extract only one form or event, use the
+<code>which</code> argument:</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example by form</span></span>
+<span><span class="va">baseline_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"form"</span>, which <span class="op">=</span> <span class="st">"demographics"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">baseline_data</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##   record_id    redcap_event_name redcap_data_access_group</span></span>
+<span><span class="co">## 1     100-6 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 2    100-13 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 3    100-16 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 4    100-31 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 5    100-34 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 6    100-36 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">##   redcap_event_name.factor redcap_data_access_group.factor    d_birth</span></span>
+<span><span class="co">## 1           Baseline visit                     Hospital 11 1963-10-05</span></span>
+<span><span class="co">## 2           Baseline visit                     Hospital 11 1959-10-04</span></span>
+<span><span class="co">## 3           Baseline visit                     Hospital 11 1951-04-08</span></span>
+<span><span class="co">## 4           Baseline visit                     Hospital 11 1944-08-08</span></span>
+<span><span class="co">## 5           Baseline visit                     Hospital 11 1954-12-02</span></span>
+<span><span class="co">## 6           Baseline visit                     Hospital 11 1952-05-08</span></span>
+<span><span class="co">##   d_admission age</span></span>
+<span><span class="co">## 1  2020-04-12  56</span></span>
+<span><span class="co">## 2  2020-02-13  60</span></span>
+<span><span class="co">## 3  2020-03-08  68</span></span>
+<span><span class="co">## 4  2020-02-23  75</span></span>
+<span><span class="co">## 5  2020-06-15  65</span></span>
+<span><span class="co">## 6  2020-02-25  67</span></span></code></pre>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_insert_na">
+<strong>rd_insert_na</strong><a class="anchor" aria-label="anchor" href="#rd_insert_na"></a>
+</h4>
+<p>This is an auxiliar/bonus function that can be used to set some
+values of a variable(s) to missing if a certain logic is fulfilled. It
+can be used, for example, to insert missings on those checkboxes that do
+not have a branching logic, as mentioned earlier. For instance, we can
+transform the checkboxes with the <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> function
+and then use this function to set the values of the checkbox
+<em>type_underlying_disease_haematological_cancer</em> to missing when
+the age is less than 65 years old:</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cb</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">#Before inserting missings</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">cb</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">type_underlying_disease_haematological_cancer</span><span class="op">)</span></span></code></pre></div>
+<pre><code>
+  0   1 
+103  87 </code></pre>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#Run with this function</span></span>
+<span><span class="va">cb2</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_insert_na.html">rd_insert_na</a></span><span class="op">(</span>vars <span class="op">=</span> <span class="st">"type_underlying_disease_haematological_cancer"</span>,</span>
+<span>               filter <span class="op">=</span> <span class="st">"age &lt; 65"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">#After inserting missings</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">cb2</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">type_underlying_disease_haematological_cancer</span><span class="op">)</span></span></code></pre></div>
+<pre><code>
+ 0  1 
+65 50 </code></pre>
+<blockquote>
+<p>Note that both the variable to be transformed (<code>age</code>) and
+the variable included in the filter
+(<code>type_underlying_disease_haematological_cancer</code>) are in the
+same event. If the variable to be transformed and the filter didn’t have
+any event in common then the transformation would give an error.
+Furthermore, if the variable to be transformed was in more events than
+the filter, only the rows of the events in common would be
+converted.</p>
+</blockquote>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="rd_rlogic">
+<strong>rd_rlogic</strong><a class="anchor" aria-label="anchor" href="#rd_rlogic"></a>
+</h4>
+<p>This is also an auxiliar/bonus function that transforms the REDCap
+logic into logic that can be evaluated in R. It returns both the
+transformed logic and the result of the evaluation of the logic in R.
+This function is used internally in multiple functions, for example,
+<code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>.</p>
+<blockquote>
+<p>This function only returns the transformed logic, so it has to be
+used outside the transform workflow.</p>
+</blockquote>
+<p>Let’s see how it transforms the logic of one of the calculated fields
+in the built-in dataset:</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">logic_trans</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/rd_rlogic.html">rd_rlogic</a></span><span class="op">(</span>logic <span class="op">=</span> <span class="st">"if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)"</span>,</span>
+<span>            var <span class="op">=</span> <span class="st">"screening_fail_crit"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">logic_trans</span><span class="op">)</span></span></code></pre></div>
+<pre><code>List of 2
+ $ rlogic: chr "ifelse(data$exc_1=='1' | data$inc_1=='0' | data$inc_2=='0' | data$inc_3=='0',1,0)"
+ $ eval  : num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</code></pre>
+<p><br></p>
+</div>
 <div class="section level4">
 <h4 id="rd_transform">
 <strong>rd_transform</strong><a class="anchor" aria-label="anchor" href="#rd_transform"></a>
 </h4>
-<p>The main function involved in the processing of the data is
-<code><a href="../reference/rd_transform.html">rd_transform()</a></code>. This function is used to process the REDCap
-data read into R using the <code><a href="../reference/redcap_data.html">redcap_data()</a></code>, as described
-above. Using the arguments of the function we can perform different type
-of transformations of our data.</p>
-<p>As previously stated, we will use the built-in dataset
-<code><a href="../reference/covican.html">REDCapDM::covican</a></code> as an example.</p>
-<div class="section level5">
-<h5 id="data-transformation">
-<em>Data transformation</em><a class="anchor" aria-label="anchor" href="#data-transformation"></a>
-</h5>
-<p>The only necessary elements that must be provided are the dataset to
-be transformed and the corresponding dictionary. If the project is
-longitudinal, as in the case of <code><a href="../reference/covican.html">REDCapDM::covican</a></code>, also the
-event-form dataset should be specified. These elements can be specified
-directly using the output of the <code><a href="../reference/redcap_data.html">redcap_data()</a></code> function or
-separately in different arguments.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Option A: list object </span></span>
-<span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#Option B: separately with different arguments</span></span>
-<span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">data</span>, </span>
-<span>                                    dic <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">dictionary</span>, </span>
-<span>                                    event_form <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">event_form</span><span class="op">)</span></span>
+<p>Alternatively, you can do all these steps at once using the
+<code><a href="../reference/rd_transform.html">rd_transform()</a></code> function:</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">#Print the results of the transformation</span></span>
 <span><span class="va">covican_transformed</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
@@ -450,6 +975,8 @@ separately in different arguments.</p>
 2. Deleting variables that contain some patterns
 
 3. Recalculating calculated fields and saving them as '[field_name]_recalc'
+
+
 | Total calculated fields | Non-transcribed fields | Recalculated different fields |
 |:-----------------------:|:----------------------:|:-----------------------------:|
 |            2            |         0 (0%)         |            1 (50%)            |
@@ -460,7 +987,7 @@ separately in different arguments.</p>
 |         age         |     Yes      |   FALSE   |
 | screening_fail_crit |     Yes      |   TRUE    |
 
-4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
+4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options.
 
 Table: Checkbox variables advisable to be reviewed
 
@@ -471,401 +998,13 @@ Table: Checkbox variables advisable to be reviewed
 5. Replacing original variables for their factor version
 
 6. Converting every branching logic in the dictionary into R logic</code></pre>
-<p>This function will return a list with the transformed dataset,
-dictionary, event_form and the output of the results of the
-transformation.</p>
-<p>As we can see, there are several steps in the transformation:</p>
-<ol>
-<li>
-<u>Elimination of variables:</u> we can specify any variable in the
-dataset which we want to remove using the argument
-<code>delete_vars</code>, as explained later.
-</li>
-<li>
-<u>Elimination of variables containing some pattern:</u> by default, the
-pattern that the function looks for is ’_complete’ and ’_timestamp’. We
-can specify any other pattern using the argument
-<code>delete_pattern</code>, as explained later.
-</li>
-<p>In this case, we do not have any variable with the pattern
-’_complete’ and ’_timestamp’ since the built-in dataset only contains a
-sample of the variables of the project. All REDCap projects, when
-downloaded, contain one variable with the pattern ’_complete’ for each
-form indicating if the form has been marked as
-incomplete/unverified/completed. Also, if the project contains some
-survey then variables ending with ’_timestamp’ are also generated
-automatically. In general, we do not need this information so these
-variables are removed by default.</p>
-<li>
-<u>Recalculation of REDCap calculated fields:</u> it finds all the
-calculated fields and recalculates them using the REDCap logic specified
-in the calculation field translated into R. The recalculated variable is
-saved as the original name adding ’_recalc’ at the end. It can happen
-that the logic found contains some specific smart-variables or other
-complex structures which the function is not able to transcribe. With
-the summary found in <code>results</code> we can see how many calculated
-fields have been found, if they have been transcribed and, if that is
-the case, if the recalculated variable is equal to the original one.
-</li>
-<p>Note: If the REDCap project is longitudinal and the event-form is not
-specified, this step will not be executed.</p>
-<p>In the example, we can see how there are two REDCap calculated
-fields, both have been transcribed successfully and the recalculation of
-the age does not match the original calculated variable from REDCap.</p>
-<li>
-<u>Checkbox transformation:</u> by default, it changes the names of the
-checkboxes to the name of its corresponding option and the name of their
-labels to ‘No/Yes’. If we want to specify another pair of label names we
-can specify them using the <code>checkbox_labels</code> argument as we
-will see. Furthermore, if the checkbox contains a branching logic, when
-this logic evaluated returns a missing value (some of the variables
-specified in it are missing) the values of the checkbox will be set to
-missing.
-</li>
-<p>Note: If the REDCap project is longitudinal and the event-form is not
-specified, the evaluations of the branching logic will not be done.</p>
-<p>For example, let’s explain the transformation that undergo the
-variables corresponding to the checkbox field of the type of underlying
-disease. The variables were named originally as
-_type_underlying_disease__<em>0</em> and
-_type_underlying_disease__<em>1</em> although the name of the options
-are ‘Haematological cancer’ and ‘Solid tumour’. Thus, in the transformed
-dataset, the names are converted to
-<em>type_underlying_disease_haematological_cancer</em> and
-<em>type_underlying_disease_solid_tumour</em>. Then, since this checkbox
-variable does not have a branching logic, the variable is advised to be
-reviewed by the user in the <code>results</code>, as seen above. When
-reviewed we could use an additional function <code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code>
-to insert the necessary missing values into this variable, as we will
-explain later. If a branching logic was found for this variable,
-<code>rd_transform</code> will insert automatically the missing values
-when the logic is not satisfied and no further transformation will be
-needed.</p>
-<li>
-<u>Replacement of the original variable by its factor version:</u>
-REDCap creates two versions of the variables in the dataset for
-multiple-choice fields: a numerical one with the number that corresponds
-to each category and a factor one containing the labels of each
-category. In this step, we will replace the original variables with
-their factor versions, except for <em>redcap_event_name</em> and
-<em>redcap_data_access_group</em>, for which we will keep both versions.
-We can specify other variables that we do not want to transform to
-factor using the argument <code>exclude_to_factor</code> which we will
-see later.
-</li>
-<li>
-<u>Transformation of the branching logic:</u> by default, every
-branching logic contained in the dictionary is presented in REDCap
-logic. In this step, we will convert each branching logic into R logic
-in order to apply this information when needed. For example, we will use
-it to properly identify missing values in variables with a branching
-logic, as we will see later in the vignette.
-</li>
-</ol>
-</div>
-<div class="section level5">
-<h5 id="data-transformation-and-classification-by-event">
-<em>Data transformation and classification by event</em><a class="anchor" aria-label="anchor" href="#data-transformation-and-classification-by-event"></a>
-</h5>
-<p>Additionally, we can change the final structure of the transformed
-dataset. For example, we can split it by each event. This can be done by
-specifying in the <code>final_format</code> argument that we want our
-data to be split by event.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        final_format <span class="op">=</span> <span class="st">"by_event"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#To print the results</span></span>
-<span><span class="va">dataset</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
-<pre><code>1. Removing selected variables
-
-2. Deleting variables that contain some patterns
-
-3. Recalculating calculated fields and saving them as '[field_name]_recalc'
-| Total calculated fields | Non-transcribed fields | Recalculated different fields |
-|:-----------------------:|:----------------------:|:-----------------------------:|
-|            2            |         0 (0%)         |            1 (50%)            |
-
-
-|     field_name      | Transcribed? | Is equal? |
-|:-------------------:|:------------:|:---------:|
-|         age         |     Yes      |   FALSE   |
-| screening_fail_crit |     Yes      |   TRUE    |
-
-4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
-
-Table: Checkbox variables advisable to be reviewed
-
-| Variables without any branching logic |
-|:-------------------------------------:|
-|        type_underlying_disease        |
-
-5. Replacing original variables for their factor version
-
-6. Converting every branching logic in the dictionary into R logic
-
-7. Final arrangment of the data by event</code></pre>
-<p>Now, a final step in the transformation has been added, which
-consists in splitting the data according to the events in the study. So,
-now the transformed dataset found in the output of the function is a
-tibble object with as many data frames as events there are in the REDCap
-project:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span><span class="op">$</span><span class="va">data</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   events                   vars       df             </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> baseline_visit_arm_1     <span style="color: #949494;">&lt;chr [31]&gt;</span> <span style="color: #949494;">&lt;df [190 × 36]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> follow_up_visit_da_arm_1 <span style="color: #949494;">&lt;chr [4]&gt;</span>  <span style="color: #949494;">&lt;df [152 × 9]&gt;</span></span></span></code></pre></div>
-<p>The column <code>df</code> of the nested dataframe is a list
-containing the data corresponding to each event. Also the variables of
-the forms that are found in each event are reported in the column
-<code>vars</code>.</p>
-<p>Note: If the REDCap project is longitudinal and the event-form is not
-specified, this transformation is not posible.</p>
-</div>
-<div class="section level5">
-<h5 id="data-transformation-and-classification-by-form">
-<em>Data transformation and classification by form</em><a class="anchor" aria-label="anchor" href="#data-transformation-and-classification-by-form"></a>
-</h5>
-<p>Another option is to split the data by the forms found in the REDCap
-project. We will use also the <code>final_format</code> argument to
-specify that we want to split data by form:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        final_format <span class="op">=</span> <span class="st">"by_form"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#To print the results</span></span>
-<span><span class="va">dataset</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
-<pre><code>1. Removing selected variables
-
-2. Deleting variables that contain some patterns
-
-3. Recalculating calculated fields and saving them as '[field_name]_recalc'
-| Total calculated fields | Non-transcribed fields | Recalculated different fields |
-|:-----------------------:|:----------------------:|:-----------------------------:|
-|            2            |         0 (0%)         |            1 (50%)            |
-
-
-|     field_name      | Transcribed? | Is equal? |
-|:-------------------:|:------------:|:---------:|
-|         age         |     Yes      |   FALSE   |
-| screening_fail_crit |     Yes      |   TRUE    |
-
-4. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing
-
-Table: Checkbox variables advisable to be reviewed
-
-| Variables without any branching logic |
-|:-------------------------------------:|
-|        type_underlying_disease        |
-
-5. Replacing original variables for their factor version
-
-6. Converting every branching logic in the dictionary into R logic
-7. Final arrangment of the data by form</code></pre>
-<p>As before, a final step in the transformation has been added, which
-is to split the data according to the forms in the study. Thus, the
-transformed dataset will now be a tibble object with as many data frames
-as forms there are in the REDCap project:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span><span class="op">$</span><span class="va">data</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 7 × 4</span></span></span>
-<span><span class="co">#&gt;   form                        events    vars        df             </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                       <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>         </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> inclusionexclusion_criteria <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [7]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 11]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> demographics                <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [4]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 9]&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> comorbidities               <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [5]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 10]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> cancer                      <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [11]&gt;</span> <span style="color: #949494;">&lt;df [190 × 16]&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> vital_signs                 <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;glue [2]&gt;</span>  <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> laboratory_findings         <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;glue [2]&gt;</span>  <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> microbiological_studies     <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;glue [1]&gt;</span>  <span style="color: #949494;">&lt;df [190 × 6]&gt;</span></span></span></code></pre></div>
-<p>Note: If the REDCap project is longitudinal and the event-form is not
-specified, this transformation is not posible.</p>
-</div>
-<div class="section level5">
-<h5 id="additional-arguments">
-<em>Additional arguments</em><a class="anchor" aria-label="anchor" href="#additional-arguments"></a>
-</h5>
-<p>There are other arguments which can be used to customize some of the
-transformation steps that the function performs by default:</p>
-<p><br></p>
-<p><u>checkbox_labels</u>: specifies the name of the categories for the
-checkbox variables. Default is ‘No/Yes’, but we can change it to
-‘N/Y’:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        checkbox_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"N"</span>, <span class="st">"Y"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><br></p>
-<p><u>checkbox_na</u>: logical argument involved in the transformation
-of checkbox variables. For checkbox variables that have a branching
-logic specified, when the logic is missing the values of the checkbox
-will be always converted to missing. Additionally, if this argument is
-true then also when the branching logic isn’t satisfied their values
-will be converted to missing.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        checkbox_na <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><br></p>
-<p><u>exclude_recalc</u>: specifies the name of the variables that we do
-not want to be recalculated. For example, if we do not want to
-recalculate the variable <em>age</em>:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        exclude_recalc <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span></span></code></pre></div>
-<p>This argument is useful to reduce the time of execution of the
-function. For calculated fields with complex logic involving variables
-in different events the recalculation operation may be time consuming,
-so we can prevent the function to recalculate them with this
-argument.</p>
-<p><br></p>
-<p><u>exclude_to_factor</u>: specifies the name of the variables that we
-do not want to transform into a factor. For example, if we want the
-variable <em>dm</em> to keep its original numeric version:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        exclude_to_factor <span class="op">=</span> <span class="st">"dm"</span><span class="op">)</span></span></code></pre></div>
-<p><br></p>
-<p><u>delete_vars</u>: every variable specified in this argument will be
-removed from the dataset. For example, we can change the argument to
-remove the date of birth variable from the dataset:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        delete_vars <span class="op">=</span> <span class="st">"d_birth"</span><span class="op">)</span></span></code></pre></div>
-<p><br></p>
-<p><u>delete_pattern</u>: every variable containing the strings
-specified in this argument will be removed from the dataset. By default,
-the value of <code>delete_pattern</code> is ‘_complete’. For example, we
-can change the argument to remove the inclusion and exclusion criteria
-variables from the dataset (variables that contain ‘inc_’ and ‘exc_’ in
-their names):</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        delete_pattern <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"inc_"</span>, <span class="st">"exc_"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><br></p>
-<p><u>which_event</u>: in the transformation by event explained earlier,
-we can specify whether we want to keep only one out of all the events in
-the dataset. For example, if we only want to keep the baseline
-visit:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        final_format <span class="op">=</span> <span class="st">"by_event"</span>,</span>
-<span>                        which_event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span><span class="op">)</span></span></code></pre></div>
-<p><br></p>
-<p><u>which_form</u>: in the transformation by form explained earlier,
-we can specify whether we want to keep only one of the forms. For
-example, if we only want to keep the demographic form:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        final_format <span class="op">=</span> <span class="st">"by_form"</span>,</span>
-<span>                        which_form <span class="op">=</span> <span class="st">"demographics"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="va">dataset</span><span class="op">$</span><span class="va">data</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span></code></pre></div>
-<pre><code>[1] "record_id"                       "redcap_event_name"              
-[3] "redcap_data_access_group"        "redcap_event_name.factor"       
-[5] "redcap_data_access_group.factor" "d_admission"                    
-[7] "d_birth"                         "age"                            
-[9] "age_recalc"                     </code></pre>
-<p><br></p>
-<p><u>wide</u>: in the transformation by form, we can specify that we
-want each of the split datasets to be in a wide format. This is useful
-if the form appears in more than one event (or in a repeated event).
-Then, we will only have one row per patient and all the variables of the
-form will be in columns repeated by each event in the order that the
-events appear in REDCap. For example, if we want to keep only the
-laboratory findings in a wide format we can do:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                        final_format <span class="op">=</span> <span class="st">"by_form"</span>,</span>
-<span>                        which_form <span class="op">=</span> <span class="st">"laboratory_findings"</span>,</span>
-<span>                        wide <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dataset</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
-<span><span class="co">#&gt;   record_id available_analytics_1 available_analytics_2 potassium_1 potassium_2</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 100-6     Yes                   Yes                          4.3          4.5</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 100-13    Yes                   Yes                          3.66         4.1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 100-16    Yes                   No                           4.04        <span style="color: #BB0000;">NA</span>  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 100-31    Yes                   <span style="color: #BB0000;">NA</span>                           4.58        <span style="color: #BB0000;">NA</span>  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 100-34    Yes                   No                           3.48        <span style="color: #BB0000;">NA</span>  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 100-36    Yes                   No                           4.09        <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
-<p><br></p>
-</div>
-</div>
-<div class="section level4">
-<h4 id="rd_rlogic">
-<strong>rd_rlogic</strong><a class="anchor" aria-label="anchor" href="#rd_rlogic"></a>
-</h4>
-<p>This function transforms the REDCap logic into logic that can be
-evaluated in R. It returns both the transformed logic and the result of
-the evaluation of the logic. This function is used in the
-<code><a href="../reference/rd_transform.html">rd_transform()</a></code> to recalculate the calculated fields and
-convert the branching logics, but it may also be useful to use it in
-other circunstances. Let’s see how it transforms the logic of one of the
-calculated fields in the built-in dataset:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">logic_trans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_rlogic.html">rd_rlogic</a></span><span class="op">(</span><span class="va">covican</span>,</span>
-<span>                         logic <span class="op">=</span> <span class="st">"if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)"</span>,</span>
-<span>                         var <span class="op">=</span> <span class="st">"screening_fail_crit"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">logic_trans</span><span class="op">)</span></span></code></pre></div>
-<pre><code>List of 2
- $ rlogic: chr "ifelse(data$exc_1=='1' | data$inc_1=='0' | data$inc_2=='0' | data$inc_3=='0',1,0)"
- $ eval  : num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</code></pre>
-<p><br></p>
-</div>
-<div class="section level4">
-<h4 id="rd_insert_na">
-<strong>rd_insert_na</strong><a class="anchor" aria-label="anchor" href="#rd_insert_na"></a>
-</h4>
-<p>This function sets some values of a variable to missing if a certain
-logic is fulfilled. It can be used as a complementary function for
-<code><a href="../reference/rd_transform.html">rd_transform()</a></code>, for example, to change the values of those
-checkboxes that do not have a branching logic, as mentioned earlier. For
-instance, we can perform a raw transformation of our data, as in section
-4.2.1.1, and then use this function to set the values of the checkbox
-<em>type_underlying_disease_haematological_cancer</em> to missing when
-the age is less than 65 years old:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Raw transformation of the data:</span></span>
-<span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="va">dataset</span><span class="op">$</span><span class="va">data</span></span>
-<span></span>
-<span><span class="co">#Before inserting missings</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">type_underlying_disease_haematological_cancer</span><span class="op">)</span></span></code></pre></div>
-<pre><code>
- No Yes 
-103  87 </code></pre>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Run the function</span></span>
-<span><span class="va">data2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_insert_na.html">rd_insert_na</a></span><span class="op">(</span><span class="va">dataset</span>,</span>
-<span>                      event_form <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">event_form</span>,</span>
-<span>                      vars <span class="op">=</span> <span class="st">"type_underlying_disease_haematological_cancer"</span>,</span>
-<span>                      filter <span class="op">=</span> <span class="st">"age &lt; 65"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">#After inserting missings</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">data2</span><span class="op">$</span><span class="va">type_underlying_disease_haematological_cancer</span><span class="op">)</span></span></code></pre></div>
-<pre><code>
- No Yes 
- 65  50 </code></pre>
-<p>Recall that both the variable to be transformed (<em>age</em>) and
-the variable included in the filter
-(<em>type_underlying_disease_haematological_cancer</em>) are in the same
-event. In the contrary, if the variable to be transformed and the filter
-didn’t have any event in common then the transformation would give an
-error. Furthermore, if the variable to be transformed was in more events
-than the filter, only the rows of the events in common would be
-converted.</p>
-<p><br></p>
+<p>Using the arguments of the function we can perform all the different
+type of transformations described until now.</p>
 </div>
 </div>
 <div class="section level3">
-<h3 id="queries">
-<strong>Queries</strong><a class="anchor" aria-label="anchor" href="#queries"></a>
+<h3 id="queries-1">
+<strong>Queries</strong><a class="anchor" aria-label="anchor" href="#queries-1"></a>
 </h3>
 <p>Queries are very important to ensure the accuracy and reliability of
 a REDCap dataset. The collected data may contain missing values,
@@ -1161,7 +1300,7 @@ REDCap data and dictionary, respectively. If the REDCap project presents
 a longitudinal design, we should also specify the event in which the
 described variables are present through the use of the
 <code>event</code> argument:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"is.na(x)"</span><span class="op">)</span>,</span>
@@ -1252,15 +1391,15 @@ warning. The warning message will advise the user to review the
 <code>results</code> element of the output for more information. This is
 to indicate that there might be potential issues or limitations with the
 conversion process for that specific variable’s branching logic:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"copd"</span>, <span class="st">"potassium"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"is.na(x)"</span>, <span class="st">"is.na(x)"</span><span class="op">)</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span><span class="op">)</span></span></code></pre></div>
-<pre><code>Warning: The branching logic of the following variables could not be converted into R logic:
+<pre><code>Warning: The branching logic of the following variables could not be converted into R logic: 
  - potassium
- Check the results element of the output(...$results) for details.</code></pre>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+Check the results element of the output(...$results) for details.</code></pre>
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1369,16 +1508,16 @@ filter, you need to consider this transformed value rather than the
 original one. This ensures that the condition is accurately applied and
 missing values are appropriately identified based on the desired
 criteria.</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"potassium"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span><span class="op">)</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span>,</span>
 <span>                    filter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"available_analytics=='Yes'"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code>Warning: The branching logic of the following variables could not be converted into R logic:
+<pre><code>Warning: The branching logic of the following variables could not be converted into R logic: 
  - potassium
- Check the results element of the output(...$results) for details.</code></pre>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+Check the results element of the output(...$results) for details.</code></pre>
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1432,12 +1571,14 @@ presents 21 missing values instead of the previous 31 cases identified.
 This means that we were identifying 10 missing values in which
 <em>available_analytics</em> did not have the value <em>Yes</em> and,
 therefore, should not be considered as missing values.</p>
+<blockquote>
 <p>Note: The <code>filter</code> argument is treated as a vector, which
 means that we can add a filter to each specified variable. Also, even if
 this argument is used to apply the branching logic condition, the
 warning about the presence of unconverted branching logic will still be
 displayed. In this specific case, you can safely ignore this
 warning.</p>
+</blockquote>
 </div>
 <div class="section level5">
 <h5 id="expressions">
@@ -1450,7 +1591,7 @@ outliers or observations that fulfill a specific condition. Hence, to
 identify, for example, all the observations where <em>age</em> is
 greater than 70, we should use the <code>expression</code> argument
 again specifying ‘x&gt;70’:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span>variables<span class="op">=</span><span class="st">"age"</span>,</span>
 <span>                    expression<span class="op">=</span><span class="st">"x&gt;70"</span>,</span>
 <span>                    event<span class="op">=</span><span class="st">"baseline_visit_arm_1"</span>,</span>
@@ -1507,7 +1648,7 @@ to the element at position <em>n</em> of <code>variables</code>.</p>
 <p>For example, if we want to identify all the observations where
 <em>age</em> is greater than 70 and all the observations where
 <em>copd</em> is ‘Yes’ we shall use:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"copd"</span><span class="op">)</span>,</span>
 <span>                    expression<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x &gt; 70"</span>, <span class="st">"x == 'Yes'"</span><span class="op">)</span>,</span>
@@ -1577,7 +1718,7 @@ The value should not be equal to ‘Yes’
 <p>In a more complex scenario, for example, to identify all the
 observations where <em>age</em> is greater than 70, less than 80, or it
 is a missing value we shall use the following expression:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables<span class="op">=</span><span class="st">"age"</span>,</span>
 <span>                    expression<span class="op">=</span><span class="st">"(x&gt;70 &amp; x&lt;80) | is.na(x)"</span>,</span>
@@ -1632,14 +1773,14 @@ The value should not be (greater than 70 and less than 80) or missing
 <p><u>Same expression for all variables</u></p>
 <p>In order to evaluate the same expression for all variables, the user
 should supply just a single element for <code>expression</code>:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>,<span class="st">"age"</span>,<span class="st">"dm"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span><span class="op">)</span></span></code></pre></div>
-<pre><code>Warning: Due to the greater number of variables compared to expressions, the
-same expression has been applied to all of them.</code></pre>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<pre><code>Warning: Number of variables (3) is greater than the number of expressions (1).
+The first expression will be applied to all variables.</code></pre>
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1732,7 +1873,7 @@ not defined.</p>
 <u>With event-form:</u> the function automatically detects in which
 events the variable is collected and generates queries for those events.
 </li>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="st">"copd"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span><span class="op">)</span></span>
@@ -1784,7 +1925,7 @@ argument.</p>
 <u>Without event-form:</u> the function generates queries for all events
 present in the dataset.
 </li>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">covican_transformed</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">covican_transformed</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"event_form"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">my_list</span>,</span>
@@ -1794,7 +1935,7 @@ present in the dataset.
 will automatically consider observations from all events in the dataset. Ensure
 that the selected variable(s) is(are) collected in all specified events. This
 will avoid overestimating the number of queries.</code></pre>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1867,8 +2008,8 @@ specified and the <code>event</code> argument is not specified.</p>
 <p><br></p>
 </div>
 <div class="section level5">
-<h5 id="additional-arguments-1">
-<em>Additional arguments</em><a class="anchor" aria-label="anchor" href="#additional-arguments-1"></a>
+<h5 id="additional-arguments">
+<em>Additional arguments</em><a class="anchor" aria-label="anchor" href="#additional-arguments"></a>
 </h5>
 <p><u>variable_names, query_name, instrument</u></p>
 <p>These arguments allow users to customize the data frame returned by
@@ -1876,7 +2017,7 @@ the function. We can change the variables names using the
 <code>variables_names</code> argument, alter the description of the
 query using the <code>query_name</code> argument or even change the name
 of the instrument using the <code>instrument</code> argument:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span><span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                   variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span><span class="op">)</span>,</span>
 <span>                   variables_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Chronic obstructive pulmonary disease (Yes/No)"</span><span class="op">)</span>,</span>
@@ -1953,7 +2094,7 @@ values of the variable <em>copd</em>, we can apply the expression
 ‘is.na(x)’ which normally would report the missing values and add
 <code>negate = TRUE</code>, so the result will be the number of non
 missing values in <em>copd</em>:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="st">"copd"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span>,</span>
@@ -2007,7 +2148,7 @@ The value should be missing
 <p>In order to keep all queries in the same R object, we can use the
 <code>addTo</code> argument to specify the output of another query
 dataset.</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                     variables <span class="op">=</span> <span class="st">"age"</span>,</span>
 <span>                     expression <span class="op">=</span> <span class="st">"is.na(x)"</span>,</span>
@@ -2081,7 +2222,7 @@ missing values of the variable <em>age</em>.</p>
 <p><u>report_title</u></p>
 <p>To customize the title of the summary of queries, we can use the
 <code>report_title</code> argument:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"x&lt;20"</span><span class="op">)</span>,</span>
@@ -2137,7 +2278,7 @@ changed it to “Missing COPD values in the baseline event”.</p>
 variables with at least one query and will omit those with zero queries.
 To include these omitted variables in the summary, we can use the
 <code>report_zeros</code> argument:</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"x &lt; 20"</span><span class="op">)</span>,</span>
@@ -2211,7 +2352,7 @@ having any queries identified.</p>
 <p>If the REDCap project has Data Access Groups (DAGs), it might be of
 our interest to report the summary by each one of the DAGs. To do that,
 we can use the <code>by_dag</code> argument:</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"x&gt;60"</span><span class="op">)</span>,</span>
@@ -2219,7 +2360,7 @@ we can use the <code>by_dag</code> argument:</p>
 <span>                    by_dag <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Now we can choose to see the report of a specific DAG, for example,
 the summary of the generated queries for the <em>Hospital 2</em>:</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span><span class="op">$</span><span class="va">`Hospital 2`</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -2298,18 +2439,20 @@ the output of the function. By using the <code>link</code> argument to
 specify the domain, the REDCap version, the project ID and the event ID,
 the function will add a column in the <em>$queries</em> element of the
 output with the direct link to REDCap where the query can be found.</p>
+<blockquote>
 <p>Note: The link will only work if the user has access to the project
 and has at least data viewing rights.</p>
+</blockquote>
 <p>We can find the information about the domain, the REDCap version and
 the project ID in the link of the <em>Project Home</em> of the project
 in REDCap:</p>
-<p><img src="files%2FProjectHome.png"><!-- --></p>
+<p><img src="files/ProjectHome.png"><!-- --></p>
 <p>The identifiers of the events can be exported from: <em>Project
 Setup</em> &lt; <em>Define My Events</em></p>
-<p><img src="files%2FEventsID.png"><!-- --></p>
+<p><img src="files/EventsID.png"><!-- --></p>
 <p>Once we have this information, we pass it as a list to the
 <code>link</code> argument:</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="st">"age"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"x&gt;89"</span>,</span>
@@ -2320,7 +2463,7 @@ Setup</em> &lt; <em>Define My Events</em></p>
 <span>                                event_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"baseline_visit_arm_1"</span> <span class="op">=</span> <span class="fl">811</span>, <span class="st">"follow_up_visit_da_arm_1"</span> <span class="op">=</span> <span class="fl">812</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The output of the function now has an additional column with the link
 to the respective query:</p>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">queries</span><span class="op">$</span><span class="va">Link</span></span></code></pre></div>
 <pre><code>[1] "https://redcappre.idibell.cat/redcap_v13.1.9/DataEntry/index.php?pid=800&amp;event_id=811&amp;page=demographics&amp;id=109-22"
@@ -2342,7 +2485,7 @@ event for some records using the <code><a href="../reference/rd_query.html">rd_q
 missing values will not be identified because they do not exist in the
 exported data. The <code><a href="../reference/rd_event.html">rd_event()</a></code> function can be used to point
 out in how many records an event does not exist:</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"follow_up_visit_da_arm_1"</span><span class="op">)</span></span>
 <span></span>
@@ -2390,7 +2533,7 @@ visit. Therefore, to check if the follow up event is missing only in the
 records that fulfill the inclusion and exclusion criteria, we can use
 the <code>filter</code> argument of the <code><a href="../reference/rd_event.html">rd_event()</a></code>
 function:</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"follow_up_visit_da_arm_1"</span>,</span>
 <span>                    filter <span class="op">=</span> <span class="st">"screening_fail_crit==0"</span><span class="op">)</span></span>
@@ -2428,7 +2571,7 @@ Follow up visit day 14+/-5d
 <p>Like the <code><a href="../reference/rd_query.html">rd_query()</a></code> function, this function also treats
 the argument <code>event</code> as a vector allowing us to check for
 multiple missing events at the same time.</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"baseline_visit_arm_1"</span>,<span class="st">"follow_up_visit_da_arm_1"</span><span class="op">)</span>,</span>
 <span>                    filter <span class="op">=</span> <span class="st">"screening_fail_crit==0"</span>,</span>
@@ -2477,10 +2620,12 @@ Baseline visit
 </tbody>
 </table>
 <p><br></p>
+<blockquote>
 <p>Note: This function also has the arguments <code>query_name</code>,
 <code>addTo</code>, <code>report_title</code>, <code>report_zeros</code>
 and <code>link</code> that work in the same way as in the examples
 previously mentioned in section 4.3.1.6.</p>
+</blockquote>
 </div>
 <div class="section level4">
 <h4 id="check_queries">
@@ -2498,7 +2643,7 @@ have an additional column (“Modification”) indicating which queries are
 new, which have been modified, which have been corrected, and which
 remain unchanged. Besides, the summary will show the number of queries
 in each one of these categories:</p>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/check_queries.html">check_queries</a></span><span class="op">(</span>old <span class="op">=</span> <span class="va">example</span><span class="op">$</span><span class="va">queries</span>, </span>
 <span>                       new <span class="op">=</span> <span class="va">new_example</span><span class="op">$</span><span class="va">queries</span><span class="op">)</span></span>
 <span></span>
@@ -2554,12 +2699,14 @@ New
 <p>There are 7 queries pending resolution, 4 solved queries, 1
 miscorrected query, and 1 new query between the previous and the new
 query dataset.</p>
+<blockquote>
 <p>Note: The “Miscorrected” category includes queries that belong to the
 same combination of record identifier and variable in both the old and
 new reports, but with a different reason. For instance, if a variable
 had a missing value in the old report, but in the new report shows a
 value outside the established range, it would be classified as
 “Miscorrected”.</p>
+</blockquote>
 <p><br></p>
 <p>Query control output:</p>
 <table class="table table" style="margin-left: auto; margin-right: auto;">
@@ -2733,13 +2880,13 @@ Pending
 </h4>
 <p>With the help of the <code><a href="../reference/rd_export.html">rd_export()</a></code> function, we can export
 the identified queries to a <code>.xlsx</code> file of our choice:</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb77"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rd_export.html">rd_export</a></span><span class="op">(</span><span class="va">example</span><span class="op">)</span></span></code></pre></div>
 <p>This is the easiest way to use the function and it will create a file
 with the name “example.xlsx” in your current working directory.</p>
 <p>In order to have a more personalised output file, we can add
 information to the following arguments:</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb78"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rd_export.html">rd_export</a></span><span class="op">(</span>queries <span class="op">=</span> <span class="va">example</span><span class="op">$</span><span class="va">queries</span>,</span>
 <span>          column <span class="op">=</span> <span class="st">"Link"</span>,</span>
 <span>          sheet_name <span class="op">=</span> <span class="st">"Queries - Proyecto"</span>,</span>
@@ -2769,7 +2916,7 @@ you that the file has been created and where it is located.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>
