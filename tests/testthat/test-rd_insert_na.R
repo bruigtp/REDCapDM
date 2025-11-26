@@ -59,29 +59,6 @@ test_that("rd_insert_na errors if data or dic missing", {
   )
 })
 
-test_that("rd_insert_na errors if vars and filter lengths differ (with event_form)", {
-  df <- head(df_single, 4)
-  v1 <- vars_in_dic[1]
-  v2 <- vars_in_dic[2]
-
-  dic <- covican$dictionary[covican$dictionary$field_name %in% c(v1, v2),
-                            c("field_name", "form_name")]
-  names(dic) <- c("field_name", "form_name")
-  dic$form_name <- as.character(dic$form_name)
-  dic$field_name <- as.character(dic$field_name)
-
-  # one filter but two vars -> should error about mismatch
-  expect_error(
-    rd_insert_na(
-      data = df, dic = dic,
-      vars = c(v1, v2),
-      filter = paste0(v1, " == 1"),
-      event_form = covican$event_form
-    ),
-    "does not match the number of filters"
-  )
-})
-
 test_that("rd_insert_na leaves data unchanged when filter matches no rows (with event_form)", {
   df <- head(df_single, 3)
   v1 <- vars_in_dic[1]
@@ -125,4 +102,100 @@ test_that("rd_insert_na errors if longitudinal but event_form missing", {
     ),
     "The dataset contains multiple events, but the `event_form` mapping was not provided. Please specify it."
   )
+})
+
+
+test_that("rd_insert_na errors if filter variables not in data", {
+  df <- head(df_single, 3)
+  v1 <- vars_in_dic[1]
+  dic <- data.frame(field_name = v1, form_name = covican$dictionary$form_name[
+    covican$dictionary$field_name == v1], stringsAsFactors = FALSE)
+
+  # Filter uses a non-existent variable
+  expect_error(
+    rd_insert_na(
+      data = df, dic = dic,
+      vars = v1,
+      filter = "nonexistent_var == 1",
+      event_form = covican$event_form
+    ),
+    "Filter variable\\(s\\) not found in data"
+  )
+})
+
+test_that("rd_insert_na errors if filter variables not in dictionary", {
+  df <- head(df_single, 3)
+  v1 <- vars_in_dic[1]
+  dic <- data.frame(field_name = v1, form_name = covican$dictionary$form_name[
+    covican$dictionary$field_name == v1], stringsAsFactors = FALSE)
+
+  # Filter uses a variable not in dic
+  expect_error(
+    rd_insert_na(
+      data = df, dic = dic,
+      vars = v1,
+      filter = paste0(v1, " < 100 & missing_in_dic < 1"),
+      event_form = covican$event_form
+    ),
+    "Filter variable\\(s\\) not found in data"
+  )
+})
+
+test_that("rd_insert_na warns when variable is present in more events than the filter", {
+
+  # Create a filter referencing both variables
+  filter_expr <- "inc_1== 1 & copd== 1"
+
+  expect_warning(
+    rd_insert_na(
+      data = covican$data, dic = covican$dictionary,
+      vars = "resp_rate", filter = filter_expr,
+      event_form = covican$event_form
+    ),
+    "Only rows in common events"
+  )
+})
+
+test_that("rd_insert_na increments results numbering for multiple transformations", {
+  df <- head(df_single, 6)
+  v1 <- vars_in_dic[1]
+  v2 <- vars_in_dic[2]
+  dic <- covican$dictionary[covican$dictionary$field_name %in% c(v1, v2),
+                            c("field_name", "form_name")]
+  names(dic) <- c("field_name", "form_name")
+  dic$form_name <- as.character(dic$form_name)
+  dic$field_name <- as.character(dic$field_name)
+
+  filter1 <- paste0(v1, " >= 0")
+  filter2 <- paste0(v1, " < 100")
+
+  result <- rd_insert_na(
+    data = df, dic = dic,
+    vars = v2,
+    filter = filter1,
+    event_form = covican$event_form
+  )
+
+  # Apply second transformation
+  result2 <- rd_insert_na(
+    data = result$data, dic = dic,
+    vars = v2,
+    filter = filter2,
+    event_form = covican$event_form
+  )
+
+  expect_true(!grepl("1\\.", result$results))
+})
+
+test_that("rd_insert_na reapplies variable labels after transformation", {
+
+  filter_expr <- "inc_1== 1 & resp_rate== 1"
+
+  result <- rd_insert_na(
+      data = covican$data, dic = covican$dictionary,
+      vars = "copd", filter = filter_expr,
+      event_form = covican$event_form
+  )
+
+  expect_equal(labelled::var_label(result$data)[["type_dm"]], "Type of diabetes")
 })

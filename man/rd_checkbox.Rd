@@ -10,62 +10,63 @@ rd_checkbox(
   dic = NULL,
   event_form = NULL,
   checkbox_labels = c("No", "Yes"),
-  checkbox_na = FALSE,
-  checkbox_names = TRUE
+  checkbox_names = TRUE,
+  na_logic = "none"
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{checkbox_labels}{A character vector of length 2 specifying the labels to be used for the checkbox options. Defaults to \code{c("No", "Yes")}.}
+\item{checkbox_labels}{Character vector of length 2 for labels of unchecked/checked values. Default: \code{c("No", "Yes")}.}
 
-\item{checkbox_na}{Logical indicating whether to assign \code{NA} to checkbox fields when the branching logic condition is not satisfied. Defaults to \code{FALSE}.}
+\item{checkbox_names}{Logical. If \code{TRUE} (default), checkbox columns are renamed using choice labels.}
 
-\item{checkbox_names}{Logical indicating whether to rename the checkbox variables in the dataset and dictionary according to their label options. Defaults to \code{TRUE}.}
+\item{na_logic}{Controls how missing values are set based on branching logic. Must be one of \code{"none"} (do nothing), \code{"missing"} (set to \code{NA} only when the logic evaluation is \code{NA}), or \code{"eval"} (set to \code{NA} when the logic evaluates to \code{FALSE}). Defaults to \code{"none"}.}
 }
 \value{
-A list containing the following elements:
-\item{data}{The transformed dataset with checkbox variables updated.}
-\item{dictionary}{The updated dictionary reflecting any changes made to the checkbox fields, including renamed variables.}
-\item{event_form}{The event-form mapping (if provided).}
-\item{results}{A summary of the transformation process, including any issues with branching logic or fields that need review.}
+A list with:
+\describe{
+\item{data}{Transformed dataset with checkbox fields as factors and optionally renamed.}
+\item{dictionary}{Updated dictionary with checkbox fields expanded and optionally renamed.}
+\item{event_form}{The \code{event_form} passed in (if applicable).}
+\item{results}{Summary of transformations and any fields needing review.}
+}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function is used to convert checkbox variables in a REDCap dataset from their default categories (e.g., "Checked" and "Unchecked") to numeric values (0 and 1), and optionally, relabel and rename them according to user-defined options. It also evaluates branching logic for checkbox fields and adjusts the data and dictionary accordingly.
+This function is used to process checkbox variables in a REDCap dataset. By default, it changes their default categories ("Unchecked" and "Checked") to new ones ("No" and "Yes). Optionally, the function can also evaluate the branching logic for checkbox fields and adjust the data and dictionary accordingly.
 }
 \details{
-This function is primarily used to process checkbox fields in a REDCap project. It performs the following:
 \itemize{
-\item Converts checkbox variables in the dataset from text labels ("Checked" and "Unchecked") to numeric values (0 and 1), and then applies the specified labels.
-\item Optionally renames the checkbox variables based on their labels (e.g., transforming variable names like \code{varname___1} to \code{varname_Yes}).
-\item Optionally modifies the branching logic in the REDCap dictionary to reflect renamed checkbox options.
-}
-}
-\note{
-\itemize{
-\item If \code{event_form} is not provided for a longitudinal project, the function may not be able to evaluate branching logic correctly.
+\item Checkbox columns are expected in REDCap wide format (\code{field___code}).
+\item Branching logic evaluation requires \code{event_form} for longitudinal projects.
+\item Names are cleaned and truncated to 60 characters; uniqueness is enforced.
+\item Fields that cannot be evaluated are listed in \code{results}.
 }
 }
 \examples{
-# Example with a project object containing data and dictionary
-results <- rd_checkbox(project = covican)
+# Basic usage with a project object
+res <- rd_checkbox(covican)
 
-# Example with custom labels for the checkboxes
-results <- rd_checkbox(
- data = covican$data,
- dic = covican$dictionary,
- checkbox_labels = c("No", "Yes")
-)
+# With custom labels
+res <- rd_checkbox(data = covican$data,
+                   dic = covican$dictionary,
+                   checkbox_labels = c("Not present", "Present"))
 
-# Example without renaming checkbox fields
-results <- rd_checkbox(covican, checkbox_names = FALSE)
+# Keep original checkbox names
+res <- rd_checkbox(covican, checkbox_names = FALSE)
+
+# Longitudinal project with NA logic
+res <- rd_checkbox(data = covican$data,
+                   dic = covican$dictionary,
+                   event_form = covican$event_form,,
+                   na_logic = "eval")
 
 }

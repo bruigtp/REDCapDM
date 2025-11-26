@@ -19,52 +19,66 @@ rd_event(
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{event}{A character vector specifying the name(s) of the REDCap event(s) to analyze for missing records.}
+\item{event}{Character vector with one or more REDCap event names to check for missing records.}
 
-\item{filter}{An optional filter to apply to the dataset. This can be used to identify missing events in a subset of the data.}
+\item{filter}{Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}.}
 
-\item{query_name}{A description of the query. Defaults to "The event (event_name) is missing" for each event if not provided.}
+\item{query_name}{Optional character vector describing each query. Defaults to a standard format: \verb{The event (event_name) is missing}.}
 
-\item{addTo}{A data frame of previous query results to which new queries can be appended. If not provided, the function creates a new data frame.}
+\item{addTo}{Optional data frame from a previous query report to which the new results can be appended.}
 
-\item{report_title}{An optional title for the report.}
+\item{report_title}{Optional string specifying the title of the final report. Defaults to \code{"Report of queries"}.}
 
-\item{report_zeros}{Logical; if \code{TRUE}, includes a report of variables without missing data.}
+\item{report_zeros}{Logical, include variables with zero queries in the report. Default is \code{FALSE}.}
 
-\item{link}{A list containing project information used to generate links for each missing event. Requires \code{domain}, \code{redcap_version}, and \code{proj_id} keys.}
+\item{link}{Optional list containing project information (\code{domain}, \code{redcap_version}, \code{proj_id}, \code{event_id}) to generate clickable links for each query.}
 }
 \value{
-A list with two elements:
-\item{queries}{A data frame listing records with missing events, including metadata for each record.}
-\item{results}{A summary table (HTML) showing the count of missing events for each analyzed event.}
+A named list with two elements:
+\describe{
+\item{\code{queries}}{A data frame listing records missing the specified events.
+Columns: \code{Identifier}, \code{DAG}, \code{Event}, \code{Instrument},
+\code{Field}, \code{Repetition}, \code{Description}, \code{Query}, \code{Code},
+and optionally \code{Link}. If no queries are found this will be an empty
+data frame with the expected columns.}
+\item{\code{results}}{An HTML table (knitr::kable styled with kableExtra) summarising
+the number of missing records per event. Returned as \code{knitr::kable} (HTML).}
+}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
-This function identifies records in a REDCap longitudinal project that are missing specific events.
-REDCap does not export events with no data by default, which can create challenges in verifying completeness.
-This function provides insights into missing events, allowing you to identify which records do not contain information about a particular event.
-}
-\details{
-The function is designed to work with REDCap longitudinal projects, which may not include empty events in their exports.
-By specifying the events of interest, users can quickly identify missing records for a specific event.
-Filters can be applied to focus the analysis on specific subsets of the data.
-
-If project information (\code{link}) is provided, the output will include clickable URLs for each missing record.
+Helps identify records in a REDCap longitudinal project that are missing one or more specified events. Because REDCap typically omits empty events from exports, an event that contains no data for a record will not appear. This function finds those absent events and returns a per-record query table and a summarized HTML report.
 }
 \examples{
-# Example usage with a REDCap dataset:
-example <- covican |> rd_event(event = "follow_up_visit_da_arm_1")
+# Minimal reproducible example
+data0 <- data.frame(
+  record_id = c("100-1", "100-2", "200-1"),
+  redcap_event_name = c("baseline_arm_1", "baseline_arm_1", "follow_up_arm_1"),
+  redcap_event_name.factor = factor(c("Baseline", "Baseline", "Follow-up")),
+  stringsAsFactors = FALSE
+)
 
-example$queries
-example$results
+# Suppose we want to check that every record has the follow-up event
+res <- rd_event(
+  data = data0,
+  dic = data.frame(),       # placeholder dictionary
+  event = "follow_up_arm_1",
+  report_zeros = TRUE
+)
+
+# Records missing the event:
+res$queries
+
+# HTML summary (in RMarkdown or Viewer)
+res$results
 
 }

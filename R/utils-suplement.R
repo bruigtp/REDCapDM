@@ -10,28 +10,22 @@
 #' @param data Dataset containing the REDCap data.
 
 fill_data <- function(which_event, which_var, data) {
-  if (which_event %in% data$redcap_event_name) {
-    fill_values <- data |>
-      dplyr::select("record_id", "redcap_event_name", dplyr::all_of(which_var)) |>
-      dplyr::rename(var = dplyr::all_of(which_var)) |>
-      dplyr::group_by(.data$record_id) |>
-      dplyr::mutate(
-        var = dplyr::case_when(
-          .data$redcap_event_name != which_event ~ NA,
-          TRUE ~ .data$var
-        ),
-        # Only the first value if the event is repeated
-        var = stats::na.exclude(unique(.data$var))[1]
-      ) |>
-      tidyr::fill("var", .direction = "downup") |>
-      dplyr::pull("var")
 
-    data[, which_var] <- fill_values
-
-    data
-  } else {
-    stop("The logic can't be evaluated after the translation")
+  if (!which_event %in% data$redcap_event_name) {
+    stop("The logic can't be evaluated after the translation", call. = FALSE)
   }
+
+  fill_values <- data |>
+    dplyr::select("record_id", "redcap_event_name", dplyr::all_of(which_var)) |>
+    dplyr::rename(var = dplyr::all_of(which_var)) |>
+    dplyr::group_by(.data$record_id) |>
+    dplyr::mutate(var = dplyr::case_when(.data$redcap_event_name != which_event ~ NA, TRUE ~ .data$var)) |>
+    tidyr::fill("var", .direction = "downup") |>
+    dplyr::pull("var")
+
+  data[[which_var]] <- fill_values
+
+  data
 }
 
 

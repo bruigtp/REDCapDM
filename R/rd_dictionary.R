@@ -3,26 +3,33 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function updates the data dictionary by evaluating and transforming the branching logic expressions for each field in the dictionary.
-#' It checks if any branching logic is present and attempts to convert it using the specified data, dictionary, and event-form mapping.
-#' If there are any issues with the conversion, those fields are listed in the results.
+#' Updates a REDCap data dictionary by converting branching logic and calculation expressions into valid R expressions. This ensures that conditional display rules and calculated fields in the dictionary can be programmatically evaluated with the dataset. Any variables that cannot be converted are reported in the results.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #'
-#' @return A list containing the following elements:
-#'   \item{data}{The original dataset, passed to the function.}
-#'   \item{dictionary}{The updated data dictionary, with modified branching logic.}
-#'   \item{event_form}{The original event-form mapping, passed to the function (if applicable).}
-#'   \item{results}{A string summarizing the results of the transformation process, including any variables with unconverted branching logic.}
+#' @return A list with the following elements:
+#' \describe{
+#'   \item{data}{The original dataset passed to the function.}
+#'   \item{dictionary}{The updated data dictionary with modified branching logic and calculations.}
+#'   \item{event_form}{The original event-form mapping (if applicable).}
+#'   \item{results}{A summary of the transformations, including any variables with unconverted branching logic.}
+#' }
+#'
+#' @details
+#' The function performs the following tasks:
+#' * Evaluates and transforms branching logic expressions into valid R expressions using `rd_rlogic`.
+#' * Evaluates and converts calculation expressions for fields of type `calc`.
+#' * Generates a results summary table listing any variables that could not be converted.
 #'
 #' @examples
-#'
-#' result <- covican |> rd_dictionary()
-#'
+#' \dontrun{
+#' result <- rd_dictionary(covican)
 #' print(result$results)
+#' updated_dic <- result$dictionary
+#' }
 #'
 #' @export
 #' @importFrom stats setNames na.omit
@@ -100,11 +107,14 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   }
 
   logics <- NULL
-  # Generamos el objeto
+  # Generate the object that will contain the warnings
   warnings_env <- new.env(parent = emptyenv())
   warnings_env$count <- 0
   warnings_env$msgs <- character()
   warnings_env$id <- numeric()
+
+  # Starting time
+  start_time <- Sys.time()
 
   # Identify rows in the dictionary with branching logic that needs evaluation
   pos_branch <- which(!dic$branching_logic_show_field_only_if %in% "")
@@ -141,14 +151,15 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     }
   }
 
+  # Warning with almost done
+  elapsed <- as.numeric(Sys.time() - start_time, units = "secs")
+
+  if (elapsed > 10) {
+    message("\u23F3 Almost done!")
+  }
+
   # Identify rows in the dictionary with calculations that need evaluation
   pos_calc <- which(dic$field_type == "calc")
-
-  message("\u23F3 Almost done!")
-
-  # message("\u23F3 Just a few more steps left!")
-
-  # browser()
 
   # Loop through each row with calculations
   for (i in pos_calc) {

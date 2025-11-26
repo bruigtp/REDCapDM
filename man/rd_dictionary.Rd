@@ -7,32 +7,41 @@
 rd_dictionary(project = NULL, data = NULL, dic = NULL, event_form = NULL)
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 }
 \value{
-A list containing the following elements:
-\item{data}{The original dataset, passed to the function.}
-\item{dictionary}{The updated data dictionary, with modified branching logic.}
-\item{event_form}{The original event-form mapping, passed to the function (if applicable).}
-\item{results}{A string summarizing the results of the transformation process, including any variables with unconverted branching logic.}
+A list with the following elements:
+\describe{
+\item{data}{The original dataset passed to the function.}
+\item{dictionary}{The updated data dictionary with modified branching logic and calculations.}
+\item{event_form}{The original event-form mapping (if applicable).}
+\item{results}{A summary of the transformations, including any variables with unconverted branching logic.}
+}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function updates the data dictionary by evaluating and transforming the branching logic expressions for each field in the dictionary.
-It checks if any branching logic is present and attempts to convert it using the specified data, dictionary, and event-form mapping.
-If there are any issues with the conversion, those fields are listed in the results.
+Updates a REDCap data dictionary by converting branching logic and calculation expressions into valid R expressions. This ensures that conditional display rules and calculated fields in the dictionary can be programmatically evaluated with the dataset. Any variables that cannot be converted are reported in the results.
+}
+\details{
+The function performs the following tasks:
+\itemize{
+\item Evaluates and transforms branching logic expressions into valid R expressions using \code{rd_rlogic}.
+\item Evaluates and converts calculation expressions for fields of type \code{calc}.
+\item Generates a results summary table listing any variables that could not be converted.
+}
 }
 \examples{
-
-result <- covican |> rd_dictionary()
-
+\dontrun{
+result <- rd_dictionary(covican)
 print(result$results)
+updated_dic <- result$dictionary
+}
 
 }

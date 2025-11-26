@@ -13,38 +13,38 @@ rd_factor(
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{exclude}{A character vector of variable names to exclude from being converted into factors.}
+\item{exclude}{Optional character vector of variable names (use original names \strong{without} the \code{.factor} suffix) to exclude from conversion.}
 }
 \value{
-A list containing:
-\item{data}{The transformed dataset with factor variables applied.}
-\item{dictionary}{The dictionary used.}
-\item{event_form}{The event-form mapping used (if provided).}
-\item{results}{A string summarizing the changes made during the transformation.}
+A list with the following elements:
+\describe{
+\item{data}{The transformed dataset with \code{.factor} columns applied as factors.}
+\item{dictionary}{The dictionary used (unchanged).}
+\item{event_form}{The event-form mapping used (if applicable).}
+\item{results}{A brief text summary of the transformation.}
+}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function converts variables in a REDCap dataset that have associated \code{.factor} columns into actual factor variables. It also allows for the exclusion of specific variables from being converted into factors.
+Converts variables in a REDCap dataset with associated \code{.factor} columns into actual factor variables, while allowing the exclusion of specific variables. Ensures consistency with the dataset and preserves variable labels.
 }
 \details{
-This function searches for columns in the data that have a \code{.factor} suffix (indicating that they can be converted into factors) and converts them into factors based on their labels.
-The \code{exclude} argument allows you to specify which variables should not be converted.
-The function also modifies the branching logic in the dictionary to reflect the changes made in the data.
-
-Variables with the names \code{redcap_event_name.factor} and \code{redcap_data_access_group.factor} are excluded from the conversion process to avoid altering event and access group information.
+The function looks for columns ending in \code{.factor} and replaces the original variable values with those \code{.factor} values (converted to factors). It preserves variable labels. The \code{exclude} argument must contain base variable names (no \code{.factor} suffix); if any \code{.factor} names are passed to \code{exclude} the function will throw an informative error. The columns \code{redcap_event_name}, \code{redcap_repeat_instrument} and \code{redcap_data_access_group} (and their \code{.factor} counterparts) are handled specially to avoid altering event or access-group data.
 }
 \examples{
-result <- REDCapDM::rd_factor(covican, exclude = c("available_analytics", "urine_culture"))
-
+\dontrun{
+result <- rd_factor(covican)
+result <- rd_factor(covican, exclude = c("available_analytics", "urine_culture"))
 transformed_data <- result$data
+}
 
 }

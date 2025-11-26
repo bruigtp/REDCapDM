@@ -79,6 +79,21 @@ Or we can use all these functions at once:
 <br>
 <br>
 
+# **Installation**
+
+The release version can be installed from CRAN:
+
+```{r eval=FALSE}
+install.packages("REDCapDM")
+```
+
+The development version can be installed from GitHub:
+
+```{r eval=FALSE}
+install.packages("remotes") # Run this line if the 'remotes' package isn't installed already.
+remotes::install_github("bruigtp/REDCapDM")
+```
+
 # **Built-in dataset**
 
 For the following examples, we will use a random sample of the COVICAN study which is included in the package. COVICAN is an international, multicentre cohort study of cancer patients with COVID-19 to describe the epidemiology, risk factors, and clinical outcomes of co-infections and superinfections in onco-hematological patients with COVID-19.
@@ -86,6 +101,8 @@ For the following examples, we will use a random sample of the COVICAN study whi
 We can load the built-in dataset by typing:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
+library(REDCapDM)
+
 data(covican)
 ```
 
@@ -134,7 +151,7 @@ kable(vars) |>
 
 # **Usage**
 
-The package structure can be divided into three main components: reading raw data, processing data and identifying queries. Typically, after collecting data in REDCap, we will have to follow this three components in order to have a final validated dataset for analysis. We will provide a complete basic user guide on how to perform each one of these steps using the package's functions. For the processing of the data and query identification, we will use the `covican` built-in dataset as an example.
+The package structure can be divided into three main components: reading raw data, processing data and identifying queries. Typically, after collecting data in REDCap, we will have to follow these three components in order to have a final validated dataset for analysis. We will provide a complete basic user guide on how to perform each one of these steps using the package's functions. For the processing of the data and query identification, we will use the `covican` built-in dataset as an example.
 
 ## **Read data**
 
@@ -231,7 +248,7 @@ When variables are deleted:
 
 ### **rd_dates**
 
-This function is designed to process and standardize `date` and `datetime` fields in a REDCap dataset. In REDCap projects, date and datetime fields can sometimes be stored as character strings, which can make analyses difficult. It detects which fields should be dates/datetimes from the REDCap dictionary and converts them to `Date` and `POSIXct`, respectively.
+This function is designed to process and standardize `date` and `datetime` fields in a REDCap dataset. In REDCap projects, date and datetime fields can sometimes be stored as character strings, which can make analyses difficult. This function detects which fields should be dates/datetimes from the REDCap dictionary and converts them to `Date` and `POSIXct`, respectively.
 
 ```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
 covican_dates <- covican |> 
@@ -261,9 +278,9 @@ After this transformation, all `date` and `datetime` variables are standardized 
 
 ### **rd_recalculate**
 
-This function identifies calculated fields in a REDCap project, translates their logic into R, recalculates them, and compares the recalculated values with the originals.  
+This function identifies calculated fields in a REDCap project, translates their calculation logic into R, recalculates the values, and compares the results with the values stored in REDCap.  
 
-It produces a report, helping users detect discrepancies between REDCap’s stored calculations and the values recomputed in R.
+It then produces a structured report that helps users detect discrepancies between REDCap’s stored calculations and the values recalculated in R.
 
 ```{r}
 covican_recalc <- covican |> 
@@ -273,13 +290,13 @@ covican_recalc <- covican |>
 covican_recalc$results
 ```
 
-The `results` object contains:
+The `results` object includes:
 
-- Summary report: total number of calculated fields, how many were successfully transcribed into R logic, and how many recalculated values differ from the originals.
+- A summary report outlining the total number of calculated fields, how many were successfully transcribed into R, and how many showed differences between the REDCap values and the recalculated ones.
 
-- Field-level report: lists each calculated field, whether its logic was transcribed, and whether the recalculated value matches the original.
+- A field-level report listing each calculated field, whether the logic was successfully converted to R, and whether the recalculated values match the originals.
 
-IN addition, you can exclude certain fields from recalculation (e.g., complex multi-event calculations) to reduce computation time and avoid unnecessary warnings.
+You can also exclude specific fields from recalculation (e.g., complex multi-event calculations) to reduce computation time and avoid unnecessary warnings.
 
 ```{r}
 # Exclude specific variables from recalculation
@@ -289,33 +306,52 @@ covican_recalc <- covican |>
 covican_recalc$results
 ```
 
-When recalculation succeeds:
+After running this function:
 
-- A new variable is added to the dataset with the suffix `_recalc.`
+- A new variable with the suffix `_recalc` is added to the dataset, placed immediately after the original variable and containing the recalculated values.
 
-- A corresponding entry is added to the dictionary with the label `". (Recalculate)"`.
+- The data dictionary is updated with a corresponding entry, where the original variable label is extended with `"(Recalculated)"` to make these fields easy to identify.
 
 <br>
 
 ### **rd_checkbox**
 
-This function processes REDCap checkbox fields, converting them from "Checked"/"Unchecked" categories into binary-coded variables (0/1) and its corresponding factor variable with user-specified labels. It also renames variables to match checkbox option labels and updates dictionary branching logic and calculations accordingly to the new names.
+This function cleans and restructures REDCap checkbox fields. It converts the default `"Unchecked/Checked"` categories of checkbox responses created by REDCap into user-specified labels (default `"No"/"Yes"`) and renames the `varname___code` variables (original REDCap structure) to readable names based on the text of the checkbox options. Additionally, it updates the dictionary to match the new variable names. This includes choices, calculations, and branching logic.
 
 ```{r}
-# Default transformation: "No"/"Yes" labels, renamed variables
+# Default transformation: "No"/"Yes" labels & renamed variables
 cb <- covican |> 
   rd_checkbox()
 
 str(cb$data$underlying_disease_hemato_acute_myeloid_leukemia)
 ```
 
-If a branching logic exists for a checkbox field, the function attempts to translate it into R, by default. When `checkbox_na = TRUE`, values outside the branching logic are set to NA. A summary of problematic fields (e.g., missing branching logic or logic not transcribable) is included in the results element:
+For example, consider the checkbox field of the type of underlying disease present in the `covican` dataset. Originally, the variables were named `type_underlying_disease__0` and `type_underlying_disease__1`, while the option labels were ‘Haematological cancer’ and ‘Solid tumour’. After running the function, the variables are renamed to `type_underlying_disease_haematological_cancer` and `type_underlying_disease_solid_tumour`, reflecting the option text in a readable format..
+
+To preserve the original REDCap-style names (e.g., `varname___1`, `varname___2`) instead of renaming variables based on option text:
 
 ```{r}
-cb$results
+# use the argument checkbox_names to choose the final format of the variable names
+cb <- covican |> 
+  rd_checkbox(checkbox_names = FALSE)
+
+str(cb$data$underlying_disease_hemato___1)
 ```
 
-You can specify alternative labels:
+If a checkbox field has a branching logic, the function will not modify any values. However, you can use the `na_logic` argument, which accepts the following options:
+
+- `"none"` (default): do not set `NA` based on branching logic during transform.
+
+- `"missing"`: set `NA` only where the branching logic evaluation is `NA`.
+
+- `"eval"`: set `NA` where the branching logic evaluates to `FALSE` (i.e., logic not satisfied or missing).
+
+```{r}
+cb <- covican |> 
+  rd_checkbox(na_logic = "eval")
+```
+
+By default, checkbox factors are labeled `"No"` and `"Yes"`, but you can specify alternative labels:
 
 ```{r}
 cb <- covican |> 
@@ -324,21 +360,12 @@ cb <- covican |>
 str(cb$data$underlying_disease_hemato_acute_myeloid_leukemia)
 ```
 
-To retain the original REDCap-style names (e.g., varname___1, varname___2) instead of renaming to option text:
-
-```{r}
-cb <- covican |> 
-  rd_checkbox(checkbox_names = FALSE)
-
-str(cb$data$underlying_disease_hemato___1)
-```
-
 <br>
 
 
 ### **rd_factor**
 
-This function converts categorical variables in a REDCap dataset into R factors. It replaces categorical columns with the corresponding `.factor` column (created by REDCap for multiple-choice fields).
+This function converts categorical variables in a REDCap dataset into R factors by replacing each original variable (numeric version) with its corresponding `.factor` version created by REDCap.
 
 ```{r}
 factored <- covican |> 
@@ -348,20 +375,20 @@ factored <- covican |>
 str(factored$data$available_analytics)
 ```
 
-You can prevent certain variables from being converted to factors using the `exclude` argument.
-This is useful if you need to keep some variables as raw numeric or text data.
+If you need to keep certain variables in their raw form, you can list them in the `exclude` argument. This prevents those variables from being replaced (including their `.factor` version) while still allowing the rest of the dataset to be converted.
 
 ```{r}
 factored <- covican |> 
   rd_factor(exclude = c("available_analytics", "urine_culture"))
 
-# Checking class of the variable
+# Checking class of both versions of the variable
 str(covican$data$available_analytics)
+str(covican$data$available_analytics.factor)
 ```
 
 > Note: the function automatically excludes these system variables from conversion: `redcap_event_name`, `redcap_repeat_instrument`, `redcap_data_access_group`. These variables are retained as-is to avoid interfering with longitudinal event mappings or user access groups.
 
-After conversion, original variables are replaced with proper R factor columns and their `.factor` counterparts are dropped.
+After conversion only the cleaned factor variables remain in the dataset, the original numeric version of those variables is dropped.
 
 <br>
 
@@ -436,7 +463,7 @@ head(baseline_data$data)
 
 ### **rd_insert_na**
 
-This is a bonus function that can be used to set some values of a variable to missing if a certain logic is fulfilled. It can be used, for example, to insert missings on those checkboxes that do not have a branching logic, as mentioned earlier. For instance, we can transform the checkboxes with the `rd_checkbox()` function and then use this function to set the values of the checkbox _type_underlying_disease_haematological_cancer_ to missing when the age is less than 65 years old:
+This is an auxiliar/bonus function that can be used to set some values of a variable(s) to missing if a certain logic is fulfilled. It can be used, for example, to insert missings on those checkboxes that do not have a branching logic, as mentioned earlier. For instance, we can transform the checkboxes with the `rd_checkbox()` function and then use this function to set the values of the checkbox _type_underlying_disease_haematological_cancer_ to missing when the age is less than 65 years old:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 cb <- covican |> 
@@ -455,13 +482,13 @@ cb2 <- covican |>
 table(cb2$data$type_underlying_disease_haematological_cancer)
 ```
 
-> Recall that both the variable to be transformed (_age_) and the variable included in the filter (_type_underlying_disease_haematological_cancer_) are in the same event. In the contrary, if the variable to be transformed and the filter didn't have any event in common then the transformation would give an error. Furthermore, if the variable to be transformed was in more events than the filter, only the rows of the events in common would be converted.
+> Note that both the variable to be transformed (`age`) and the variable included in the filter (`type_underlying_disease_haematological_cancer`) are in the same event. If the variable to be transformed and the filter didn't have any event in common then the transformation would give an error. Furthermore, if the variable to be transformed was in more events than the filter, only the rows of the events in common would be converted.
 
 <br>
 
 ### **rd_rlogic**
 
-This is also a bonus function that transforms the REDCap logic into logic that can be evaluated in R. It returns both the transformed logic and the result of the evaluation of the logic in R. 
+This is also an auxiliar/bonus function that transforms the REDCap logic into logic that can be evaluated in R. It returns both the transformed logic and the result of the evaluation of the logic in R. This function is used internally in multiple functions, for example, `rd_dictionary()`.
 
 > This function only returns the transformed logic, so it has to be used outside the transform workflow.
 

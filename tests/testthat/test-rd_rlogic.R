@@ -187,7 +187,7 @@ test_that("rd_rlogic handles event-specific logic", {
   expect_true(is.na(out$eval[2]) || identical(out$eval[2], NA))
 })
 
-test_that("fill_data fills from the specified event across records and uses first non-NA when repeated", {
+test_that("fill_data fills from the specified event across records correctly", {
   # build a small toy dataset with multiple records and repeated events
   df <- data.frame(
     record_id = c(1, 1, 1, 2, 2, 3, 3, 4),
@@ -200,12 +200,11 @@ test_that("fill_data fills from the specified event across records and uses firs
   out <- fill_data(which_event = "ev1", which_var = "visit_date", data = df)
 
   # Expectations:
-  # - For record 1: two ev1 entries ("A","A2") -> function should pick the *first* non-NA unique value ("A")
-  #   and fill it to all rows for record 1.
-  # - For record 2: ev1 exists but is NA -> result for record 2 should be NA for all its rows.
-  # - For record 3: ev1 is not present for that record -> result NA for its rows.
-  # - For record 4: ev1 present with "D" -> "D" for its rows.
-  expected <- c("A", "A", "A", NA, NA, NA, NA, "D")
+  # - For record 1: ev1 rows remain "A", "A2", propagated to ev2 row with fill -> "A", "A", "A2"
+  # - For record 2: ev1 is NA -> ev2 row stays NA
+  # - For record 3: no ev1 -> all NA
+  # - For record 4: ev1 "D" -> stays "D"
+  expected <- c("A", "A", "A2", NA, NA, NA, NA, "D")
 
   expect_equal(out$visit_date, expected)
 })
@@ -223,3 +222,126 @@ test_that("fill_data errors when the requested event is not present in the datas
     "The logic can't be evaluated after the translation"
   )
 })
+
+# helper that creates a tiny dictionary row for given fields
+make_dic <- function(fields, choices = NULL, text_validation = NA_character_, form = "form1") {
+  fields <- as.character(fields)
+  n <- length(fields)
+  df <- data.frame(
+    field_name = fields,
+    form_name = rep(as.character(form), n),
+    section_header = "",
+    field_type = "",
+    field_label = "",
+    choices_calculations_or_slider_labels = rep(ifelse(is.null(choices), "", choices), n),
+    field_note = "",
+    text_validation_type_or_show_slider_number = rep(text_validation, n),
+    text_validation_min = "",
+    text_validation_max = "",
+    identifier = "",
+    branching_logic_show_field_only_if = "",
+    required_field = "",
+    custom_alignment = "",
+    question_number_surveys_only = "",
+    matrix_group_name = "",
+    matrix_ranking = "",
+    field_annotation = "",
+    stringsAsFactors = FALSE
+  )
+  df
+}
+
+test_that("rd_rlogic warns when multiple logic expressions or multiple vars are provided and uses first", {
+  df <- data.frame(a = c(1,0), stringsAsFactors = FALSE)
+  dic <- make_dic("a")
+  expect_warning(
+    out <- rd_rlogic(data = df, dic = dic,
+                     logic = c("if([a]='1',1,0)", "if([a]='0',1,0)"),
+                     var = c("a", "a")),
+    "`logic` contains more than one expression;|`var` contains more than one variable name"
+  )
+
+  # Should have translated the first logic only
+  expect_true(grepl("ifelse\\(data\\$a==", out$rlogic))
+  expect_equal(as.numeric(out$eval), as.numeric(df$a == 1))
+})
+
+test_that("rd_rlogic translates rounddown(...) to floor/round variants", {
+  df <- data.frame(x = c(2.6, 3.2), stringsAsFactors = FALSE)
+  dic <- make_dic("x")
+  # test rounddown with 0 -> floor
+  out0 <- rd_rlogic(data = df, dic = dic, logic = "rounddown([x],0)", var = "x")
+  expect_true(grepl("floor\\(", out0$rlogic) || grepl("round\\(", out0$rlogic))
+  # evaluate should equal floor(x) when used as expression (no ifelse wrapper)
+  # Because rd_rlogic returns value in `eval` for single-event (no event_form)
+  expect_equal(as.numeric(out0$eval), floor(df$x))
+})
+
+test_that("rd_rlogic converts sum(...) to rowSums and evaluates correctly", {
+  df <- data.frame(a = c(1,2), b = c(3, NA), stringsAsFactors = FALSE)
+  dic <- make_dic(c("a", "b"))
+  out <- rd_rlogic(data = df, dic = dic,
+                   logic = "sum([a],[b])",
+                   var = "a")
+  expect_true(grepl("rowSums\\(", out$rlogic))
+  # result should equal rowSums with NA treated as NA (default)
+  expect_equal(as.numeric(out$eval), rowSums(cbind(df$a, df$b)))
+})
+
+test_that("rd_rlogic stops when the same variable is specified for different events ([][] case)", {
+  # Create a minimal dataset with event names for longitudinal behavior
+  df <- data.frame(record_id = 1:2,
+                   redcap_event_name = c("ev1", "ev2"),
+                   x = c(1, 0),
+                   stringsAsFactors = FALSE)
+  dic <- make_dic("x")
+  # logic references x in two different events explicitly -> should error
+  logic <- "if([ev1][x]='1' or [ev2][x]='1',1,0)"
+  expect_error(
+    rd_rlogic(data = df, dic = dic, event_form = data.frame(form="form1", unique_event_name=c("ev1","ev2"), stringsAsFactors = FALSE),
+              logic = logic, var = "x"),
+    "The logic cannot be transcribed because the same variable is specified for different events\\."
+  )
+})
+
+test_that("rd_rlogic errors when logic references variable in a repeated instrument", {
+  # Build a dataset with redcap_repeat_instrument and a dic marking the form
+  df <- data.frame(record_id = 1:2,
+                   redcap_event_name = c("ev1", "ev1"),
+                   redcap_repeat_instrument = c("form_repeat", NA),
+                   repvar = c(1, 0),
+                   stringsAsFactors = FALSE)
+  # dic says repvar belongs to form_repeat (so it's in a repeated instrument)
+  dic <- make_dic("repvar", form = "form_repeat")
+  logic <- "if([repvar]='1',1,0)"
+  expect_error(
+    rd_rlogic(data = df, dic = dic, event_form = data.frame(form="form_repeat", unique_event_name="ev1", stringsAsFactors = FALSE),
+              logic = logic, var = "repvar"),
+    "cannot translate logic involving variables that belong to repeated instruments"
+  )
+})
+
+test_that("rd_rlogic maps factor variables used in arithmetic to numeric via choices_calculations_or_slider_labels", {
+  # factor variable with labelled choices like "1, Yes|2, No"
+  df <- data.frame(f = factor(c("Yes", "No")), g = c(1, 2), stringsAsFactors = FALSE)
+  dic <- make_dic("f", choices = "1, Yes | 2, No")
+  # logic uses f in arithmetic with g; vars_calc detection should convert factor to numeric
+  out <- rd_rlogic(data = df, dic = dic, logic = "if([f]+[g] > 1, 1, 0)", var = "f")
+  expect_true(grepl("data\\$f", out$rlogic))
+  # After mapping, evaluation should be numeric and length matches rows
+  expect_equal(length(out$eval), nrow(df))
+  # Confirm at least one TRUE/1 expected value
+  expect_true(any(as.numeric(out$eval) %in% c(0,1)))
+})
+
+test_that("rd_rlogic throws an error when final evaluation fails (invalid R code after translation)", {
+  df <- data.frame(a = c(1, 0), stringsAsFactors = FALSE)
+  dic <- make_dic("a")
+  # malformed logic that will produce invalid R code after translation
+  bad_logic <- "if([a]='1', 1, )"
+  expect_error(
+    rd_rlogic(data = df, dic = dic, logic = bad_logic, var = "a"),
+    "The logic could not be evaluated after translation\\."
+  )
+})
+

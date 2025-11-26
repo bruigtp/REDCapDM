@@ -3,51 +3,58 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function is used to convert checkbox variables in a REDCap dataset from their default categories (e.g., "Checked" and "Unchecked") to numeric values (0 and 1), and optionally, relabel and rename them according to user-defined options. It also evaluates branching logic for checkbox fields and adjusts the data and dictionary accordingly.
+#' This function is used to process checkbox variables in a REDCap dataset. By default, it changes their default categories ("Unchecked" and "Checked") to new ones ("No" and "Yes). Optionally, the function can also evaluate the branching logic for checkbox fields and adjust the data and dictionary accordingly.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
-#' @param checkbox_labels A character vector of length 2 specifying the labels to be used for the checkbox options. Defaults to `c("No", "Yes")`.
-#' @param checkbox_na Logical indicating whether to assign `NA` to checkbox fields when the branching logic condition is not satisfied. Defaults to `FALSE`.
-#' @param checkbox_names Logical indicating whether to rename the checkbox variables in the dataset and dictionary according to their label options. Defaults to `TRUE`.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
+#' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels.
+#' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE`). Defaults to `"none"`.
 #'
-#' @return A list containing the following elements:
-#'   \item{data}{The transformed dataset with checkbox variables updated.}
-#'   \item{dictionary}{The updated dictionary reflecting any changes made to the checkbox fields, including renamed variables.}
-#'   \item{event_form}{The event-form mapping (if provided).}
-#'   \item{results}{A summary of the transformation process, including any issues with branching logic or fields that need review.}
+#' @return A list with:
+#' \describe{
+#'   \item{data}{Transformed dataset with checkbox fields as factors and optionally renamed.}
+#'   \item{dictionary}{Updated dictionary with checkbox fields expanded and optionally renamed.}
+#'   \item{event_form}{The `event_form` passed in (if applicable).}
+#'   \item{results}{Summary of transformations and any fields needing review.}
+#' }
 #'
 #' @details
-#' This function is primarily used to process checkbox fields in a REDCap project. It performs the following:
-#'   - Converts checkbox variables in the dataset from text labels ("Checked" and "Unchecked") to numeric values (0 and 1), and then applies the specified labels.
-#'   - Optionally renames the checkbox variables based on their labels (e.g., transforming variable names like `varname___1` to `varname_Yes`).
-#'   - Optionally modifies the branching logic in the REDCap dictionary to reflect renamed checkbox options.
+#' * Checkbox columns are expected in REDCap wide format (`field___code`).
+#' * Branching logic evaluation requires `event_form` for longitudinal projects.
+#' * Names are cleaned and truncated to 60 characters; uniqueness is enforced.
+#' * Fields that cannot be evaluated are listed in `results`.
 #'
-#' @note
-#' - If `event_form` is not provided for a longitudinal project, the function may not be able to evaluate branching logic correctly.
 #'
 #' @examples
-#' # Example with a project object containing data and dictionary
-#' results <- rd_checkbox(project = covican)
+#' # Basic usage with a project object
+#' res <- rd_checkbox(covican)
 #'
-#' # Example with custom labels for the checkboxes
-#' results <- rd_checkbox(
-#'  data = covican$data,
-#'  dic = covican$dictionary,
-#'  checkbox_labels = c("No", "Yes")
-#' )
+#' # With custom labels
+#' res <- rd_checkbox(data = covican$data,
+#'                    dic = covican$dictionary,
+#'                    checkbox_labels = c("Not present", "Present"))
 #'
-#' # Example without renaming checkbox fields
-#' results <- rd_checkbox(covican, checkbox_names = FALSE)
+#' # Keep original checkbox names
+#' res <- rd_checkbox(covican, checkbox_names = FALSE)
+#'
+#' # Longitudinal project with NA logic
+#' res <- rd_checkbox(data = covican$data,
+#'                    dic = covican$dictionary,
+#'                    event_form = covican$event_form,,
+#'                    na_logic = "eval")
 #'
 #' @export
 #' @importFrom stats setNames na.omit
 
-rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, checkbox_names = TRUE) {
+rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_names = TRUE, na_logic = "none") {
   results <- NULL
   rlogic_eval <- NULL
+
+  # validate na_logic against allowed choices
+  na_logic <- match.arg(na_logic, choices = c("none", "missing", "eval"))
 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
@@ -115,21 +122,17 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   }
 
   # Update results with the this transformation
-  transf_message <- if (!repeat_instrument) {
-    reason <- if (checkbox_na)
-      "when the logic isn't satisfied or it's missing"
-    else
-      "when the logic is missing"
+  reason <- if (na_logic == "eval")
+    "when the logic isn't satisfied or it's missing"
+  else if (na_logic == "missing")
+    "when the logic is missing"
+  else
+    ""
 
-    stringr::str_glue(
-      "Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. ",
-      "For checkboxes that have a branching logic, {reason} their values will be set to missing."
-    )
-  } else {
-    stringr::str_glue(
-      "Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."
-    )
-  }
+  base <- "Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."
+
+  transf_message <- if (repeat_instrument || reason == "") base
+  else paste0(base, " For checkboxes that have a branching logic, ", reason, " their values will be set to missing.")
 
   if (is.null(results)) {
     results <- c(results, stringr::str_glue("{transf_message} (rd_checkbox)\n"))
@@ -158,8 +161,6 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       if (repeat_instrument) {
         warning("The project contains repeated instruments, and this function cannot accurately evaluate the branching logic of checkboxes in such cases.", call. = FALSE)
       }
-
-      # warning(stringr::str_glue("There are {sum(dic$field_type == 'checkbox' & dic$branching_logic_show_field_only_if != '')} checkboxes with branching logic, please specify `checkbox_na` to determine the behaviour of this function for these cases.\n For more information `?rd_checkbox`."), call. = FALSE)
 
 
       caption <- "Checkbox variables advisable to be reviewed"
@@ -193,11 +194,11 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
           }
 
           # Set missing values where logic is not satisfied
-          if (checkbox_na) {
+          if (na_logic == "eval") {
             for (j in seq_along(vars_data)) {
               data[, vars_data[j]] <- ifelse(rlogic_eval, as.character(data[, vars_data[j]]), NA)
             }
-          } else {
+          } else if (na_logic == "missing") {
             # Set missing values only where logic evaluation is missing
             for (j in seq_along(vars_data)) {
               data[, vars_data[j]] <- ifelse(!is.na(rlogic_eval), as.character(data[, vars_data[j]]), NA)
@@ -310,6 +311,8 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
               "The transformed checkbox name '{out0}' already exists in the dataset. It has been renamed to '{out[j]}' to avoid conflicts."
             )
           )
+
+          correspondence[,"out"] <- ifelse(correspondence[,"out"] == out0, out[j], correspondence[,"out"])
         }
 
         # Update the variable names in the data and dictionary

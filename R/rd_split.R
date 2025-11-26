@@ -1,44 +1,47 @@
-#' Split a dataset by form or event based on the data dictionary
+#' Split a REDCap dataset by form or event
 #'
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function splits the provided dataset into separate datasets by form or event, using the data dictionary to define the variables for each form or event.
-#' It handles both longitudinal and non-longitudinal projects.
+#' Splits a REDCap dataset into separate datasets by **form** or **event** using the data dictionary. Supports both longitudinal and non-longitudinal projects and can return wide or long formats for repeated measures.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
-#' @param which A character string specifying which form or event to return (optional). If not provided, all forms or events will be included.
-#' @param by A character string specifying the split criteria: "form" (default) or "event".
-#' @param wide A logical value indicating whether to return the data in wide format when splitting by form. Defaults to `FALSE`.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param which Optional. A single form or event to extract. If not provided, all forms or events are returned.
+#' @param by Character. Criteria to split the dataset: `"form"` (default) or `"event"`.
+#' @param wide Logical. If `TRUE` (for form-based splits), repeated instances are returned in wide format. Defaults to `FALSE`.
 #'
-#' @return A list or a data frame, depending on the `which` and `wide` arguments:
-#'   - If `which` is specified, returns the dataset for that particular form or event.
-#'   - If `wide` is `TRUE` (for form-based splitting), returns the data in wide format (repeated measures are expanded into columns).
-#'   - If neither is specified, returns a list of data frames for each form or event.
+#' @details
+#' * Handles checkbox variables and REDCap default variables (`_complete`, `_timestamp`) appropriately.
+#' * For form-based splits in longitudinal projects, uses `event_form` to map variables to events.
+#' * Wide format expands repeated instances into multiple columns per record.
+#' * Filtering by `which` allows extracting a single form or event.
+#' * Projects with repeated instruments are handled by filtering on the `redcap_repeat_instrument` variable.
+#'
+#' @return Depending on `which` and `wide`:
+#' \describe{
+#'   \item{data}{A `data.frame` or a list of `data.frames` representing the split datasets.}
+#'   \item{dictionary}{The original REDCap dictionary.}
+#'   \item{event_form}{The original event-form mapping (if applicable).}
+#'   \item{results}{A summary message of the splitting operation.}
+#' }
 #'
 #' @examples
-#'
-#' # To separate data by form:
+#' # Split by form and return wide format
 #' result <- covican |>
-#'   rd_factor() |>
-#'   rd_checkbox() |>
 #'   rd_split(by = "form", wide = TRUE)
 #'
 #' print(result)
 #'
-#' # To separate data by event:
+#' # Split by event (long format)
 #' result <- covican |>
-#'   rd_factor() |>
-#'   rd_checkbox() |>
 #'   rd_split(by = "event")
 #'
 #' print(result)
 #'
 #' @export
-#' @importFrom stats na.omit
 
 rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, which = NULL, by = "form", wide = FALSE) {
 

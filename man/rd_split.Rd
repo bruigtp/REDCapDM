@@ -2,7 +2,7 @@
 % Please edit documentation in R/rd_split.R
 \name{rd_split}
 \alias{rd_split}
-\title{Split a dataset by form or event based on the data dictionary}
+\title{Split a REDCap dataset by form or event}
 \usage{
 rd_split(
   project = NULL,
@@ -15,48 +15,52 @@ rd_split(
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{which}{A character string specifying which form or event to return (optional). If not provided, all forms or events will be included.}
+\item{which}{Optional. A single form or event to extract. If not provided, all forms or events are returned.}
 
-\item{by}{A character string specifying the split criteria: "form" (default) or "event".}
+\item{by}{Character. Criteria to split the dataset: \code{"form"} (default) or \code{"event"}.}
 
-\item{wide}{A logical value indicating whether to return the data in wide format when splitting by form. Defaults to \code{FALSE}.}
+\item{wide}{Logical. If \code{TRUE} (for form-based splits), repeated instances are returned in wide format. Defaults to \code{FALSE}.}
 }
 \value{
-A list or a data frame, depending on the \code{which} and \code{wide} arguments:
-\itemize{
-\item If \code{which} is specified, returns the dataset for that particular form or event.
-\item If \code{wide} is \code{TRUE} (for form-based splitting), returns the data in wide format (repeated measures are expanded into columns).
-\item If neither is specified, returns a list of data frames for each form or event.
+Depending on \code{which} and \code{wide}:
+\describe{
+\item{data}{A \code{data.frame} or a list of \code{data.frames} representing the split datasets.}
+\item{dictionary}{The original REDCap dictionary.}
+\item{event_form}{The original event-form mapping (if applicable).}
+\item{results}{A summary message of the splitting operation.}
 }
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function splits the provided dataset into separate datasets by form or event, using the data dictionary to define the variables for each form or event.
-It handles both longitudinal and non-longitudinal projects.
+Splits a REDCap dataset into separate datasets by \strong{form} or \strong{event} using the data dictionary. Supports both longitudinal and non-longitudinal projects and can return wide or long formats for repeated measures.
+}
+\details{
+\itemize{
+\item Handles checkbox variables and REDCap default variables (\verb{_complete}, \verb{_timestamp}) appropriately.
+\item For form-based splits in longitudinal projects, uses \code{event_form} to map variables to events.
+\item Wide format expands repeated instances into multiple columns per record.
+\item Filtering by \code{which} allows extracting a single form or event.
+\item Projects with repeated instruments are handled by filtering on the \code{redcap_repeat_instrument} variable.
+}
 }
 \examples{
-
-# To separate data by form:
+# Split by form and return wide format
 result <- covican |>
-  rd_factor() |>
-  rd_checkbox() |>
   rd_split(by = "form", wide = TRUE)
 
 print(result)
 
-# To separate data by event:
+# Split by event (long format)
 result <- covican |>
-  rd_factor() |>
-  rd_checkbox() |>
   rd_split(by = "event")
 
 print(result)

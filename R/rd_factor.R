@@ -3,31 +3,31 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function converts variables in a REDCap dataset that have associated `.factor` columns into actual factor variables. It also allows for the exclusion of specific variables from being converted into factors.
+#' Converts variables in a REDCap dataset with associated `.factor` columns into actual factor variables, while allowing the exclusion of specific variables. Ensures consistency with the dataset and preserves variable labels.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
-#' @param exclude A character vector of variable names to exclude from being converted into factors.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param exclude Optional character vector of variable names (use original names **without** the `.factor` suffix) to exclude from conversion.
 #'
-#' @return A list containing:
-#' \item{data}{The transformed dataset with factor variables applied.}
-#' \item{dictionary}{The dictionary used.}
-#' \item{event_form}{The event-form mapping used (if provided).}
-#' \item{results}{A string summarizing the changes made during the transformation.}
+#' @return A list with the following elements:
+#' \describe{
+#'   \item{data}{The transformed dataset with `.factor` columns applied as factors.}
+#'   \item{dictionary}{The dictionary used (unchanged).}
+#'   \item{event_form}{The event-form mapping used (if applicable).}
+#'   \item{results}{A brief text summary of the transformation.}
+#' }
 #'
 #' @details
-#' This function searches for columns in the data that have a `.factor` suffix (indicating that they can be converted into factors) and converts them into factors based on their labels.
-#' The `exclude` argument allows you to specify which variables should not be converted.
-#' The function also modifies the branching logic in the dictionary to reflect the changes made in the data.
-#'
-#' Variables with the names `redcap_event_name.factor` and `redcap_data_access_group.factor` are excluded from the conversion process to avoid altering event and access group information.
+#' The function looks for columns ending in `.factor` and replaces the original variable values with those `.factor` values (converted to factors). It preserves variable labels. The `exclude` argument must contain base variable names (no `.factor` suffix); if any `.factor` names are passed to `exclude` the function will throw an informative error. The columns `redcap_event_name`, `redcap_repeat_instrument` and `redcap_data_access_group` (and their `.factor` counterparts) are handled specially to avoid altering event or access-group data.
 #'
 #' @examples
-#' result <- REDCapDM::rd_factor(covican, exclude = c("available_analytics", "urine_culture"))
-#'
+#' \dontrun{
+#' result <- rd_factor(covican)
+#' result <- rd_factor(covican, exclude = c("available_analytics", "urine_culture"))
 #' transformed_data <- result$data
+#' }
 #'
 #' @export
 #' @importFrom stats na.omit
@@ -67,13 +67,26 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   data <- data |>
     dplyr::select(-dplyr::any_of(keep))
 
-  # Identify the columns ending with '.factor' (these are the potential factor variables)
-  factors <- data |>
-    dplyr::select(dplyr::matches("\\.factor$")) |>
-    names() |>
-    stringr::str_remove("\\.factor$")
+  # Identify factor columns and remove orphans
+  factor_cols <- grep("\\.factor$", names(data), value = TRUE)
+  factors <- sub("\\.factor$", "", factor_cols)
+  factors <- setdiff(factors, sub("\\.factor$", "", keep))
 
-  factors <- setdiff(factors, stringr::str_remove(keep, "\\.factor$"))
+  # Detect orphan .factor columns (base column missing)
+  orphan <- factor_cols[!factors %in% names(data)]
+
+  if (length(orphan) > 0) {
+    warning(
+      stringr::str_glue(
+        "Removed {length(orphan)} '.factor' column(s) whose original variables no longer exist. This usually happens if the original variables were deleted earlier using `rd_delete_vars` and the '.factor' version was kept."
+      ),
+      call. = FALSE
+    )
+    # Remove orphan columns
+    data <- data[, setdiff(names(data), orphan)]
+    # Update factors vector after removal
+    factors <- setdiff(factors, sub("\\.factor$", "", orphan))
+  }
 
   # If there are no factor variables, stop the function
   if (length(factors) == 0) {

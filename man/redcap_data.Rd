@@ -15,39 +15,44 @@ redcap_data(
 )
 }
 \arguments{
-\item{data_path}{Path to the exported R file for data import (if using exported files).}
+\item{data_path}{Path to exported R file (use with \code{dic_path}).}
 
-\item{dic_path}{Path to the dictionary file (CSV or XLSX).}
+\item{dic_path}{Path to the dictionary file (CSV or XLSX; use with \code{data_path})..}
 
 \item{event_path}{Path to the event-form mapping file (CSV or XLSX) for longitudinal projects (downloadable via the \verb{Designate Instruments for My Events} tab within the \verb{Project Setup} section of REDCap).}
 
-\item{uri}{The URI of the REDCap project (for API connection).}
+\item{uri}{REDCap API base URI (use with \code{token}).}
 
-\item{token}{API token for REDCap project access.}
+\item{token}{REDCap API token (use with \code{uri}).}
 
-\item{filter_field}{Fields to include in the import (API connection only).}
+\item{filter_field}{Optional character vector of field names to request from the API.}
 
-\item{survey_fields}{Logical indicating whether to include survey-related fields (API connection only).}
+\item{survey_fields}{Logical; include survey-related fields when pulling via API. Default \code{FALSE}.}
 }
 \value{
-A list containing:
+A list with:
 \itemize{
 \item \code{data}: Imported dataset.
-\item \code{dictionary}: Variable dictionary.
-\item \code{event_form} (if applicable): Event-form mapping for longitudinal projects.
+\item \code{dictionary}: Variable dictionary (project metadata).
+\item \code{event_form}: Event-form mapping for longitudinal projects (if applicable).
 }
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
-This function reads datasets from a REDCap project into R for analysis. Data can be imported from REDCap exported files or via an API connection.
 
-\strong{Options for data import:}
+Import REDCap data into R either from REDCap's exported R file or directly via the REDCap API. The function returns a list with the dataset, the project dictionary (metadata) and, for longitudinal projects, the instrument–event mapping (\code{event_form}) when available.
+}
+\details{
+Two import modes are supported:
 \itemize{
-\item \strong{Exported Data}: REDCap's \emph{Export Data} function generates files suitable for R import.
-\item \strong{API Connection}: Use the REDCap API to directly pull data into R.
+\item \strong{Exported files} — use \code{data_path} (REDCap R export) and \code{dic_path} (dictionary CSV/XLSX).
+\item \strong{API} — use \code{uri} and \code{token} to pull data and metadata directly from REDCap.
 }
 
-\strong{Steps for using exported data:}
+If the project is longitudinal, provide \code{event_path} (instrument–event mapping)
+or the function will attempt to fetch it from the API when using API mode.
+
+\strong{Steps for using exported data in REDCap:}
 \enumerate{
 \item Use the REDCap \emph{Export Data} function and choose \emph{R Statistical Software} format.
 \item REDCap generates:
@@ -60,22 +65,26 @@ This function reads datasets from a REDCap project into R for analysis. Data can
 }
 \note{
 To use other package functions effectively, include the \code{dic_path} argument to load the project dictionary.
+
+\itemize{
+\item Use either exported-files mode (\code{data_path} + \code{dic_path}) \strong{or} API mode (\code{uri} + \code{token}) — not both.
+\item For exported files, REDCap's R export is required for \code{data_path}. Dictionary and event files must be CSV or XLSX.
+}
 }
 \examples{
 \dontrun{
-# Import using exported files
-
-dataset <- redcap_data(
-  data_path = "C:/Users/username/example.r",
-  dic_path = "C:/Users/username/example_dictionary.csv",
-  event_path = "C:/Users/username/events.csv"
+# From exported files
+out <- redcap_data(
+  data_path = "project_export.r",
+  dic_path  = "project_dictionary.csv",
+  event_path = "instrument_event_map.csv"
 )
 
-# Import using API
-
-dataset_api <- redcap_data(
-  uri = "https://redcap.idibell.cat/api/",
-  token = "55E5C3D1E83213ADA2182A4BFDEA"
-) # This token is fictitious
+# From API
+out_api <- redcap_data(
+  uri   = "https://redcap.example.org/api/",
+  token = "REPLACE_WITH_TOKEN"
+)
 }
+
 }

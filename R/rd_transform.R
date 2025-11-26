@@ -3,40 +3,54 @@
 #' @description
 #' `r lifecycle::badge('stable')`
 #'
-#' This function transforms the raw REDCap data read by the `redcap_data` function. It runs in one-step pipeline all the functions dedicated to processing the data. It returns the transformed data and dictionary, along with a summary of the results of each step.
+#' Transforms the raw REDCap data read by the `redcap_data` function. The function runs in one-step pipeline all functions dedicated to processing the data and returns the transformed data and dictionary, along with a summary of each step done.
 #'
-#' @param project Output of the `redcap_data` function, which is a list containing the data frames of the data, dictionary and event_form (if needed) of the REDCap project.
-#' @param data Data frame containing the data read from REDCap. If the list is specified, this argument is not necessary.
-#' @param dic Data frame  containing the dictionary read from REDCap. If the list is specified, this argument is not necessary.
-#' @param event_form Data frame containing the correspondence of each event with each form. If the list is specified, this argument is not necessary.
-#' @param checkbox_labels Character vector with the names for the two options of every checkbox variable. Default is `c('No', 'Yes')`.
-#' @param checkbox_na Logical indicating if checkboxes values with branching logic should be set to missing only when the branching logic is missing (`FALSE`), or also when the branching logic isn't satisfied (`TRUE`). The default is `FALSE`.
-#' @param exclude_recalc Character vector with the names of variables that should not be recalculated. Useful for projects with time-consuming recalculations of certain calculated fields.
-#' @param exclude_factor Character vector with the names of variables that should not be transformed to factors.
-#' @param delete_vars Character vector specifying the variables to exclude.
-#' @param delete_pattern Character vector specifying the regex pattern for variables to be excluded.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
+#' @param na_logic Controls how missing values are set based on the branching logic of a checkbox. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE`). Defaults to `"none"`.
+#' @param exclude_recalc Optional. Character vector of field names to exclude from recalculation.
+#' @param exclude_factor Optional character vector of variable names (use original names **without** the `.factor` suffix) to exclude from conversion.
+#' @param delete_vars Optional. A character vector of variable names to remove from both the dataset and dictionary.
+#' @param delete_pattern Optional. A character vector of regular expression patterns. Variables matching these patterns will be removed from the dataset and dictionary.
 #' @param final_format Character string indicating the final format of the data. Options are `raw`, `by_event` or `by_form`. `raw` (default) returns the transformed data in its original structure, `by_event` returns it as a nested data frame by event, and `by_form` returns it as a nested data frame by form.
-#' @param which_event Character string indicating a specific event to return if the final format is  `by_event`.
-#' @param which_form Character string indicating a specific form to return if the final format is `by_form`.
-#' @param wide Logical indicating if the data split by form (if selected) should be in a wide format (`TRUE`) or a long format (`FALSE`).
-#' @return A list with the transformed dataset, dictionary, event_form, and the results of each transformation step.
+#' @param which_event Character. If `final_format = "by_event"`, return only this event.
+#' @param which_form Character. If `final_format = "by_form"`, return only this form.
+#' @param wide Logical. If `TRUE` (for form-based splits), repeated instances are returned in wide format. Defaults to `FALSE`.
+#'
+#' @return A list with elements:
+#' \describe{
+#'   \item{data}{Transformed data (data.frame or nested list when split).}
+#'   \item{dictionary}{Updated dictionary data.frame.}
+#'   \item{event_form}{Event–form mapping (if applicable).}
+#'   \item{results}{Character summary of transformation steps performed.}
+#' }
 #'
 #' @examples
-#' # Basic transformation
-#' rd_transform(covican)
+#' # Minimal usage (project object or data + dictionary)
+#' trans <- rd_transform(covican)
 #'
-#' # For customization of checkbox labels (example)
-#' rd_transform(covican,
-#'   checkbox_labels = c("Not present", "Present")
-#' )
+#' # Custom checkbox labels
+#' trans <- rd_transform(covican,
+#'                       checkbox_labels = c("Not present", "Present"))
+#'
+#' # Return only a single form (wide)
+#' trans <- rd_transform(covican,
+#'                       final_format = "by_form",
+#'                       which_form = "laboratory_findings",
+#'                       wide = TRUE)
 #'
 #' @export
-#'
 
-rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_na = FALSE, exclude_recalc = NULL, exclude_factor = NULL, delete_vars = NULL, delete_pattern = NULL, final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL) {
+rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), na_logic = "none", exclude_recalc = NULL, exclude_factor = NULL, delete_vars = NULL, delete_pattern = NULL, final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL) {
 
   results <- NULL
   ind <- 1
+
+  # validate na_logic against allowed choices
+  na_logic <- match.arg(na_logic, choices = c("none", "missing", "eval"))
 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
@@ -85,14 +99,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   }
 
   # Check if the project has repeated instruments
-  if ("redcap_repeat_instrument" %in% names(data)) {
-    repeat_instrument <- dplyr::case_when(
-      any(!is.na(data$redcap_repeat_instrument)) ~ TRUE,
-      TRUE ~ FALSE
-    )
-  } else {
-    repeat_instrument <- FALSE
-  }
+    repeat_instrument <- "redcap_repeat_instrument" %in% names(data) && any(!is.na(data$redcap_repeat_instrument))
 
   message("\u23F3 Transformation in progress...")
 
@@ -174,10 +181,13 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   }
 
   if (!repeat_instrument) {
-    if (checkbox_na) {
+    # Message depends on na_logic option
+    if (na_logic == "eval") {
       results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing"))
-    } else {
+    } else if (na_logic == "missing") {
       results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing"))
+    } else {
+      results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."))
     }
   } else {
     results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."))
@@ -193,7 +203,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     } else {
       if (!repeat_instrument) {
         # Transform missings of checkboxes with branching logic:
-        trans <- rd_checkbox(data = data, dic = dic, event_form = event_form, checkbox_na = checkbox_na, checkbox_labels = checkbox_labels, checkbox_names = TRUE)
+        trans <- rd_checkbox(data = data, dic = dic, event_form = event_form, checkbox_labels = checkbox_labels, checkbox_names = TRUE, na_logic = na_logic)
 
         results <- c(results, trans$results[-1])
 

@@ -14,47 +14,49 @@ rd_rlogic(
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{logic}{SA string representing the logic in REDCap format (e.g., \code{"if([exc_1]='1' or [inc_1]='0', 1, 0)"}).}
+\item{logic}{A single REDCap logic string (e.g., \code{"if([exc_1]='1' or [inc_1]='0', 1, 0)"}).}
 
-\item{var}{A string containing the name of the variable that holds the logic. This is typically the outcome variable to which the logic applies.}
+\item{var}{A single string specifying the target variable the logic applies to.}
 }
 \value{
-A list containing:
-\itemize{
-\item \code{rlogic}: The translated REDCap logic in R format.
-\item \code{eval}: The evaluation result of the R logic applied to the provided dataset. If applicable, the result is filtered by event-specific logic.
+A list with:
+\describe{
+\item{rlogic}{The translated R-compatible logic as a string.}
+\item{eval}{The evaluation of the translated logic on the provided dataset, filtered by event if applicable.}
 }
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
-This function converts REDCap logic into R-compatible logic. The function processes common REDCap operators (such as \code{and}, \code{or}, \code{=}, \code{<}, \code{>}, etc.) and formats them into their R equivalents. It also handles event-specific logic in longitudinal REDCap projects.
-Please note that this function may not be able to accurately transform REDCap logic involving smart variables or certain field types that require specialized handling.
+Converts a REDCap logic expression into R-compatible logic. Processes one logic expression (\code{logic}) for one target variable (\code{var}) at a time. Supports common REDCap operators (\code{and}, \code{or}, \code{=}, \code{<}, \code{>}, etc.) and handles event-specific logic in longitudinal projects. Logic involving smart variables or repeated instruments may require manual review.
 }
 \details{
-The function performs several transformations to convert the REDCap logic into R logic:
 \itemize{
-\item It translates REDCap-specific operators (e.g., \code{=} to \code{==}, \code{and} to \code{&}, \code{or} to \code{|}).
-\item It removes or replaces certain REDCap-specific syntax that does not directly translate to R (e.g., removing \code{true} values).
-\item It handles event-specific variables and ensures that logic is correctly adjusted when the data has multiple events.
-\item It also allows for handling of missing values by transforming empty strings (\code{''}) to \code{NA} in R.
+\item Translates REDCap operators and functions into R equivalents:
+\itemize{
+\item \code{=} → \code{==}, \verb{<>} → \code{!=}, \code{and} → \code{&}, \code{or} → \code{|}.
+\item Converts functions like \verb{if()}, \code{rounddown()}, \code{datediff()}, \code{sum()} to R equivalents.
 }
-
-Please be aware that REDCap logic that references smart variables or involves complex field relationships might require manual intervention for an accurate translation.
+\item Handles date transformations and empty strings (\code{''}) → \code{NA}.
+\item Adjusts logic for longitudinal data using \code{event_form} if provided.
+\item Evaluates the translated R logic against the dataset and returns the results.
+\item Logic with repeated instruments, smart variables, or multiple events per variable may require manual inspection.
+}
 }
 \examples{
-# Example: Translating a REDCap logic expression into R logic for the variable `screening_fail_crit`
+# Translate a single REDCap logic expression for one variable
 covican |>
   rd_rlogic(
-    logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
+    logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0', 1, 0)",
     var = "screening_fail_crit"
   )
+
 }

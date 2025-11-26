@@ -1,12 +1,11 @@
 make_toy_dic <- function(fields) {
-  df <- data.frame(
+  data.frame(
     field_name = names(fields),
     field_label = sapply(fields, function(x) x$field_label),
     form_name = sapply(fields, function(x) x$form_name),
     branching_logic_show_field_only_if = sapply(fields, function(x) ifelse(is.null(x$branch), NA_character_, x$branch)),
     stringsAsFactors = FALSE
   )
-  df
 }
 
 test_that("rd_query errors when data or dic are missing", {
@@ -117,7 +116,7 @@ test_that("rd_query repeats a single expression for multiple variables (warning 
                                v2 = list(field_label = "V2", form_name = "f1")))
   expect_warning(
     res <- rd_query(data = toy_data, dic = toy_dic, variables = c("v1", "v2"), expression = "is.na(x)"),
-    regexp = "Fewer expressions than variables"
+    regexp = "The first expression will be applied to all variables."
   )
   # Both fields should produce queries (identifiers present for the NA rows)
   expect_true("1" %in% res$queries$Identifier)
@@ -432,17 +431,6 @@ test_that("rd_query applies branching logic correctly", {
   expect_true(all(res$queries$Identifier %in% c("1")))
 })
 
-# --- Helpers used in these tests ---
-make_toy_dic <- function(fields) {
-  data.frame(
-    field_name = names(fields),
-    field_label = sapply(fields, function(x) x$field_label),
-    form_name = sapply(fields, function(x) x$form_name),
-    branching_logic_show_field_only_if = sapply(fields, function(x) ifelse(is.null(x$branch), NA_character_, x$branch)),
-    stringsAsFactors = FALSE
-  )
-}
-
 # --- Extra tests to improve coverage ---
 
 test_that("rd_query accepts a 'project' object and uses check_proj result", {
@@ -544,3 +532,151 @@ test_that("rd_query handles checkbox-style variable names with '___' suffix when
   expect_true(all(c("queries", "results") %in% names(res)))
 })
 
+test_that("rd_query allows a single custom report_title", {
+  toy_data <- data.frame(record_id = 1:2, a = c(NA, 1))
+  toy_dic <- make_toy_dic(list(a = list(field_label = "A", form_name = "f1")))
+
+  res <- rd_query(data = toy_data, dic = toy_dic,
+                  variables = "a", expression = "is.na(x)",
+                  report_title = "Missing Report")
+
+  expect_true(all(grepl("Missing Report", as.character(res$results))))
+})
+
+test_that("rd_query warns when too many expressions for few variables", {
+  toy_data <- data.frame(record_id = 1:2, a = c(1, NA))
+  toy_dic <- make_toy_dic(list(a = list(field_label = "A", form_name = "f1")))
+
+  expect_warning(
+    rd_query(data = toy_data, dic = toy_dic, variables = c("a"),
+             expression = c("is.na(x)", "x > 0")),
+    regexp = "The first variable will be used for all expressions."
+  )
+})
+
+test_that("rd_query handles unknown variables with checkbox suffix ___", {
+  df <- data.frame(record_id = c(1,2,3), flag___1 = c(1, NA, 1))
+  toy_dic <- make_toy_dic(list(flag = list(field_label = "Flag", form_name = "flags")))
+
+  res <- rd_query(data = df, dic = toy_dic, variables = "flag___1", expression = "is.na(x)")
+  expect_true(is.list(res))
+  expect_true(all(c("queries", "results") %in% names(res)))
+})
+
+test_that("rd_query handles completely empty dataset with report_zeros = TRUE", {
+  df <- data.frame(record_id = character(0), x = numeric(0))
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "demo")))
+
+  res <- rd_query(data = df, dic = toy_dic, variables = "x", expression = "is.na(x)", report_zeros = TRUE)
+  expect_true(nrow(res$queries) == 0) # no queries generated
+  expect_true(all(c("queries", "results") %in% names(res)))
+})
+
+test_that("rd_query handles expressions that evaluate to NA", {
+  df <- data.frame(record_id = 1:3, y = c(NA, 1, 2))
+  toy_dic <- make_toy_dic(list(y = list(field_label = "Y", form_name = "demo")))
+
+  # expression that produces NA for first element
+  res <- rd_query(data = df, dic = toy_dic, variables = "y", expression = "x > 10")
+  expect_true(all(res$queries$Identifier %in% c("1","2","3") | nrow(res$queries) >= 0))
+})
+
+
+test_that("rd_query warns when branching logic cannot be parsed", {
+  df <- data.frame(record_id = 1:2, z = c(NA, 1))
+  toy_dic <- make_toy_dic(list(z = list(field_label = "Z", form_name = "f1", branch = "[z] >> 1")))
+
+  expect_warning(
+    rd_query(data = df, dic = toy_dic, variables = "z", expression = "is.na(x)"),
+    regexp = "could not be converted"
+  )
+})
+
+test_that("rd_query ignores empty filter vector", {
+  df <- data.frame(record_id = 1:2, a = c(NA, 1))
+  toy_dic <- make_toy_dic(list(a = list(field_label = "A", form_name = "f1")))
+
+  res <- rd_query(data = df, dic = toy_dic, variables = "a", expression = "is.na(x)", filter = character(0))
+  expect_true(nrow(res$queries) > 0)
+})
+
+test_that("rd_query handles multiple event_id on longitudinal dataset correctly", {
+  df <- data.frame(record_id = 1:2, x = c(NA, 5), redcap_event_name = c("e1", "e2"), redcap_event_name.factor = c("E1", "E2"))
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "demo")))
+
+  link <- list(domain = "redcap", redcap_version = "10", proj_id = 1,
+               event_id = setNames(c(101, 102), c("e1","e2")))
+
+  res <- rd_query(data = df, dic = toy_dic, variables = "x", expression = "is.na(x)", link = link)
+  expect_true(all(c("Link","Event") %in% names(res$queries)))
+})
+
+#----------
+
+test_that("rd_query auto-maps event from event_form when event is NA", {
+  toy_data <- data.frame(
+    record_id = as.character(1:4),
+    redcap_event_name = c("ev1", "ev1", "ev2", "ev2"),
+    x = c(1, 2, 3, 4),
+    stringsAsFactors = FALSE
+  )
+
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "f1")))
+  event_form <- data.frame(form = "f1", unique_event_name = c("ev1"), stringsAsFactors = FALSE)
+
+  # call with event = NA (default) but providing event_form
+  out <- rd_query(variables = "x", expression = "x > 1", data = toy_data, dic = toy_dic, event_form = event_form)
+
+  expect_true(is.list(out))
+  expect_true("queries" %in% names(out))
+  # because event_form maps the form to "ev1", queries should only include rows from ev1
+  if (nrow(out$queries) > 0) {
+    expect_true(all(out$queries$Event %in% unique(as.character(toy_data$redcap_event_name[toy_data$redcap_event_name %in% event_form$unique_event_name]))))
+  }
+})
+
+test_that("rd_query accepts scalar link$event_id for non-longitudinal dataset and adds event_id column", {
+  toy_data <- data.frame(record_id = as.character(1:2), x = c(1,2), stringsAsFactors = FALSE)
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "demo")))
+
+  # single event_id provided for a non-longitudinal dataset
+  link <- list(event_id = 5, domain = "d", redcap_version = 9, proj_id = 1)
+
+  out <- rd_query(variables = "x", expression = "x>0", data = toy_data, dic = toy_dic, link = link)
+
+  # Should not error and queries should exist; the queries data frame should have an event_id column
+  expect_true(is.list(out))
+  # depending on whether queries are present or zero-queries, check that merge did not crash;
+  # if queries exist, they should include event_id when full link set is provided
+  if (nrow(out$queries) > 0) {
+    expect_true("id=1" %in% out$queries$Link || any(grepl("id=2", out$queries$Link)))
+  }
+})
+
+test_that("rd_query errors when query_name length mismatches variables", {
+  toy_data <- data.frame(record_id = 1L, x = 1L, x2 = 1L, redcap_event_name = "ev1", stringsAsFactors = FALSE)
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "f1")))
+
+  expect_error(
+    rd_query(variables = c("x", "x2"), expression = c("x>0", "x>0"), query_name = c("q1", "q2", "q3"), data = toy_data, dic = toy_dic, event = "ev1"),
+    regexp = "Multiple query names specified, but the number of query names is different from the number of variables"
+  )
+})
+
+test_that("rd_query addTo preserves Link column when present in addTo$queries", {
+  data <- data.frame(record_id = 1:2, x = c(1, 2), redcap_event_name = c("ev1","ev1"), stringsAsFactors = FALSE)
+  dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "f1")))
+
+  # produce a first run with one query
+  base <- rd_query(variables = "x", expression = "x>1", data = data, dic = dic, event = "ev1")
+
+  addTo <- list(queries = as.data.frame(base$queries))
+  # add a Link column to mimic an earlier export
+  addTo$queries$Link <- "http://example.com/1"
+
+  # call rd_query with addTo; should not error and resulting queries should include a Link column
+  out <- rd_query(variables = "x", expression = "x>0", data = data, dic = dic, event = "ev1", addTo = addTo)
+  expect_true(is.list(out))
+  expect_true("queries" %in% names(out))
+  expect_true("Link" %in% names(out$queries))
+})

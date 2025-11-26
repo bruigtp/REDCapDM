@@ -3,37 +3,43 @@
 #' @description
 #' `r lifecycle::badge('stable')`
 #'
-#' This function allows you to manually insert a missing value into certain variables (`vars`) if the specified filter/s (`filter`) are satisfied.
-#' It's particularly useful for managing checkboxes without explicit gatekeeper questions in their branching logic.
+#' Sets selected variables to `NA` when a filter condition is satisfied. Useful for managing checkboxes or other fields without explicit gatekeeper questions.
 #'
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param vars Character vector of variable names to set to `NA`.
+#' @param filter A single logical expression (as string). Rows where the filter evaluates to `TRUE` will have the corresponding `vars` set to `NA`.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
-#' @param vars A character vector with the names of the variables to be transformed.
-#' @param filter A character vector of logical expressions to evaluate. If the evaluation is `TRUE`, the corresponding variable in `vars` is set to `NA`.
+#' @details
+#' * Each variable is only updated in rows/events where both the variable and filter are present.
+#' * For longitudinal projects, `event_form` must be provided for proper event-level filtering.
+#' * Only one filter expression is allowed.
+#' * Variables and filter columns must exist in both `data` and `dictionary`.
 #'
-#' @note
-#' Each variable is only transformed in the events where both the variable and the filter evaluation are present, so they must have at least one event in common.
-#'
-#' @return The modified data frame with the specified variables updated.
+#' @return A list with:
+#' \describe{
+#'   \item{data}{The dataset with `NA` inserted where the filter applies.}
+#'   \item{dictionary}{The unchanged dictionary.}
+#'   \item{event_form}{The `event_form` passed in (if applicable).}
+#'   \item{results}{Summary message of the changes applied.}
+#' }
 #'
 #' @examples
-#'
-#' # Example usage:
-#' table(is.na(covican$data$potassium))
-#'
-#' data <- covican |>
-#'   rd_insert_na(
-#'     vars = "potassium",
-#'     filter = "age < 65"
-#'   )
-#'
+#' # Set 'potassium' to NA where age < 65
+#' \dontrun{
+#' data <- rd_insert_na(
+#'   data = covican$data,
+#'   dic = covican$dictionary,
+#'   vars = "potassium",
+#'   filter = "age < 65"
+#' )
 #' table(data$potassium)
+#' }
 #'
 #' @export
-#' @importFrom rlang .data
+#' @importFrom rlang .data parse_expr eval_tidy
 
 rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, vars, filter) {
 
@@ -59,41 +65,111 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     stop("The dataset contains multiple events, but the `event_form` mapping was not provided. Please specify it.")
   }
 
-  # Validate matching lengths of `vars` and `filter`
-  if (length(filter) != length(vars)) {
-    stop("The number of variables (`vars`) does not match the number of filters (`filter`). Ensure both have equal length.")
+  # Validate there is exactly one filter and allow multiple vars
+  if (length(filter) != 1) {
+    stop("Please provide exactly one filter.")
   } else {
-    # Loop through variables and filters to apply transformations
-    for (i in seq_along(filter)) {
-      # For every filter & variable get the variables specified in the filter and their events (if there is more than one event)
-      if (longitudinal) {
-        # Parse variables within the filter expression
-        vars_filter <- trimws(unlist(stringr::str_split(filter[i], "[&|]")))
-        vars_filter <- gsub("!?is.na\\(", "", vars_filter)
-        vars_filter <- unlist(stringr::str_extract_all(vars_filter, "^\\w+"))
+    # Parse variables within the single filter expression once
+    vars_filter <- trimws(unlist(stringr::str_split(filter[1], "[&|]")))
+    vars_filter <- gsub("!?is.na\\(", "", vars_filter)
+    vars_filter <- gsub("\\[|\\]", "", vars_filter)
+    vars_filter <- gsub("data\\$", "", vars_filter)
+    vars_filter <- unlist(stringr::str_extract_all(vars_filter, "^\\w+"))
+    vars_filter <- unique(vars_filter)
 
-        # Extract corresponding events for filter variables
-        event_filter <- tibble::tibble(vars_filter = vars_filter) |>
-          dplyr::mutate(
-            form = purrr::map_chr(.data$vars_filter, ~ dic |>
-              dplyr::filter(.data$field_name %in% .x) |>
-              dplyr::pull(.data$form_name)),
-            event = purrr::map(.data$form, ~ event_form |>
-              dplyr::filter(.data$form %in% .x) |>
-              dplyr::pull(.data$unique_event_name))
-          )
+    # check filter vars exist in the dataset
+    missing_in_data <- vars_filter[!vars_filter %in% names(data)]
+    if (length(missing_in_data) > 0) {
+      stop(
+        sprintf(
+          "Filter variable(s) not found in data: %s",
+          paste(shQuote(missing_in_data), collapse = ", ")
+        ),
+        call. = FALSE
+      )
+    }
 
-        # Identify common events for filter variables
-        events <- Reduce(intersect, event_filter$event)
+    # check filter vars exist in the dictionary
+    missing_in_dic <- vars_filter[!vars_filter %in% dic$field_name]
+    if (length(missing_in_dic) > 0) {
+      stop(
+        sprintf(
+          "Filter variable(s) not found in dictionary: %s",
+          paste(shQuote(missing_in_dic), collapse = ", ")
+        ),
+        call. = FALSE
+      )
+    }
 
-        # Stop if there are no common events
-        if (length(events) == 0) {
-          stop("The variables in the filter belong to different events.")
+    # Extract corresponding events for filter variables
+    event_filter <- tibble::tibble(vars_filter = vars_filter) |>
+      dplyr::mutate(
+        form = purrr::map_chr(.data$vars_filter, ~ dic |>
+                                dplyr::filter(.data$field_name %in% .x) |>
+                                dplyr::pull(.data$form_name)),
+        event = purrr::map(.data$form, ~ event_form |>
+                             dplyr::filter(.data$form %in% .x) |>
+                             dplyr::pull(.data$unique_event_name))
+      )
+
+    # Identify common events for filter variables
+    events <- Reduce(intersect, event_filter$event)
+
+    # Stop if there are no common events among filter variables
+    if (length(events) == 0) {
+      stop("The variables in the filter belong to different events.")
+    }
+
+    # Evaluate the filter expression once to get logical mask for rows
+    filter_expr <- tryCatch({
+      rlang::parse_expr(filter[1])
+    }, error = function(e) {
+      stop(sprintf("Unable to parse filter expression '%s'.", filter[1]), call. = FALSE)
+    })
+
+    rows_mask <- tryCatch({
+      # Evaluate in the context of `data`; result should be logical vector of length nrow(data)
+      rlang::eval_tidy(filter_expr, data = data)
+    }, error = function(e) {
+      stop(sprintf("Error evaluating filter '%s'.", filter[1]), call. = FALSE)
+    })
+
+    if (!is.logical(rows_mask) || length(rows_mask) != nrow(data)) {
+      stop(sprintf("Filter '%s' did not return a logical vector with length equal to nrow(data).", filter[1]))
+    }
+
+    # Validate that provided vars exist in data and in dictionary
+    missing_vars_in_data <- vars[!vars %in% names(data)]
+    if (length(missing_vars_in_data) > 0) {
+      stop(sprintf("Variable(s) not found in data: %s", paste(shQuote(missing_vars_in_data), collapse = ", ")), call. = FALSE)
+    }
+    missing_vars_in_dic <- vars[!vars %in% dic$field_name]
+    if (length(missing_vars_in_dic) > 0) {
+      stop(sprintf("Variable(s) not found in dictionary: %s", paste(shQuote(missing_vars_in_dic), collapse = ", ")), call. = FALSE)
+    }
+
+    # Try to detect an event column in `data` (common names or values matching event_form)
+    event_col <- NULL
+    candidate_names <- c("redcap_event_name", "unique_event_name", "event_name", "event")
+    event_col <- intersect(names(data), candidate_names)[1]
+    if (is.null(event_col)) {
+      for (col in names(data)) {
+        col_values <- unique(data[[col]])
+        if (any(col_values %in% event_form$unique_event_name, na.rm = TRUE)) {
+          event_col <- col
+          break
         }
+      }
+    }
 
+    # Loop through the variables to transform
+    for (j in seq_along(vars)) {
+      var_j <- vars[j]
+
+      if (longitudinal) {
         # Identify events for the variable to be transformed
         form_var <- dic |>
-          dplyr::filter(.data$field_name == vars[i]) |>
+          dplyr::filter(.data$field_name == var_j) |>
           dplyr::pull(.data$form_name)
 
         event_var <- event_form |>
@@ -103,39 +179,54 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
         # Ensure the variable's events overlap with filter events
         match_events <- intersect(events, event_var)
 
-        # Error: filter variables are in different events from the variable to be transformed
+        # Error: no overlapping events between the variable and the filter
         if (length(match_events) == 0) {
-          stop("The variable `{vars[i]}` and the filter do not overlap in any events.")
+          stop(stringr::str_glue("The variable `{var_j}` and the filter do not overlap in any events."), call. = FALSE)
         } else {
-          # Warn: one of the events of the variable is not present in the filter
+          # Warn: variable present in more events than the filter
           if (!all(event_var %in% match_events)) {
             warning(stringr::str_glue(
-              "The variable `{vars[i]}` is present in more events than the filter. ",
+              "The variable `{var_j}` is present in more events than the filter. ",
               "Only rows in common events ({paste(match_events, collapse = ', ')}) will be transformed."
             ))
           }
         }
+      } else {
+        # not longitudinal: no per-event checks required
+        match_events <- NULL
       }
 
-      # Apply transformation: set specified variable to NA if filter is true
-      id <- data |>
-        dplyr::mutate(id = dplyr::row_number()) |>
-        dplyr::filter(eval(parse(text = filter[i]))) |>
-        dplyr::pull(id)
+      # Compute candidate row ids where the filter is TRUE
+      ids <- which(rows_mask)
 
-      data[id, vars[i]] <- NA
+      # If longitudinal and an event column is found, restrict ids to the overlapping events for this var
+      if (longitudinal && !is.null(event_col)) {
+        ids <- ids[which(data[[event_col]][ids] %in% match_events)]
+      } else if (longitudinal && is.null(event_col)) {
+        # No event column found in data — warn that event-level restriction cannot be applied
+        warning("No event column detected in `data`. The filter will be applied across all rows (event-level restriction skipped).")
+      }
+
+      # Apply the transformation (set selected rows for var_j to NA)
+      if (length(ids) > 0) {
+        data[ids, var_j] <- NA
+      } else {
+        # No rows to change for this variable (possible due to event restriction)
+        # We do not stop here; just inform via a message (could be silent depending on preference)
+        message(sprintf("No rows matched for variable '%s' after applying filter and event overlap.", var_j))
+      }
     }
 
     # Reapply variable labels to the data after transformation
     data <- data |>
       labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
 
-    # Update results with the this transformation
+    # Update results with this transformation
+    inserted_msg <- stringr::str_glue("Inserting missing values into variable(s): {paste(vars, collapse = ', ')}. (rd_insert_na)\n")
     if (is.null(results)) {
-      results <- c(results, stringr::str_glue("Inserting missing values into certain variables. (rd_insert_na)\n"))
+      results <- c(results, inserted_msg)
     } else {
-
-      if(grepl("^[A-Z]", results[1])) {
+      if (grepl("^[A-Z]", results[1])) {
         results[1] <- paste("1.", results[1])
       }
 
@@ -146,7 +237,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
         stringr::str_remove("\\.") |>
         as.numeric()
 
-      results <- c(results, stringr::str_glue("\n\n{last_val_res + 1}. Inserting missing values into certain variables. (rd_insert_na)\n"))
+      results <- c(results, stringr::str_glue("\n\n{last_val_res + 1}. {inserted_msg}\n"))
     }
 
     # Return the updated data, dictionary, event_form, and results (if present)

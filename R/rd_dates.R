@@ -3,31 +3,31 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function processes and transforms date and datetime fields in a REDCap dataset.
+#' Converts date and datetime fields in a REDCap dataset to appropriate R classes.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #'
-#' @return A list containing the following elements:
-#'   \item{data}{The transformed dataset with date and datetime variables correctly formatted.}
-#'   \item{dictionary}{The original data dictionary passed to the function.}
-#'   \item{event_form}{The original event-form mapping passed to the function (if applicable).}
+#' @return A list with the following elements:
+#' \describe{
+#'   \item{data}{The transformed dataset with date and datetime fields formatted as `Date` and `POSIXct`.}
+#'   \item{dictionary}{The original REDCap dictionary passed to the function.}
+#'   \item{event_form}{The original event-form mapping (if applicable).}
+#'   \item{results}{A summary of the transformations performed.}
+#' }
 #'
 #' @details
 #' The function performs the following tasks:
-#' - Extracts date and datetime fields from the data dictionary using validation types
-#'   (`date_*` and `datetime_*`).
-#' - Converts these fields in the dataset to `Date` and `POSIXct` objects, respectively.
+#' * Detects date and datetime fields from the REDCap dictionary (`date_*` and `datetime_*` validation types).
+#' * Converts date fields to `Date` class.
+#' * Converts datetime fields to `POSIXct` class, treating empty strings as `NA`.
 #'
 #'
 #' @examples
-#'
-#' # Example usage:
-#' result <- rd_dates(data = covican$data, dic = covican$dictionary)
-#'
-#' result <- covican |> rd_dates()
+#' result <- rd_dates(covican)
+#' transformed_data <- result$data
 #'
 #' @export
 #' @importFrom stats na.omit

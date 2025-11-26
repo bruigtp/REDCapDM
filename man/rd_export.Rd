@@ -14,32 +14,28 @@ rd_export(
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the dataframe of queries and results (expected \code{rd_query} or \code{rd_event} output). Overrides \code{queries}.}
 
-\item{queries}{A data frame containing the identified queries. If \code{...} is provided, this argument is ignored.}
+\item{queries}{A data frame of identified queries.}
 
-\item{column}{A string specifying the column in the dataset that contains hyperlinks. If not specified,
-hyperlinks will not be added unless a column named \code{Link} is detected.}
+\item{column}{Name of the column containing URLs to convert into hyperlinks. If \code{NULL}, hyperlinks are added only if a \code{Link} column exists.}
 
-\item{sheet_name}{A string specifying the name of the sheet in the resulting \code{.xlsx} file. Defaults to \code{"Sheet1"}.}
+\item{sheet_name}{Name of the Excel sheet in the resulting \code{.xlsx} file. Default: \code{"Sheet1"}.}
 
-\item{path}{A string specifying the file path to save the \code{.xlsx} file. If \code{NULL}, the file is saved in the
-current working directory with the name \code{example.xlsx}.}
+\item{path}{File path for saving the \code{.xlsx} file. If \code{NULL}, the file is saved as \code{"example.xlsx"} in the working directory.}
 
-\item{password}{An optional string to password-protect the worksheet, preventing unauthorized edits.}
+\item{password}{Optional password to protect the worksheet from edits.}
 }
 \value{
-An \code{.xlsx} file saved to the specified path, containing the query data and hyperlinks if specified.
+An \code{.xlsx} file written to the specified path.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function exports a query dataset, typically generated using \code{rd_query} or \code{rd_event}, into an \code{.xlsx} file.
-It supports adding hyperlinks to specified columns and optional password protection for the worksheet.
+Export a query dataset (e.g., from \code{rd_query} or \code{rd_event}) to an \code{.xlsx} file. The function can optionally convert a column of URLs into Excel hyperlinks and apply password protection to the worksheet.
 }
 \examples{
 \dontrun{
-# Export queries to an Excel file
 rd_export(
   queries = my_queries,
   column = "Link",

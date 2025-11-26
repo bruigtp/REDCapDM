@@ -2,56 +2,62 @@
 #'
 #' @description
 #' `r lifecycle::badge('stable')`
-#' This function reads datasets from a REDCap project into R for analysis. Data can be imported from REDCap exported files or via an API connection.
 #'
-#' **Options for data import:**
+#' Import REDCap data into R either from REDCap's exported R file or directly via the REDCap API. The function returns a list with the dataset, the project dictionary (metadata) and, for longitudinal projects, the instrument–event mapping (`event_form`) when available.
 #'
-#' - **Exported Data**: REDCap's *Export Data* function generates files suitable for R import.
-#' - **API Connection**: Use the REDCap API to directly pull data into R.
+#' @details
+#' Two import modes are supported:
+#' * **Exported files** — use `data_path` (REDCap R export) and `dic_path` (dictionary CSV/XLSX).
+#' * **API** — use `uri` and `token` to pull data and metadata directly from REDCap.
 #'
-#' **Steps for using exported data:**
+#' If the project is longitudinal, provide `event_path` (instrument–event mapping)
+#' or the function will attempt to fetch it from the API when using API mode.
+#'
+#' **Steps for using exported data in REDCap:**
 #' 1. Use the REDCap *Export Data* function and choose *R Statistical Software* format.
 #' 2. REDCap generates:
 #'    - A CSV file with observations.
 #'    - An R script to format variables for import.
 #' 3. Ensure the exported files, dictionary, and event mapping (if any) are in the same directory.
 #'
+#'
 #' @note To use other package functions effectively, include the `dic_path` argument to load the project dictionary.
 #'
-#' @param data_path Path to the exported R file for data import (if using exported files).
-#' @param dic_path Path to the dictionary file (CSV or XLSX).
+#' @param data_path Path to exported R file (use with `dic_path`).
+#' @param dic_path Path to the dictionary file (CSV or XLSX; use with `data_path`)..
 #' @param event_path Path to the event-form mapping file (CSV or XLSX) for longitudinal projects (downloadable via the `Designate Instruments for My Events` tab within the `Project Setup` section of REDCap).
-#' @param uri The URI of the REDCap project (for API connection).
-#' @param token API token for REDCap project access.
-#' @param filter_field Fields to include in the import (API connection only).
-#' @param survey_fields Logical indicating whether to include survey-related fields (API connection only).
+#' @param uri REDCap API base URI (use with `token`).
+#' @param token REDCap API token (use with `uri`).
+#' @param filter_field Optional character vector of field names to request from the API.
+#' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
 #'
-#' @return A list containing:
+#' @return A list with:
 #'   - `data`: Imported dataset.
-#'   - `dictionary`: Variable dictionary.
-#'   - `event_form` (if applicable): Event-form mapping for longitudinal projects.
+#'   - `dictionary`: Variable dictionary (project metadata).
+#'   - `event_form`: Event-form mapping for longitudinal projects (if applicable).
 #'
+#' @note
+#' * Use either exported-files mode (`data_path` + `dic_path`) **or** API mode (`uri` + `token`) — not both.
+#' * For exported files, REDCap's R export is required for `data_path`. Dictionary and event files must be CSV or XLSX.
 #'
 #' @examples
 #' \dontrun{
-#' # Import using exported files
-#'
-#' dataset <- redcap_data(
-#'   data_path = "C:/Users/username/example.r",
-#'   dic_path = "C:/Users/username/example_dictionary.csv",
-#'   event_path = "C:/Users/username/events.csv"
+#' # From exported files
+#' out <- redcap_data(
+#'   data_path = "project_export.r",
+#'   dic_path  = "project_dictionary.csv",
+#'   event_path = "instrument_event_map.csv"
 #' )
 #'
-#' # Import using API
-#'
-#' dataset_api <- redcap_data(
-#'   uri = "https://redcap.idibell.cat/api/",
-#'   token = "55E5C3D1E83213ADA2182A4BFDEA"
-#' ) # This token is fictitious
+#' # From API
+#' out_api <- redcap_data(
+#'   uri   = "https://redcap.example.org/api/",
+#'   token = "REPLACE_WITH_TOKEN"
+#' )
 #' }
+#'
 #' @export
 #' @importFrom stats setNames
-#'
 
 redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NULL, survey_fields = FALSE) {
 
@@ -415,7 +421,14 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       dplyr::pull(.data$field_name)
 
     if (length(var_noevent) > 0) {
-      warning(stringr::str_glue("The following variables were removed since they are not linked to any event: {var_noevent}"), call. = FALSE)
+
+      vars_str <- paste(var_noevent, collapse = ", ")
+
+      warning(
+        sprintf("The following variable%s were removed since they are not linked to any event: %s",
+                ifelse(length(var_noevent) > 1, "s", ""), vars_str),
+        call. = FALSE
+      )
 
       var_noevent <- intersect(var_noevent, names(data))
 

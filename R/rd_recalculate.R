@@ -3,47 +3,46 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function processes REDCap project data, recalculates fields defined as calculated fields in the dictionary,
-#' and compares the recalculated values with the original ones. It also generates a report of discrepancies and
-#' updates the dataset and dictionary with new calculated fields (if applicable).
+#' Recalculates fields marked as calculated in the REDCap dictionary, compares them with the original values, and reports discrepancies. If any differences are found, new recalculated fields are added to the dataset and dictionary with `_recalc` appended to the names.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
-#' @param exclude (Optional) A character vector of field names to exclude from recalculation.
-#'
-#' @return A list containing the following elements:
-#'   \item{data}{The updated dataset with recalculated fields (if applicable).}
-#'   \item{dictionary}{The updated dictionary with recalculated field entries (if applicable).}
-#'   \item{event_form}{The original event-form mapping passed to the function (if applicable).}
-#'   \item{results}{A string summarizing the results of the recalculation process.}
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param exclude Optional. Character vector of field names to exclude from recalculation.
 #'
 #' @details
-#' The function:
-#' - Identifies calculated fields from the dictionary and evaluates the specified formulas.
-#' - Compares recalculated values with the original values.
-#' - Adds recalculated fields to the dataset, appending `_recalc` to the original variable names.
-#' - Updates the dictionary to reflect the new variables.
-#' - Summarizes the number of calculated fields, discrepancies, and untranslated fields in a report.
+#' * Fields of type `calc` in the dictionary are recalculated.
+#' * Recalculated values are compared with the original values.
+#' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary.
+#' * Works for single-event projects; for longitudinal projects, `event_form` must be provided.
+#' * Fields with incomplete branching logic or smart variables may fail to recalculate.
 #'
-#'
-#' @note
-#' - Recalculation is only possible for single-event projects unless `event_form` is specified for longitudinal projects.
-#' - If branching logic is incomplete, poorly defined or contains smart-variables, recalculation may fail for some fields.
+#' @return A list with:
+#' \describe{
+#'   \item{data}{The dataset with new `_recalc` fields for any differing calculated fields.}
+#'   \item{dictionary}{Updated dictionary including the new `_recalc` fields.}
+#'   \item{event_form}{The `event_form` passed in (if applicable).}
+#'   \item{results}{Summary report of the recalculation process, including tables of discrepancies.}
+#' }
 #'
 #' @examples
-#'
-#' # Example usage with individual arguments
+#' # Recalculate all calculated fields
+#' \dontrun{
 #' results <- rd_recalculate(
 #'   data = covican$data,
 #'   dic = covican$dictionary,
 #'   event_form = covican$event_form
 #' )
+#' }
 #'
-#' # Example usage with a project object, excluding variables from the recalculation
-#' results <- covican |>
-#'   rd_recalculate(exclude = c("age", "screening_fail_crit"))
+#' # Recalculate but exclude some variables
+#' \dontrun{
+#' results <- rd_recalculate(
+#'   project = covican,
+#'   exclude = c("age", "screening_fail_crit")
+#' )
+#' }
 #'
 #' @export
 #' @importFrom rlang :=
@@ -77,7 +76,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
   # Identify if the project is longitudinal or includes repeated instruments
   longitudinal <- "redcap_event_name" %in% names(data)
-  repeat_instrument <- any("redcap_repeat_instrument" %in% names(data) & !is.na(data$redcap_repeat_instrument))
+  repeat_instrument <- "redcap_repeat_instrument" %in% names(data) && any(!is.na(data$redcap_repeat_instrument))
 
   # Check if there are datetime variables stored as characters in the dataset
   vars_date <- dic |>
@@ -164,7 +163,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     # Add recalculated fields to the dataset and dictionary
     calc_change <- calc |>
-      dplyr::filter(!is.na(.data$trans))
+      dplyr::filter(!is.na(.data$trans) & !.data$is_equal)
 
     if (nrow(calc_change) > 0) {
       for (i in seq_len(nrow(calc_change))) {
@@ -237,7 +236,10 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     results <- stringr::str_glue("{results}")
   } else {
     # Stop if recalculation is not possible due to missing event-form mapping in longitudinal projects
-    stop("\nRecalculation cannot proceed because the project has more than one event, but the event-form correspondence has not been provided. Please specify the event-form mapping for accurate recalculation.\n", call. = FALSE)
+    stop(
+      "\nRecalculation cannot proceed because the project has more than one event, but the event-form correspondence has not been provided. Please specify the event-form mapping for accurate recalculation.\n",
+      call. = FALSE
+    )
   }
 
   # Return updated datasets and results

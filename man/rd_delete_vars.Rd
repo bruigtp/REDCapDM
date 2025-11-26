@@ -2,7 +2,7 @@
 % Please edit documentation in R/rd_delete_vars.R
 \name{rd_delete_vars}
 \alias{rd_delete_vars}
-\title{Delete Variables from REDCap Data and Dictionary}
+\title{Delete Variables from REDCap Dataset and Dictionary}
 \usage{
 rd_delete_vars(
   project = NULL,
@@ -14,53 +14,48 @@ rd_delete_vars(
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping,
-typically the output of the \code{redcap_data} function. If provided,
-it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata,
-including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects.
-Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{vars}{A character vector specifying variable names to delete from the dataset and dictionary.
-These variables will be removed from both the \code{data} and \code{dic}.}
+\item{vars}{Optional. A character vector of variable names to remove from both the dataset and dictionary.}
 
-\item{pattern}{A character vector of regular expression patterns. Variables matching these patterns
-will be removed from the \code{data} and \code{dic}.}
+\item{pattern}{Optional. A character vector of regular expression patterns. Variables matching these patterns will be removed from the dataset and dictionary.}
 }
 \value{
-A list containing the following elements:
+A list containing:
+\describe{
 \item{data}{The updated dataset with specified variables removed.}
-\item{dictionary}{The updated data dictionary with corresponding variables removed.}
-\item{event_form}{The original event-form mapping passed to the function (if applicable).}
+\item{dictionary}{The updated REDCap dictionary.}
+\item{event_form}{The original event-form mapping (if applicable).}
+\item{results}{A summary message describing the variable removal operation.}
+}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function removes variables from a REDCap dataset and its associated dictionary based on
-specific variable names or patterns. It ensures consistency between the data and dictionary
-while preserving labels.
+Deletes selected variables from a REDCap dataset and its dictionary, keeping them consistent and preserving variable labels.
 }
 \details{
-The function performs the following operations:
 \itemize{
-\item Removes variables specified in the \code{vars} argument from both the dataset and dictionary.
-\item Removes variables matching patterns provided in the \code{pattern} argument.
+\item Ensure that at least one of \code{vars} or \code{pattern} is specified.
+\item Removes specified variables and their factor versions (e.g., \code{variable.factor}) from the dataset.
+\item Removes matching variables from the dictionary.
+\item Warns about factor versions of variables matching patterns, recommending use of \code{rd_factor()} if necessary.
 }
 }
 \examples{
-# Example usage:
-
-# Deleting specific variables
-result <- rd_delete_vars(covican,
+# Delete specific variables by name
+result <- rd_delete_vars(
+  project = covican,
   vars = c("potassium", "leuk_lymph")
 )
 
-# Deleting variables based on patterns
+# Delete variables matching patterns
 result <- rd_delete_vars(
   data = covican$data,
   dic = covican$dictionary,

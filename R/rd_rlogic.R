@@ -3,38 +3,39 @@
 #' @description
 #' `r lifecycle::badge('stable')`
 #'
-#' This function converts REDCap logic into R-compatible logic. The function processes common REDCap operators (such as `and`, `or`, `=`, `<`, `>`, etc.) and formats them into their R equivalents. It also handles event-specific logic in longitudinal REDCap projects.
-#' Please note that this function may not be able to accurately transform REDCap logic involving smart variables or certain field types that require specialized handling.
+#' Converts a REDCap logic expression into R-compatible logic. Processes one logic expression (`logic`) for one target variable (`var`) at a time. Supports common REDCap operators (`and`, `or`, `=`, `<`, `>`, etc.) and handles event-specific logic in longitudinal projects. Logic involving smart variables or repeated instruments may require manual review.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset containing the checkbox variables.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata, including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects. Optional; defaults to `NULL` if not applicable.
-#' @param logic SA string representing the logic in REDCap format (e.g., `"if([exc_1]='1' or [inc_1]='0', 1, 0)"`).
-#' @param var A string containing the name of the variable that holds the logic. This is typically the outcome variable to which the logic applies.
-#'
-#' @return A list containing:
-#'   - `rlogic`: The translated REDCap logic in R format.
-#'   - `eval`: The evaluation result of the R logic applied to the provided dataset. If applicable, the result is filtered by event-specific logic.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param logic A single REDCap logic string (e.g., `"if([exc_1]='1' or [inc_1]='0', 1, 0)"`).
+#' @param var A single string specifying the target variable the logic applies to.
 #'
 #' @details
-#' The function performs several transformations to convert the REDCap logic into R logic:
-#'   - It translates REDCap-specific operators (e.g., `=` to `==`, `and` to `&`, `or` to `|`).
-#'   - It removes or replaces certain REDCap-specific syntax that does not directly translate to R (e.g., removing `true` values).
-#'   - It handles event-specific variables and ensures that logic is correctly adjusted when the data has multiple events.
-#'   - It also allows for handling of missing values by transforming empty strings (`''`) to `NA` in R.
+#' * Translates REDCap operators and functions into R equivalents:
+#'   - `=` → `==`, `<>` → `!=`, `and` → `&`, `or` → `|`.
+#'   - Converts functions like `if()`, `rounddown()`, `datediff()`, `sum()` to R equivalents.
+#' * Handles date transformations and empty strings (`''`) → `NA`.
+#' * Adjusts logic for longitudinal data using `event_form` if provided.
+#' * Evaluates the translated R logic against the dataset and returns the results.
+#' * Logic with repeated instruments, smart variables, or multiple events per variable may require manual inspection.
 #'
-#' Please be aware that REDCap logic that references smart variables or involves complex field relationships might require manual intervention for an accurate translation.
+#' @return A list with:
+#' \describe{
+#'   \item{rlogic}{The translated R-compatible logic as a string.}
+#'   \item{eval}{The evaluation of the translated logic on the provided dataset, filtered by event if applicable.}
+#' }
 #'
 #' @examples
-#' # Example: Translating a REDCap logic expression into R logic for the variable `screening_fail_crit`
+#' # Translate a single REDCap logic expression for one variable
 #' covican |>
 #'   rd_rlogic(
-#'     logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
+#'     logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0', 1, 0)",
 #'     var = "screening_fail_crit"
 #'   )
-#' @export
 #'
+#' @export
 
 rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, logic, var) {
 
@@ -53,9 +54,22 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Check if the project is longitudinal (more than one event present in the data)
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
+  # Check for repeated instruments
+  repeat_instrument <- "redcap_repeat_instrument" %in% names(data) && any(!is.na(data$redcap_repeat_instrument))
+
   # Error: data is longitudinal, but event_form isn't provided
   if (is.null(event_form) & longitudinal) {
     stop("There is more than one event in the data, but the event-form correspondence hasn't been specified.")
+  }
+
+  # If user accidentally passes multiple logic expressions or multiple vars
+  if (length(logic) > 1) {
+    warning("`logic` contains more than one expression; rd_rlogic processes only one logic at a time. Using the first element.", call. = FALSE)
+    logic <- logic[[1]]
+  }
+  if (length(var) > 1) {
+    warning("`var` contains more than one variable name; rd_rlogic processes only one variable at a time. Using the first element.", call. = FALSE)
+    var <- var[[1]]
   }
 
   rlogic <- logic # Initialize REDCap logic to be converted
@@ -79,20 +93,26 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Get the variables evaluated in the REDCap logic
   rlogic_var <- unlist(stringr::str_extract_all(rlogic, "\\[[\\w,\\-]+\\]"))
+  rlogic_var <- gsub("^\\[|\\]$", "", rlogic_var)
 
   # Check if the variables are present in the data or events
   if (longitudinal) {
-    check_lgl <- purrr::map_lgl(rlogic_var, function(x) {
-      out <- gsub("^\\[", "", x)
-      out <- gsub("\\]$", "", out)
-      out %in% names(data) | out %in% data$redcap_event_name
-    })
+    check_lgl <- rlogic_var %in% names(data) | rlogic_var %in% data$redcap_event_name
   } else {
-    check_lgl <- purrr::map_lgl(rlogic_var, function(x) {
-      out <- gsub("^\\[", "", x)
-      out <- gsub("\\]$", "", out)
-      out %in% names(data)
-    })
+    check_lgl <- rlogic_var %in% names(data)
+  }
+
+  # Error: one of the variables is in a repeated instrument
+  if (repeat_instrument) {
+    rep_forms <- unique(na.omit(data$redcap_repeat_instrument))
+    bad <- dic$field_name %in% rlogic_var & dic$form_name %in% rep_forms
+    if (any(bad)) {
+      vars <- paste0(dic$field_name[bad], " (form:", dic$form_name[bad], ")", collapse = ", ")
+      stop(sprintf(
+        "This function cannot translate logic involving variables that belong to repeated instruments. Review the following variables manually: %s",
+        vars
+      ), call. = FALSE)
+    }
   }
 
   # Error: any variable in logic is not found in the data
@@ -145,6 +165,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("rounddown(.*)\\)", "floor\\1)", rlogic)
   rlogic <- gsub("datediff\\s?", "lubridate::time_length(lubridate::interval", rlogic)
   rlogic <- gsub("sum\\((.*?)\\)", "rowSums(cbind(\\1))", rlogic)
+  rlogic <- gsub("year\\((.*?)\\)", "lubridate::year(\\1)", rlogic)
 
   # Handle date formats in logic
   if (grepl("'dmy'", rlogic)) {
@@ -267,7 +288,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Check for date fields in the logic that are still in character class
   date_class <- dic |>
-    dplyr::filter(.data$field_name %in% gsub("\\[|\\]", "", rlogic_var)) |>
+    dplyr::filter(.data$field_name %in% rlogic_var) |>
     dplyr::filter(grepl("^date_|^datetime_", .data$text_validation_type_or_show_slider_number)) |>
     dplyr::pull(.data$field_name)
 

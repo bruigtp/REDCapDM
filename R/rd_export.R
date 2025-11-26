@@ -3,23 +3,19 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function exports a query dataset, typically generated using `rd_query` or `rd_event`, into an `.xlsx` file.
-#' It supports adding hyperlinks to specified columns and optional password protection for the worksheet.
+#' Export a query dataset (e.g., from `rd_query` or `rd_event`) to an `.xlsx` file. The function can optionally convert a column of URLs into Excel hyperlinks and apply password protection to the worksheet.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping, typically the output of the `redcap_data` function. If provided, it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param queries A data frame containing the identified queries. If `...` is provided, this argument is ignored.
-#' @param column A string specifying the column in the dataset that contains hyperlinks. If not specified,
-#' hyperlinks will not be added unless a column named `Link` is detected.
-#' @param sheet_name A string specifying the name of the sheet in the resulting `.xlsx` file. Defaults to `"Sheet1"`.
-#' @param path A string specifying the file path to save the `.xlsx` file. If `NULL`, the file is saved in the
-#' current working directory with the name `example.xlsx`.
-#' @param password An optional string to password-protect the worksheet, preventing unauthorized edits.
+#' @param project A list containing the dataframe of queries and results (expected `rd_query` or `rd_event` output). Overrides `queries`.
+#' @param queries A data frame of identified queries.
+#' @param column Name of the column containing URLs to convert into hyperlinks. If `NULL`, hyperlinks are added only if a `Link` column exists.
+#' @param sheet_name Name of the Excel sheet in the resulting `.xlsx` file. Default: `"Sheet1"`.
+#' @param path File path for saving the `.xlsx` file. If `NULL`, the file is saved as `"example.xlsx"` in the working directory.
+#' @param password Optional password to protect the worksheet from edits.
 #'
-#' @return An `.xlsx` file saved to the specified path, containing the query data and hyperlinks if specified.
+#' @return An `.xlsx` file written to the specified path.
 #'
 #' @examples
 #' \dontrun{
-#' # Export queries to an Excel file
 #' rd_export(
 #'   queries = my_queries,
 #'   column = "Link",

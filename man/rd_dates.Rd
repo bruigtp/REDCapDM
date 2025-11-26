@@ -7,38 +7,38 @@
 rd_dates(project = NULL, data = NULL, dic = NULL, event_form = NULL)
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 }
 \value{
-A list containing the following elements:
-\item{data}{The transformed dataset with date and datetime variables correctly formatted.}
-\item{dictionary}{The original data dictionary passed to the function.}
-\item{event_form}{The original event-form mapping passed to the function (if applicable).}
+A list with the following elements:
+\describe{
+\item{data}{The transformed dataset with date and datetime fields formatted as \code{Date} and \code{POSIXct}.}
+\item{dictionary}{The original REDCap dictionary passed to the function.}
+\item{event_form}{The original event-form mapping (if applicable).}
+\item{results}{A summary of the transformations performed.}
+}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function processes and transforms date and datetime fields in a REDCap dataset.
+Converts date and datetime fields in a REDCap dataset to appropriate R classes.
 }
 \details{
 The function performs the following tasks:
 \itemize{
-\item Extracts date and datetime fields from the data dictionary using validation types
-(\verb{date_*} and \verb{datetime_*}).
-\item Converts these fields in the dataset to \code{Date} and \code{POSIXct} objects, respectively.
+\item Detects date and datetime fields from the REDCap dictionary (\verb{date_*} and \verb{datetime_*} validation types).
+\item Converts date fields to \code{Date} class.
+\item Converts datetime fields to \code{POSIXct} class, treating empty strings as \code{NA}.
 }
 }
 \examples{
-
-# Example usage:
-result <- rd_dates(data = covican$data, dic = covican$dictionary)
-
-result <- covican |> rd_dates()
+result <- rd_dates(covican)
+transformed_data <- result$data
 
 }

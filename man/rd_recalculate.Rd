@@ -13,57 +13,55 @@ rd_recalculate(
 )
 }
 \arguments{
-\item{project}{A list containing the REDCap data, dictionary, and event mapping, typically the output of the \code{redcap_data} function. If provided, it overrides individual \code{data}, \code{dic}, and \code{event_form} arguments.}
+\item{project}{A list containing the REDCap data, dictionary, and event mapping (expected \code{redcap_data()} output). Overrides \code{data}, \code{dic}, and \code{event_form}.}
 
-\item{data}{A \code{data.frame} or \code{tibble} representing the REDCap dataset containing the checkbox variables.}
+\item{data}{A \code{data.frame} or \code{tibble} with the REDCap dataset.}
 
-\item{dic}{A \code{data.frame} representing the REDCap dictionary with metadata, including field names, field types, and branching logic.}
+\item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
-\item{event_form}{A \code{data.frame} or \code{list} mapping event names to forms for longitudinal projects. Optional; defaults to \code{NULL} if not applicable.}
+\item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
 
-\item{exclude}{(Optional) A character vector of field names to exclude from recalculation.}
+\item{exclude}{Optional. Character vector of field names to exclude from recalculation.}
 }
 \value{
-A list containing the following elements:
-\item{data}{The updated dataset with recalculated fields (if applicable).}
-\item{dictionary}{The updated dictionary with recalculated field entries (if applicable).}
-\item{event_form}{The original event-form mapping passed to the function (if applicable).}
-\item{results}{A string summarizing the results of the recalculation process.}
+A list with:
+\describe{
+\item{data}{The dataset with new \verb{_recalc} fields for any differing calculated fields.}
+\item{dictionary}{Updated dictionary including the new \verb{_recalc} fields.}
+\item{event_form}{The \code{event_form} passed in (if applicable).}
+\item{results}{Summary report of the recalculation process, including tables of discrepancies.}
+}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-This function processes REDCap project data, recalculates fields defined as calculated fields in the dictionary,
-and compares the recalculated values with the original ones. It also generates a report of discrepancies and
-updates the dataset and dictionary with new calculated fields (if applicable).
+Recalculates fields marked as calculated in the REDCap dictionary, compares them with the original values, and reports discrepancies. If any differences are found, new recalculated fields are added to the dataset and dictionary with \verb{_recalc} appended to the names.
 }
 \details{
-The function:
 \itemize{
-\item Identifies calculated fields from the dictionary and evaluates the specified formulas.
-\item Compares recalculated values with the original values.
-\item Adds recalculated fields to the dataset, appending \verb{_recalc} to the original variable names.
-\item Updates the dictionary to reflect the new variables.
-\item Summarizes the number of calculated fields, discrepancies, and untranslated fields in a report.
-}
-}
-\note{
-\itemize{
-\item Recalculation is only possible for single-event projects unless \code{event_form} is specified for longitudinal projects.
-\item If branching logic is incomplete, poorly defined or contains smart-variables, recalculation may fail for some fields.
+\item Fields of type \code{calc} in the dictionary are recalculated.
+\item Recalculated values are compared with the original values.
+\item If differences exist, new fields \verb{[field_name]_recalc} are added to the dataset and dictionary.
+\item Works for single-event projects; for longitudinal projects, \code{event_form} must be provided.
+\item Fields with incomplete branching logic or smart variables may fail to recalculate.
 }
 }
 \examples{
-
-# Example usage with individual arguments
+# Recalculate all calculated fields
+\dontrun{
 results <- rd_recalculate(
   data = covican$data,
   dic = covican$dictionary,
   event_form = covican$event_form
 )
+}
 
-# Example usage with a project object, excluding variables from the recalculation
-results <- covican |>
-  rd_recalculate(exclude = c("age", "screening_fail_crit"))
+# Recalculate but exclude some variables
+\dontrun{
+results <- rd_recalculate(
+  project = covican,
+  exclude = c("age", "screening_fail_crit")
+)
+}
 
 }

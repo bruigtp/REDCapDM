@@ -1,44 +1,40 @@
-#' Delete Variables from REDCap Data and Dictionary
+#' Delete Variables from REDCap Dataset and Dictionary
 #'
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' This function removes variables from a REDCap dataset and its associated dictionary based on
-#' specific variable names or patterns. It ensures consistency between the data and dictionary
-#' while preserving labels.
+#' Deletes selected variables from a REDCap dataset and its dictionary, keeping them consistent and preserving variable labels.
 #'
-#' @param project A list containing the REDCap data, dictionary, and event mapping,
-#' typically the output of the `redcap_data` function. If provided,
-#' it overrides individual `data`, `dic`, and `event_form` arguments.
-#' @param data A `data.frame` or `tibble` representing the REDCap dataset.
-#' @param dic A `data.frame` representing the REDCap dictionary with metadata,
-#' including field names, field types, and branching logic.
-#' @param event_form A `data.frame` or `list` mapping event names to forms for longitudinal projects.
-#' Optional; defaults to `NULL` if not applicable.
-#' @param vars A character vector specifying variable names to delete from the dataset and dictionary.
-#'   These variables will be removed from both the `data` and `dic`.
-#' @param pattern A character vector of regular expression patterns. Variables matching these patterns
-#'   will be removed from the `data` and `dic`.
+#' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
+#' @param data A `data.frame` or `tibble` with the REDCap dataset.
+#' @param dic A `data.frame` with the REDCap dictionary.
+#' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
+#' @param vars Optional. A character vector of variable names to remove from both the dataset and dictionary.
+#' @param pattern Optional. A character vector of regular expression patterns. Variables matching these patterns will be removed from the dataset and dictionary.
 #'
-#' @return A list containing the following elements:
-#'   \item{data}{The updated dataset with specified variables removed.}
-#'   \item{dictionary}{The updated data dictionary with corresponding variables removed.}
-#'   \item{event_form}{The original event-form mapping passed to the function (if applicable).}
 #'
 #' @details
-#' The function performs the following operations:
-#' - Removes variables specified in the `vars` argument from both the dataset and dictionary.
-#' - Removes variables matching patterns provided in the `pattern` argument.
+#' - Ensure that at least one of `vars` or `pattern` is specified.
+#' - Removes specified variables and their factor versions (e.g., `variable.factor`) from the dataset.
+#' - Removes matching variables from the dictionary.
+#' - Warns about factor versions of variables matching patterns, recommending use of `rd_factor()` if necessary.
+#'
+#' @return A list containing:
+#' \describe{
+#'   \item{data}{The updated dataset with specified variables removed.}
+#'   \item{dictionary}{The updated REDCap dictionary.}
+#'   \item{event_form}{The original event-form mapping (if applicable).}
+#'   \item{results}{A summary message describing the variable removal operation.}
+#' }
 #'
 #' @examples
-#' # Example usage:
-#'
-#' # Deleting specific variables
-#' result <- rd_delete_vars(covican,
+#' # Delete specific variables by name
+#' result <- rd_delete_vars(
+#'   project = covican,
 #'   vars = c("potassium", "leuk_lymph")
 #' )
 #'
-#' # Deleting variables based on patterns
+#' # Delete variables matching patterns
 #' result <- rd_delete_vars(
 #'   data = covican$data,
 #'   dic = covican$dictionary,
@@ -46,7 +42,6 @@
 #' )
 #'
 #' @export
-#' @importFrom stats na.omit
 
 rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, vars = NULL, pattern = NULL) {
   results <- NULL
@@ -114,10 +109,17 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
       names()
 
     if (length(pattern_factor) > 0) {
-      pattern_factor <- paste0(pattern_factor, ".factor")
+      pattern_factor <- ifelse(
+        endsWith(pattern_factor, ".factor"),
+        pattern_factor,
+        paste0(pattern_factor, ".factor")
+      )
+
+      vars_eliminated <- data |>
+        dplyr::select(!dplyr::matches(comb_pattern))
 
       # Warn if factor versions of the variables matching the patterns are present in the dataset
-      if (any(pattern_factor %in% names(data) & grepl("\\$", pattern))) {
+      if (any(pattern_factor %in% names(vars_eliminated)) & any(grepl("\\$", pattern))) {
         warning("The dataset contains factor versions of variables matching the specified patterns. To properly remove them, use the `rd_factor` function first.", call. = FALSE)
       }
     }
