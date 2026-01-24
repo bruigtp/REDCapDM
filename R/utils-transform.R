@@ -457,6 +457,7 @@ split_event <- function(data,dic,event_form,which=NULL){
 #' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param which Character string specifying a form if only data for that form is desired.
 #' @param wide Logical indicating if the dataset should be returned in a wide format (`TRUE`) or long format (`FALSE`).
+#' @importFrom magrittr `%>%`
 
 split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 
@@ -468,7 +469,7 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   if(longitudinal & is.null(event_form)){
     stop("To split the data by form the event_form has to be provided in a longitudinal project", call. = FALSE)
   }
-  
+
   #Check if the project has repeated instruments
   if("redcap_repeat_instrument" %in% names(data)) {
     repeat_instrument <- dplyr::case_when(
@@ -554,29 +555,29 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
       dplyr::mutate(df = purrr::map(.data$vars,  ~ data |>
                                       dplyr::select(tidyselect::all_of(unique(c(basic_redcap_vars, .x))))))
   }
-  
+
   if(repeat_instrument)  {
     form_check <- data %>%
-    dplyr::distinct(redcap_repeat_instrument, redcap_repeat_instrument.factor)
-    
+    dplyr::distinct(.data$redcap_repeat_instrument, .data$redcap_repeat_instrument.factor)
+
     ndata <- ndata %>%
       dplyr::left_join(form_check, by = dplyr::join_by("form" == "redcap_repeat_instrument")) %>%
       dplyr::relocate("form_factor" = "redcap_repeat_instrument.factor", .after = form) %>%
       dplyr::mutate(df = purrr::map2(.data$form_factor, .data$df, ~ {
         if (is.na(.x)) {
           .y %>%
-            dplyr::filter(is.na(redcap_repeat_instrument.factor)) %>%
+            dplyr::filter(is.na(.data$redcap_repeat_instrument.factor)) %>%
             dplyr::select(-dplyr::starts_with("redcap_repeat_instrument"))
         } else {
           .y %>%
-            dplyr::filter(redcap_repeat_instrument.factor == .x) %>%
+            dplyr::filter(.data$redcap_repeat_instrument.factor == .x) %>%
             dplyr::mutate(redcap_repeat_instrument = redcap_repeat_instrument.factor) %>%
             dplyr::select(-redcap_repeat_instrument.factor)
         }
       })) %>%
       dplyr::select(-"form_factor")
-  } 
-    
+  }
+
 
   if(repeat_instrument)  {
     form_check <- data |>

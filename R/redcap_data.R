@@ -28,6 +28,7 @@
 #' @param event_path Path to the event-form mapping file (CSV or XLSX) for longitudinal projects (downloadable via the `Designate Instruments for My Events` tab within the `Project Setup` section of REDCap).
 #' @param uri REDCap API base URI (use with `token`).
 #' @param token REDCap API token (use with `uri`).
+#' @param sep Character string specifying the field separator for the exported dictionary CSV file. Defaul `","`.
 #' @param filter_field Optional character vector of field names to request from the API.
 #' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
 #'
@@ -59,7 +60,7 @@
 #' @export
 #' @importFrom stats setNames
 
-redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, sep = NULL, filter_field = NULL, survey_fields = FALSE) {
+redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, sep = ",", filter_field = NULL, survey_fields = FALSE) {
 
   event_form <- NULL
 

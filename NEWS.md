@@ -1,3 +1,13 @@
+# REDCapDM 1.0-1
+
+## Bug fixes
+
+- Fixed a bug in `rd_checkbox` that mis-evaluated the branching logic of certain checkboxes if they had previously been transformed with `rd_factor`
+
+## New features
+
+-  Added a `sep` argument to the `redcap_data()` function, allowing users to specify the field separator when reading CSV dictionary files.
+
 # REDCapDM 1.0-0
 
 ## Bug fixes
