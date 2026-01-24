@@ -93,6 +93,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   data <- as.data.frame(data)
   dic <- as.data.frame(dic)
 
+  # Ensure variables is a character string
+  variables <- as.character(variables)
+
   # Initialize the query structure
   queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
   colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
