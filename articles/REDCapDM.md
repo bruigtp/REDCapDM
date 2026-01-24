@@ -267,7 +267,7 @@ covican_transformed$results
 #> |         age         |     Yes      |   FALSE   |
 #> | screening_fail_crit |     Yes      |   TRUE    |
 #> 
-#> 2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. (rd_checkbox)
+#> 2. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing. (rd_checkbox)
 #> 
 #> Table: Checkbox variables advisable to be reviewed
 #> 
@@ -573,6 +573,9 @@ dict_result <- covican |>
   rd_checkbox() |>
   rd_dictionary()
 ```
+
+    ## Warning: The checkboxes are already in factor form. To properly evaluate
+    ## checkbox branching logic, please run `rd_dictionary()` first.
 
 When we transform the dictionary:
 

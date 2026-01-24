@@ -16,6 +16,7 @@ redcap_data(
   event_path = NA,
   uri = NA,
   token = NA,
+  sep = ",",
   filter_field = NULL,
   survey_fields = FALSE
 )
@@ -44,6 +45,11 @@ redcap_data(
 - token:
 
   REDCap API token (use with `uri`).
+
+- sep:
+
+  Character string specifying the field separator for the exported
+  dictionary CSV file. Defaul `","`.
 
 - filter_field:
 

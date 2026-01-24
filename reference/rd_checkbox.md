@@ -18,7 +18,7 @@ rd_checkbox(
   event_form = NULL,
   checkbox_labels = c("No", "Yes"),
   checkbox_names = TRUE,
-  na_logic = "none"
+  na_logic = "missing"
 )
 ```
 
@@ -59,7 +59,7 @@ rd_checkbox(
   Controls how missing values are set based on branching logic. Must be
   one of `"none"` (do nothing), `"missing"` (set to `NA` only when the
   logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic
-  evaluates to `FALSE`). Defaults to `"none"`.
+  evaluates to `FALSE`). Defaults to `"missing"`.
 
 ## Value
 
