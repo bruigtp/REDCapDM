@@ -59,7 +59,7 @@
 #' @export
 #' @importFrom stats setNames
 
-redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NULL, survey_fields = FALSE) {
+redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, sep = NULL, filter_field = NULL, survey_fields = FALSE) {
 
   event_form <- NULL
 
@@ -121,7 +121,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       dic <- openxlsx::read.xlsx(dic_path, colNames = FALSE, detectDates = TRUE, sheet = 1)
     } else if (extension_dic == "csv") {
       # Read CSV file
-      dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE)
+      dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE, sep = sep)
     } else {
       stop("Unsupported dictionary format. Only CSV and XLSX are supported.", call. = FALSE)
     }
