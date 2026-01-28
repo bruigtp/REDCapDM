@@ -433,6 +433,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       var_noevent <- intersect(var_noevent, names(data))
 
+      var_noevent <- var_noevent[var_noevent != "record_id"]
+
       data_def$data <- data_def$data |>
         dplyr::select(-dplyr::any_of(var_noevent))
 
