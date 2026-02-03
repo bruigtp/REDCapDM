@@ -175,7 +175,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
       for (i in seq_along(var_check_dic)) {
         # Identify variables associated with each checkbox option
-        vars_data <- names(data)[grep(stringr::str_glue("{var_check_dic[i]}___"), names(data))]
+        vars_data <- names(data)[grep(stringr::str_glue("^{var_check_dic[i]}___"), names(data))]
         vars_data <- vars_data[!grepl(".factor$", vars_data)]
 
         # Retrieve branching logic for the checkbox field
@@ -183,6 +183,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
         # If there is branching logic, attempt to translate and evaluate it
         if (!is.na(logic) & !logic %in% "") {
+
           # Checking if the logic is already in R format
           if (grepl("<>|\\[.*?\\]", logic) & !grepl("==|!=|\\$", logic)) {
             # Translate REDCap logic to R language using rd_rlogic function
