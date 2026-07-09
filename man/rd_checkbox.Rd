@@ -11,7 +11,7 @@ rd_checkbox(
   event_form = NULL,
   checkbox_labels = c("No", "Yes"),
   checkbox_names = TRUE,
-  na_logic = "none"
+  na_logic = "missing"
 )
 }
 \arguments{
@@ -27,7 +27,7 @@ rd_checkbox(
 
 \item{checkbox_names}{Logical. If \code{TRUE} (default), checkbox columns are renamed using choice labels.}
 
-\item{na_logic}{Controls how missing values are set based on branching logic. Must be one of \code{"none"} (do nothing), \code{"missing"} (set to \code{NA} only when the logic evaluation is \code{NA}), or \code{"eval"} (set to \code{NA} when the logic evaluates to \code{FALSE}). Defaults to \code{"none"}.}
+\item{na_logic}{Controls how missing values are set based on branching logic. Must be one of \code{"none"} (do nothing), \code{"missing"} (set to \code{NA} only when the logic evaluation is \code{NA}), or \code{"eval"} (set to \code{NA} when the logic evaluates to \code{FALSE}). Defaults to \code{"missing"}.}
 }
 \value{
 A list with:

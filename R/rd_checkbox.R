@@ -11,7 +11,7 @@
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
 #' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels.
-#' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE`). Defaults to `"none"`.
+#' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE`). Defaults to `"missing"`.
 #'
 #' @return A list with:
 #' \describe{
@@ -49,7 +49,7 @@
 #' @export
 #' @importFrom stats setNames na.omit
 
-rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_names = TRUE, na_logic = "none") {
+rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), checkbox_names = TRUE, na_logic = "missing") {
   results <- NULL
   rlogic_eval <- NULL
 
@@ -121,7 +121,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     }
   }
 
-  # Update results with the this transformation
+  # Update results with the transformation
   reason <- if (na_logic == "eval")
     "when the logic isn't satisfied or it's missing"
   else if (na_logic == "missing")
@@ -162,6 +162,12 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
         warning("The project contains repeated instruments, and this function cannot accurately evaluate the branching logic of checkboxes in such cases.", call. = FALSE)
       }
 
+      # Handle the fact that a rd_factor was performed before this function
+      if (length(var_check_factors) == 0 & all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {
+        warning(
+          "The checkboxes are already in factor form. To properly evaluate checkbox branching logic, please run `rd_dictionary()` first.", call. = FALSE
+        )
+      }
 
       caption <- "Checkbox variables advisable to be reviewed"
       review <- NULL
@@ -169,7 +175,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
       for (i in seq_along(var_check_dic)) {
         # Identify variables associated with each checkbox option
-        vars_data <- names(data)[grep(stringr::str_glue("{var_check_dic[i]}___"), names(data))]
+        vars_data <- names(data)[grep(stringr::str_glue("^{var_check_dic[i]}___"), names(data))]
         vars_data <- vars_data[!grepl(".factor$", vars_data)]
 
         # Retrieve branching logic for the checkbox field
@@ -177,6 +183,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
         # If there is branching logic, attempt to translate and evaluate it
         if (!is.na(logic) & !logic %in% "") {
+
           # Checking if the logic is already in R format
           if (grepl("<>|\\[.*?\\]", logic) & !grepl("==|!=|\\$", logic)) {
             # Translate REDCap logic to R language using rd_rlogic function
@@ -385,10 +392,23 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace2)
     )
 
-  # Returning checkboxes to numeric version
+  # Returning checkboxes to numeric version & applying the same missing values to their factor version
   if (length(var_check_factors) > 0) {
+
+    correspondence <- correspondence |>
+      dplyr::mutate(out_factor = paste0(out, ".factor"))
+
     data <- data |>
-      dplyr::mutate(dplyr::across(correspondence$out, ~ as.numeric(.x)))
+      dplyr::mutate(
+        dplyr::across(dplyr::any_of(correspondence$out), as.numeric),
+        dplyr::across(dplyr::any_of(correspondence$out_factor), ~{
+
+          var_fac <- data[[dplyr::cur_column()]]
+          var_num <- data[[sub("\\.factor$", "", dplyr::cur_column())]]
+
+          dplyr::case_when(!is.na(var_num) ~ var_fac)
+          })
+      )
   }
 
   # Apply the labels to the data

@@ -10,6 +10,7 @@ redcap_data(
   event_path = NA,
   uri = NA,
   token = NA,
+  sep = ",",
   filter_field = NULL,
   survey_fields = FALSE
 )
@@ -24,6 +25,8 @@ redcap_data(
 \item{uri}{REDCap API base URI (use with \code{token}).}
 
 \item{token}{REDCap API token (use with \code{uri}).}
+
+\item{sep}{Character string specifying the field separator for the exported dictionary CSV file. Defaul \code{","}.}
 
 \item{filter_field}{Optional character vector of field names to request from the API.}
 
