@@ -10,3 +10,6 @@
 ^vignettes/articles$
 ^doc$
 ^Meta$
+^CRAN-SUBMISSION$
+^cran-comments\.md$
+^.vscode

@@ -89,7 +89,12 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   }
 
   # Proceed only if the project is not longitudinal or has event-form mapping, and is not repeated
-  if (!(longitudinal & is.null(event_form)) & !repeat_instrument) {
+  if (!(longitudinal & is.null(event_form))) {
+
+    if(repeat_instrument) {
+      stop("The dataset contains repeated instruments, which are not supported by this function. ", call. = FALSE)
+    }
+
     # Replace `NA` in branching logic fields with empty strings
     if (any(is.na(dic$branching_logic_show_field_only_if))) {
       dic <- dic |>

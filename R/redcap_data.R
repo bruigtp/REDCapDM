@@ -28,6 +28,7 @@
 #' @param event_path Path to the event-form mapping file (CSV or XLSX) for longitudinal projects (downloadable via the `Designate Instruments for My Events` tab within the `Project Setup` section of REDCap).
 #' @param uri REDCap API base URI (use with `token`).
 #' @param token REDCap API token (use with `uri`).
+#' @param sep Character string specifying the field separator for the exported dictionary CSV file. Defaul `","`.
 #' @param filter_field Optional character vector of field names to request from the API.
 #' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
 #'
@@ -59,7 +60,7 @@
 #' @export
 #' @importFrom stats setNames
 
-redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, filter_field = NULL, survey_fields = FALSE) {
+redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, sep = ",", filter_field = NULL, survey_fields = FALSE) {
 
   event_form <- NULL
 
@@ -121,7 +122,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       dic <- openxlsx::read.xlsx(dic_path, colNames = FALSE, detectDates = TRUE, sheet = 1)
     } else if (extension_dic == "csv") {
       # Read CSV file
-      dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE)
+      dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE, sep = sep)
     } else {
       stop("Unsupported dictionary format. Only CSV and XLSX are supported.", call. = FALSE)
     }
@@ -432,6 +433,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       var_noevent <- intersect(var_noevent, names(data))
 
+      var_noevent <- var_noevent[var_noevent != "record_id"]
+
       data_def$data <- data_def$data |>
         dplyr::select(-dplyr::any_of(var_noevent))
 
@@ -445,7 +448,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
 
   # Change the labelled class of each column but don't remove the label:
-  data <- data |>
+  data_def$data <- data_def$data |>
     dplyr::mutate_all(function(x) {
       class(x) <- setdiff(class(x), "labelled")
       x

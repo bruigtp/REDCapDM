@@ -1,7 +1,7 @@
 Package: REDCapDM
 Type: Package
 Title: 'REDCap' Data Management
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: c(
     person("João", "Carmezim", email = "jcarmezim@igtp.cat", role = c("aut", "cre")),
     person("Pau", "Satorra", role = c("aut")),
@@ -16,7 +16,6 @@ License: MIT + file LICENSE
 URL: https://bruigtp.github.io/REDCapDM/, https://doi.org/10.1186/s12874-024-02178-6
 BugReports: https://github.com/bruigtp/REDCapDM/issues
 Encoding: UTF-8
-RoxygenNote: 7.3.3
 Imports:
     dplyr,
     janitor,
@@ -33,7 +32,8 @@ Imports:
     stringi,
     cli,
     forcats,
-    lifecycle
+    lifecycle,
+    magrittr
 Suggests: 
     knitr,
     rmarkdown,
@@ -47,3 +47,4 @@ LazyData: true
 Config/testthat/edition: 3
 Config/Needs/website: rmarkdown
 Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.0.0
