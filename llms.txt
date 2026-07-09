@@ -33,6 +33,7 @@ The *release* version can be installed from
 [CRAN](https://cran.r-project.org/package=REDCapDM).
 
 ``` r
+
 install.packages("REDCapDM")
 ```
 
@@ -41,6 +42,7 @@ The *development* version can be installed from
 `remotes` package.
 
 ``` r
+
 install.packages("remotes") # Run this line if the 'remotes' package isn't installed already.
 remotes::install_github("bruigtp/REDCapDM")
 ```

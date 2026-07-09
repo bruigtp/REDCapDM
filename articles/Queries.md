@@ -26,6 +26,7 @@ this scenario, the expression would be ‘is.na(x)’, where ‘x’ represents
 the variable itself:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = "copd",
                     expression = "is.na(x)")
@@ -43,6 +44,7 @@ Alternatively, to identify outliers or observations that meet a certain
 condition (for example, range):
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("age", "potassium"),
                     expression = c("x > 80", "x > 4.2 & x < 4.3"),
@@ -62,6 +64,7 @@ In both cases, the function returns a list containing a data frame
 designed to aid you to locate each query in the REDCap project:
 
 ``` r
+
 example$queries
 ```
 
@@ -71,15 +74,17 @@ And a summary of the generated queries per specified variable for each
 applied expression:
 
 ``` r
+
 example$results
 ```
 
-| Variables | Description |     Event      |                           Query                            | Total |
-|:---------:|:-----------:|:--------------:|:----------------------------------------------------------:|:-----:|
-|    age    |     Age     | Baseline visit |          The value should not be greater than 80           |  22   |
-| potassium |  Potassium  | Baseline visit | The value should not be greater than 4.2 and less than 4.3 |   4   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| age | Age | Baseline visit | The value should not be greater than 80 | 22 |
+| potassium | Potassium | Baseline visit | The value should not be greater than 4.2 and less than 4.3 | 4 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
   
 
@@ -94,6 +99,7 @@ corresponding row. To identify these cases, you can use the following
 code:
 
 ``` r
+
 example <- rd_event(covican_transformed,
                     event = "follow_up_visit_da_arm_1")
 ```
@@ -112,6 +118,7 @@ function allows you to compare the previous query dataset with the new
 one:
 
 ``` r
+
 check <- check_queries(old = example$queries, 
                        new = new_example$queries)
 ```
@@ -120,6 +127,7 @@ The output, in addition to the query data frame, now includes a summary
 with the number of new, miscorrected, solved and pending queries:
 
 ``` r
+
 # Print results
 check$results
 ```
@@ -131,7 +139,8 @@ check$results
 | Miscorrected |   1   |
 |     New      |   1   |
 
-Comparison report
+Comparison report {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 > Note: The “Miscorrected” category includes queries that belong to the
 > same combination of record identifier and variable in both the old and
@@ -151,6 +160,7 @@ function, you can export the identified queries to a `.xlsx` file of
 your choice:
 
 ``` r
+
 rd_export(example)
 ```
 
@@ -159,6 +169,7 @@ named “example.xlsx” in your current working directory, but you can
 customise this exported file:
 
 ``` r
+
 rd_export(queries = example$queries,
           column = "Link",
           sheet_name = "Queries - Proyecto",

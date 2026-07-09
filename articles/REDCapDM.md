@@ -82,12 +82,14 @@ Or we can use all these functions at once:
 The release version can be installed from CRAN:
 
 ``` r
+
 install.packages("REDCapDM")
 ```
 
 The development version can be installed from GitHub:
 
 ``` r
+
 install.packages("remotes") # Run this line if the 'remotes' package isn't installed already.
 remotes::install_github("bruigtp/REDCapDM")
 ```
@@ -103,6 +105,7 @@ and superinfections in onco-hematological patients with COVID-19.
 We can load the built-in dataset by typing:
 
 ``` r
+
 library(REDCapDM)
 
 data(covican)
@@ -123,28 +126,28 @@ form.
 
 Some of the variables in the dataset are:
 
-| Name                     | Description                                                       | Categories                                            |
-|:-------------------------|:------------------------------------------------------------------|:------------------------------------------------------|
-| record_id                | Identifier of each record                                         |                                                       |
-| redcap_event_name        | Auto-generated name of the events                                 |                                                       |
-| redcap_data_access_group | Auto-generated name of each center                                |                                                       |
-| inc_1                    | Patients older than 18 years                                      | No ; Yes                                              |
-| inc_2                    | Cancer patients                                                   | No ; Yes                                              |
-| inc_3                    | Diagnosed of COVID-19                                             | No ; Yes                                              |
-| exc_1                    | Solid tumour remission \>1 year                                   | No ; Yes                                              |
-| screening_fail_crit      | Indicator of non-compliance with inclusion and exclusion criteria | Compliance ; Non-compliance                           |
-| d_birth                  | Date of birth (y-m-d)                                             |                                                       |
-| d_admission              | Date of first visit (y-m-d)                                       |                                                       |
-| age                      | Age                                                               |                                                       |
-| dm                       | Indicator of diabetes                                             | No ; Yes                                              |
-| type_dm                  | Type of diabetes                                                  | No complications ; End-organ diabetes-related disease |
-| copd                     | Indicator of chronic pulmonary disease                            | No ; Yes                                              |
-| fio2                     | Fraction of inspired oxygen (%)                                   |                                                       |
-| available_analytics      | Indicator of blood test available                                 | No ; Yes                                              |
-| potassium                | Potassium (mmol/L)                                                |                                                       |
-| resp_rate                | Respiratory rate (bpm)                                            |                                                       |
-| leuk_lymph               | Indicator of leukemia or lymphoma                                 | No ; Yes                                              |
-| acute_leuk               | Indicator of acute leukemia                                       | No ; Yes                                              |
+| Name | Description | Categories |
+|:---|:---|:---|
+| record_id | Identifier of each record |  |
+| redcap_event_name | Auto-generated name of the events |  |
+| redcap_data_access_group | Auto-generated name of each center |  |
+| inc_1 | Patients older than 18 years | No ; Yes |
+| inc_2 | Cancer patients | No ; Yes |
+| inc_3 | Diagnosed of COVID-19 | No ; Yes |
+| exc_1 | Solid tumour remission \>1 year | No ; Yes |
+| screening_fail_crit | Indicator of non-compliance with inclusion and exclusion criteria | Compliance ; Non-compliance |
+| d_birth | Date of birth (y-m-d) |  |
+| d_admission | Date of first visit (y-m-d) |  |
+| age | Age |  |
+| dm | Indicator of diabetes | No ; Yes |
+| type_dm | Type of diabetes | No complications ; End-organ diabetes-related disease |
+| copd | Indicator of chronic pulmonary disease | No ; Yes |
+| fio2 | Fraction of inspired oxygen (%) |  |
+| available_analytics | Indicator of blood test available | No ; Yes |
+| potassium | Potassium (mmol/L) |  |
+| resp_rate | Respiratory rate (bpm) |  |
+| leuk_lymph | Indicator of leukemia or lymphoma | No ; Yes |
+| acute_leuk | Indicator of acute leukemia | No ; Yes |
 
   
 
@@ -175,6 +178,7 @@ where we have stored the R file and the dictionary from the REDCap
 project:
 
 ``` r
+
 dataset <- redcap_data(data_path = "C:/Users/username/example.r",
                        dic_path = "C:/Users/username/example_dictionary.csv")
 ```
@@ -191,6 +195,7 @@ mappings (CSV)*. Then, it has to be specified using the argument
 `event_path`:
 
 ``` r
+
 dataset <- redcap_data(data_path = "C:/Users/username/example.r",
                        dic_path = "C:/Users/username/example_dictionary.csv",
                        event_path = "C:/Users/username/events.csv")
@@ -206,6 +211,7 @@ respectively refer to the uniform resource identifier of the REDCap
 project and the user-specific string that serves as the password:
 
 ``` r
+
 dataset_api <- redcap_data(uri = "https://redcap.idibell.cat/api/",
                            token = "55E5C3D1E83213ADA2182A4BFDEA")
 ```
@@ -246,6 +252,7 @@ exchanged. For example, for `covican` there are no variables to delete
 and dates are already processed, so the pipeline would be simplified:
 
 ``` r
+
 covican_transformed <- covican |> 
     rd_recalculate() |> 
     rd_checkbox() |> 
@@ -296,6 +303,7 @@ You can delete variables either by specifying their exact names or by
 using regular expression patterns:
 
 ``` r
+
 # Option A: delete by variable name
 covican_deleted <- covican |> 
   rd_delete_vars(vars = c("potassium", "leuk_lymph"))
@@ -323,6 +331,7 @@ dates/datetimes from the REDCap dictionary and converts them to `Date`
 and `POSIXct`, respectively.
 
 ``` r
+
 covican_dates <- covican |> 
   rd_dates()
 ```
@@ -330,6 +339,7 @@ covican_dates <- covican |>
 Quick verification example:
 
 ``` r
+
 # Simulate a character date since covican already has the dates in the correct format
 covican_dates <- covican
 covican_dates$data <- covican_dates$data |> 
@@ -362,6 +372,7 @@ discrepancies between REDCap’s stored calculations and the values
 recalculated in R.
 
 ``` r
+
 covican_recalc <- covican |> 
   rd_recalculate()
 
@@ -397,6 +408,7 @@ multi-event calculations) to reduce computation time and avoid
 unnecessary warnings.
 
 ``` r
+
 # Exclude specific variables from recalculation
 covican_recalc <- covican |> 
   rd_recalculate(exclude = c("screening_fail_crit", "resp_rate"))
@@ -440,6 +452,7 @@ variable names. This includes choices, calculations, and branching
 logic.
 
 ``` r
+
 # Default transformation: "No"/"Yes" labels & renamed variables
 cb <- covican |> 
   rd_checkbox()
@@ -463,6 +476,7 @@ To preserve the original REDCap-style names (e.g., `varname___1`,
 `varname___2`) instead of renaming variables based on option text:
 
 ``` r
+
 # use the argument checkbox_names to choose the final format of the variable names
 cb <- covican |> 
   rd_checkbox(checkbox_names = FALSE)
@@ -487,6 +501,7 @@ the following options:
   (i.e., logic not satisfied or missing).
 
 ``` r
+
 cb <- covican |> 
   rd_checkbox(na_logic = "eval")
 ```
@@ -495,6 +510,7 @@ By default, checkbox factors are labeled `"No"` and `"Yes"`, but you can
 specify alternative labels:
 
 ``` r
+
 cb <- covican |> 
   rd_checkbox(checkbox_labels = c("Absent", "Present"))
 
@@ -513,6 +529,7 @@ factors by replacing each original variable (numeric version) with its
 corresponding `.factor` version created by REDCap.
 
 ``` r
+
 factored <- covican |> 
   rd_factor()
 
@@ -529,6 +546,7 @@ replaced (including their `.factor` version) while still allowing the
 rest of the dataset to be converted.
 
 ``` r
+
 factored <- covican |> 
   rd_factor(exclude = c("available_analytics", "urine_culture"))
 
@@ -540,6 +558,7 @@ str(covican$data$available_analytics)
     ##  - attr(*, "label")= chr "Blood test available? (+/- 72h)"
 
 ``` r
+
 str(covican$data$available_analytics.factor)
 ```
 
@@ -567,6 +586,7 @@ from REDCap logic into R logic, and ensures the dictionary remains
 consistent with the cleaned dataset.
 
 ``` r
+
 # Update dictionary after cleaning
 dict_result <- covican |>
   rd_factor() |>
@@ -603,6 +623,7 @@ For non-longitudinal projects (or longitudinal projects with an
 based on forms.
 
 ``` r
+
 forms_data <- covican |>
   rd_split(by = "form")
 
@@ -623,6 +644,7 @@ forms_data$data
 If repeated entries exist, you can reshape the data into wide format:
 
 ``` r
+
 forms_data <- covican |>
   rd_split(by = "form", wide = TRUE)
 ```
@@ -637,6 +659,7 @@ function uses the `event_form` mapping to assign variables correctly to
 each event:
 
 ``` r
+
 events_data <- covican |>
   rd_split(by = "event")
 
@@ -652,6 +675,7 @@ events_data$data
 If you want to extract only one form or event, use the `which` argument:
 
 ``` r
+
 # Example by form
 baseline_data <- covican |>
   rd_split(by = "form", which = "demographics")
@@ -696,6 +720,7 @@ function and then use this function to set the values of the checkbox
 is less than 65 years old:
 
 ``` r
+
 cb <- covican |> 
   rd_checkbox()
 
@@ -703,10 +728,12 @@ cb <- covican |>
 table(cb$data$type_underlying_disease_haematological_cancer)
 ```
 
+
       0   1 
     103  87 
 
 ``` r
+
 #Run with this function
 cb2 <- covican |> 
   rd_checkbox() |> 
@@ -716,6 +743,7 @@ cb2 <- covican |>
 #After inserting missings
 table(cb2$data$type_underlying_disease_haematological_cancer)
 ```
+
 
      0  1 
     65 50 
@@ -745,6 +773,7 @@ Let’s see how it transforms the logic of one of the calculated fields in
 the built-in dataset:
 
 ``` r
+
 logic_trans <- covican |> 
   rd_rlogic(logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
             var = "screening_fail_crit")
@@ -765,6 +794,7 @@ Alternatively, you can do all these steps at once using the
 function:
 
 ``` r
+
 covican_transformed <- rd_transform(covican)
 
 #Print the results of the transformation
@@ -833,11 +863,12 @@ expression applied:
 
 [TABLE]
 
-| Variables |              Description              |     Event      |              Query              | Total |
-|:---------:|:-------------------------------------:|:--------------:|:-------------------------------:|:-----:|
-|   copd    | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing |   6   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 6 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 The data frame is designed to aid users in locating each query in their
 REDCap project. It includes information such as the record identifier,
@@ -863,6 +894,7 @@ should also specify the event in which the described variables are
 present through the use of the `event` argument:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
                     expression = c("is.na(x)", "is.na(x)"),
@@ -872,12 +904,13 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-| Variables |              Description              |     Event      |              Query              | Total |
-|:---------:|:-------------------------------------:|:--------------:|:-------------------------------:|:-----:|
-|   copd    | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing |   6   |
-|    age    |                  Age                  | Baseline visit | The value should not be missing |   5   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 6 |
+| age | Age | Baseline visit | The value should not be missing | 5 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 In this case, we can observe that there are 6 missing values in the
 *copd* variable and 5 missing values in *age*.
@@ -906,6 +939,7 @@ indicate that there might be potential issues or limitations with the
 conversion process for that specific variable’s branching logic:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("age", "copd", "potassium"),
                     expression = c("is.na(x)", "is.na(x)", "is.na(x)"),
@@ -917,13 +951,15 @@ example <- rd_query(covican_transformed,
     Check the results element of the output(...$results) for details.
 
 ``` r
+
 # Printing results
 example$results
 ```
 
 [TABLE]
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 Based on the information provided, in addition to the missing values of
 the *age* and *copd* variables already identified, there are 31 missing
@@ -945,6 +981,7 @@ ensures that the condition is accurately applied and missing values are
 appropriately identified based on the desired criteria.
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("potassium"),
                     expression = c("is.na(x)"),
@@ -957,15 +994,17 @@ example <- rd_query(covican_transformed,
     Check the results element of the output(...$results) for details.
 
 ``` r
+
 # Printing results
 example$results
 ```
 
-| Variables | Description |     Event      |              Query              | Total |                 Branching logic                 |
-|:---------:|:-----------:|:--------------:|:-------------------------------:|:-----:|:-----------------------------------------------:|
-| potassium |  Potassium  | Baseline visit | The value should not be missing |  21   | \[available_analytics\]\[current-instance\]=‘1’ |
+| Variables | Description | Event | Query | Total | Branching logic |
+|:--:|:--:|:--:|:--:|:--:|:--:|
+| potassium | Potassium | Baseline visit | The value should not be missing | 21 | \[available_analytics\]\[current-instance\]=‘1’ |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 The total number of missing values changes when we use the `filter`
 argument, the variable *potassium* now presents 21 missing values
@@ -992,6 +1031,7 @@ observations where *age* is greater than 70, we should use the
 `expression` argument again specifying ‘x\>70’:
 
 ``` r
+
 example <- rd_query(variables="age",
                     expression="x>70",
                     event="baseline_visit_arm_1",
@@ -1002,11 +1042,12 @@ example <- rd_query(variables="age",
 example$results
 ```
 
-| Variables | Description |     Event      |                  Query                  | Total |
-|:---------:|:-----------:|:--------------:|:---------------------------------------:|:-----:|
-|    age    |     Age     | Baseline visit | The value should not be greater than 70 |  76   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| age | Age | Baseline visit | The value should not be greater than 70 | 76 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
   
 
@@ -1020,6 +1061,7 @@ greater than 70 and all the observations where *copd* is ‘Yes’ we shall
 use:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables=c("age", "copd"),
                     expression=c("x > 70", "x == 'Yes'"),
@@ -1029,12 +1071,13 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-| Variables |              Description              |     Event      |                  Query                  | Total |
-|:---------:|:-------------------------------------:|:--------------:|:---------------------------------------:|:-----:|
-|    age    |                  Age                  | Baseline visit | The value should not be greater than 70 |  76   |
-|   copd    | Chronic obstructive pulmonary disease | Baseline visit | The value should not be equal to ‘Yes’  |  21   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| age | Age | Baseline visit | The value should not be greater than 70 | 76 |
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be equal to ‘Yes’ | 21 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
   
 
@@ -1043,6 +1086,7 @@ observations where *age* is greater than 70, less than 80, or it is a
 missing value we shall use the following expression:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables="age",
                     expression="(x>70 & x<80) | is.na(x)",
@@ -1052,11 +1096,12 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-| Variables | Description |     Event      |                                 Query                                 | Total |
-|:---------:|:-----------:|:--------------:|:---------------------------------------------------------------------:|:-----:|
-|    age    |     Age     | Baseline visit | The value should not be (greater than 70 and less than 80) or missing |  54   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| age | Age | Baseline visit | The value should not be (greater than 70 and less than 80) or missing | 54 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 ##### *Special cases*
 
@@ -1066,6 +1111,7 @@ In order to evaluate the same expression for all variables, the user
 should supply just a single element for `expression`:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("copd","age","dm"),
                     expression = "is.na(x)",
@@ -1076,17 +1122,19 @@ example <- rd_query(covican_transformed,
     The first expression will be applied to all variables.
 
 ``` r
+
 # Printing results
 example$results
 ```
 
-| Variables |                   Description                    |     Event      |              Query              | Total |
-|:---------:|:------------------------------------------------:|:--------------:|:-------------------------------:|:-----:|
-|   copd    |      Chronic obstructive pulmonary disease       | Baseline visit | The value should not be missing |   6   |
-|    age    |                       Age                        | Baseline visit | The value should not be missing |   5   |
-|    dm     | Diabetes (treated with insulin or antidiabetic … | Baseline visit | The value should not be missing |   5   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 6 |
+| age | Age | Baseline visit | The value should not be missing | 5 |
+| dm | Diabetes (treated with insulin or antidiabetic … | Baseline visit | The value should not be missing | 5 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
   
 
@@ -1107,8 +1155,66 @@ There are two possibilities here:
 1.  *With event-form:* the function automatically detects in which
     events the variable is collected and generates queries for those
     events.
+
+    ``` r
+
+    example <- rd_query(covican_transformed,
+                        variables = "copd",
+                        expression = "is.na(x)")
+
+    # Printing results
+    example$results
+    ```
+
+    | Variables | Description | Event | Query | Total |
+    |:--:|:--:|:--:|:--:|:--:|
+    | copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 6 |
+
+    Report of queries {.table .table .table-striped .table-condensed
+    style="width: auto !important; margin-left: auto; margin-right: auto;"}
+
+    We get the same result as if we had used the `event` argument.
+
 2.  *Without event-form:* the function generates queries for all events
     present in the dataset.
+
+    ``` r
+
+    my_list <- subset(covican_transformed, !names(covican_transformed) %in% "event_form")
+
+    example <- rd_query(my_list,
+                        variables = "copd",
+                        expression = "is.na(x)")
+    ```
+
+        Warning: No event or event-form has been specified. Therefore, the function
+        will automatically consider observations from all events in the dataset. Ensure
+        that the selected variable(s) is(are) collected in all specified events. This
+        will avoid overestimating the number of queries.
+
+    ``` r
+
+    # Printing results
+    example$results
+    ```
+
+    | Variables | Description | Event | Query | Total |
+    |:--:|:--:|:--:|:--:|:--:|
+    | copd | Chronic obstructive pulmonary disease | Follow up visit day 14+/-5d | The value should not be missing | 152 |
+    | copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 6 |
+
+    Report of queries {.table .table .table-striped .table-condensed
+    style="width: auto !important; margin-left: auto; margin-right: auto;"}
+
+    As we can see, there are 152 new missing values in the follow-up
+    visit because the variable *copd* it is only present in the baseline
+    visit. Thus, it might result in an overestimation of the number of
+    missing values, as the function considers all the events of the
+    study if no event is specified.
+
+    The function will issue a warning if it detects that the REDCap
+    project contains multiple events, the event-form mapping is not
+    specified and the `event` argument is not specified.
 
   
 
@@ -1123,6 +1229,7 @@ argument or even change the name of the instrument using the
 `instrument` argument:
 
 ``` r
+
 example<- rd_query(covican_transformed,
                    variables = c("copd"),
                    variables_names = c("Chronic obstructive pulmonary disease (Yes/No)"),
@@ -1147,6 +1254,7 @@ which normally would report the missing values and add `negate = TRUE`,
 so the result will be the number of non missing values in *copd*:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = "copd",
                     expression = "is.na(x)",
@@ -1157,11 +1265,12 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-| Variables |              Description              |     Event      |            Query            | Total |
-|:---------:|:-------------------------------------:|:--------------:|:---------------------------:|:-----:|
-|   copd    | Chronic obstructive pulmonary disease | Baseline visit | The value should be missing |  184  |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should be missing | 184 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 There are 184 non missing values in the variable *copd*.
 
@@ -1173,6 +1282,7 @@ In order to keep all queries in the same R object, we can use the
 `addTo` argument to specify the output of another query dataset.
 
 ``` r
+
 example2 <- rd_query(covican_transformed,
                      variables = "age",
                      expression = "is.na(x)",
@@ -1183,12 +1293,13 @@ example2 <- rd_query(covican_transformed,
 example2$results
 ```
 
-| Variables |              Description              |     Event      |              Query              | Total |
-|:---------:|:-------------------------------------:|:--------------:|:-------------------------------:|:-----:|
-|   copd    | Chronic obstructive pulmonary disease | Baseline visit |   The value should be missing   |  184  |
-|    age    |                  Age                  | Baseline visit | The value should not be missing |   5   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should be missing | 184 |
+| age | Age | Baseline visit | The value should not be missing | 5 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 We have joined our former output of 184 non missing values in the
 variable *copd* with the new query dataset composed by the 5 missing
@@ -1202,6 +1313,7 @@ To customize the title of the summary of queries, we can use the
 `report_title` argument:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
                     expression = c("is.na(x)", "x<20"),
@@ -1212,11 +1324,13 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-| Variables |              Description              |     Event      |              Query              | Total |
-|:---------:|:-------------------------------------:|:--------------:|:-------------------------------:|:-----:|
-|   copd    | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing |   6   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 6 |
 
-Missing COPD values in the baseline event
+Missing COPD values in the baseline event {.table .table .table-striped
+.table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 The default title of the summary is “Report of queries” but we have
 changed it to “Missing COPD values in the baseline event”.
@@ -1231,6 +1345,7 @@ To include these omitted variables in the summary, we can use the
 `report_zeros` argument:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
                     expression = c("is.na(x)", "x < 20"),
@@ -1241,12 +1356,13 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-| Variables |              Description              |     Event      |                Query                 | Total |
-|:---------:|:-------------------------------------:|:--------------:|:------------------------------------:|:-----:|
-|   copd    | Chronic obstructive pulmonary disease | Baseline visit |   The value should not be missing    |   6   |
-|    age    |                  Age                  | Baseline visit | The value should not be less than 20 |   0   |
+| Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|
+| copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 6 |
+| age | Age | Baseline visit | The value should not be less than 20 | 0 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 The variable *age* is reported in the summary in spite of not having any
 queries identified.
@@ -1260,6 +1376,7 @@ interest to report the summary by each one of the DAGs. To do that, we
 can use the `by_dag` argument:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = c("copd", "age"),
                     expression = c("is.na(x)", "x>60"),
@@ -1271,16 +1388,18 @@ Now we can choose to see the report of a specific DAG, for example, the
 summary of the generated queries for the *Hospital 2*:
 
 ``` r
+
 # Printing results
 example$results$`Hospital 2`
 ```
 
-|    DAG     | Variables |              Description              |     Event      |                  Query                  | Total |
-|:----------:|:---------:|:-------------------------------------:|:--------------:|:---------------------------------------:|:-----:|
-| Hospital 2 |    age    |                  Age                  | Baseline visit | The value should not be greater than 60 |   3   |
-| Hospital 2 |   copd    | Chronic obstructive pulmonary disease | Baseline visit |     The value should not be missing     |   2   |
+| DAG | Variables | Description | Event | Query | Total |
+|:--:|:--:|:--:|:--:|:--:|:--:|
+| Hospital 2 | age | Age | Baseline visit | The value should not be greater than 60 | 3 |
+| Hospital 2 | copd | Chronic obstructive pulmonary disease | Baseline visit | The value should not be missing | 2 |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 For this DAG, there are 3 values of *age* bigger than 60 and 2 missing
 values in the variable *copd*.
@@ -1312,6 +1431,7 @@ Once we have this information, we pass it as a list to the `link`
 argument:
 
 ``` r
+
 example <- rd_query(covican_transformed,
                     variables = "age",
                     expression = "x>89",
@@ -1326,6 +1446,7 @@ The output of the function now has an additional column with the link to
 the respective query:
 
 ``` r
+
 # Printing results
 example$queries$Link
 ```
@@ -1352,6 +1473,7 @@ function can be used to point out in how many records an event does not
 exist:
 
 ``` r
+
 example <- rd_event(covican_transformed,
                     event = "follow_up_visit_da_arm_1")
 
@@ -1363,7 +1485,8 @@ example$results
 |:------------------------:|:---------------------------:|:-----:|
 | follow_up_visit_da_arm_1 | Follow up visit day 14+/-5d |  38   |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 There are a total of 38 events per record without any row corresponding
 to the event *Follow up visit day 14+/-5d*. Thus, when searching for
@@ -1385,6 +1508,7 @@ the `filter` argument of the
 function:
 
 ``` r
+
 example <- rd_event(covican_transformed,
                     event = "follow_up_visit_da_arm_1",
                     filter = "screening_fail_crit==0")
@@ -1397,7 +1521,8 @@ example$results
 |:------------------------:|:---------------------------:|:-----:|
 | follow_up_visit_da_arm_1 | Follow up visit day 14+/-5d |  34   |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
   
 
@@ -1407,6 +1532,7 @@ function, this function also treats the argument `event` as a vector
 allowing us to check for multiple missing events at the same time.
 
 ``` r
+
 example <- rd_event(covican_transformed,
                     event = c("baseline_visit_arm_1","follow_up_visit_da_arm_1"),
                     filter = "screening_fail_crit==0",
@@ -1421,7 +1547,8 @@ example$results
 | follow_up_visit_da_arm_1 | Follow up visit day 14+/-5d |  34   |
 |   baseline_visit_arm_1   |       Baseline visit        |   0   |
 
-Report of queries
+Report of queries {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
   
 
@@ -1447,6 +1574,7 @@ corrected, and which remain unchanged. Besides, the summary will show
 the number of queries in each one of these categories:
 
 ``` r
+
 check <- check_queries(old = example$queries, 
                        new = new_example$queries)
 
@@ -1461,7 +1589,8 @@ check$results
 | Miscorrected |   1   |
 |     New      |   1   |
 
-Comparison report
+Comparison report {.table .table .table-striped .table-condensed
+style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
 There are 7 queries pending resolution, 4 solved queries, 1 miscorrected
 query, and 1 new query between the previous and the new query dataset.
@@ -1487,6 +1616,7 @@ function, we can export the identified queries to a `.xlsx` file of our
 choice:
 
 ``` r
+
 rd_export(example)
 ```
 
@@ -1497,6 +1627,7 @@ In order to have a more personalised output file, we can add information
 to the following arguments:
 
 ``` r
+
 rd_export(queries = example$queries,
           column = "Link",
           sheet_name = "Queries - Proyecto",

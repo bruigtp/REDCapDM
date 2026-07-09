@@ -32,6 +32,7 @@ Then, provide the paths to these files using the
 function:
 
 ``` r
+
 dataset <- redcap_data(
   data_path = "C:/Users/username/example.r",
   dic_path = "C:/Users/username/example_dictionary.csv",
@@ -47,6 +48,7 @@ You can also import data directly from REDCap using your project’s **API
 token** and **URL**:
 
 ``` r
+
 dataset_api <- redcap_data(
   uri = "https://redcap.com/api/",
   token = "YOUR_API_TOKEN_HERE"
@@ -63,11 +65,11 @@ longitudinal projects.
 [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html)
 returns a list with three elements:
 
-| Element      | Description                                                              |
-|--------------|--------------------------------------------------------------------------|
-| `data`       | Imported dataset containing all REDCap variables                         |
+| Element | Description |
+|----|----|
+| `data` | Imported dataset containing all REDCap variables |
 | `dictionary` | Metadata for each variable, including labels, types, and branching logic |
-| `event_form` | Mapping between events and forms (only for longitudinal projects)        |
+| `event_form` | Mapping between events and forms (only for longitudinal projects) |
 
   
   
@@ -85,13 +87,13 @@ which performs multiple operations in one step.
 [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
 performs the following actions:
 
-| Transformation             | Description                                                          |
-|----------------------------|----------------------------------------------------------------------|
-| Variable deletion          | Remove specific variables or patterns                                |
-| Recalculate fields         | Update REDCap calculated fields                                      |
-| Checkbox transformation    | Convert checkbox variables into separate variables with option names |
-| Factor conversion          | Replace original variables with their factor version                 |
-| Branching logic conversion | Translate REDCap logic into R logic for easier processing            |
+| Transformation | Description |
+|----|----|
+| Variable deletion | Remove specific variables or patterns |
+| Recalculate fields | Update REDCap calculated fields |
+| Checkbox transformation | Convert checkbox variables into separate variables with option names |
+| Factor conversion | Replace original variables with their factor version |
+| Branching logic conversion | Translate REDCap logic into R logic for easier processing |
 
 ### **2. Basic usage**
 
@@ -104,6 +106,7 @@ You can provide these inputs either as a **single list** (output of
 or as **separate arguments**:
 
 ``` r
+
 #Option A: Provide the full project list
 covican_transformed <- rd_transform(covican)
 
@@ -128,6 +131,7 @@ The output is a list containing:
 You can view the transformation results:
 
 ``` r
+
 #Print the results of the transformation
 covican_transformed$results
 ```
@@ -167,6 +171,7 @@ For longitudinal projects, you can split the transformed dataset by
 event using the `final_format = "by_event"` argument:
 
 ``` r
+
 dataset <- rd_transform(covican,
                         final_format = "by_event")
 ```
@@ -175,6 +180,7 @@ Where the transformed dataset is a tibble object, containing data frames
 for each event in the REDCap project.
 
 ``` r
+
 dataset$data
 #> # A tibble: 2 × 2
 #>   events                   df             
@@ -189,6 +195,7 @@ Or, alternatively, it can be split by form using
 `final_format = "by_form"` argument:
 
 ``` r
+
 dataset <- rd_transform(covican,
                         final_format = "by_form")
 ```
@@ -197,6 +204,7 @@ Where the tibble object is composed by data frames corresponding to each
 form in the REDCap project.
 
 ``` r
+
 dataset$data
 #> # A tibble: 7 × 3
 #>   form                        events    df             
