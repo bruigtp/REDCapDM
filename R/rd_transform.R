@@ -112,13 +112,6 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     }
   })
 
-  # Change the labelled class of each column but don't remove the label:
-  data <- data |>
-    dplyr::mutate_all(function(x) {
-      class(x) <- setdiff(class(x), "labelled")
-      x
-    })
-
   # Delete selected variables
   results <- c(results, stringr::str_glue("{ind}. Removing selected variables\n"))
   ind <- ind + 1

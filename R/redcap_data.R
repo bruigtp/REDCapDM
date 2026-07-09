@@ -444,6 +444,13 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   data_def$data <- data_def$data |>
     labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
 
+  # Change the labelled class of each column but don't remove the label:
+  data <- data |>
+    dplyr::mutate_all(function(x) {
+      class(x) <- setdiff(class(x), "labelled")
+      x
+    })
+
   # Return the result
   return(data_def)
 }
