@@ -597,26 +597,26 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Clean HTML labels
   data_def$dictionary <- data_def$dictionary |>
-    dplyr::mutate(
-      field_label = dplyr::case_when(
-        is.na(field_label) | !nzchar(field_label) ~ field_label,
+  dplyr::mutate(
+    field_label = dplyr::case_when(
+      is.na(.data$field_label) | !nzchar(.data$field_label) ~ .data$field_label,
 
-        TRUE ~ {
-          lbl_clean <- stringr::str_replace_all(field_label, "<[^>]+>", " ")
+      TRUE ~ {
+        lbl_clean <- stringr::str_replace_all(.data$field_label, "<[^>]+>", " ")
 
-          lbl_clean <- stringr::str_replace_all(lbl_clean, "&nbsp;", " ")
-          lbl_clean <- stringr::str_replace_all(lbl_clean, "&amp;", "&")
-          lbl_clean <- stringr::str_replace_all(lbl_clean, "&lt;", "<")
-          lbl_clean <- stringr::str_replace_all(lbl_clean, "&gt;", ">")
-          lbl_clean <- stringr::str_replace_all(lbl_clean, "&quot;", '"')
-          lbl_clean <- stringr::str_replace_all(lbl_clean, "&#39;", "'")
+        lbl_clean <- stringr::str_replace_all(lbl_clean, "&nbsp;", " ")
+        lbl_clean <- stringr::str_replace_all(lbl_clean, "&amp;", "&")
+        lbl_clean <- stringr::str_replace_all(lbl_clean, "&lt;", "<")
+        lbl_clean <- stringr::str_replace_all(lbl_clean, "&gt;", ">")
+        lbl_clean <- stringr::str_replace_all(lbl_clean, "&quot;", '"')
+        lbl_clean <- stringr::str_replace_all(lbl_clean, "&#39;", "'")
 
-          lbl_clean <- stringr::str_replace_all(lbl_clean, "[\\r\\n\\t\\u200B\\u200C\\u200D\\uFEFF]", " ")
+        lbl_clean <- stringr::str_replace_all(lbl_clean, "[\\r\\n\\t\\u200B\\u200C\\u200D\\uFEFF]", " ")
 
-          stringr::str_squish(lbl_clean)
-        }
-      )
+        stringr::str_squish(lbl_clean)
+      }
     )
+  )
 
   # Reapply labels to the modified dataset
   data_def$data <- data_def$data |>
