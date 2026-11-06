@@ -464,13 +464,17 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   )
 
   # Identify which fields are of type 'text' & have non-null validation
-  validated_text_fields <- data_def$dictionary |>
-    dplyr::filter(
-      .data$field_type == "text",
-      !is.na(.data$text_validation_type_or_show_slider_number) &
-        .data$text_validation_type_or_show_slider_number != ""
-    ) |>
-    dplyr::pull(.data$field_name)
+  validated_text_fields <- if ("text_validation_type_or_show_slider_number" %in% names(data_def$dictionary)) {
+    data_def$dictionary |>
+      dplyr::filter(
+        .data$field_type == "text",
+        !is.na(.data$text_validation_type_or_show_slider_number) &
+          .data$text_validation_type_or_show_slider_number != ""
+      ) |>
+      dplyr::pull(.data$field_name)
+  } else {
+    character(0)
+  }
 
   #Identify categorical text field types
   categorical_fields <- data_def$dictionary |>
