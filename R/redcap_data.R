@@ -500,10 +500,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       dplyr::select(
         -dplyr::matches(checkbox_mdc_pattern)
       ) |>
-      dplyr::mutate(
+            dplyr::mutate(
         dplyr::across(
           dplyr::all_of(target_columns),
           ~ {
+            was_factor <- is.factor(.x)
             val_char <- stringr::str_trim(as.character(.x))
             val_clean <- ifelse(
               val_char %in% missing_codes,
