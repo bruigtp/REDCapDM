@@ -18,7 +18,8 @@ redcap_data(
   token = NA,
   sep = ",",
   filter_field = NULL,
-  survey_fields = FALSE
+  survey_fields = FALSE,
+  rm_mdc = TRUE
 )
 ```
 
@@ -49,7 +50,7 @@ redcap_data(
 - sep:
 
   Character string specifying the field separator for the exported
-  dictionary CSV file. Defaul `","`.
+  dictionary CSV file. Default `","`.
 
 - filter_field:
 
@@ -60,13 +61,17 @@ redcap_data(
   Logical; include survey-related fields when pulling via API. Default
   `FALSE`.
 
+- rm_mdc:
+
+  Logical; Removes the Missing Data Codes from de data. Default `TRUE`.
+
 ## Value
 
 A list with:
 
 - `data`: Imported dataset.
 
-- `dictionary`: Variable dictionary (project metadata).
+- `dictionary`: Variable dictionary (project meta data).
 
 - `event_form`: Event-form mapping for longitudinal projects (if
   applicable).
