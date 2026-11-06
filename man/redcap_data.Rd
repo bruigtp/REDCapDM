@@ -12,7 +12,8 @@ redcap_data(
   token = NA,
   sep = ",",
   filter_field = NULL,
-  survey_fields = FALSE
+  survey_fields = FALSE,
+  rm_mdc = TRUE
 )
 }
 \arguments{
@@ -26,17 +27,19 @@ redcap_data(
 
 \item{token}{REDCap API token (use with \code{uri}).}
 
-\item{sep}{Character string specifying the field separator for the exported dictionary CSV file. Defaul \code{","}.}
+\item{sep}{Character string specifying the field separator for the exported dictionary CSV file. Default \code{","}.}
 
 \item{filter_field}{Optional character vector of field names to request from the API.}
 
 \item{survey_fields}{Logical; include survey-related fields when pulling via API. Default \code{FALSE}.}
+
+\item{rm_mdc}{Logical; Removes the Missing Data Codes from de data. Default \code{TRUE}.}
 }
 \value{
 A list with:
 \itemize{
 \item \code{data}: Imported dataset.
-\item \code{dictionary}: Variable dictionary (project metadata).
+\item \code{dictionary}: Variable dictionary (project meta data).
 \item \code{event_form}: Event-form mapping for longitudinal projects (if applicable).
 }
 }

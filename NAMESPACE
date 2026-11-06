@@ -9,6 +9,7 @@ export(rd_event)
 export(rd_export)
 export(rd_factor)
 export(rd_insert_na)
+export(rd_missplot)
 export(rd_query)
 export(rd_recalculate)
 export(rd_rlogic)
@@ -17,10 +18,15 @@ export(rd_transform)
 export(redcap_data)
 import(cli)
 importFrom(lifecycle,deprecated)
-importFrom(magrittr,`%>%`)
-importFrom(rlang,":=")
-importFrom(rlang,.data)
-importFrom(rlang,eval_tidy)
-importFrom(rlang,parse_expr)
-importFrom(stats,na.omit)
-importFrom(stats,setNames)
+importFrom(magrittr,"%>%")
+importFrom(rlang,
+  ":=",
+  .data,
+  eval_tidy,
+  parse_expr
+)
+importFrom(stats,
+  na.omit,
+  setNames
+)
+importFrom(utils,head)

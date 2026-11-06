@@ -567,7 +567,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     # Checkboxes: Remove only empy MDC columns
     cb_mdc_cols <- colnames(data_def$data)[stringr::str_detect(colnames(data_def$data), checkbox_mdc_pattern)]
-    cb_mdc_cols <- grep(tolower(checkbox_mdc_pattern), colnames(data_def$data), value = TRUE)
+    
     cols_to_remove <- c()
 
     base_cb_cols <- unique(stringr::str_remove(cb_mdc_cols, "\\.factor$"))
