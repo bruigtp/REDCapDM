@@ -510,7 +510,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
               NA_character_,
               val_char
             )
-            return(val_clean)
+            if (was_factor) factor(val_clean, levels = levels(.x)) else val_clean
           }
         )
       )
