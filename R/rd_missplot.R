@@ -3,35 +3,26 @@
 #' @description
 #' `r lifecycle::badge('experimental')`
 #'
-#' Generates a visual summary of missing data for variables in a REDCap dataset
-#' or list structure. For cross-sectional (single-event) studies, it displays
-#' a barplot showing the proportion or count of missing values per variable.
-#' For longitudinal (multi-event) studies, it generates a heatmap illustrating
-#' missingness across events and variables.
+#' Generates a visual summary of missing data for variables in a REDCap dataset or list structure. For cross-sectional (single-event) studies, it displays a barplot showing the proportion or count of missing values per variable. For longitudinal (multi-event) studies, it generates a heatmap illustrating missingness across events and variables.
 #'
 #' @param data A `data frame` or a list containing a `data` element retrieved from REDCap.
 #' @param sort_by_missingness Logical. Variables are ordered from highest to lowest missingness. Default `TRUE`.
-#' @param ncol Integer. The number of columns for facet arrangement. Default `NULL`.
+#' @param max_vars Integer. If specified, only the top `max_vars` variables are plotted (by missingness, or by original column order if `sort_by_missingness = FALSE`). Default `NULL` (show all variables).
 #' @param show_percentages Logical. Displays missingness as percentages. Default `TRUE`.
 #' @param use_field_labels Logical. Uses field labels from the dictionary for axis labels instead of variable names. Default `TRUE`.
 #' @param drop_complete Logical. Variables with 0 missing values are excluded from the plot. Default `TRUE`.
-#' @return A `ggplot2` object representing either a missingness barplot
-#'   or a longitudinal missingness heatmap.
+#' @return A `ggplot2` object representing either a missingness barplot or a longitudinal missingness heatmap.
 #'
 #' @details
-#' The function automatically detects whether the input dataset contains longitudinal
-#' event information. If `redcap_event_name` is detected in the data columns,
-#' a missingness heatmap grouped by event is produced.
+#' The function automatically detects whether the input dataset contains longitudinal event information. If `redcap_event_name` is detected in the data columns, a missingness heatmap grouped by event is produced.
 #'
 #' @export
-#' @import ggplot2
 
-rd_missplot <- function(data,
-                              sort_by_missingness = TRUE,
-                              ncol = NULL,
-                              show_percentages = TRUE,
-                              use_field_labels = TRUE,
-                              drop_complete = TRUE) {
+rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_percentages = TRUE, use_field_labels = TRUE, drop_complete = TRUE) {
+
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("The `ggplot2` package is required for `rd_missplot()`. Install it with `install.packages('ggplot2')`.", call. = FALSE)
+  }
 
   # Extract data frame and dictionary if nested inside a list (e.g., data_def)
   dictionary_df <- NULL
@@ -92,7 +83,7 @@ rd_missplot <- function(data,
       label_map <- stats::setNames(dict_clean$field_label, dict_clean$field_name)
 
       mapped_labels <- sapply(df_cols, function(x) {
-        if (x %in% names(label_map) && nzchar(label_map[[x]])) {
+        if (x %in% names(label_map) && !is.na(label_map[[x]]) && nzchar(label_map[[x]])) {
           label_map[[x]]
         } else {
           x
@@ -152,10 +143,10 @@ rd_missplot <- function(data,
         dplyr::mutate(display_label = factor(.data$display_label, levels = orig_levels))
     }
 
-    # Filter top N variables if 'ncol' is defined
-    if (!is.null(ncol) && is.numeric(ncol)) {
+    # Filter top N variables if 'max_vars' is defined
+    if (!is.null(max_vars) && is.numeric(max_vars)) {
       missing_summary <- missing_summary |>
-        dplyr::slice_head(n = ncol)
+        dplyr::slice_head(n = max_vars)
     }
 
     # Fix factor levels for correct ggplot axis display (bottom-to-top)
@@ -206,7 +197,6 @@ rd_missplot <- function(data,
       # Map the raw events from event_form to the formatted names in the display
       event_map <- stats::setNames(event_vector_display, df[[event_col]])
       event_order <- unique(event_map[raw_event_order])
-      event_order <- event_order[!is.na(event_order) & nzchar(event_order)]
 
       # Remove NAs if any event in event_form had no recorded data
       event_order <- event_order[!is.na(event_order) & nzchar(event_order)]
@@ -266,14 +256,14 @@ rd_missplot <- function(data,
     } else {
       raw_cols <- setdiff(colnames(df_cleaned), "clean_event_name")
       var_order <- get_label_mapping(raw_cols, dictionary_df)
-      if (drop_complete && exists("complete_vars")) {
+      if (drop_complete) {
         var_order <- setdiff(var_order, complete_vars)
       }
     }
 
-    # Filter top N variables if 'ncol' is specified
-    if (!is.null(ncol) && is.numeric(ncol)) {
-      var_order <- head(var_order, ncol)
+    # Filter top N variables if 'max_vars' is specified
+    if (!is.null(max_vars) && is.numeric(max_vars)) {
+      var_order <- head(var_order, max_vars)
 
       missing_longitudinal <- missing_longitudinal |>
         dplyr::filter(.data$display_label %in% var_order)
