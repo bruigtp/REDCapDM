@@ -113,6 +113,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   if (any(!variables %in% names(data))) {
     stop("Specified variables do not exist in the dataset. Please review the `variables` argument.")
   }
+  
+  # Repeating instruments of the complete dataset (before any event or filter subsetting)
+  rep_pairs <- repeat_info(data)$pairs
 
   # Warning: event not specified
   if (all(is.na(event)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) & is.null(event_form)) {
@@ -149,7 +152,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Warning: multiple events are specified
     if (length(event) > 1 & is.null(event_form)) {
-      warning("Multiple events specified. Ensure variables are collected across all events to avoid overestimation.", .call = FALSE)
+      warning("Multiple events specified. Ensure variables are collected across all events to avoid overestimation.", call. = FALSE)
     }
 
     # Filter data by events - factor version
@@ -228,7 +231,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         data[, "event_id"] <- as.numeric(link[["event_id"]])
       } else {
         # Error: More than one event_id is specified and the project is non-longitudinal
-        stop("Non-longitudinal project. Please provide only one event ID.", .call = FALSE)
+        stop("Non-longitudinal project. Please provide only one event ID.", call. = FALSE)
       }
     }
   }
@@ -361,6 +364,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       raw0 <- data
     }
 
+    # Keep only the rows in which the variable is collected: in projects with repeated instruments the other rows are empty by design, not missing.
+    raw0 <- raw0[repeat_home_rows(raw0, dic, variables[i], rep_pairs), , drop = FALSE]
+
     # Apply custom expression filters
     x <- variables[i]
     command <- paste0("raw", "<-dplyr::filter(raw0,", gsub("\\bx\\b", x, expression[i]), ")")
@@ -451,19 +457,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           }
         },
         Field = variables[i],
-        Repetition = if (any(c("redcap_repeat_instrument", "redcap_repeat_instance") %in% names(x))) {
-          if ("redcap_repeat_instrument" %in% names(x) & all(is.na(x[, "redcap_repeat_instrument"]))) {
-            if ("redcap_repeat_instance" %in% names(x) & all(is.na(x[, "redcap_repeat_instance"]))) {
-              "-"
-            } else {
-              paste0(x[, "redcap_repeat_instance"])
-            }
-          } else {
-            paste0(x[, "redcap_repeat_instrument"], "-", x[, "redcap_repeat_instance"])
-          }
-        } else {
-          "-"
-        },
+        Repetition = repetition_label(x),
         Description = if (all(is.na(variables_names))) {
           if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
             trimws(gsub("<.*?>", "", as.character(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"])))
@@ -506,13 +500,20 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         stringsAsFactors = FALSE
       )
 
+      # Open the right instance of repeated instruments and repeating events
+      link_instance <- if ("redcap_repeat_instance" %in% names(x)) {
+        ifelse(is.na(x[, "redcap_repeat_instance"]), "", paste0("&instance=", x[, "redcap_repeat_instance"]))
+      } else {
+        ""
+      }
+
       # Add link to each query
       if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"])
+        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"], link_instance)
       }
 
       if (all(c("domain", "redcap_version", "proj_id") %in% names(link)) & !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"])
+        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"], link_instance)
       }
 
       # Adding each identified query to the queries data frame
@@ -633,18 +634,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Classify each query with its own code
   if (nrow(queries) > 0) {
     # Sort data by record ID
-    if (all(grepl("-", queries$Identifier))) {
-      queries <- queries |>
-        tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
-      queries[, "center"] <- as.numeric(queries[, "center"])
-      queries[, "id"] <- as.numeric(queries[, "id"])
-      queries <- queries[order(queries[, "center"], queries[, "id"]), ]
-      rownames(queries) <- NULL
-      queries <- queries |> dplyr::select(-"center", -"id")
-    } else {
-      queries$Identifier <- as.numeric(queries$Identifier)
-      queries <- queries[order(queries$Identifier), ]
-    }
+    queries <- sort_by_identifier(queries)
 
     # Remove duplicates and add code for each query
     queries <- unique(queries |>
@@ -737,24 +727,24 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         }
 
         report <- report |> dplyr::select(-"var_event")
-
-        # Add the variables description
-        report$descr <- purrr::map_chr(gsub("___.*$", "", report$var), function(x) {
-          if (x %in% dic$field_name) {
-            # Truncate description name if it exceeds 50 characters
-            name <- gsub("<.*?>", "", dic$field_label[dic$field_name %in% x])
-            stringr::str_trunc(name, 50)
-          } else {
-            "-"
-          }
-        })
       }
+
+      # Add the variables description (dropped by the grouping above)
+      report$descr <- purrr::map_chr(gsub("___.*$", "", report$var), function(x) {
+        if (x %in% dic$field_name) {
+          # Truncate description name if it exceeds 50 characters
+          name <- gsub("<.*?>", "", dic$field_label[dic$field_name %in% x])
+          stringr::str_trunc(name, 50)
+        } else {
+          "-"
+        }
+      })
     } else {
       # Report of the variables with identified queries (eliminating the ones with zero queries)
       report <- report |>
         dplyr::group_by(.data$var, .data$descr, .data$event, .data$query_descr, .data$dag, .drop = TRUE) |>
         dplyr::summarise("total" = dplyr::n(), .groups = "keep") |>
-        dplyr::filter("total" != 0)
+        dplyr::filter(.data$total != 0)
     }
 
     # Truncate descriptions and variable names if too long

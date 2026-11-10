@@ -106,3 +106,42 @@ round <- function(x, digits) {
   z <- z / 10^digits
   z * posneg
 }
+
+
+
+
+## Sort_by_identifier ----
+
+#' Sort a query report by record identifier
+#'
+#' Uses natural ordering, so `"100-2"` comes before `"100-10"` and `"ABC2"`
+#' before `"ABC10"`. `Identifier` is converted to numeric only when every
+#' identifier is a plain number.
+#'
+#' @param queries Data frame with an `Identifier` column.
+#' @param by_code Logical. If `TRUE`, ties are broken by the `Code` column.
+#' @return The sorted data frame.
+#' @noRd
+sort_by_identifier <- function(queries, by_code = FALSE) {
+  id <- as.character(queries$Identifier)
+  keys <- list(natural_rank(id))
+
+  if (by_code && "Code" %in% names(queries)) {
+    keys <- c(keys, list(natural_rank(queries$Code)))
+  }
+
+  queries <- queries[do.call(order, keys), , drop = FALSE]
+  rownames(queries) <- NULL
+
+  if (all(grepl("^-?[0-9]+(\\.[0-9]+)?$", id[!is.na(id)]))) {
+    queries$Identifier <- as.numeric(queries$Identifier)
+  }
+
+  queries
+}
+
+natural_rank <- function(x) {
+  x <- as.character(x)
+  sorted <- unique(x[stringi::stri_order(x, opts_collator = stringi::stri_opts_collator(numeric = TRUE))])
+  match(x, sorted)
+}

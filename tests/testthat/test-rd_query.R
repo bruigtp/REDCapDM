@@ -680,3 +680,93 @@ test_that("rd_query addTo preserves Link column when present in addTo$queries", 
   expect_true("queries" %in% names(out))
   expect_true("Link" %in% names(out$queries))
 })
+
+
+# ---- Repeated instruments and repeating events ----
+
+test_that("rd_query ignores rows of other instruments for a non-repeating variable", {
+  fx <- make_repeat_classic()
+  res <- suppressMessages(rd_query(data = fx$data, dic = fx$dictionary, variables = "age", expression = "is.na(x)"))
+
+  expect_equal(nrow(res$queries), 1)
+  expect_equal(as.character(res$queries$Identifier), "2")
+  expect_equal(res$queries$Repetition, "-")
+})
+
+test_that("rd_query only checks the instances of a repeating instrument variable", {
+  fx <- make_repeat_classic()
+  res <- suppressMessages(rd_query(data = fx$data, dic = fx$dictionary, variables = "ae_term", expression = "is.na(x)"))
+
+  expect_equal(nrow(res$queries), 1)
+  expect_equal(as.character(res$queries$Identifier), "1")
+  expect_equal(res$queries$Repetition, "ae-2")
+})
+
+test_that("rd_query handles forms repeating in only some events and repeating events", {
+  fx <- make_repeat_longitudinal()
+
+  hb <- suppressWarnings(suppressMessages(rd_query(fx, variables = "hb", expression = "is.na(x)")))
+  expect_equal(nrow(hb$queries), 1)
+  expect_equal(hb$queries$Repetition, "labs-2")
+
+  fu <- suppressWarnings(suppressMessages(rd_query(fx, variables = "fu_status", expression = "is.na(x)")))
+  expect_equal(nrow(fu$queries), 1)
+  expect_equal(fu$queries$Repetition, "2")
+})
+
+test_that("rd_query links open the instance of the query", {
+  fx <- make_repeat_classic()
+  res <- suppressMessages(rd_query(
+    data = fx$data, dic = fx$dictionary, variables = "ae_term", expression = "is.na(x)",
+    link = list(domain = "redcap.example.org", redcap_version = "14.0.0", proj_id = 1)
+  ))
+
+  expect_match(res$queries$Link, "&page=ae&id=1&instance=2$")
+})
+
+test_that("rd_query keeps the same output when there are no repetitions", {
+  toy_data <- data.frame(record_id = 1:3, age = c(NA, 20, NA))
+  toy_dic <- make_toy_dic(list(age = list(field_label = "Age", form_name = "demo")))
+  res <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "age", expression = "is.na(x)"))
+
+  expect_equal(res$queries$Identifier, c(1, 3))
+  expect_equal(res$queries$Repetition, c("-", "-"))
+  expect_equal(res$queries$Code, c("1-1", "3-1"))
+})
+
+# ---- Other fixes ----
+
+test_that("rd_query works with report_zeros = TRUE when every variable has queries", {
+  toy_data <- data.frame(record_id = 1:3, x = c(NA, 1, 2))
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "demo")))
+
+  res <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "x", expression = "is.na(x)", report_zeros = TRUE))
+  expect_equal(nrow(res$queries), 1)
+})
+
+test_that("rd_query keeps alphanumeric identifiers and sorts them naturally", {
+  toy_data <- data.frame(record_id = c("ABC10", "ABC2", "SITE-1"), x = NA)
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "demo")))
+
+  res <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "x", expression = "is.na(x)"))
+  expect_equal(res$queries$Identifier, c("ABC2", "ABC10", "SITE-1"))
+  expect_equal(res$queries$Code, c("ABC2-1", "ABC10-1", "SITE-1-1"))
+})
+
+test_that("rd_query sorts center-id identifiers naturally", {
+  toy_data <- data.frame(record_id = c("100-10", "100-2", "20-1"), x = NA)
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "demo")))
+
+  res <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "x", expression = "is.na(x)"))
+  expect_equal(res$queries$Identifier, c("20-1", "100-2", "100-10"))
+})
+
+test_that("rd_query multiple-events warning has no stray text", {
+  toy_data <- data.frame(record_id = 1:2, redcap_event_name = c("e1", "e2"), x = c(NA, 1))
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "demo")))
+
+  expect_warning(
+    rd_query(data = toy_data, dic = toy_dic, variables = "x", expression = "is.na(x)", event = c("e1", "e2")),
+    "avoid overestimation\\.$"
+  )
+})
