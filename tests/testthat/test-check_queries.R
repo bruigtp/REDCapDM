@@ -70,3 +70,54 @@ test_that("check_queries preserves Code creation and returns results viewer with
   expect_true(is.character(out$queries$Code))
 })
 
+
+# ---- Events and repeated instruments ----
+
+make_report <- function(identifier, event, repetition, query = "The value is NA and it should not be missing") {
+  data.frame(
+    Identifier = identifier, DAG = "-", Event = event, Instrument = "Ae", Field = "ae_term",
+    Repetition = repetition, Description = "AE term", Query = query, stringsAsFactors = FALSE
+  )
+}
+
+test_that("check_queries tells instances of a repeated instrument apart", {
+  old <- make_report(c("1", "1"), "-", c("ae-1", "ae-2"))
+  old$Code <- c("1-1", "1-2")
+  new <- make_report("1", "-", "ae-2")
+
+  res <- check_queries(old, new, return_viewer = FALSE)
+
+  expect_equal(as.character(res$queries$Modification[res$queries$Repetition == "ae-1"]), "Solved")
+  expect_equal(as.character(res$queries$Modification[res$queries$Repetition == "ae-2"]), "Pending")
+})
+
+test_that("check_queries tells events apart", {
+  old <- make_report(c("1", "1"), c("baseline", "follow_up"), "-")
+  old$Code <- c("1-1", "1-2")
+  new <- make_report("1", "follow_up", "-")
+
+  res <- check_queries(old, new, return_viewer = FALSE)
+
+  expect_equal(as.character(res$queries$Modification[res$queries$Event == "baseline"]), "Solved")
+  expect_equal(as.character(res$queries$Modification[res$queries$Event == "follow_up"]), "Pending")
+})
+
+test_that("check_queries does not flag a query in another instance as Miscorrected", {
+  old <- make_report("1", "-", "ae-1")
+  old$Code <- "1-1"
+  new <- make_report(c("1", "1"), "-", c("ae-1", "ae-2"))
+
+  res <- check_queries(old, new, return_viewer = FALSE)
+
+  expect_equal(as.character(res$queries$Modification[res$queries$Repetition == "ae-2"]), "New")
+})
+
+test_that("check_queries keeps alphanumeric identifiers and sorts them naturally", {
+  old <- data.frame(Identifier = c("ABC10", "ABC2"), Description = "x", Query = "q", Code = c("ABC10-1", "ABC2-1"))
+  new <- data.frame(Identifier = c("ABC10", "ABC2"), Description = "x", Query = "q")
+
+  res <- check_queries(old, new, return_viewer = FALSE)
+
+  expect_equal(res$queries$Identifier, c("ABC2", "ABC10"))
+  expect_equal(res$queries$Code, c("ABC2-1", "ABC10-1"))
+})

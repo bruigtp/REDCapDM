@@ -99,15 +99,19 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
     stop("There is more than one title for the report, please choose only one.", call. = FALSE)
   }
 
+  # Columns that identify a query. Event and Repetition are used when both reports have them, so the same variable in different events or instances of a repeated instrument are different queries.
+  key_cols <- c("Identifier", intersect(c("Event", "Repetition"), intersect(names(old), names(new))), "Description")
+  query_key <- function(df, cols) do.call(paste, c(unname(as.list(df[cols])), sep = "\r"))
+
   # Merge old and new datasets
   new <- new |> dplyr::select(-dplyr::any_of("Code"))
-  old[, "comp"] <- paste0(old$Identifier, old$Description, old$Query)
-  new[, "comp"] <- paste0(new$Identifier, new$Description, new$Query)
+  old[, "comp"] <- query_key(old, c(key_cols, "Query"))
+  new[, "comp"] <- query_key(new, c(key_cols, "Query"))
   check <- merge(old, new, by = intersect(names(old), names(new)), all = TRUE)
 
   # Add columns for comparisons and determine statuses
-  check[, "comp"] <- paste0(check$Identifier, check$Description, check$Query)
-  check[, "comp2"] <- paste0(check$Identifier, check$Description)
+  check[, "comp"] <- query_key(check, c(key_cols, "Query"))
+  check[, "comp2"] <- query_key(check, key_cols)
   check[, "Modification"] <- NA
   check[, "Modification"][check$comp %in% old$comp & check$comp %in% new$comp] <- "Pending"
   check[, "Modification"][check$comp %in% old$comp & !check$comp %in% new$comp] <- "Solved"
@@ -141,19 +145,8 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   check <- check |>
     dplyr::select(-dplyr::any_of(c("comp", "comp2", "n")))
 
-  # Arrange the dataset by specific fields
-  if (any(stringr::str_detect(check$Identifier, "-"))) {
-    check <- check |> tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
-    check[, "center"] <- as.numeric(check[, "center"])
-    check[, "id"] <- as.numeric(check[, "id"])
-    check <- check[order(check[, "center"], check[, "id"], check[, "Code"], na.last = TRUE), ]
-    rownames(check) <- NULL
-    check <- check |>
-      dplyr::select(-dplyr::any_of(c("center", "id")))
-  } else {
-    check$Identifier <- as.numeric(check$Identifier)
-    check <- check[order(check$Identifier, check$Code), ]
-  }
+  # Arrange the dataset by identifier and previous code
+  check <- sort_by_identifier(check, by_code = TRUE)
 
   # Assign new codes to each query to match the old dataset
   check <- data.frame(check |>

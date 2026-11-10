@@ -96,3 +96,46 @@ test_that("report_zeros toggles presence of zero lines in covican", {
     )
   )
 })
+
+
+# ---- Fixes ----
+
+make_event_data <- function() {
+  data.frame(
+    record_id = c("1", "2", "3", "3"),
+    redcap_event_name = c("baseline_arm_1", "baseline_arm_1", "baseline_arm_1", "follow_up_arm_1"),
+    redcap_event_name.factor = factor(c("Baseline", "Baseline", "Baseline", "Follow-up")),
+    redcap_data_access_group = c("A", "B", "A", "A"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("rd_event reports the DAG of each record", {
+  res <- rd_event(data = make_event_data(), dic = data.frame(), event = "follow_up_arm_1")
+
+  expect_equal(res$queries$Identifier, c(1, 2))
+  expect_equal(res$queries$DAG, c("A", "B"))
+})
+
+test_that("rd_event works without the factor version of the event name", {
+  data <- make_event_data()
+  data$redcap_event_name.factor <- NULL
+
+  res <- rd_event(data = data, dic = data.frame(), event = "follow_up_arm_1")
+  expect_equal(nrow(res$queries), 2)
+})
+
+test_that("rd_event works when record_id is not the first column", {
+  data <- make_event_data()[, c("redcap_event_name", "record_id", "redcap_data_access_group")]
+
+  res <- rd_event(data = data, dic = data.frame(), event = "follow_up_arm_1")
+  expect_equal(res$queries$Identifier, c(1, 2))
+})
+
+test_that("rd_event keeps alphanumeric identifiers and sorts them naturally", {
+  data <- make_event_data()
+  data$record_id <- c("ABC10", "ABC2", "ABC3", "ABC3")
+
+  res <- rd_event(data = data, dic = data.frame(), event = "follow_up_arm_1")
+  expect_equal(res$queries$Identifier, c("ABC2", "ABC10"))
+})

@@ -88,7 +88,7 @@ rd_event <- function(project = NULL,
   colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
 
   # Rename the first column to "record_id" if necessary
-  if ("record_id" %in% names(data)) {
+  if (!"record_id" %in% names(data)) {
     names(data)[1] <- "record_id"
   }
 
@@ -163,11 +163,10 @@ rd_event <- function(project = NULL,
         x <- raw[, c("record_id", grep("redcap", names(raw), value = TRUE))]
         excel <- data.frame(
           Identifier = x[, "record_id"],
-          DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(x))) {
-            ifelse("redcap_data_access_group.factor" %in% names(x),
-              as.character(x[, "redcap_data_access_group.factor"]),
-              as.character(x[, "redcap_data_access_group"])
-            )
+          DAG = if ("redcap_data_access_group.factor" %in% names(x)) {
+            as.character(x[, "redcap_data_access_group.factor"])
+          } else if ("redcap_data_access_group" %in% names(x)) {
+            as.character(x[, "redcap_data_access_group"])
           } else {
             "-"
           },
@@ -230,27 +229,8 @@ rd_event <- function(project = NULL,
 
   # Classify each query with a unique code if there are queries present
   if (nrow(queries) != 0) {
-    # Handle cases where the Identifier contains a center and id separated by a dash
-    if (all(grepl("-", queries$Identifier))) {
-      # Separate the Identifier into center and id components
-      queries <- queries |>
-        tidyr::separate("Identifier", c("center", "id"), sep = "([-])", remove = FALSE)
-
-      # Convert center and id to numeric for sorting
-      queries[, "center"] <- as.numeric(queries[, "center"])
-      queries[, "id"] <- as.numeric(queries[, "id"])
-
-      # Sort queries by center and id
-      queries <- queries[order(queries[, "center"], queries[, "id"]), ]
-
-      # Reset row names and remove temporary columns
-      rownames(queries) <- NULL
-      queries <- queries |> dplyr::select(-"center", -"id")
-    } else {
-      # If Identifier doesn't contain a dash, sort numerically by Identifier
-      queries$Identifier <- as.numeric(queries$Identifier)
-      queries <- queries[order(queries$Identifier), ]
-    }
+    # Sort queries by record identifier
+    queries <- sort_by_identifier(queries)
 
     # Remove duplicate queries and ensure only unique rows are retained
     queries <- queries |>
@@ -302,13 +282,9 @@ rd_event <- function(project = NULL,
     report <- as.data.frame(matrix(ncol = 2, nrow = length(event)))
     colnames(report) <- c("var", "descr")
 
-    # Populate the report with event names and placeholders for descriptions
+    # Populate the report with event names (descriptions are added below)
     report$var <- event
-    report$descr <- if ("redcap_event_name.factor" %in% names(data)) {
-      as.character(unique(data0$redcap_event_name.factor[which(data0$redcap_event_name %in% event)]))
-    } else {
-      "-"
-    }
+    report$descr <- "-"
 
     # Set total queries for each event to zero
     report$total <- 0
@@ -324,9 +300,17 @@ rd_event <- function(project = NULL,
     }
   }
 
+  # Describe each event with its label when available, otherwise with its name
+  event_descr <- as.character(report$var)
+  if (all(c("redcap_event_name", "redcap_event_name.factor") %in% names(data0))) {
+    lookup <- unique(data0[, c("redcap_event_name", "redcap_event_name.factor")])
+    labels_found <- as.character(lookup$redcap_event_name.factor)[match(event_descr, lookup$redcap_event_name)]
+    event_descr <- ifelse(is.na(labels_found), event_descr, labels_found)
+  }
+
   # Finalize and arrange the report for output
   report <- report |>
-    dplyr::mutate(descr = unique(data0$redcap_event_name.factor[data0$redcap_event_name %in% report$var])) |>
+    dplyr::mutate(descr = event_descr) |>
     dplyr::select("var", "descr", "total") |>
     dplyr::arrange(dplyr::desc(.data$total))
 
