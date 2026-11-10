@@ -16,7 +16,6 @@ License: MIT + file LICENSE
 URL: https://bruigtp.github.io/REDCapDM/, https://doi.org/10.1186/s12874-024-02178-6
 BugReports: https://github.com/bruigtp/REDCapDM/issues
 Encoding: UTF-8
-RoxygenNote: 7.3.3
 Imports:
     dplyr,
     janitor,
@@ -40,7 +39,8 @@ Suggests:
     rmarkdown,
     kableExtra,
     testthat (>= 3.0.0),
-    mockery
+    mockery,
+    ggplot2
 VignetteBuilder: knitr
 Depends: 
     R (>= 4.1)
@@ -48,3 +48,4 @@ LazyData: true
 Config/testthat/edition: 3
 Config/Needs/website: rmarkdown
 Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.1
