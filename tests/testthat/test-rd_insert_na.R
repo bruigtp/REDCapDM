@@ -199,3 +199,20 @@ test_that("rd_insert_na reapplies variable labels after transformation", {
 
   expect_equal(labelled::var_label(result$data)[["type_dm"]], "Type of diabetes")
 })
+
+
+
+# ---- Non-longitudinal projects ----
+
+test_that("rd_insert_na works in non-longitudinal projects", {
+  data <- data.frame(record_id = 1:4, age = c(30, 70, 45, 80), smoker = c(1, 0, 1, 1))
+  attr(data$smoker, "label") <- "Smoker"
+  dic <- data.frame(field_name = c("record_id", "age", "smoker"), form_name = "demo")
+
+  res <- rd_insert_na(data = data, dic = dic, vars = "smoker", filter = "age > 60")
+
+  expect_equal(res$data$smoker, c(1, NA, 1, NA), ignore_attr = TRUE)
+  expect_equal(attr(res$data$smoker, "label"), "Smoker")
+  expect_null(attr(res$data$age, "label"))
+  expect_false("event_form" %in% names(res))
+})

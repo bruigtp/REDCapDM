@@ -100,25 +100,30 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   df_cleaned <- df |>
     dplyr::select(-dplyr::any_of(cols_to_exclude))
 
-  ## Cross-Sectional Study (Single Event): Barplot ##
+  
+  # In projects with repeated instruments each variable is only collected in some rows; elsewhere it is empty by design and must not count as missing.
+  plot_vars <- colnames(df_cleaned)
+  rep_pairs <- repeat_info(df)$pairs
+
+  if (nrow(rep_pairs) > 0 && is.null(dictionary_df)) {
+    warning("The data contains repeated instruments but no dictionary was provided, so missingness may be overestimated. Pass the output of `redcap_data()` (a list with `data` and `dictionary`) for accurate results.", call. = FALSE)
+  }
+
+  home_rows <- lapply(stats::setNames(plot_vars, plot_vars), function(v) {
+    repeat_home_rows(df, dictionary_df, v, rep_pairs)
+  })
+
+  ## Cross-Sectional Study (Single Event): Barplot
 
   if (!is_longitudinal) {
 
-    # Calculate missingness per variable
-    missing_summary <- df_cleaned |>
-      dplyr::summarise(
-        dplyr::across(
-          dplyr::everything(),
-          ~ sum(is.na(.x))
-        )
-      ) |>
-      tidyr::pivot_longer(
-        cols = dplyr::everything(),
-        names_to = "variable",
-        values_to = "missing_count"
-      ) |>
+    # Calculate missingness per variable, over the rows where it is collected
+    missing_summary <- tibble::tibble(
+      variable = plot_vars,
+      missing_count = purrr::map_int(plot_vars, ~ sum(is.na(df_cleaned[[.x]][home_rows[[.x]]]))),
+      total_obs = purrr::map_int(plot_vars, ~ sum(home_rows[[.x]]))
+    ) |>
       dplyr::mutate(
-        total_obs = nrow(df),
         missing_pct = (.data$missing_count / .data$total_obs) * 100,
         display_label = get_label_mapping(.data$variable, dictionary_df)
       )
@@ -182,7 +187,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
     return(p)
 
-    ## Longitudinal Study (Multi-Event): Heatmap ##
+    ## Longitudinal Study (Multi-Event): Heatmap
 
   } else {
 
@@ -209,22 +214,23 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     # Remove NAs or empty values
     event_order <- event_order[!is.na(event_order) & nzchar(event_order)]
 
-    # Calculate missingness grouped by clean_event_name
-    missing_longitudinal <- df_cleaned |>
-      dplyr::group_by(.data$clean_event_name) |>
-      dplyr::summarise(
-        dplyr::across(
-          dplyr::everything(),
-          ~ sum(is.na(.x))
-        ),
-        event_total_obs = dplyr::n(),
-        .groups = "drop"
+    # Calculate missingness grouped by clean_event_name, over the rows where each variable is collected (events without any such row are left out)
+    missing_longitudinal <- purrr::map_dfr(plot_vars, function(v) {
+      tibble::tibble(
+        clean_event_name = df_cleaned$clean_event_name,
+        is_home = home_rows[[v]],
+        is_missing = is.na(df_cleaned[[v]])
       ) |>
-      tidyr::pivot_longer(
-        cols = -c("clean_event_name", "event_total_obs"),
-        names_to = "variable",
-        values_to = "missing_count"
-      ) |>
+        dplyr::group_by(.data$clean_event_name) |>
+        dplyr::summarise(
+          event_total_obs = sum(.data$is_home),
+          missing_count = sum(.data$is_missing & .data$is_home),
+          .groups = "drop"
+        ) |>
+        dplyr::mutate(variable = v, .before = "missing_count")
+    }) |>
+      dplyr::filter(.data$event_total_obs > 0) |>
+      dplyr::arrange(.data$clean_event_name, match(.data$variable, plot_vars)) |>
       dplyr::mutate(
         missing_pct = (.data$missing_count / .data$event_total_obs) * 100,
         display_label = get_label_mapping(.data$variable, dictionary_df)

@@ -107,3 +107,35 @@ test_that("longitudinal heatmap with sort_by_missingness = FALSE and drop_comple
 
   expect_s3_class(p, "ggplot")
 })
+
+
+
+# ---- Repeated instruments ----
+
+test_that("rd_missplot only counts the rows where each variable is collected", {
+  fx <- make_repeat_classic()
+  p <- suppressMessages(rd_missplot(fx, use_field_labels = FALSE, drop_complete = FALSE))
+
+  res <- as.data.frame(p$data)
+  expect_equal(res$missing_pct[res$variable == "age"], 50)
+  expect_equal(res$total_obs[res$variable == "age"], 2)
+  expect_equal(res$total_obs[res$variable == "ae_term"], 3)
+})
+
+test_that("rd_missplot heatmap uses the instances of a form repeating in only some events", {
+  fx <- make_repeat_longitudinal()
+  p <- suppressMessages(rd_missplot(fx, use_field_labels = FALSE, drop_complete = FALSE))
+
+  res <- as.data.frame(p$data)
+  hb_treatment <- res[res$variable == "hb" & res$clean_event_name == "Treatment", ]
+  expect_equal(hb_treatment$event_total_obs, 2)
+  expect_equal(hb_treatment$missing_pct, 50)
+})
+
+test_that("rd_missplot warns when there are repeated instruments but no dictionary", {
+  fx <- make_repeat_classic()
+  expect_warning(
+    suppressMessages(rd_missplot(fx$data, drop_complete = FALSE)),
+    "no dictionary was provided"
+  )
+})

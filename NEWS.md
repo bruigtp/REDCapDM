@@ -1,3 +1,26 @@
+# REDCapDM (development version)
+
+## New features
+
+- New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects).
+- New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
+
+## Repeated instruments and repeating events
+
+- `rd_query()` now only checks each variable in the rows where it is collected. In projects with repeated instruments, empty fields of other instruments are no longer reported as queries.
+- The `Repetition` column of `rd_query()` is now correct for every row, and query links open the right instance.
+- `check_queries()` uses the event and the repetition to match queries, so the same variable in different events or instances is tracked separately.
+- `rd_missplot()` computes missingness only over the rows where each variable is collected.
+- Repeating events are now detected internally.
+
+## Bug fixes
+
+- `rd_insert_na()` failed in non-longitudinal projects.
+- `rd_query(report_zeros = TRUE)` failed when every variable had queries.
+- `rd_query()`, `rd_event()` and `check_queries()` turned alphanumeric record identifiers into `NA`; identifiers are now sorted naturally.
+- `rd_event()` assigned the DAG of the first record to every query, failed without `redcap_event_name.factor` and could pair events with the wrong description.
+- Fixed a stray "FALSE" at the end of a `rd_query()` warning.
+
 # REDCapDM 1.0-1
 
 ## Bug fixes

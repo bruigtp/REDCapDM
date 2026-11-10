@@ -101,25 +101,28 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       )
     }
 
-    # Extract corresponding events for filter variables
-    event_filter <- tibble::tibble(vars_filter = vars_filter) |>
-      dplyr::mutate(
-        form = purrr::map_chr(.data$vars_filter, ~ dic |>
-                                dplyr::filter(.data$field_name %in% .x) |>
-                                dplyr::pull(.data$form_name)),
-        event = purrr::map(.data$form, ~ event_form |>
-                             dplyr::filter(.data$form %in% .x) |>
-                             dplyr::pull(.data$unique_event_name))
-      )
+    # Events are only relevant in longitudinal projects
+    if (longitudinal) {
+      # Extract corresponding events for filter variables
+      event_filter <- tibble::tibble(vars_filter = vars_filter) |>
+        dplyr::mutate(
+          form = purrr::map_chr(.data$vars_filter, ~ dic |>
+                                  dplyr::filter(.data$field_name %in% .x) |>
+                                  dplyr::pull(.data$form_name)),
+          event = purrr::map(.data$form, ~ event_form |>
+                               dplyr::filter(.data$form %in% .x) |>
+                               dplyr::pull(.data$unique_event_name))
+        )
 
-    # Identify common events for filter variables
-    events <- Reduce(intersect, event_filter$event)
+      # Identify common events for filter variables
+      events <- Reduce(intersect, event_filter$event)
 
-    # Stop if there are no common events among filter variables
-    if (length(events) == 0) {
-      stop("The variables in the filter belong to different events.")
+      # Stop if there are no common events among filter variables
+      if (length(events) == 0) {
+        stop("The variables in the filter belong to different events.")
+      }
     }
-
+    
     # Evaluate the filter expression once to get logical mask for rows
     filter_expr <- tryCatch({
       rlang::parse_expr(filter[1])
@@ -216,10 +219,6 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
         message(sprintf("No rows matched for variable '%s' after applying filter and event overlap.", var_j))
       }
     }
-
-    # Reapply variable labels to the data after transformation
-    data <- data |>
-      labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
 
     # Update results with this transformation
     inserted_msg <- stringr::str_glue("Inserting missing values into variable(s): {paste(vars, collapse = ', ')}. (rd_insert_na)\n")
