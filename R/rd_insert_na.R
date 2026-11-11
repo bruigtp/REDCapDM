@@ -14,6 +14,7 @@
 #'
 #' @details
 #' * Each variable is only updated in rows/events where both the variable and filter are present.
+#' * If the variable has a `.factor` version, it is updated too.
 #' * For longitudinal projects, `event_form` must be provided for proper event-level filtering.
 #' * Only one filter expression is allowed.
 #' * Variables and filter columns must exist in both `data` and `dictionary`.
@@ -207,9 +208,14 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
         warning("No event column detected in `data`. The filter will be applied across all rows (event-level restriction skipped).")
       }
 
-      # Apply the transformation (set selected rows for var_j to NA)
+      # Apply the transformation (set selected rows for var_j to NA), also in its .factor version so that a later rd_factor() doesn't bring the values back
       if (length(ids) > 0) {
         data[ids, var_j] <- NA
+
+        factor_j <- paste0(var_j, ".factor")
+        if (factor_j %in% names(data)) {
+          data[ids, factor_j] <- NA
+        }
       } else {
         # No rows to change for this variable (possible due to event restriction)
         # We do not stop here; just inform via a message (could be silent depending on preference)

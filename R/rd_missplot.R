@@ -11,14 +11,16 @@
 #' @param show_percentages Logical. Displays missingness as percentages. Default `TRUE`.
 #' @param use_field_labels Logical. Uses field labels from the dictionary for axis labels instead of variable names. Default `TRUE`.
 #' @param drop_complete Logical. Variables with 0 missing values are excluded from the plot. Default `TRUE`.
+#' @param max_label_length Integer. Maximum number of characters of the axis labels. Use `NULL` to keep them complete. Default `40`.
 #' @return A `ggplot2` object representing either a missingness barplot or a longitudinal missingness heatmap.
 #'
 #' @details
 #' The function automatically detects whether the input dataset contains longitudinal event information. If `redcap_event_name` is detected in the data columns, a missingness heatmap grouped by event is produced.
+#' When the event-form mapping is available (`event_form` element of the list), each variable is only evaluated in the events where its form is collected; the other cells of the heatmap are left blank.
 #'
 #' @export
 
-rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_percentages = TRUE, use_field_labels = TRUE, drop_complete = TRUE) {
+rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_percentages = TRUE, use_field_labels = TRUE, drop_complete = TRUE, max_label_length = 40) {
 
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("The `ggplot2` package is required for `rd_missplot()`. Install it with `install.packages('ggplot2')`.", call. = FALSE)
@@ -70,30 +72,28 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
   cols_to_exclude <- unique(c(redcap_system_cols, factor_cols, complete_status_cols))
 
-  # Helper function to map field_name to field_label if dictionary exists
+  # Axis label of every column: its dictionary label (when requested and available) or its name, shortened to `max_label_length` characters
+  axis_labels <- colnames(df)
+
+  if (use_field_labels && !is.null(dictionary_df) &&
+      all(c("field_name", "field_label") %in% colnames(dictionary_df))) {
+    dic_labels <- as.character(dictionary_df$field_label[match(axis_labels, dictionary_df$field_name)])
+    has_label <- !is.na(dic_labels) & nzchar(dic_labels)
+    axis_labels[has_label] <- dic_labels[has_label]
+  }
+
+  if (!is.null(max_label_length)) {
+    axis_labels <- stringr::str_trunc(axis_labels, max_label_length)
+  }
+
+  # Variables sharing a label would be merged in the plot: add their name
+  shared <- axis_labels %in% axis_labels[duplicated(axis_labels)]
+  axis_labels[shared] <- paste0(axis_labels[shared], " (", colnames(df)[shared], ")")
+
+  label_lookup <- stats::setNames(axis_labels, colnames(df))
+
   get_label_mapping <- function(df_cols, dict) {
-    if (use_field_labels && !is.null(dict) &&
-        all(c("field_name", "field_label") %in% colnames(dict))) {
-
-      dict_clean <- dict |>
-        dplyr::filter(!is.na(.data$field_name) & .data$field_name != "") |>
-        dplyr::select("field_name", "field_label") |>
-        dplyr::distinct(.data$field_name, .keep_all = TRUE)
-
-      label_map <- stats::setNames(dict_clean$field_label, dict_clean$field_name)
-
-      mapped_labels <- sapply(df_cols, function(x) {
-        if (x %in% names(label_map) && !is.na(label_map[[x]]) && nzchar(label_map[[x]])) {
-          label_map[[x]]
-        } else {
-          x
-        }
-      }, USE.NAMES = FALSE)
-
-      return(mapped_labels)
-    } else {
-      return(df_cols)
-    }
+    unname(label_lookup[df_cols])
   }
 
   # Clean dataframe by removing system variables
@@ -229,6 +229,31 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
         missing_pct = (.data$missing_count / .data$event_total_obs) * 100,
         display_label = get_label_mapping(.data$variable, dictionary_df)
       )
+    
+    # Leave out the events where a variable is not collected (its form is not designated in that event), instead of showing them as 100% missing
+    event_form_df <- if (is.list(data) && !is.data.frame(data)) data$event_form else NULL
+
+    if (!is.null(dictionary_df) &&
+        all(c("field_name", "form_name") %in% names(dictionary_df)) &&
+        all(c("unique_event_name", "form") %in% names(event_form_df))) {
+
+      # Forms collected in each event, using the event names shown in the plot
+      event_names <- unique(data.frame(raw = as.character(df[[event_col]]), shown = event_vector_display))
+      collected <- merge(event_form_df[, c("unique_event_name", "form")], event_names,
+                         by.x = "unique_event_name", by.y = "raw")
+      collected_keys <- paste(collected$shown, collected$form, sep = "\r")
+
+      # Form of each variable (checkbox options are matched by the field name)
+      var_form <- vapply(unique(missing_longitudinal$variable), function(v) {
+        form <- dictionary_df$form_name[match(c(v, sub("___.*$", "", v)), dictionary_df$field_name)]
+        form <- form[!is.na(form)]
+        if (length(form) > 0) as.character(form[1]) else NA_character_
+      }, character(1))
+
+      row_form <- var_form[missing_longitudinal$variable]
+      missing_longitudinal <- missing_longitudinal[
+        is.na(row_form) | paste(missing_longitudinal$clean_event_name, row_form, sep = "\r") %in% collected_keys, ]
+    }
 
     # Drop 100% complete variables if requested across all events
     if (drop_complete) {
@@ -278,6 +303,10 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
     fill_var <- if (show_percentages) "missing_pct" else "missing_count"
     fill_label <- if (show_percentages) "Missing %" else "Missing Count"
+    
+    # Explain the blank cells (variables not collected in some events)
+    blank_cells <- nrow(missing_longitudinal) < dplyr::n_distinct(missing_longitudinal$clean_event_name) * dplyr::n_distinct(missing_longitudinal$display_label)
+    caption <- if (blank_cells) "Blank cells: the variable is not collected in that event." else NULL
 
     # Build heatmap: X = Variables (Columns), Y = REDCap Event (Rows)
     p <- ggplot2::ggplot(
@@ -294,7 +323,8 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
       ggplot2::labs(
         title = "Longitudinal Missing Data Heatmap",
         x = "Variables",
-        y = "REDCap Event"
+        y = "REDCap Event",
+        caption = caption
       ) +
       ggplot2::theme(
         axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 8),

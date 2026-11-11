@@ -10,7 +10,8 @@ rd_missplot(
   max_vars = NULL,
   show_percentages = TRUE,
   use_field_labels = TRUE,
-  drop_complete = TRUE
+  drop_complete = TRUE,
+  max_label_length = 40
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ rd_missplot(
 \item{use_field_labels}{Logical. Uses field labels from the dictionary for axis labels instead of variable names. Default \code{TRUE}.}
 
 \item{drop_complete}{Logical. Variables with 0 missing values are excluded from the plot. Default \code{TRUE}.}
+
+\item{max_label_length}{Integer. Maximum number of characters of the axis labels. Use \code{NULL} to keep them complete. Default \code{40}.}
 }
 \value{
 A \code{ggplot2} object representing either a missingness barplot or a longitudinal missingness heatmap.
@@ -36,4 +39,5 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 }
 \details{
 The function automatically detects whether the input dataset contains longitudinal event information. If \code{redcap_event_name} is detected in the data columns, a missingness heatmap grouped by event is produced.
+When the event-form mapping is available (\code{event_form} element of the list), each variable is only evaluated in the events where its form is collected; the other cells of the heatmap are left blank.
 }

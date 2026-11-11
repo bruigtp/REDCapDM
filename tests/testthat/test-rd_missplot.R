@@ -107,3 +107,52 @@ test_that("longitudinal heatmap with sort_by_missingness = FALSE and drop_comple
 
   expect_s3_class(p, "ggplot")
 })
+
+
+# ---- Axis labels and event-form mapping ----
+
+make_long_label_data <- function() {
+  df <- data.frame(record_id = 1:4, a = c(NA, 1, 2, 3), b = c(NA, NA, 1, 2), c = c(NA, 1, 1, 1))
+  dic <- data.frame(
+    field_name = c("record_id", "a", "b", "c"),
+    field_label = c("ID",
+                    "A very long label that describes the first variable in detail",
+                    "A very long label that describes the second variable in detail",
+                    "Short"),
+    stringsAsFactors = FALSE
+  )
+  list(data = df, dictionary = dic)
+}
+
+test_that("rd_missplot shortens long labels and keeps them distinct", {
+  p <- suppressMessages(rd_missplot(make_long_label_data(), max_label_length = 20, drop_complete = FALSE))
+  labels <- as.character(p$data$display_label)
+
+  expect_true("Short" %in% labels)
+  # both long labels are cut to the same 20 characters, so the variable name is added
+  expect_setequal(labels[labels != "Short"], c("A very long label... (a)", "A very long label... (b)"))
+})
+
+test_that("rd_missplot keeps complete labels with max_label_length = NULL", {
+  p <- suppressMessages(rd_missplot(make_long_label_data(), max_label_length = NULL, drop_complete = FALSE))
+  expect_true("A very long label that describes the first variable in detail" %in% as.character(p$data$display_label))
+})
+
+test_that("rd_missplot heatmap leaves out the events where a variable is not collected", {
+  p <- suppressMessages(rd_missplot(covican, use_field_labels = FALSE, drop_complete = FALSE))
+  res <- as.data.frame(p$data)
+
+  # copd (comorbidities) is only collected at baseline
+  expect_equal(as.character(res$clean_event_name[res$variable == "copd"]), "Baseline visit")
+  # potassium (laboratory_findings) is collected at both events
+  expect_equal(sum(res$variable == "potassium"), 2)
+  expect_match(p$labels$caption, "not collected")
+})
+
+test_that("rd_missplot heatmap uses every event when there is no event-form mapping", {
+  p <- suppressMessages(rd_missplot(covican[c("data", "dictionary")], use_field_labels = FALSE, drop_complete = FALSE))
+  res <- as.data.frame(p$data)
+
+  expect_equal(sum(res$variable == "copd"), 2)
+  expect_null(p$labels$caption)
+})
