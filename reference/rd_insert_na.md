@@ -75,6 +75,8 @@ A list with:
 - Each variable is only updated in rows/events where both the variable
   and filter are present.
 
+- If the variable has a `.factor` version, it is updated too.
+
 - For longitudinal projects, `event_form` must be provided for proper
   event-level filtering.
 

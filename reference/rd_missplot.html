@@ -53,7 +53,8 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 <span>  max_vars <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  show_percentages <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  use_field_labels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  drop_complete <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  drop_complete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  max_label_length <span class="op">=</span> <span class="fl">40</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -84,6 +85,10 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 <dt id="arg-drop-complete">drop_complete<a class="anchor" aria-label="anchor" href="#arg-drop-complete"></a></dt>
 <dd><p>Logical. Variables with 0 missing values are excluded from the plot. Default <code>TRUE</code>.</p></dd>
 
+
+<dt id="arg-max-label-length">max_label_length<a class="anchor" aria-label="anchor" href="#arg-max-label-length"></a></dt>
+<dd><p>Integer. Maximum number of characters of the axis labels. Use <code>NULL</code> to keep them complete. Default <code>40</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -91,7 +96,8 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The function automatically detects whether the input dataset contains longitudinal event information. If <code>redcap_event_name</code> is detected in the data columns, a missingness heatmap grouped by event is produced.</p>
+    <p>The function automatically detects whether the input dataset contains longitudinal event information. If <code>redcap_event_name</code> is detected in the data columns, a missingness heatmap grouped by event is produced.
+When the event-form mapping is available (<code>event_form</code> element of the list), each variable is only evaluated in the events where its form is collected; the other cells of the heatmap are left blank.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -105,6 +105,7 @@ Sets selected variables to NA when a filter condition is satisfied. Useful for m
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
 <ul><li><p>Each variable is only updated in rows/events where both the variable and filter are present.</p></li>
+<li><p>If the variable has a <code>.factor</code> version, it is updated too.</p></li>
 <li><p>For longitudinal projects, <code>event_form</code> must be provided for proper event-level filtering.</p></li>
 <li><p>Only one filter expression is allowed.</p></li>
 <li><p>Variables and filter columns must exist in both <code>data</code> and <code>dictionary</code>.</p></li>

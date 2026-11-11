@@ -17,7 +17,8 @@ rd_missplot(
   max_vars = NULL,
   show_percentages = TRUE,
   use_field_labels = TRUE,
-  drop_complete = TRUE
+  drop_complete = TRUE,
+  max_label_length = 40
 )
 ```
 
@@ -53,6 +54,11 @@ rd_missplot(
   Logical. Variables with 0 missing values are excluded from the plot.
   Default `TRUE`.
 
+- max_label_length:
+
+  Integer. Maximum number of characters of the axis labels. Use `NULL`
+  to keep them complete. Default `40`.
+
 ## Value
 
 A `ggplot2` object representing either a missingness barplot or a
@@ -63,3 +69,6 @@ longitudinal missingness heatmap.
 The function automatically detects whether the input dataset contains
 longitudinal event information. If `redcap_event_name` is detected in
 the data columns, a missingness heatmap grouped by event is produced.
+When the event-form mapping is available (`event_form` element of the
+list), each variable is only evaluated in the events where its form is
+collected; the other cells of the heatmap are left blank.
