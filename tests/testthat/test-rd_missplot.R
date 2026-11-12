@@ -156,3 +156,136 @@ test_that("rd_missplot heatmap uses every event when there is no event-form mapp
   expect_equal(sum(res$variable == "copd"), 2)
   expect_null(p$labels$caption)
 })
+
+# ---- by = "record", events and forms ----
+
+test_that("by = 'record' paints the missing cells of each record", {
+  fx <- make_missplot_data()
+  p <- suppressMessages(rd_missplot(list(data = fx$data, dictionary = fx$dic), by = "record", use_field_labels = FALSE))
+  res <- as.data.frame(p$data)
+
+  expect_s3_class(p, "ggplot")
+  expect_setequal(unique(as.character(res$variable)), c("age", "weight"))
+  expect_equal(nrow(res), 6 * 2)
+  expect_equal(sort(as.character(res$row_id[res$variable == "age" & res$status == "Missing"])), c("2", "4", "5"))
+  expect_equal(sum(res$status == "Missing"), 3 + 4)
+  # record_id is the identifier, not a variable
+  expect_false("record_id" %in% res$variable)
+  # first record on top
+  expect_equal(levels(res$row_id), as.character(6:1))
+  expect_equal(p$labels$y, "Records (n = 6)")
+})
+
+test_that("by = 'record' keeps drop_complete, max_vars and sort_by_missingness", {
+  fx <- make_missplot_data()
+  input <- list(data = fx$data, dictionary = fx$dic)
+
+  expect_message(rd_missplot(input, by = "record"), "fully complete")
+
+  p <- suppressMessages(rd_missplot(input, by = "record", use_field_labels = FALSE, drop_complete = FALSE))
+  expect_equal(levels(p$data$display_label), c("weight", "age", "height", "sex"))
+
+  p <- suppressMessages(rd_missplot(input, by = "record", use_field_labels = FALSE, drop_complete = FALSE, sort_by_missingness = FALSE))
+  expect_equal(levels(p$data$display_label), c("age", "weight", "height", "sex"))
+
+  p <- suppressMessages(rd_missplot(input, by = "record", use_field_labels = FALSE, max_vars = 1))
+  expect_equal(unique(as.character(p$data$variable)), "weight")
+})
+
+test_that("by = 'record' orders the records naturally", {
+  df <- data.frame(record_id = c("10-2", "9-1", "10-10", "10-1"), a = c(NA, 1, NA, 2))
+  p <- rd_missplot(df, by = "record")
+
+  expect_equal(rev(levels(p$data$row_id)), c("9-1", "10-1", "10-2", "10-10"))
+})
+
+test_that("by = 'record' uses the first column as identifier when there is no record_id", {
+  df <- data.frame(patient = c("A", "B"), a = c(NA, 1), b = c(2, NA))
+  p <- rd_missplot(df, by = "record")
+
+  expect_setequal(as.character(p$data$row_id), c("A", "B"))
+  expect_false("patient" %in% p$data$variable)
+})
+
+test_that("by = 'record' plots the first event by default, with a warning", {
+  expect_warning(
+    p <- suppressMessages(rd_missplot(covican, by = "record")),
+    "Only the first event \\(Baseline visit\\)"
+  )
+
+  expect_equal(levels(p$data$event), "Baseline visit")
+  expect_equal(length(unique(p$data$row_id)), 190)
+})
+
+test_that("by = 'record' plots the chosen events in chronological order, by unique or shown name", {
+  p <- suppressMessages(rd_missplot(covican, by = "record", use_field_labels = FALSE,
+                                    events = c("Follow up visit day 14+/-5d", "baseline_visit_arm_1")))
+  res <- as.data.frame(p$data)
+
+  expect_equal(levels(res$event), c("Baseline visit", "Follow up visit day 14+/-5d"))
+  # copd (comorbidities) is only collected at baseline
+  expect_equal(unique(as.character(res$event[res$variable == "copd"])), "Baseline visit")
+  # 38 records have no follow-up visit: shown in grey in that panel
+  follow_up <- res[res$event == "Follow up visit day 14+/-5d" & res$variable == "potassium", ]
+  expect_equal(sum(follow_up$status == "Event not recorded"), 38)
+  expect_equal(sum(follow_up$status == "Missing"), sum(is.na(covican$data$potassium[covican$data$redcap_event_name == "follow_up_visit_da_arm_1"])))
+  expect_match(p$labels$caption, "no data in that event")
+
+  p_all <- suppressMessages(rd_missplot(covican, by = "record", events = "all"))
+  expect_equal(levels(p_all$data$event), levels(res$event))
+})
+
+test_that("by = 'record' labels every row with its record identifier", {
+  p <- suppressWarnings(suppressMessages(rd_missplot(covican, by = "record")))
+  expect_false(inherits(p$theme$axis.text.y, "element_blank"))
+  expect_setequal(levels(p$data$row_id), unique(covican$data$record_id))
+
+  small <- covican
+  small$data <- covican$data[covican$data$record_id %in% unique(covican$data$record_id)[1:10], ]
+  p <- suppressMessages(rd_missplot(small, by = "record", events = "all"))
+  expect_false(inherits(p$theme$axis.text.y, "element_blank"))
+    expect_equal(p$labels$y, "Records (n = 10)")
+  expect_equal(p$theme$axis.text.y$size, 7)
+})
+
+test_that("by = 'record' makes the identifiers smaller when there are many records", {
+  p <- suppressWarnings(suppressMessages(rd_missplot(covican, by = "record")))
+  expect_lt(p$theme$axis.text.y$size, 7)
+  expect_gte(p$theme$axis.text.y$size, 2)
+})
+
+test_that("forms restricts the variables plotted, in both modes", {
+  p <- suppressMessages(rd_missplot(covican, by = "record", events = "all", forms = "laboratory_findings",
+                                    use_field_labels = FALSE, drop_complete = FALSE))
+  forms_shown <- covican$dictionary$form_name[match(unique(as.character(p$data$variable)), covican$dictionary$field_name)]
+  expect_equal(unique(forms_shown), "laboratory_findings")
+
+  p <- suppressMessages(rd_missplot(covican, forms = c("demographics", "comorbidities"), use_field_labels = FALSE, drop_complete = FALSE))
+  forms_shown <- covican$dictionary$form_name[match(unique(as.character(p$data$variable)), covican$dictionary$field_name)]
+  expect_setequal(unique(forms_shown), c("demographics", "comorbidities"))
+})
+
+test_that("events filters the heatmap of by = 'vars'", {
+  p <- suppressMessages(rd_missplot(covican, events = "follow_up_visit_da_arm_1", use_field_labels = FALSE))
+
+  expect_equal(as.character(unique(p$data$clean_event_name)), "Follow up visit day 14+/-5d")
+  expect_false("copd" %in% p$data$variable)
+})
+
+test_that("rd_missplot validates by, events and forms", {
+  fx <- make_missplot_data()
+
+  expect_error(rd_missplot(covican, by = "patient"), "should be one of")
+  expect_error(rd_missplot(covican, events = c("baseline_visit_arm_1", "visit_99")), "Event\\(s\\) not found in the data: 'visit_99'")
+  expect_error(rd_missplot(covican, forms = "labs"), "Form\\(s\\) not found in the dictionary: 'labs'")
+  expect_error(rd_missplot(fx$data, forms = "demo"), "`forms` needs the dictionary")
+  expect_warning(suppressMessages(rd_missplot(fx$data, events = "baseline")), "`events` is ignored")
+  expect_error(suppressMessages(rd_missplot(list(data = fx$data[, c("record_id", "height")]), by = "record")), "There are no variables to plot")
+})
+
+test_that("by = 'vars' gives the same plot as before when events and forms are not used", {
+  p_default <- suppressMessages(rd_missplot(covican))
+  p_all <- suppressMessages(rd_missplot(covican, by = "vars", events = "all"))
+
+  expect_equal(as.data.frame(p_default$data), as.data.frame(p_all$data))
+})
