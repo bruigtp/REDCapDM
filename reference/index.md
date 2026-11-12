@@ -33,8 +33,8 @@
 - [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
   **\[stable\]** : Insert Missing Values Using a Filter
 - [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
-  **\[experimental\]** : Plot Missing Data Overview (Barplot or
-  Longitudinal Heatmap)
+  **\[experimental\]** : Plot Missing Data Overview (Barplot,
+  Longitudinal Heatmap or Record Map)
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   **\[stable\]** : Identification of Queries
 - [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
