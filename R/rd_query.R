@@ -376,6 +376,14 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Keep only the rows in which the variable is collected: in projects with repeated instruments the other rows are empty by design, not missing.
     raw0 <- raw0[repeat_home_rows(raw0, dic, variables[i], rep_pairs), , drop = FALSE]
+    
+    # Keep only the events in which the form of the variable is collected (when several variables are checked at once, the data contains the events of all of them)
+    if (!is.null(event_form) && "redcap_event_name" %in% names(raw0)) {
+      var_events <- event_form$unique_event_name[event_form$form %in% var_form(variables[i], dic)]
+      if (length(var_events) > 0) {
+        raw0 <- raw0[raw0$redcap_event_name %in% var_events, , drop = FALSE]
+      }
+    }
 
     # Apply custom expression filters
     x <- variables[i]

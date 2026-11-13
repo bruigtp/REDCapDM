@@ -113,3 +113,12 @@ test_that("rd_checkbox names the options from the dictionary when the data has n
   expect_false(any(grepl("_x(\\.\\d+)?$", names(res$data))))
   expect_equal(names(res$data), names(rd_checkbox(covican)$data))
 })
+
+
+test_that("rd_checkbox returns a project without checkboxes unchanged, with a warning", {
+  fx <- make_repeat_classic()
+
+  expect_warning(res <- rd_checkbox(fx), "has no checkbox fields")
+  expect_identical(res$data, fx$data)
+  expect_identical(res$dictionary, fx$dictionary)
+})

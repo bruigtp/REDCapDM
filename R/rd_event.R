@@ -150,6 +150,19 @@ rd_event <- function(project = NULL,
         dplyr::filter(!data$record_id %in% ids) |>
         dplyr::slice(rep(1:dplyr::n(), each = length(event[k])))
 
+      
+      # Multi-arm projects: only the records of the arm of the event can have it
+      if ("redcap_event_name" %in% names(data0)) {
+        event_raw <- if (event[k] %in% data0$redcap_event_name) event[k] else unique(data0$redcap_event_name[data0$redcap_event_name.factor %in% event[k]])
+        arm_k <- event_arm(event_raw, event_form)
+
+        if (length(arm_k) > 0 && !anyNA(arm_k)) {
+          arm_records <- data0$record_id[event_arm(data0$redcap_event_name, event_form) %in% arm_k]
+          raw <- raw |>
+            dplyr::filter(.data$record_id %in% arm_records)
+        }
+      }
+
       # If missing records are found, create query entries for them
       if (nrow(raw) > 0) {
         # Assign the current event name to the missing records - raw version
@@ -342,4 +355,22 @@ rd_event <- function(project = NULL,
     queries = queries,
     results = result
   )
+}
+
+
+#' Arm of each event
+#'
+#' @param events Unique event names.
+#' @param event_form Event-form mapping (its `arm_num` column is used when available).
+#' @return The arm of each event, taken from `event_form` or, if not available, from the `_arm_<n>` suffix of its name.
+#' @noRd
+event_arm <- function(events, event_form = NULL) {
+  arm <- rep(NA_character_, length(events))
+
+  if (!is.null(event_form) && all(c("arm_num", "unique_event_name") %in% names(event_form))) {
+    arm <- as.character(event_form$arm_num[match(events, event_form$unique_event_name)])
+  }
+
+  from_name <- ifelse(grepl("_arm_\\d+$", events), sub("^.*_arm_(\\d+)$", "\\1", events), NA_character_)
+  ifelse(is.na(arm), from_name, arm)
 }

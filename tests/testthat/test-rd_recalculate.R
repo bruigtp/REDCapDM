@@ -163,3 +163,16 @@ test_that("rd_recalculate works with repeated instruments", {
   expect_match(paste(res$results, collapse = "\n"), "\\|\\s+ae_double\\s+\\|\\s+Yes\\s+\\|\\s+TRUE\\s+\\|\\s+0\\s+\\|")
   expect_false("ae_double_recalc" %in% names(res$data))
 })
+
+
+test_that("rd_recalculate compares values, not attributes such as the variable label", {
+  df <- data.frame(record_id = 1:3, w = c(60, 80, 100), h = c(160, 180, 200), bmi = c(23.4, 24.7, 25))
+  attr(df$w, "label") <- "Weight"
+  dic <- data.frame(field_name = c("record_id", "w", "h", "bmi"), form_name = "f1", field_type = c("text", "text", "text", "calc"),
+                    field_label = c("ID", "Weight", "Height", "BMI"), choices_calculations_or_slider_labels = c("", "", "", "round([w]/(([h]/100)^2),1)"),
+                    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = "", stringsAsFactors = FALSE)
+
+  res <- rd_recalculate(data = df, dic = dic)
+  expect_match(paste(res$results, collapse = "\n"), "\\|\\s+bmi\\s+\\|\\s+Yes\\s+\\|\\s+TRUE\\s+\\|\\s+0\\s+\\|")
+  expect_false("bmi_recalc" %in% names(res$data))
+})

@@ -266,29 +266,23 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
               dplyr::pull(max_id) |>
               max()
           ),
-          df = if (longitudinal) {
-            purrr::pmap(list(.data$vars, .data$df, .data$events), function(x, y, z) {
+          df = purrr::pmap(list(.data$vars, .data$df, if (longitudinal) .data$events else as.list(rep(NA, dplyr::n()))), function(x, y, z) {
+
+            y <- y |>
+              dplyr::select(dplyr::any_of(c("record_id", setdiff(x, basic_redcap_vars))))
+
+            # One row per record: the rows of a record (events, instances of a repeated instrument or event) become numbered columns
+            if (dplyr::n_distinct(z) > 1 || any(duplicated(y$record_id))) {
 
               y <- y |>
-                dplyr::select(dplyr::all_of(c("record_id", x)))
+                dplyr::group_by(.data$record_id) |>
+                dplyr::mutate(id = seq_along(.data$record_id)) |>
+                dplyr::ungroup() |>
+                tidyr::pivot_wider(names_from = "id", values_from = -c("record_id", "id"))
+            }
 
-              if(dplyr::n_distinct(z) > 1) {
-
-                y <- y |>
-                  dplyr::group_by(.data$record_id) |>
-                  dplyr::mutate(id = seq_along(.data$record_id)) |>
-                  dplyr::ungroup() |>
-                  tidyr::pivot_wider(names_from = "id", values_from = -c("record_id", "id"))
-              }
-
-              return(y)
-            })
-          } else {
-            purrr::map2(.data$vars, .data$df, function(x, y) {
-              y |>
-                dplyr::select(dplyr::all_of(c("record_id", x)))
-            })
-          }
+            return(y)
+          })
         ) |>
         dplyr::relocate("max_repeated_instance", .before = "vars")
     }

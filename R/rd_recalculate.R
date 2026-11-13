@@ -145,20 +145,9 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
             NULL
           }
         }),
-        is_equal = purrr::map2_lgl(.data$calc, .data$recalc, function(x, y) {
-          if (!is.null(y)) {
-            if (is.numeric(x) & is.numeric(y)) {
-              identical(round(x, 3), round(y, 3))
-            } else if (all(is.na(x)) & all(is.na(y))) {
-              TRUE
-            } else {
-              identical(x, y)
-            }
-          } else {
-            NA
-          }
-        }),
-        n_diff = purrr::map2_int(.data$calc, .data$recalc, count_differences)
+        n_diff = purrr::map2_int(.data$calc, .data$recalc, count_differences),
+        # Equal when no value differs (identical() would also compare attributes such as the variable label)
+        is_equal = ifelse(is.na(.data$n_diff), NA, .data$n_diff == 0)
       ) |>
       dplyr::select(-"rlogic")
 

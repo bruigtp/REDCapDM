@@ -148,3 +148,22 @@ test_that("rd_event explains that it needs a longitudinal project", {
     "rd_event\\(\\) needs a longitudinal project"
   )
 })
+
+
+test_that("rd_event only expects the event in the records of its arm", {
+  data <- data.frame(
+    record_id = c("1", "1", "2", "2", "3", "4"),
+    redcap_event_name = c("screen_arm_1", "visit_arm_1", "screen_arm_1", "end_arm_1", "screen_arm_2", "screen_arm_1"),
+    stringsAsFactors = FALSE
+  )
+  event_form <- data.frame(arm_num = c(1, 1, 1, 2), unique_event_name = c("screen_arm_1", "visit_arm_1", "end_arm_1", "screen_arm_2"),
+                           form = "f1", stringsAsFactors = FALSE)
+
+  res <- rd_event(data = data, dic = data.frame(), event_form = event_form, event = "visit_arm_1")
+  # records 2 and 4 are in arm 1 and have no visit; record 3 is in arm 2
+  expect_equal(sort(as.character(res$queries$Identifier)), c("2", "4"))
+
+  # without event_form, the arm is taken from the name of the event
+  res <- rd_event(data = data, dic = data.frame(), event = "visit_arm_1")
+  expect_equal(sort(as.character(res$queries$Identifier)), c("2", "4"))
+})

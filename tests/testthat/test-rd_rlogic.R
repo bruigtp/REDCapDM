@@ -291,20 +291,19 @@ test_that("rd_rlogic converts sum(...) to rowSums and evaluates correctly", {
   expect_equal(as.numeric(out$eval), rowSums(cbind(df$a, df$b)))
 })
 
-test_that("rd_rlogic stops when the same variable is specified for different events ([][] case)", {
-  # Create a minimal dataset with event names for longitudinal behavior
-  df <- data.frame(record_id = 1:2,
-                   redcap_event_name = c("ev1", "ev2"),
-                   x = c(1, 0),
+test_that("rd_rlogic translates logic that uses the same variable in different events", {
+  df <- data.frame(record_id = c(1, 1, 2, 2),
+                   redcap_event_name = c("ev1", "ev2", "ev1", "ev2"),
+                   x = c(10, 14, 20, NA),
                    stringsAsFactors = FALSE)
-  dic <- make_dic("x")
-  # logic references x in two different events explicitly -> should error
-  logic <- "if([ev1][x]='1' or [ev2][x]='1',1,0)"
-  expect_error(
-    rd_rlogic(data = df, dic = dic, event_form = data.frame(form="form1", unique_event_name=c("ev1","ev2"), stringsAsFactors = FALSE),
-              logic = logic, var = "x"),
-    "The logic cannot be transcribed because the same variable is specified for different events\\."
-  )
+  dic <- make_dic(c("x", "change"))
+  event_form <- data.frame(form = "form1", unique_event_name = c("ev1", "ev2"), stringsAsFactors = FALSE)
+
+  # e.g. the change between two visits
+  out <- rd_rlogic(data = df, dic = dic, event_form = event_form, logic = "[ev2][x] - [ev1][x]", var = "change")
+
+  expect_equal(out$eval, c(4, 4, NA, NA))
+  expect_match(out$rlogic, "data$x__ev2 - data$x__ev1", fixed = TRUE)
 })
 
 test_that("rd_rlogic evaluates the logic of a repeated instrument in its instances", {

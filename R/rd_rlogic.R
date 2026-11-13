@@ -230,13 +230,22 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       dplyr::group_by(.data$vars) |>
       dplyr::summarise(n = length(unique(.data$events)))
 
-    if (any(n_events$n > 1)) {
-      stop("The logic cannot be transcribed because the same variable is specified for different events.")
-    }
+    # Variables used in several events (e.g. the change between two visits)
+    multi_event_vars <- n_events$vars[n_events$n > 1]
 
     # Apply the previously defined function to get the value in the corresponding event and fill it for all the rows of data
     for (i in seq_along(list_var_event)) {
-      data <- fill_data(list_var_event[[i]][1], list_var_event[[i]][2], data)
+      event_i <- list_var_event[[i]][1]
+      var_i <- list_var_event[[i]][2]
+
+      if (var_i %in% multi_event_vars) {
+        # One column per event: `<variable>__<event>`
+        event_col_i <- paste0(var_i, "__", event_i)
+        data[[event_col_i]] <- fill_data(event_i, var_i, data)[[var_i]]
+        rlogic <- gsub(paste0("[", event_i, "][", var_i, "]"), paste0("[", event_col_i, "]"), rlogic, fixed = TRUE)
+      } else {
+        data <- fill_data(event_i, var_i, data)
+      }
     }
 
     # Update rlogic by removing the event-specific variable format ([][] -> [])

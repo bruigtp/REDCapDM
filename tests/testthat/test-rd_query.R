@@ -810,3 +810,14 @@ test_that("rd_query applies branching logic that uses variables of the base row 
   expect_equal(as.character(res$queries$Identifier), "1")
   expect_equal(res$queries$Repetition, "ae-2")
 })
+
+
+test_that("rd_query checks each variable only in the events of its form when several variables are checked at once", {
+  together <- suppressWarnings(rd_query(covican, variables = c("copd", "potassium"), expression = "is.na(x)"))
+  copd <- suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)"))
+  potassium <- suppressWarnings(rd_query(covican, variables = "potassium", expression = "is.na(x)"))
+
+  expect_equal(nrow(together$queries), nrow(copd$queries) + nrow(potassium$queries))
+  # copd is only collected at baseline
+  expect_equal(unique(together$queries$Event[together$queries$Field == "copd"]), "Baseline visit")
+})

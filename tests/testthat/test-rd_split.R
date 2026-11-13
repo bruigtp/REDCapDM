@@ -267,3 +267,14 @@ test_that("rd_split keeps the `_mdc` columns of redcap_data(rm_mdc = FALSE) with
   res <- rd_split(mdc, by = "event")
   expect_true("potassium_mdc" %in% names(res$data$df[[1]]))
 })
+
+
+test_that("rd_split wide gives one row per record with repeated instruments", {
+  fx <- make_repeat_classic()
+  res <- rd_split(data = fx$data, dic = fx$dictionary, by = "form", wide = TRUE)
+
+  ae <- res$data$df[[which(res$data$form == "ae")]]
+  expect_equal(nrow(ae), 2)
+  expect_true(all(c("ae_term_1", "ae_term_2", "ae_grade_1", "ae_grade_2") %in% names(ae)))
+  expect_equal(res$data$max_repeated_instance[res$data$form == "ae"], 2)
+})

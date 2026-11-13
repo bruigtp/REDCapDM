@@ -90,10 +90,20 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   var_check_dic <- dic$field_name[dic$field_type == "checkbox"]
 
   # Ensure there are checkbox fields in either the data or the dictionary
+  # A project without checkboxes is returned unchanged, so that the function can be part of any pipeline
   if (length(var_check) == 0 & length(var_check_dic) == 0) {
-    stop("No checkbox fields found in either the data or the dictionary.")
-  }
+    warning("The project has no checkbox fields: the data is returned unchanged.", call. = FALSE)
 
+    return(
+      list(
+        data = data,
+        dictionary = dic,
+        event_form = event_form,
+        results = if (!is.null(results)) stringr::str_glue("{results}")
+      ) |>
+        purrr::compact()
+    )
+  }
   # Check for missing checkbox fields in either the data or the dictionary
   if (length(var_check) > 0 & length(var_check_dic) == 0) {
     stop("No checkbox fields found in the dictionary.")

@@ -266,7 +266,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     }
 
     if (length(total_missing) == 0) {
-      stop("There are no variables to plot: none of the selected variables has missing values.", call. = FALSE)
+      stop("There are no variables to plot: none of the selected variables has missing values. Set `drop_complete = FALSE` to plot them.", call. = FALSE)
     }
 
     # Variable order (columns)

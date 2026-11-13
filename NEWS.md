@@ -10,6 +10,8 @@
 - `rd_rlogic()` returns `eval_data`, the evaluation next to the record identifier, event and repetition of each row.
 - `rd_insert_na()` also updates the `.factor` version of the variables.
 - `rd_factor()` warns when the dictionary logic was already translated to R with `rd_dictionary()`.
+- `rd_rlogic()` translates logic that uses the same variable in different events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
+- `rd_checkbox()` returns a project without checkbox fields unchanged, with a warning, instead of an error.
 
 ## Repeated instruments and repeating events
 
@@ -32,6 +34,10 @@
 - `rd_query()`, `rd_event()` and `check_queries()` turned alphanumeric record identifiers into `NA`; identifiers are now sorted naturally.
 - `rd_event()` assigned the DAG of the first record to every query, failed without `redcap_event_name.factor` and could pair events with the wrong description. It now explains that it needs a longitudinal project.
 - `rd_transform()` failed when the record identifier was not called `record_id`.
+- `rd_recalculate()` reported a calculated field as different from REDCap when the values were equal but the variable had a label.
+- `rd_split(wide = TRUE)` returned several rows per record for repeated instruments in non-longitudinal projects.
+- `rd_query()` with several variables checked each variable also in the events of the other ones.
+- `rd_event()` reported records of other arms as missing the event in projects with several arms.
 - `rd_split()` failed with descriptive fields in the dictionary.
 - `redcap_data()` no longer warns about an incomplete final line when reading the event file.
 - Fixed a stray "FALSE" at the end of a `rd_query()` warning.
