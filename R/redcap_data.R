@@ -31,7 +31,7 @@
 #' @param sep Character string specifying the field separator for the exported dictionary CSV file. Default `","`.
 #' @param filter_field Optional character vector of field names to request from the API.
 #' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
-#' @param rm_mdc Logical; Removes the Missing Data Codes from de data. Default `TRUE`.
+#' @param rm_mdc Logical; Removes the Missing Data Codes from de data. Default `TRUE`. With `FALSE`, the codes are kept: in multiple-choice fields as an additional category (in the `.factor` version), and in validated text fields (numbers, dates, ...) in a new `<field>_mdc` column, while the field itself keeps its type and has `NA` in those rows.
 #'
 #' @return A list with:
 #'   - `data`: Imported dataset.
@@ -481,6 +481,28 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     dplyr::filter(.data$field_type %in% c("radio", "yesno", "dropdown", "truefalse")) |>
     dplyr::pull(.data$field_name)
 
+  
+  # A Missing Data Code turns the whole column into text when the CSV is read. Once the codes are removed, numeric fields and multiple-choice codes recover their type (as if the column had no codes); dates, phones, etc. stay as text
+  numeric_fields <- if ("text_validation_type_or_show_slider_number" %in% names(data_def$dictionary)) {
+    data_def$dictionary |>
+      dplyr::filter(
+        .data$field_type == "text",
+        .data$text_validation_type_or_show_slider_number %in% c("number", "integer") |
+          grepl("^number_", .data$text_validation_type_or_show_slider_number)
+      ) |>
+      dplyr::pull(.data$field_name)
+  } else {
+    character(0)
+  }
+  numeric_fields <- c(numeric_fields, categorical_fields)
+
+  restore_type <- function(x, field) {
+    if (field %in% numeric_fields && is.character(x)) utils::type.convert(x, as.is = TRUE) else x
+  }
+
+  # Validated fields whose Missing Data Codes are kept in a `<field>_mdc` column (rm_mdc = FALSE)
+  mdc_fields <- character(0)
+
   if (rm_mdc) {
     # Include .factor versions in "radio" & "yesno" field types
     categorical_factor_fields <- paste0(categorical_fields, ".factor")
@@ -504,6 +526,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         dplyr::across(
           dplyr::all_of(target_columns),
           ~ {
+            # Numeric columns can't contain Missing Data Codes
+            if (!is.character(.x) && !is.factor(.x)) {
+              return(.x)
+            }
             was_factor <- is.factor(.x)
             val_char <- stringr::str_trim(as.character(.x))
             val_clean <- ifelse(
@@ -511,7 +537,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
               NA_character_,
               val_char
             )
-            if (was_factor) factor(val_clean, levels = levels(.x)) else val_clean
+            if (was_factor) factor(val_clean, levels = levels(.x)) else restore_type(val_clean, dplyr::cur_column())
           }
         )
       )
@@ -520,20 +546,42 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     }
   } else {
 
-    # Convert into NA all validated text fields.
+    # Validated text fields (numbers, dates, ...): the codes are set to NA, so that the field keeps its type, and kept in a new `<field>_mdc` column next to it
     text_targets <- intersect(validated_text_fields, colnames(data_def$data))
-    if (length(text_targets) > 0) {
-      data_def$data <- data_def$data |>
-        dplyr::mutate(
-          dplyr::across(
-            dplyr::all_of(text_targets),
-            ~ {
-              val_char <- stringr::str_trim(as.character(.x))
-              ifelse(toupper(val_char) %in% missing_codes, NA_character_, val_char)
-              }
-            )
-        )
+    for (var in text_targets) {
+      x <- data_def$data[[var]]
+
+      # Numeric columns can't contain Missing Data Codes
+      if (!is.character(x) && !is.factor(x)) {
+        next
       }
+
+      val_char <- stringr::str_trim(as.character(x))
+      is_mdc <- toupper(val_char) %in% missing_codes
+
+      if (any(is_mdc)) {
+        mdc_col <- paste0(var, "_mdc")
+
+        if (mdc_col %in% colnames(data_def$data)) {
+          warning(stringr::str_glue("The Missing Data Codes of `{var}` can't be kept because the dataset already has a `{mdc_col}` column. They are set to NA."), call. = FALSE)
+        } else {
+          data_def$data[[mdc_col]] <- ifelse(is_mdc, val_char, NA_character_)
+          data_def$data <- data_def$data |>
+            dplyr::relocate(dplyr::all_of(mdc_col), .after = dplyr::all_of(var))
+          mdc_fields <- c(mdc_fields, var)
+        }
+      }
+
+      data_def$data[[var]] <- restore_type(ifelse(is_mdc, NA_character_, val_char), var)
+    }
+
+    if (length(mdc_fields) > 0) {
+      warning(stringr::str_glue(
+        "Missing Data Codes found in validated fields ({paste(mdc_fields, collapse = ', ')}). ",
+        "They are set to NA and kept in the new columns {paste0(mdc_fields, '_mdc', collapse = ', ')}."
+      ), call. = FALSE)
+    }
+
     # Process categorical variables
     cat_targets <- intersect(categorical_fields, colnames(data_def$data))
     for (var in cat_targets) {
@@ -560,7 +608,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
           next_code <- if (length(numeric_codes) > 0) max(numeric_codes, na.rm = TRUE) + 1 else 1
 
           orig_vals[is_mdc_mask] <- as.character(next_code)
-          data_def$data[[var]] <- orig_vals
+          data_def$data[[var]] <- restore_type(orig_vals, var)
         }
       }
       }
@@ -624,6 +672,20 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   # Reapply labels to the modified dataset
   data_def$data <- data_def$data |>
     labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
+
+  
+  # Labels of the columns with the Missing Data Codes (rm_mdc = FALSE)
+  if (length(mdc_fields) > 0) {
+    mdc_labels <- if ("field_label" %in% names(data_def$dictionary)) {
+      data_def$dictionary$field_label[match(mdc_fields, data_def$dictionary$field_name)]
+    } else {
+      rep(NA_character_, length(mdc_fields))
+    }
+    mdc_labels <- paste0(ifelse(is.na(mdc_labels) | !nzchar(mdc_labels), mdc_fields, mdc_labels), " (Missing Data Code)")
+
+    data_def$data <- data_def$data |>
+      labelled::set_variable_labels(.labels = stats::setNames(as.list(mdc_labels), paste0(mdc_fields, "_mdc")))
+  }
 
   # Change the labelled class of each column but don't remove the label:
   data_def$data <- data_def$data |>

@@ -37,7 +37,7 @@ A list with:
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
-Converts a REDCap logic expression into R-compatible logic. Processes one logic expression (\code{logic}) for one target variable (\code{var}) at a time. Supports common REDCap operators (\code{and}, \code{or}, \code{=}, \code{<}, \code{>}, etc.) and handles event-specific logic in longitudinal projects. Logic involving smart variables or repeated instruments may require manual review.
+Converts a REDCap logic expression into R-compatible logic. Processes one logic expression (\code{logic}) for one target variable (\code{var}) at a time. Supports common REDCap operators (\code{and}, \code{or}, \code{=}, \code{<}, \code{>}, etc.) and handles event-specific logic in longitudinal projects and repeated instruments. Logic involving smart variables may require manual review.
 }
 \details{
 \itemize{
@@ -49,7 +49,9 @@ Converts a REDCap logic expression into R-compatible logic. Processes one logic 
 \item Handles date transformations and empty strings (\code{''}) → \code{NA}.
 \item Adjusts logic for longitudinal data using \code{event_form} if provided.
 \item Evaluates the translated R logic against the dataset and returns the results.
-\item Logic with repeated instruments, smart variables, or multiple events per variable may require manual inspection.
+\item With repeated instruments and repeating events, the logic is evaluated in the rows where \code{var} is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
+\item As in REDCap, \code{datediff()} returns the absolute difference unless its last argument is \code{true}, its units are \code{"y"}, \code{"M"} (months), \code{"d"}, \code{"h"}, \code{"m"} (minutes) and \code{"s"}, and \code{"today"} is the current date.
+\item Logic with smart variables, or multiple events per variable may require manual inspection.
 }
 }
 \examples{

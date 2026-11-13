@@ -56,14 +56,24 @@ test_that("long checkbox labels are truncated to 60 characters", {
 })
 
 
-test_that("function warns about repeated instruments", {
-  covican_test <- covican
-  covican_test$data$redcap_repeat_instrument <- rep("some_form", nrow(covican_test$data))
+test_that("rd_checkbox evaluates the branching logic of checkboxes in repeating instruments", {
+  fx <- make_repeat_classic()
+  fx$data$sym___1 <- c(NA, 1, 0, NA, 1)
+  fx$data$sym___2 <- c(NA, 0, 1, NA, 0)
+  fx$data$sym___1.factor <- factor(c(NA, "Checked", "Unchecked", NA, "Checked"), levels = c("Unchecked", "Checked"))
+  fx$data$sym___2.factor <- factor(c(NA, "Unchecked", "Checked", NA, "Unchecked"), levels = c("Unchecked", "Checked"))
+  fx$dictionary <- rbind(fx$dictionary, data.frame(
+    field_name = "sym", form_name = "ae", field_type = "checkbox", field_label = "Symptoms",
+    choices_calculations_or_slider_labels = "1, Cough | 2, Fever", text_validation_type_or_show_slider_number = NA,
+    branching_logic_show_field_only_if = "[age] > '40'", stringsAsFactors = FALSE
+  ))
 
-  expect_warning(
-    rd_checkbox(data = covican_test$data, dic = covican_test$dictionary, event_form = covican$event_form),
-    "repeated instruments"
-  )
+  expect_no_warning(res <- rd_checkbox(fx, checkbox_names = FALSE, na_logic = "missing"))
+
+  # record 1 (50 years old in its base row) keeps its answers; record 2 has no age
+  expect_equal(as.character(res$data$sym___1.factor), c(NA, "Yes", "No", NA, NA))
+  expect_equal(as.character(res$data$sym___2.factor), c(NA, "No", "Yes", NA, NA))
+  expect_equal(as.numeric(res$data$sym___1), c(NA, 1, 0, NA, NA))
 })
 
 test_that("running rd_checkbox twice cannot be done", {

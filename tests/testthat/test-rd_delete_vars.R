@@ -147,3 +147,19 @@ test_that("rd_delete_vars errors with unknown forms or without vars, pattern or 
     "At least one of the 'vars', 'pattern' or 'forms' arguments must be provided"
   )
 })
+
+
+test_that("rd_delete_vars also removes the `_mdc` columns of redcap_data(rm_mdc = FALSE)", {
+  mdc <- covican
+  mdc$data <- dplyr::mutate(covican$data, potassium_mdc = ifelse(is.na(potassium), "UNK", NA), .after = "potassium")
+
+  out <- rd_delete_vars(mdc, vars = "potassium")
+  expect_false(any(c("potassium", "potassium_mdc") %in% names(out$data)))
+
+  out <- rd_delete_vars(mdc, forms = "laboratory_findings")
+  expect_false(any(c("potassium", "potassium_mdc") %in% names(out$data)))
+
+  # deleting another variable keeps it
+  out <- rd_delete_vars(mdc, vars = "fio2")
+  expect_true("potassium_mdc" %in% names(out$data))
+})

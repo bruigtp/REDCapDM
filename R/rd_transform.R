@@ -98,9 +98,6 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     warning("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
   }
 
-  # Check if the project has repeated instruments
-    repeat_instrument <- "redcap_repeat_instrument" %in% names(data) && any(!is.na(data$redcap_repeat_instrument))
-
   message("\u23F3 Transformation in progress...")
 
   labels <- purrr::map_chr(data, function(x) {
@@ -153,35 +150,29 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       TRUE ~ branching_logic_show_field_only_if
     ))
 
-  if (!repeat_instrument) {
-    # Recalculate calculated fields (previous to transforming factors and other preprocessing)
-    # It wil create duplicate variables of each calculated field with "_recalc" in the end and the recalculated value
+  # Recalculate calculated fields (previous to transforming factors and other preprocessing)
+  # It wil create duplicate variables of each calculated field with "_recalc" in the end and the recalculated value
 
-    results <- c(results, stringr::str_glue("\n\n{ind}. Recalculating calculated fields and saving them as '[field_name]_recalc'"))
-    ind <- ind + 1
+  results <- c(results, stringr::str_glue("\n\n{ind}. Recalculating calculated fields and saving them as '[field_name]_recalc'"))
+  ind <- ind + 1
 
-    # If the project is longitudinal and the event hasn't been specified no recalculation is possible
-    if (longitudinal & is.null(event_form)) {
-      results <- c(results, "\nNo recalculation is possible as the project has more than one event and the event-form correspondence has not been specified\n")
-    } else {
-      recalc <- rd_recalculate(data = data, dic = dic, event_form = event_form, exclude = exclude_recalc)
+  # If the project is longitudinal and the event hasn't been specified no recalculation is possible
+  if (longitudinal & is.null(event_form)) {
+    results <- c(results, "\nNo recalculation is possible as the project has more than one event and the event-form correspondence has not been specified\n")
+  } else {
+    recalc <- rd_recalculate(data = data, dic = dic, event_form = event_form, exclude = exclude_recalc)
 
-      data <- recalc$data
-      dic <- recalc$dictionary
+    data <- recalc$data
+    dic <- recalc$dictionary
 
-      results <- c(results, recalc$results[-1])
-    }
+    results <- c(results, recalc$results[-1])
   }
 
-  if (!repeat_instrument) {
-    # Message depends on na_logic option
-    if (na_logic == "eval") {
-      results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing"))
-    } else if (na_logic == "missing") {
-      results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing"))
-    } else {
-      results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."))
-    }
+  # Message depends on na_logic option
+  if (na_logic == "eval") {
+    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing"))
+  } else if (na_logic == "missing") {
+    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing"))
   } else {
     results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."))
   }
@@ -194,15 +185,13 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     if (is.null(event_form) & longitudinal) {
       results <- c(results, "\nBranching logic evaluation is not possible as the project has more than one event and the event-form correspondence has not been specified\n")
     } else {
-      if (!repeat_instrument) {
-        # Transform missings of checkboxes with branching logic:
-        trans <- rd_checkbox(data = data, dic = dic, event_form = event_form, checkbox_labels = checkbox_labels, checkbox_names = TRUE, na_logic = na_logic)
+      # Transform missings of checkboxes with branching logic:
+      trans <- rd_checkbox(data = data, dic = dic, event_form = event_form, checkbox_labels = checkbox_labels, checkbox_names = TRUE, na_logic = na_logic)
 
-        results <- c(results, trans$results[-1])
+      results <- c(results, trans$results[-1])
 
-        data <- trans$data
-        dic <- trans$dictionary
-      }
+      data <- trans$data
+      dic <- trans$dictionary
     }
   } else {
     results <- c(results, "\nNo checkboxes are found in the data\n")
@@ -233,17 +222,15 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       x
     })
 
-  if (!repeat_instrument) {
-    # Transform the branching logic from the dictionary which is in REDCap logic (raw) into R logic
-    results <- c(results, stringr::str_glue("\n\n{ind}. Converting every branching logic in the dictionary into R logic"))
-    ind <- ind + 1
+  # Transform the branching logic from the dictionary which is in REDCap logic (raw) into R logic
+  results <- c(results, stringr::str_glue("\n\n{ind}. Converting every branching logic in the dictionary into R logic"))
+  ind <- ind + 1
 
-    dic_trans <- rd_dictionary(data = data, dic = dic, event_form = event_form)
+  dic_trans <- rd_dictionary(data = data, dic = dic, event_form = event_form)
 
-    dic <- dic_trans$dictionary
+  dic <- dic_trans$dictionary
 
-    results <- c(results, dic_trans$results[-1])
-  }
+  results <- c(results, dic_trans$results[-1])
 
 
   # Arrange our dataset by record_id and event (will keep the same order of events as in redcap)
@@ -295,7 +282,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
         data <- split$data
       }
     } else if (final_format == "by_form") {
-      results <- c(results, stringr::str_glue("{ind}. Final arrangment of the data by form"))
+      results <- c(results, stringr::str_glue("\n\n{ind}. Final arrangment of the data by form"))
       ind <- ind + 1
 
       if (is.null(wide)) {

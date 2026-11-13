@@ -145,3 +145,21 @@ natural_rank <- function(x) {
   sorted <- unique(x[stringi::stri_order(x, opts_collator = stringi::stri_opts_collator(numeric = TRUE))])
   match(x, sorted)
 }
+
+
+
+#' Columns with the Missing Data Codes of a field
+#'
+#' `redcap_data(rm_mdc = FALSE)` keeps the codes of the validated text fields in
+#' a `<field>_mdc` column next to the field. Like the `.factor` versions, they are
+#' not in the dictionary.
+#'
+#' @param data_names Column names of the dataset.
+#' @param dic_fields Field names of the dictionary (a REDCap field called
+#'   `x_mdc` is never taken as one of these columns).
+#' @return The names of the `_mdc` columns.
+#' @noRd
+mdc_columns <- function(data_names, dic_fields = NULL) {
+  cols <- grep("_mdc$", data_names, value = TRUE)
+  cols[sub("_mdc$", "", cols) %in% data_names & !cols %in% dic_fields]
+}

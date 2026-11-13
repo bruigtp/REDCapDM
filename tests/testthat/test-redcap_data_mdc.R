@@ -128,30 +128,58 @@ test_that("redcap_data() does not crash when the dictionary has no field_label c
 })
 
 test_that("rm_mdc = FALSE keeps the Missing Data Code label in the .factor column", {
-  out <- run_redcap_data_mdc(rm_mdc = FALSE)
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = FALSE))
 
   expect_equal(as.character(out$data$sex.factor[3]), "UNK")
 })
 
 test_that("rm_mdc = FALSE assigns a placeholder numeric code (not a real category code) to the raw column", {
-  out <- run_redcap_data_mdc(rm_mdc = FALSE)
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = FALSE))
 
   # sex's real codes are 1/2, so the placeholder for the MDC should be >= 3,
   # never collide with an existing, dictionary-defined category code.
   expect_true(as.numeric(out$data$sex[3]) >= 3)
 })
 
-test_that("rm_mdc = FALSE still wipes Missing Data Codes to NA in validated text fields (no preservation)", {
-  # This documents a likely inconsistency: categorical fields keep the MDC
-  # readable via .factor, but validated text fields get no equivalent
-  # treatment under rm_mdc = FALSE -- they're wiped exactly like rm_mdc = TRUE.
-  out <- run_redcap_data_mdc(rm_mdc = FALSE)
+test_that("rm_mdc = FALSE keeps the Missing Data Codes of validated text fields in a `_mdc` column", {
+  expect_warning(
+    out <- run_redcap_data_mdc(rm_mdc = FALSE),
+    "Missing Data Codes found in validated fields \\(lab_value\\)\\. They are set to NA and kept in the new columns lab_value_mdc\\."
+  )
 
+  # the field keeps its type, with NA where there was a code
+  expect_equal(out$data$lab_value, c(5.2, NA, 7.1), ignore_attr = TRUE)
+  expect_equal(out$data$lab_value_mdc, c(NA, "ASKU", NA), ignore_attr = TRUE)
+  # right after the field, with its label
+  expect_equal(which(names(out$data) == "lab_value_mdc"), which(names(out$data) == "lab_value") + 1)
+  expect_equal(attr(out$data$lab_value_mdc, "label"), "Lab value (mmol/L) (Missing Data Code)")
+  # not added to the dictionary
+  expect_false("lab_value_mdc" %in% out$dictionary$field_name)
+})
+
+test_that("rm_mdc = FALSE doesn't add `_mdc` columns when there are no codes", {
+  fx <- make_mdc_fixture()
+  fx$data$lab_value <- c("5.2", "6.0", "7.1")
+
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = FALSE, fx = fx))
+  expect_false(any(grepl("_mdc$", names(out$data))))
+  expect_true(is.numeric(out$data$lab_value))
+})
+
+test_that("rm_mdc = FALSE doesn't overwrite an existing `_mdc` column", {
+  fx <- make_mdc_fixture()
+  fx$data$lab_value_mdc <- c("a", "b", "c")
+
+  expect_warning(
+    out <- run_redcap_data_mdc(rm_mdc = FALSE, fx = fx),
+    "already has a `lab_value_mdc` column"
+  )
+  expect_equal(out$data$lab_value_mdc, c("a", "b", "c"), ignore_attr = TRUE)
   expect_true(is.na(out$data$lab_value[2]))
 })
 
 test_that("rm_mdc = FALSE drops a checkbox Missing Data Code column only when nobody ever selected it", {
-  out <- run_redcap_data_mdc(rm_mdc = FALSE)
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = FALSE))
 
   # chk___NI is 0 for every record in the fixture -> must be dropped.
   expect_false("chk___NI" %in% names(out$data))
@@ -161,7 +189,7 @@ test_that("rm_mdc = FALSE keeps a checkbox Missing Data Code column when at leas
   fx <- make_mdc_fixture()
   fx$data$chk___NI <- c(1, 0, 0)  # record 1 *did* select "Not Indicated"
 
-  out <- run_redcap_data_mdc(rm_mdc = FALSE, fx = fx)
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = FALSE, fx = fx))
 
   expect_true("chk___NI" %in% names(out$data))
 })
@@ -171,4 +199,48 @@ test_that("HTML tags and entities are cleaned from dictionary field_label", {
 
   lbl <- out$dictionary$field_label[out$dictionary$field_name == "lab_value"]
   expect_equal(lbl, "Lab value (mmol/L)")
+})
+
+
+
+# ---- Column types ----
+
+test_that("redcap_data keeps numbers and multiple-choice codes numeric after removing Missing Data Codes", {
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = TRUE))
+
+  expect_equal(out$data$lab_value, c(5.2, NA, 7.1), ignore_attr = TRUE)
+  expect_equal(out$data$sex, c(1L, 2L, NA), ignore_attr = TRUE)
+
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = FALSE))
+  expect_true(is.numeric(out$data$lab_value))
+  expect_true(is.numeric(out$data$sex))
+  expect_true(out$data$sex[3] >= 3)
+})
+
+test_that("redcap_data doesn't turn numeric columns into text when there are no Missing Data Codes", {
+  fx <- make_mdc_fixture()
+  fx$data <- data.frame(record_id = 1:3, sex = c(1L, 2L, 1L), lab_value = c(78, 102, 9.5),
+                        chk___1 = c(1, 0, 1), chk___NI = c(0, 0, 0))
+  fx$data$sex.factor <- factor(c("Male", "Female", "Male"), levels = c("Male", "Female"))
+  fx$data$chk___NI.factor <- factor(rep("Unchecked", 3), levels = c("Unchecked", "Checked"))
+
+  for (rm_mdc in c(TRUE, FALSE)) {
+    # the empty checkbox option named after a code (chk___NI) is removed with a warning
+    out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = rm_mdc, fx = fx))
+    expect_true(is.numeric(out$data$lab_value))
+    expect_true(is.numeric(out$data$sex))
+    # a text comparison would give 2 ("78" > "100" and "9.5" > "100")
+    expect_equal(sum(out$data$lab_value > 100), 1)
+  }
+})
+
+test_that("redcap_data keeps as text the validated fields that aren't numbers", {
+  fx <- make_mdc_fixture()
+  fx$data$phone <- c("0612345678", "UNK", "0698765432")
+  fx$dic <- rbind(fx$dic, data.frame(field_name = "phone", form_name = "form1", field_type = "text",
+                                     text_validation_type_or_show_slider_number = "phone",
+                                     field_label = "Phone", stringsAsFactors = FALSE))
+
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = TRUE, fx = fx))
+  expect_equal(out$data$phone, c("0612345678", NA, "0698765432"), ignore_attr = TRUE)
 })

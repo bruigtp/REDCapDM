@@ -33,7 +33,7 @@ redcap_data(
 
 \item{survey_fields}{Logical; include survey-related fields when pulling via API. Default \code{FALSE}.}
 
-\item{rm_mdc}{Logical; Removes the Missing Data Codes from de data. Default \code{TRUE}.}
+\item{rm_mdc}{Logical; Removes the Missing Data Codes from de data. Default \code{TRUE}. With \code{FALSE}, the codes are kept: in multiple-choice fields as an additional category (in the \code{.factor} version), and in validated text fields (numbers, dates, ...) in a new \verb{<field>_mdc} column, while the field itself keeps its type and has \code{NA} in those rows.}
 }
 \value{
 A list with:

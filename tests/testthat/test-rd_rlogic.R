@@ -307,21 +307,22 @@ test_that("rd_rlogic stops when the same variable is specified for different eve
   )
 })
 
-test_that("rd_rlogic errors when logic references variable in a repeated instrument", {
+test_that("rd_rlogic evaluates the logic of a repeated instrument in its instances", {
   # Build a dataset with redcap_repeat_instrument and a dic marking the form
   df <- data.frame(record_id = 1:2,
                    redcap_event_name = c("ev1", "ev1"),
                    redcap_repeat_instrument = c("form_repeat", NA),
+                   redcap_repeat_instance = c(1, NA),
                    repvar = c(1, 0),
                    stringsAsFactors = FALSE)
   # dic says repvar belongs to form_repeat (so it's in a repeated instrument)
   dic <- make_dic("repvar", form = "form_repeat")
   logic <- "if([repvar]='1',1,0)"
-  expect_error(
-    rd_rlogic(data = df, dic = dic, event_form = data.frame(form="form_repeat", unique_event_name="ev1", stringsAsFactors = FALSE),
-              logic = logic, var = "repvar"),
-    "cannot translate logic involving variables that belong to repeated instruments"
-  )
+  out <- rd_rlogic(data = df, dic = dic, event_form = data.frame(form="form_repeat", unique_event_name="ev1", stringsAsFactors = FALSE),
+                   logic = logic, var = "repvar")
+
+  # the second row is a base row, where repvar is not collected
+  expect_equal(out$eval, c(1, NA))
 })
 
 test_that("rd_rlogic maps factor variables used in arithmetic to numeric via choices_calculations_or_slider_labels", {
@@ -442,4 +443,86 @@ test_that("rd_rlogic leaves a factor as it is when its values aren't the labels 
   )
 
   expect_equal(rd_rlogic(data = data, dic = dic, logic = "[smoker]='Si'", var = "res")$eval, c(TRUE, FALSE))
+})
+
+
+# ---- Repeated instruments and repeating events ----
+
+test_that("rd_rlogic evaluates a repeating instrument variable in its instances only", {
+  fx <- make_repeat_classic()
+  out <- rd_rlogic(fx, logic = "[ae_grade] > '1'", var = "ae_term")
+
+  expect_equal(out$eval, c(NA, FALSE, TRUE, NA, TRUE))
+  expect_equal(names(out$eval_data), c("record_id", "redcap_repeat_instrument", "redcap_repeat_instance", "eval"))
+})
+
+test_that("rd_rlogic takes the variables of the other forms from the base row, as REDCap does", {
+  fx <- make_repeat_classic()
+  out <- rd_rlogic(fx, logic = "[age] > '40'", var = "ae_grade")
+
+  # record 1 is 50 years old in its base row; record 2 has no age
+  expect_equal(out$eval, c(NA, TRUE, TRUE, NA, NA))
+})
+
+test_that("rd_rlogic errors when the logic uses a variable of another repeating instrument", {
+  fx <- make_repeat_classic()
+
+  expect_error(
+    rd_rlogic(fx, logic = "[ae_grade] = '1'", var = "age"),
+    "variables of another repeated instrument.*ae_grade \\(form:ae\\)"
+  )
+})
+
+test_that("rd_rlogic handles forms repeating in only some events", {
+  fx <- make_repeat_longitudinal()
+
+  # labs is a regular form at baseline and a repeating instrument at treatment
+  out <- rd_rlogic(fx, logic = "[hb] < '12'", var = "hb")
+  expect_equal(out$eval, c(FALSE, NA, TRUE, NA, NA, NA))
+
+  # sbp (vitals, treatment base row) is taken for the instances of labs at treatment
+  out <- rd_rlogic(fx, logic = "[sbp] > '100'", var = "hb")
+  expect_equal(out$eval, c(NA, NA, TRUE, TRUE, NA, NA))
+})
+
+# ---- datediff ----
+
+test_that("rd_rlogic returns the absolute datediff() unless it is signed, as REDCap does", {
+  df <- data.frame(record_id = 1:2, d1 = as.Date(c("2024-03-05", "2024-03-01")), d2 = as.Date(c("2024-03-01", "2024-03-05")))
+  dic <- make_dic(c("record_id", "d1", "d2", "res"), text_validation = "date_ymd")
+
+  out <- rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'d')", var = "res")
+  expect_equal(out$eval, c(4, 4))
+  expect_match(out$rlogic, "^abs\\(")
+
+  out <- rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'d','ymd',true)", var = "res")
+  expect_equal(out$eval, c(-4, 4))
+})
+
+test_that("datediff_absolute only wraps the unsigned datediff() calls", {
+  expect_equal(
+    datediff_absolute("if(datediff([a],[b],'d')>5 and datediff([c],'today','y',true)<1,1,0)"),
+    "if(abs(datediff([a],[b],'d'))>5 and datediff([c],'today','y',true)<1,1,0)"
+  )
+  expect_equal(datediff_absolute("rounddown(datediff([a],[b],'y'),0)"), "rounddown(abs(datediff([a],[b],'y')),0)")
+  expect_equal(datediff_absolute("[x] + 1"), "[x] + 1")
+})
+
+test_that("rd_rlogic translates the date format, the units and 'today' of datediff()", {
+  df <- data.frame(record_id = 1:2, d1 = as.Date(c("2024-01-01", "2023-01-01")), d2 = as.Date(c("2024-03-01", "2024-01-01")))
+  dic <- make_dic(c("record_id", "d1", "d2", "res"), text_validation = "date_ymd")
+
+  # date format argument
+  for (format in c("ymd", "mdy", "dmy")) {
+    out <- rd_rlogic(data = df, dic = dic, logic = sprintf("datediff([d1],[d2],'d','%s')", format), var = "res")
+    expect_equal(out$eval, c(60, 365))
+  }
+
+  # 'M' are months and 'm' minutes
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'M')", var = "res")$eval, c(2, 12))
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'m')", var = "res")$eval, c(60, 365) * 24 * 60)
+
+  # 'today'
+  out <- rd_rlogic(data = df, dic = dic, logic = "datediff([d1],'today','d')", var = "res")
+  expect_equal(out$eval, as.numeric(Sys.Date() - df$d1))
 })

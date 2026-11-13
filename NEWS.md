@@ -4,6 +4,7 @@
 
 - New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank.
 - New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
+- With `redcap_data(rm_mdc = FALSE)`, the Missing Data Codes of validated text fields (numbers, dates, ...) are kept in a new `<field>_mdc` column, so that the field keeps its type. `rd_missplot()`, `rd_delete_vars()` and `rd_split()` handle these columns like the `.factor` ones.
 - New `forms` argument in `rd_delete_vars()` to remove every variable of a form.
 - `rd_recalculate()` reports the number of different values of each calculated field.
 - `rd_rlogic()` returns `eval_data`, the evaluation next to the record identifier, event and repetition of each row.
@@ -17,6 +18,9 @@
 - `check_queries()` uses the event and the repetition to match queries, so the same variable in different events or instances is tracked separately.
 - `rd_missplot()` computes missingness only over the rows where each variable is collected.
 - Repeating events are now detected internally.
+- `rd_rlogic()` translates and evaluates logic in projects with repeated instruments and repeating events: the logic of a repeating instrument is evaluated in its instances and, as in REDCap, the variables of the other forms take the value of the base row of the same record and event. As a result, `rd_recalculate()` now works with repeated instruments, and `rd_query()` and `rd_dictionary()` apply and translate their branching logic.
+- `rd_checkbox()` evaluates the branching logic of checkboxes and `rd_transform()` no longer skips the recalculation, the checkbox branching logic and the dictionary translation in projects with repeated instruments.
+- `rd_missplot(by = "record")` shows each repetition as a row and tells apart the cells of variables not collected in that row.
 
 ## Bug fixes
 
@@ -31,6 +35,7 @@
 - `rd_split()` failed with descriptive fields in the dictionary.
 - `redcap_data()` no longer warns about an incomplete final line when reading the event file.
 - Fixed a stray "FALSE" at the end of a `rd_query()` warning.
+- `rd_rlogic()` translated `datediff()` differently from REDCap: it now returns the absolute difference unless the last argument is `true`, accepts any date format (`"ymd"`, `"mdy"`...), uses `"M"` for months and `"m"` for minutes, and understands `"today"`.
 
 
 # REDCapDM 1.0-1

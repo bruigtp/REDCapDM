@@ -87,6 +87,9 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
       stop(stringr::str_glue("The following variables are not present in the dataset: {paste0(vars_missing, collapse = ', ')}.\nPlease remove them from the `vars` argument."), call. = FALSE)
     }
 
+    # Columns with the Missing Data Codes of the variables (redcap_data(rm_mdc = FALSE))
+    mdc_cols <- mdc_columns(names(data), dic$field_name)
+
     for (i in seq_along(vars)) {
       # Remove the variable from the dataset
       data <- data |>
@@ -96,6 +99,12 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
       if (paste0(vars[i], ".factor") %in% names(data)) {
         data <- data |>
           dplyr::select(!paste0(vars[i], ".factor"))
+      }
+      
+      # Same for the column with its Missing Data Codes (redcap_data(rm_mdc = FALSE))
+      if (paste0(vars[i], "_mdc") %in% mdc_cols) {
+        data <- data |>
+          dplyr::select(!paste0(vars[i], "_mdc"))
       }
 
       # Remove the variable from the dictionary
@@ -164,6 +173,9 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
          base_names %in% c(paste0(forms, "_complete"), paste0(forms, "_timestamp"))) &
         base_names != id_var
     ]
+    
+    # Columns with the Missing Data Codes of these fields (redcap_data(rm_mdc = FALSE))
+    form_cols <- c(form_cols, intersect(paste0(form_fields, "_mdc"), mdc_columns(names(data), dic$field_name)))
 
     data <- data |>
       dplyr::select(!dplyr::all_of(form_cols))

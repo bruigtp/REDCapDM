@@ -74,9 +74,8 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   })
 
 
-  # Identify if the project is longitudinal or includes repeated instruments
+  # Identify if the project is longitudinal
   longitudinal <- "redcap_event_name" %in% names(data)
-  repeat_instrument <- "redcap_repeat_instrument" %in% names(data) && any(!is.na(data$redcap_repeat_instrument))
 
   # Check if there are datetime variables stored as characters in the dataset
   vars_date <- dic |>
@@ -88,12 +87,8 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     warning("The dataset contains date fields stored as character class, which may lead to incorrect or inconsistent date transcription results. Use the `rd_dates` function before this one to properly format these date fields.", call. = FALSE)
   }
 
-  # Proceed only if the project is not longitudinal or has event-form mapping, and is not repeated
+  # Proceed only if the project is not longitudinal or has event-form mapping
   if (!(longitudinal & is.null(event_form))) {
-
-    if(repeat_instrument) {
-      stop("The dataset contains repeated instruments, which are not supported by this function. ", call. = FALSE)
-    }
 
     # Replace `NA` in branching logic fields with empty strings
     if (any(is.na(dic$branching_logic_show_field_only_if))) {

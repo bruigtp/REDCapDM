@@ -146,3 +146,20 @@ test_that("rd_recalculate gives the same result with a tibble", {
   expect_equal(names(res_tib$data), names(rd_recalculate(covican)$data))
   expect_false("screening_fail_crit_recalc" %in% names(res_tib$data))
 })
+
+
+# ---- Repeated instruments ----
+
+test_that("rd_recalculate works with repeated instruments", {
+  fx <- make_repeat_classic()
+  fx$data$ae_double <- c(NA, 2, 4, NA, 6)
+  fx$dictionary <- rbind(fx$dictionary, data.frame(
+    field_name = "ae_double", form_name = "ae", field_type = "calc", field_label = "Double grade",
+    choices_calculations_or_slider_labels = "[ae_grade]*2", text_validation_type_or_show_slider_number = NA,
+    branching_logic_show_field_only_if = "", stringsAsFactors = FALSE
+  ))
+
+  res <- rd_recalculate(fx)
+  expect_match(paste(res$results, collapse = "\n"), "\\|\\s+ae_double\\s+\\|\\s+Yes\\s+\\|\\s+TRUE\\s+\\|\\s+0\\s+\\|")
+  expect_false("ae_double_recalc" %in% names(res$data))
+})

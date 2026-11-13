@@ -797,3 +797,16 @@ test_that("rd_query keeps working with the branching logic translated by rd_dict
   res <- suppressWarnings(rd_query(dic_fac, variables = "type_dm", expression = "is.na(x)"))
   expect_equal(nrow(res$queries), 5)
 })
+
+
+test_that("rd_query applies branching logic that uses variables of the base row in a repeating instrument", {
+  fx <- make_repeat_classic()
+  fx$dictionary$branching_logic_show_field_only_if[fx$dictionary$field_name == "ae_term"] <- "[age] > '40'"
+
+  res <- suppressWarnings(suppressMessages(rd_query(fx, variables = "ae_term", expression = "is.na(x)")))
+
+  # only record 1 (50 years old) has to fill ae_term; its second instance is empty
+  expect_equal(nrow(res$queries), 1)
+  expect_equal(as.character(res$queries$Identifier), "1")
+  expect_equal(res$queries$Repetition, "ae-2")
+})

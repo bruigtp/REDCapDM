@@ -77,9 +77,8 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     }
   })
 
-  # Identify if the project is longitudinal or includes repeated instruments
+  # Identify if the project is longitudinal
   longitudinal <- "redcap_event_name" %in% names(data)
-  repeat_instrument <- "redcap_repeat_instrument" %in% names(data) && any(!is.na(data[["redcap_repeat_instrument"]]))
 
   # Identify checkbox variables in the data (those with '___' in their names)
   var_check <- names(data)[grep("___", names(data))]
@@ -131,7 +130,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   base <- "Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."
 
-  transf_message <- if (repeat_instrument || reason == "") base
+  transf_message <- if (reason == "") base
   else paste0(base, " For checkboxes that have a branching logic, ", reason, " their values will be set to missing.")
 
   if (is.null(results)) {
@@ -157,10 +156,6 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     if (is.null(event_form) & longitudinal) {
       warning("Branching logic evaluation could not be performed because the project contains multiple events and the event-form correspondence was not specified. Please provide the `event_form` argument to enable branching logic evaluation.", call. = FALSE)
     } else {
-      # Handle projects with repeated instruments where branching logic can't be evaluated
-      if (repeat_instrument) {
-        warning("The project contains repeated instruments, and this function cannot accurately evaluate the branching logic of checkboxes in such cases.", call. = FALSE)
-      }
 
       # Handle the fact that a rd_factor was performed before this function
       if (length(var_check_factors) == 0 & all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {

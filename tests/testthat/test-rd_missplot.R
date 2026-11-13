@@ -319,3 +319,38 @@ test_that("by = 'vars' gives the same plot as before when events and forms are n
 
   expect_equal(as.data.frame(p_default$data), as.data.frame(p_all$data))
 })
+
+
+test_that("rd_missplot doesn't plot the `_mdc` columns of redcap_data(rm_mdc = FALSE)", {
+  mdc <- covican
+  mdc$data <- dplyr::mutate(covican$data, potassium_mdc = ifelse(is.na(potassium), "UNK", NA), .after = "potassium")
+
+  p <- suppressMessages(rd_missplot(mdc, use_field_labels = FALSE, drop_complete = FALSE))
+  expect_false("potassium_mdc" %in% p$data$variable)
+  expect_true("potassium" %in% p$data$variable)
+})
+
+
+test_that("by = 'record' tells apart the cells not collected in a row of a repeated instrument", {
+  fx <- make_repeat_classic()
+  p <- suppressMessages(rd_missplot(fx, by = "record", use_field_labels = FALSE, drop_complete = FALSE))
+  res <- as.data.frame(p$data)
+
+  status <- function(row, var) as.character(res$status[res$row_id == row & res$variable == var])
+  expect_equal(status("1", "age"), "Observed")
+  expect_equal(status("2", "age"), "Missing")
+  expect_equal(status("1 (ae-2)", "ae_term"), "Missing")
+  # age is not asked in the instances, nor ae_term in the base rows
+  expect_equal(status("1 (ae-1)", "age"), "Not collected in this row")
+  expect_equal(status("1", "ae_term"), "Not collected in this row")
+  expect_match(p$labels$caption, "not collected in that row")
+  expect_equal(p$labels$y, "Records (n = 2)")
+})
+
+test_that("by = 'record' leaves out the rows without any of the plotted variables", {
+  fx <- make_repeat_classic()
+  p <- suppressMessages(rd_missplot(fx, by = "record", forms = "ae", use_field_labels = FALSE, drop_complete = FALSE))
+
+  expect_setequal(levels(droplevels(p$data$row_id)), c("1 (ae-1)", "1 (ae-2)", "2 (ae-1)"))
+  expect_false("Not collected in this row" %in% p$data$status)
+})

@@ -50,7 +50,7 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 The function automatically detects whether the input dataset contains longitudinal event information. If \code{redcap_event_name} is detected in the data columns, a missingness heatmap grouped by event is produced.
 When the event-form mapping is available (\code{event_form} element of the list), each variable is only evaluated in the events where its form is collected; the other cells of the heatmap are left blank.
 
-With \code{by = "record"}, longitudinal projects get one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning); use \code{events} to choose others. Records without data in an event are shown in grey in that event's panel. Every row is labelled with its record identifier.
+With \code{by = "record"}, longitudinal projects get one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning); use \code{events} to choose others. Records without data in an event are shown in grey in that event's panel. With repeated instruments and repeating events, each repetition is a row of its own, and the cells of variables that are not collected in that row are shown in light grey. Every row is labelled with its record identifier.
 }
 \examples{
 \dontrun{

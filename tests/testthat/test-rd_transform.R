@@ -186,3 +186,22 @@ test_that("rd_transform works when the identifier is not called record_id", {
   expect_equal(res$data$study_id, ref$data$record_id)
   expect_equal(nrow(res$data), nrow(ref$data))
 })
+
+
+test_that("rd_transform recalculates and translates the dictionary with repeated instruments", {
+  fx <- make_repeat_classic()
+  fx$data$ae_double <- c(NA, 2, 4, NA, 6)
+  fx$dictionary <- rbind(fx$dictionary, data.frame(
+    field_name = "ae_double", form_name = "ae", field_type = "calc", field_label = "Double grade",
+    choices_calculations_or_slider_labels = "[ae_grade]*2", text_validation_type_or_show_slider_number = NA,
+    branching_logic_show_field_only_if = "[age] > '40'", stringsAsFactors = FALSE
+  ))
+
+  res <- suppressWarnings(suppressMessages(rd_transform(fx)))
+  report <- paste(res$results, collapse = "\n")
+
+  expect_match(report, "Recalculating calculated fields")
+  expect_match(report, "\\|\\s+ae_double\\s+\\|\\s+Yes\\s+\\|\\s+TRUE\\s+\\|")
+  expect_match(report, "Converting every branching logic")
+  expect_equal(res$dictionary$branching_logic_show_field_only_if[res$dictionary$field_name == "ae_double"], "data$age > 40")
+})

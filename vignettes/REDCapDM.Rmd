@@ -196,7 +196,7 @@ In this case, there is no need to specify the event-form file since the function
 The `redcap_data()` function returns a list with three elements: imported data, dictionary and event-form mapping(if included).
 
 
-If the project uses REDCap's Missing Data Codes (e.g. `NI`, `UNK`, `ASKU`), by default (`rm_mdc = TRUE`) they are replaced by missing values (`NA`) and a warning is shown. With `rm_mdc = FALSE`, they are kept in the multiple-choice variables as an additional category, while they are still replaced by `NA` in the validated text fields (numbers, dates, ...):
+If the project uses REDCap's Missing Data Codes (e.g. `NI`, `UNK`, `ASKU`), by default (`rm_mdc = TRUE`) they are replaced by missing values (`NA`) and a warning is shown. With `rm_mdc = FALSE`, they are kept: in the multiple-choice variables as an additional category, and in the validated text fields (numbers, dates, ...) in a new `<field>_mdc` column next to the field, which keeps its type and has `NA` in those rows. A warning lists the fields with codes:
 
 ```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
 dataset <- redcap_data(data_path = "C:/Users/username/example.r",

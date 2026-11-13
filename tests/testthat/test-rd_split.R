@@ -255,3 +255,15 @@ test_that("rd_split ignores the descriptive fields of the dictionary", {
 
   expect_equal(res$data, ref$data)
 })
+
+
+test_that("rd_split keeps the `_mdc` columns of redcap_data(rm_mdc = FALSE) with their variable", {
+  mdc <- covican
+  mdc$data <- dplyr::mutate(covican$data, potassium_mdc = ifelse(is.na(potassium), "UNK", NA), .after = "potassium")
+
+  res <- rd_split(mdc, by = "form", which = "laboratory_findings")
+  expect_true("potassium_mdc" %in% names(res$data))
+
+  res <- rd_split(mdc, by = "event")
+  expect_true("potassium_mdc" %in% names(res$data$df[[1]]))
+})

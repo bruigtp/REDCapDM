@@ -21,7 +21,7 @@
 #' The function automatically detects whether the input dataset contains longitudinal event information. If `redcap_event_name` is detected in the data columns, a missingness heatmap grouped by event is produced.
 #' When the event-form mapping is available (`event_form` element of the list), each variable is only evaluated in the events where its form is collected; the other cells of the heatmap are left blank.
 #'
-#' With `by = "record"`, longitudinal projects get one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning); use `events` to choose others. Records without data in an event are shown in grey in that event's panel. Every row is labelled with its record identifier.
+#' With `by = "record"`, longitudinal projects get one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning); use `events` to choose others. Records without data in an event are shown in grey in that event's panel. With repeated instruments and repeating events, each repetition is a row of its own, and the cells of variables that are not collected in that row are shown in light grey. Every row is labelled with its record identifier.
 #'
 #' @examples
 #' \dontrun{
@@ -142,7 +142,10 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   factor_cols <- grep("\\.factor$", colnames(df), value = TRUE)
   complete_status_cols <- grep("_complete$", colnames(df), value = TRUE)
 
-  cols_to_exclude <- unique(c(redcap_system_cols, factor_cols, complete_status_cols))
+  # Columns with the Missing Data Codes kept by redcap_data(rm_mdc = FALSE)
+  mdc_cols <- mdc_columns(colnames(df), dictionary_df$field_name)
+
+  cols_to_exclude <- unique(c(redcap_system_cols, factor_cols, complete_status_cols, mdc_cols))
 
   # Axis label of every column: its dictionary label (when requested and available) or its name, shortened to `max_label_length` characters
   axis_labels <- colnames(df)
@@ -237,6 +240,8 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
       event = rep(if (is_longitudinal) event_vector_display else "", times = length(plot_vars)),
       variable = rep(plot_vars, each = n_rows),
       missing = unlist(lapply(df_cleaned, is.na), use.names = FALSE),
+      # Repeated instruments: each variable is only collected in some rows
+      home = unlist(home_rows[plot_vars], use.names = FALSE),
       stringsAsFactors = FALSE
     )
 
@@ -248,7 +253,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
         is.na(row_form) | paste(missing_records$raw_event, row_form, sep = "\r") %in% collected_keys, ]
     }
 
-    total_missing <- tapply(missing_records$missing, factor(missing_records$variable, levels = plot_vars), sum)
+    total_missing <- tapply(missing_records$missing & missing_records$home, factor(missing_records$variable, levels = plot_vars), sum)
     total_missing <- total_missing[!is.na(total_missing)]
 
     # Drop 100% complete variables if requested
@@ -277,14 +282,28 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     record_rows <- unique(c(row_id, all_records))
     cells <- unique(missing_records[, c("event", "variable")])
     full_grid <- merge(data.frame(row_id = record_rows, stringsAsFactors = FALSE), cells, by = NULL)
-    missing_records <- merge(full_grid, missing_records[, c("row_id", "event", "variable", "missing")],
+    missing_records <- merge(full_grid, missing_records[, c("row_id", "event", "variable", "missing", "home")],
                              by = c("row_id", "event", "variable"), all.x = TRUE)
 
+    # Record of each row of the plot, and events where each record has data
+    row_record <- stats::setNames(c(as.character(df[[id_col]]), all_records), c(row_id, all_records))
+    record_events <- paste(as.character(df[[id_col]]), if (is_longitudinal) event_vector_display else "", sep = "\r")
+    event_recorded <- paste(row_record[missing_records$row_id], missing_records$event, sep = "\r") %in% record_events
+
     missing_records$status <- factor(
-      ifelse(is.na(missing_records$missing), "Event not recorded",
-             ifelse(missing_records$missing, "Missing", "Observed")),
-      levels = c("Missing", "Observed", "Event not recorded")
+      dplyr::case_when(
+        missing_records$home %in% TRUE & missing_records$missing ~ "Missing",
+        missing_records$home %in% TRUE ~ "Observed",
+        event_recorded ~ "Not collected in this row",
+        .default = "Event not recorded"
+      ),
+      levels = c("Missing", "Observed", "Not collected in this row", "Event not recorded")
     )
+
+    # Rows without any variable collected in them (e.g. the base rows when only repeating instruments are plotted)
+    useful_rows <- unique(missing_records$row_id[missing_records$status != "Not collected in this row"])
+    missing_records <- missing_records[missing_records$row_id %in% useful_rows, ]
+    record_rows <- record_rows[record_rows %in% useful_rows]
 
     # Records in natural order (e.g. 100-6 before 100-13), the first one on top
     row_order <- record_rows[stringi::stri_order(record_rows, opts_collator = stringi::stri_opts_collator(numeric = TRUE))]
@@ -298,11 +317,16 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
       missing_records$event <- factor(missing_records$event, levels = unique(shown_name[selected_events]))
     }
 
-    n_records <- length(all_records)
+    n_records <- length(unique(row_record[record_rows]))
 
     # Smaller identifiers when there are many rows, so that they don't overlap (7 with 50 rows or fewer, 2 at least)
     id_size <- max(2, min(7, 350 / length(record_rows)))
     not_recorded <- any(missing_records$status == "Event not recorded")
+    not_collected <- any(missing_records$status == "Not collected in this row")
+    caption <- c(
+      if (not_recorded) "Grey cells: the record has no data in that event.",
+      if (not_collected) "Light grey cells: the variable is not collected in that row (repeated instruments)."
+    )
 
     p <- ggplot2::ggplot(
       missing_records,
@@ -310,7 +334,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     ) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_manual(
-        values = c("Missing" = "#2c3e50", "Observed" = "white", "Event not recorded" = "grey85"),
+        values = c("Missing" = "#2c3e50", "Observed" = "white", "Not collected in this row" = "grey95", "Event not recorded" = "grey80"),
         name = NULL
       ) +
       ggplot2::guides(fill = ggplot2::guide_legend(override.aes = list(colour = "grey60"))) +
@@ -319,7 +343,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
         title = "Missing Data per Record",
         x = "Variables",
         y = paste0("Records (n = ", n_records, ")"),
-        caption = if (not_recorded) "Grey cells: the record has no data in that event." else NULL
+        caption = if (length(caption) > 0) paste(caption, collapse = "\n") else NULL
       ) +
       ggplot2::theme(
         axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 8),

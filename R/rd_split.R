@@ -127,6 +127,9 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     }
 
     fact_vars <- grep(".factor$", vars_less, value = TRUE)
+    
+    # Columns with the Missing Data Codes kept by redcap_data(rm_mdc = FALSE)
+    fact_vars <- c(fact_vars, intersect(vars_less, mdc_columns(names(data), dic$field_name)))
 
     # Checkbox vars already identified in the previous step (vars_more)
     less_check <- grep("___", vars_less, value = TRUE)
@@ -149,7 +152,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       ""
     )
     body <- unlist(lapply(seq_along(actions), function(i) paste0(i, ". ", actions[i])))
-    footer <- c("", "Suggested order: list(data, dic, ...) |> rd_delete_vars(delete_pattern = ...) |> rd_split(...)")
+    footer <- c("", "Suggested order: list(data, dic, ...) |> rd_delete_vars(pattern = ...) |> rd_split(...)")
     stop(paste(c(header, body, footer), collapse = "\n"), call. = FALSE)
   }
 
@@ -168,7 +171,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
           events = purrr::map(.data$form, ~ event_form$unique_event_name[event_form$form == .x]),
           vars = purrr::map(.data$form, ~{
             posible_vars <- dic$field_name[dic$form_name == .x]
-            posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"))
+            posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"), paste0(posible_vars, "_mdc"))
 
             check_df <- tibble::tibble(check_data = names(data)[grep("___", names(data))]) |>
               dplyr::mutate(check_dic = gsub("___.*$", "", check_data)) |>
@@ -199,7 +202,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
         dplyr::mutate(
           vars = purrr::map(.data$form, ~ {
             posible_vars <- dic$field_name[dic$form_name == .x]
-            posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"))
+            posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"), paste0(posible_vars, "_mdc"))
 
             check_df <- tibble::tibble(check_data = names(data)[grep("___", names(data))]) |>
               dplyr::mutate(check_dic = gsub("___.*$", "", check_data)) |>
@@ -297,7 +300,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
         redcap_event_name = purrr::map(.data$form_name, ~ event_form$unique_event_name[event_form$form == .x]),
         vars = purrr::map(.data$form_name, ~{
           posible_vars <- dic$field_name[dic$form_name == .x]
-          posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"))
+          posible_vars <- c(posible_vars, paste0(posible_vars, ".factor"), paste0(posible_vars, "_mdc"))
 
           check_df <- tibble::tibble(check_data = names(data)[grep("___", names(data))]) |>
             dplyr::mutate(check_dic = gsub("___.*$", "", check_data)) |>
