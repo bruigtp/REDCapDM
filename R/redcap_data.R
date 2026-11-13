@@ -131,6 +131,19 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # Import the data using the R file
     tmp_env <- new.env()
     file.lines <- scan(data_path, what = character(), skip = 2, sep = "\n", quiet = TRUE)
+
+    # The lines of the script that would change the user's session are not run. The `label()` and `units()` of the
+    # script are defined here instead, with the same result.
+    file.lines <- file.lines[!grepl("^\\s*(graphics\\.off\\(\\)|library\\(Hmisc\\)|rm\\(list\\s*=\\s*ls\\(\\)\\))\\s*;?\\s*$", file.lines)]
+    tmp_env$`label<-` <- function(x, value) {
+      attr(x, "label") <- value
+      x
+    }
+    tmp_env$`units<-` <- function(x, value) {
+      attr(x, "units") <- value
+      x
+    }
+
     # Error: the csv file that the R script reads must be in the same folder
     csv_file <- stringr::str_match(file.lines, "read\\.csv\\(['\"]([^'\"]+)['\"]")[, 2]
     csv_file <- csv_file[!is.na(csv_file)]

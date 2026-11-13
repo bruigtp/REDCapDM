@@ -20,3 +20,4 @@ This function recalculates each calculated field if the logic can be transcribed
 
 The function returns the dataset and dictionary with the recalculated variables appended (named as the original field plus \verb{_recalc}), along with a summary table of the recalculation results.
 }
+\keyword{internal}

@@ -18,3 +18,4 @@ checkbox_names(data, dic, labels, checkbox_labels = c("No", "Yes"))
 \description{
 This function updates the names of checkboxes in the dataset and dictionary to reflect the names of their options.
 }
+\keyword{internal}

@@ -189,8 +189,7 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   viewer <- NULL
   if (isTRUE(return_viewer)) {
     viewer <- knitr::kable(report, align = c("cc"), row.names = FALSE, caption = report_title, format = "html", longtable = TRUE)
-    viewer <- kableExtra::kable_styling(viewer, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
-    viewer <- kableExtra::row_spec(viewer, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+    viewer <- style_report(viewer)
   }
 
   # Return results

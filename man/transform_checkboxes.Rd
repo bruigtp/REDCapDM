@@ -20,3 +20,4 @@ This function inspects all the checkboxes in the study to determine if they have
 
 The function returns the dataset with the transformed checkboxes and a table summarizing the results.
 }
+\keyword{internal}

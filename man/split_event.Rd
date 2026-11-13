@@ -18,3 +18,4 @@ split_event(data, dic, event_form, which = NULL)
 \description{
 This function generates a nested dataset filtered by each event, containing only the variables associated with each event. It uses the provided data, dictionary, and event-form mapping. You can choose to return data for a specific event.
 }
+\keyword{internal}

@@ -485,3 +485,32 @@ test_that("redcap_data warns about a project without records and keeps working w
   expect_equal(nrow(out$data), 0)
   expect_warning(redcap_data(data_path = tmp_r, dic_path = tmp_dic, rm_mdc = FALSE), "no records yet")
 })
+
+
+test_that("redcap_data reads the R script of REDCap without Hmisc and without closing the plots", {
+  dir <- tempfile()
+  dir.create(dir)
+  write.csv(data.frame(record_id = 1:2, sex = c(1, 2)), file.path(dir, "PROJ_DATA.csv"), row.names = FALSE)
+  writeLines(c(
+    "#Clear existing data and graphics", "rm(list=ls())", "graphics.off()", "#Load Hmisc library", "library(Hmisc)",
+    "#Read Data", "data=read.csv('PROJ_DATA.csv')", "#Setting Labels", "", "label(data$record_id)=\"Record ID\"",
+    "label(data$sex)=\"Sex\"", "#Setting Units", "units(data$sex)=\"code\"", "",
+    "#Setting Factors(will create new variable for factors)", "data$sex.factor = factor(data$sex,levels=c(\"1\",\"2\"))",
+    "levels(data$sex.factor)=c(\"Man\",\"Woman\")"
+  ), file.path(dir, "PROJ_R.r"))
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = c("record_id", "sex"), form_name = "f1", field_type = c("text", "radio"),
+                       select_choices_or_calculations = c("", "1, Man | 2, Woman")), tmp_dic, row.names = FALSE)
+
+  attached_before <- "package:Hmisc" %in% search()
+  grDevices::pdf(NULL)
+  device <- grDevices::dev.cur()
+  on.exit(grDevices::dev.off(device), add = TRUE)
+
+  out <- redcap_data(data_path = file.path(dir, "PROJ_R.r"), dic_path = tmp_dic)
+
+  expect_equal(attr(out$data$sex, "label"), "Sex")
+  expect_equal(levels(out$data$sex.factor), c("Man", "Woman"))
+  expect_equal("package:Hmisc" %in% search(), attached_before)
+  expect_equal(grDevices::dev.cur(), device)
+})

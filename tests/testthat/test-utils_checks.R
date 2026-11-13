@@ -98,3 +98,11 @@ test_that("rd_split names the variables of the data that are not in the dictiona
   x$data$extra_var <- 1
   expect_error(rd_split(x), "not found in the dictionary: extra_var")
 })
+
+
+test_that("the reports work without kableExtra", {
+  table <- knitr::kable(data.frame(a = 1), format = "html")
+
+  mockery::stub(style_report, "requireNamespace", FALSE)
+  expect_identical(style_report(table), table)
+})

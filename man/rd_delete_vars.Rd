@@ -59,11 +59,11 @@ result <- rd_delete_vars(
   vars = c("potassium", "leuk_lymph")
 )
 
-# Delete variables matching patterns
+# Delete variables matching patterns (here, the inclusion and exclusion criteria)
 result <- rd_delete_vars(
   data = covican$data,
   dic = covican$dictionary,
-  pattern = c("_complete$", "_other$")
+  pattern = c("^inc_", "^exc_")
 )
 
 # Delete every variable of a form

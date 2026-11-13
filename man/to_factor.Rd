@@ -16,3 +16,4 @@ to_factor(data, dic, exclude = NULL)
 \description{
 This function converts all variables in the dataset to factors, except those specified in the \code{exclude} parameter.
 }
+\keyword{internal}

@@ -49,6 +49,8 @@
 - `rd_event()` failed with event labels.
 - `rd_dictionary()` failed after `rd_factor()` when the only factors were yes/no or true/false fields.
 - `redcap_data(rm_mdc = FALSE)`, `rd_split()` and `rd_missplot()` failed or warned in projects without records.
+- `redcap_data()` no longer runs the `library(Hmisc)` and `graphics.off()` lines of the R script exported by REDCap: it failed when Hmisc wasn't installed, attached Hmisc (masking e.g. `dplyr::summarize()`) and closed the open plots.
+- knitr and lubridate are now declared dependencies: several functions failed when knitr wasn't installed, and the translation of `datediff()` needed lubridate. kableExtra is optional: without it the HTML reports are not styled.
 
 ## Clearer messages
 

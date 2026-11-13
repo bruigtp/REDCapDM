@@ -8,7 +8,7 @@
 #' @param which_event String specifying the name of the event.
 #' @param which_var String specifying the name of the variable.
 #' @param data Dataset containing the REDCap data.
-
+#' @noRd
 fill_data <- function(which_event, which_var, data) {
 
   if (!which_event %in% data$redcap_event_name) {
@@ -41,8 +41,7 @@ fill_data <- function(which_event, which_var, data) {
 #' @param data A data frame (optional) that may be overridden if provided in the `project` object.
 #' @param dic A data dictionary (optional) that may be overridden if provided in the `project` object.
 #' @param event_form An optional event-form object that may be overridden if provided in the `project`.
-#'
-#'
+#' @noRd
 check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL) {
   # Ensure 'project' is a list
   if (!is.list(project)) {
@@ -102,7 +101,7 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL) {
 #' @examples
 #' round(3.14159, 2)
 #' round(c(-2.718, 3.14159), 1)
-#'
+#' @noRd
 round <- function(x, digits = 0) {
   posneg <- sign(x)
   z <- abs(x) * 10^digits
@@ -167,4 +166,25 @@ natural_rank <- function(x) {
 mdc_columns <- function(data_names, dic_fields = NULL) {
   cols <- grep("_mdc$", data_names, value = TRUE)
   cols[sub("_mdc$", "", cols) %in% data_names & !cols %in% dic_fields]
+}
+
+
+
+## Style_report ----
+
+#' Style an HTML report table
+#'
+#' Applies the style of the reports of the package with kableExtra when it is installed. Otherwise the table is returned as
+#' it is, so that the functions don't need kableExtra.
+#'
+#' @param x An HTML table created with `knitr::kable()`.
+#' @return The styled table.
+#' @noRd
+style_report <- function(x) {
+  if (!requireNamespace("kableExtra", quietly = TRUE)) {
+    return(x)
+  }
+
+  x <- kableExtra::kable_styling(x, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
+  kableExtra::row_spec(x, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
 }

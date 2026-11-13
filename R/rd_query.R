@@ -899,14 +899,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         format = "html",
         longtable = TRUE
       )
-      report_dag[[i]] <- kableExtra::kable_styling(report_dag[[i]],
-        bootstrap_options = c("striped", "condensed"),
-        full_width = FALSE
-      )
-      report_dag[[i]] <- kableExtra::row_spec(report_dag[[i]], 0,
-        italic = FALSE,
-        extra_css = "border-bottom: 1px solid grey"
-      )
+      report_dag[[i]] <- style_report(report_dag[[i]])
     }
 
     # Prepare final output in the 'by_dag' format
@@ -960,14 +953,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       format = "html",
       longtable = TRUE
     )
-    viewer <- kableExtra::kable_styling(viewer,
-      bootstrap_options = c("striped", "condensed"),
-      full_width = FALSE
-    )
-    viewer <- kableExtra::row_spec(viewer, 0,
-      italic = FALSE,
-      extra_css = "border-bottom: 1px solid grey"
-    )
+    viewer <- style_report(viewer)
 
     # Prepare final output without DAG-specific split
     def <- list(

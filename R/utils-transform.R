@@ -10,8 +10,7 @@
 #' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param exclude_recalc Character vector with the names of the variables that should not be recalculated. Useful for projects with time-consuming recalculations for certain calculated fields.
 #' @importFrom rlang :=
-
-############Calculated functions############
+#' @keywords internal
 recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
 
   lifecycle::deprecate_warn("1.0.0", "recalculate()", "rd_recalculate()")
@@ -148,7 +147,7 @@ recalculate <- function(data, dic, event_form = NULL, exclude_recalc = NULL){
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame  containing the correspondence of each event with each form.
 #' @param checkbox_na Logical indicating if values of checkboxes with branching logic should be set to missing only when the branching logic is missing (`FALSE`), or also when the branching logic is not satisfied (`TRUE`). The default is `FALSE`.
-
+#' @keywords internal
 transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FALSE){
 
   lifecycle::deprecate_warn("1.0.0", "transform_checkboxes()", "rd_checkbox()")
@@ -237,7 +236,7 @@ transform_checkboxes <- function(data, dic, event_form = NULL, checkbox_na = FAL
 #' @param dic Dataset containing the REDCap dictionary.
 #' @param labels Named character vector with the names of the variables in the data and their corresponding REDCap labels.
 #' @param checkbox_labels Character vector specifying the names for the two options of each checkbox variable. The default is `c('No', 'Yes')`.
-
+#' @keywords internal
 checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
 
   lifecycle::deprecate_warn("1.0.0", "checkbox_names()", "rd_checkbox()")
@@ -364,7 +363,7 @@ checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
 #' @param dic Data frame  containing the dictionary read from REDCap.
 #' @param event_form Data frame containing the correspondence of each event with each form.
 #' @param which Character string specifying an event if only data for that event is desired.
-
+#' @keywords internal
 split_event <- function(data,dic,event_form,which=NULL){
 
   lifecycle::deprecate_warn("1.0.0", "split_event()", "rd_split()")
@@ -458,7 +457,7 @@ split_event <- function(data,dic,event_form,which=NULL){
 #' @param which Character string specifying a form if only data for that form is desired.
 #' @param wide Logical indicating if the dataset should be returned in a wide format (`TRUE`) or long format (`FALSE`).
 #' @importFrom magrittr `%>%`
-
+#' @keywords internal
 split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 
   lifecycle::deprecate_warn("1.0.0", "split_form()", "rd_split()")
@@ -641,7 +640,7 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 #' @param data Data frame containing the REDCap data.
 #' @param dic Data frame containing the REDCap dictionary.
 #' @param exclude Character vector specifying the names of variables that should not be converted to factors. If `NULL`, all variables will be converted.
-
+#' @keywords internal
 to_factor <- function(data, dic, exclude = NULL){
 
   lifecycle::deprecate_warn("1.0.0", "to_factor()", "rd_factor()")
@@ -721,4 +720,3 @@ to_factor <- function(data, dic, exclude = NULL){
     list(data = data, dic = dic)
   }
 }
-

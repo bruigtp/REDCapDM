@@ -35,6 +35,7 @@
 #' # With custom labels
 #' res <- rd_checkbox(data = covican$data,
 #'                    dic = covican$dictionary,
+#'                    event_form = covican$event_form,
 #'                    checkbox_labels = c("Not present", "Present"))
 #'
 #' # Keep original checkbox names

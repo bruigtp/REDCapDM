@@ -39,7 +39,8 @@
 #'     logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0', 1, 0)",
 #'     var = "screening_fail_crit"
 #'   )
-#'
+#' 
+#' @importFrom lubridate time_length interval
 #' @export
 
 rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, logic, var) {

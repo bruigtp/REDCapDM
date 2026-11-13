@@ -375,11 +375,7 @@ rd_event <- function(project = NULL,
     format = "html",
     longtable = TRUE
   )
-  result <- kableExtra::kable_styling(result,
-    bootstrap_options = c("striped", "condensed"),
-    full_width = FALSE
-  )
-  result <- kableExtra::row_spec(result, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
+  result <- style_report(result)
 
   # Return the queries and the formatted report
   list(

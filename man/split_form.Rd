@@ -20,3 +20,4 @@ split_form(data, dic, event_form = NULL, which = NULL, wide = FALSE)
 \description{
 This function generates a nested dataset containing only the variables associated with each form, using the provided data, dictionary, and event-form mapping. You can choose to return data for a specific form.
 }
+\keyword{internal}
