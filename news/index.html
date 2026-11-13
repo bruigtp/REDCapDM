@@ -38,6 +38,58 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="redcapdm-development-version">REDCapDM (development version)<a class="anchor" aria-label="anchor" href="#redcapdm-development-version"></a></h2>
+<div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li>New <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With <code>by = "record"</code> it shows the missing values record by record. The <code>events</code> and <code>forms</code> arguments choose what is plotted, long labels are shortened (<code>max_label_length</code>) and the events where a variable is not collected are left blank.</li>
+<li>New <code>rm_mdc</code> argument in <code><a href="../reference/redcap_data.html">redcap_data()</a></code> to remove REDCap Missing Data Codes (default <code>TRUE</code>).</li>
+<li>New <code>forms</code> argument in <code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code> to remove every variable of a form.</li>
+<li>
+<code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> reports the number of different values of each calculated field.</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> returns <code>eval_data</code>, the evaluation next to the record identifier, event and repetition of each row.</li>
+<li>
+<code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> also updates the <code>.factor</code> version of the variables.</li>
+<li>
+<code><a href="../reference/rd_factor.html">rd_factor()</a></code> warns when the dictionary logic was already translated to R with <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="repeated-instruments-and-repeating-events-development-version">Repeated instruments and repeating events<a class="anchor" aria-label="anchor" href="#repeated-instruments-and-repeating-events-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> now only checks each variable in the rows where it is collected. In projects with repeated instruments, empty fields of other instruments are no longer reported as queries.</li>
+<li>The <code>Repetition</code> column of <code><a href="../reference/rd_query.html">rd_query()</a></code> is now correct for every row, and query links open the right instance.</li>
+<li>
+<code><a href="../reference/check_queries.html">check_queries()</a></code> uses the event and the repetition to match queries, so the same variable in different events or instances is tracked separately.</li>
+<li>
+<code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> computes missingness only over the rows where each variable is collected.</li>
+<li>Repeating events are now detected internally.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code>, <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> and <code><a href="../reference/rd_query.html">rd_query()</a></code> gave wrong results when the variables had already been converted to factors with <code><a href="../reference/rd_factor.html">rd_factor()</a></code>.</li>
+<li>
+<code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> applied twice duplicated the <code>_recalc</code> fields.</li>
+<li>
+<code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> and <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> gave wrong results with tibbles, and <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> couldn’t name the options of data without variable labels.</li>
+<li>
+<code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> failed in non-longitudinal projects.</li>
+<li>
+<code>rd_query(report_zeros = TRUE)</code> failed when every variable had queries.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/check_queries.html">check_queries()</a></code> turned alphanumeric record identifiers into <code>NA</code>; identifiers are now sorted naturally.</li>
+<li>
+<code><a href="../reference/rd_event.html">rd_event()</a></code> assigned the DAG of the first record to every query, failed without <code>redcap_event_name.factor</code> and could pair events with the wrong description. It now explains that it needs a longitudinal project.</li>
+<li>
+<code><a href="../reference/rd_transform.html">rd_transform()</a></code> failed when the record identifier was not called <code>record_id</code>.</li>
+<li>
+<code><a href="../reference/rd_split.html">rd_split()</a></code> failed with descriptive fields in the dictionary.</li>
+<li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> no longer warns about an incomplete final line when reading the event file.</li>
+<li>Fixed a stray “FALSE” at the end of a <code><a href="../reference/rd_query.html">rd_query()</a></code> warning.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0-1" id="redcapdm-10-1">REDCapDM 1.0-1<a class="anchor" aria-label="anchor" href="#redcapdm-10-1"></a></h2>
 <div class="section level3">
 <h3 id="bug-fixes-1-0-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-0-1"></a></h3>

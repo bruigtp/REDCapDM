@@ -1,5 +1,93 @@
 # Changelog
 
+## REDCapDM (development version)
+
+### New features
+
+- New
+  [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  function to visualise missing data per variable (barplot) or per event
+  and variable (heatmap in longitudinal projects). With `by = "record"`
+  it shows the missing values record by record. The `events` and `forms`
+  arguments choose what is plotted, long labels are shortened
+  (`max_label_length`) and the events where a variable is not collected
+  are left blank.
+- New `rm_mdc` argument in
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  to remove REDCap Missing Data Codes (default `TRUE`).
+- New `forms` argument in
+  [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)
+  to remove every variable of a form.
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  reports the number of different values of each calculated field.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  returns `eval_data`, the evaluation next to the record identifier,
+  event and repetition of each row.
+- [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  also updates the `.factor` version of the variables.
+- [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  warns when the dictionary logic was already translated to R with
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md).
+
+### Repeated instruments and repeating events
+
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  now only checks each variable in the rows where it is collected. In
+  projects with repeated instruments, empty fields of other instruments
+  are no longer reported as queries.
+- The `Repetition` column of
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  is now correct for every row, and query links open the right instance.
+- [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  uses the event and the repetition to match queries, so the same
+  variable in different events or instances is tracked separately.
+- [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  computes missingness only over the rows where each variable is
+  collected.
+- Repeating events are now detected internally.
+
+### Bug fixes
+
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  gave wrong results when the variables had already been converted to
+  factors with
+  [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md).
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  applied twice duplicated the `_recalc` fields.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  and
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  gave wrong results with tibbles, and
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  couldn’t name the options of data without variable labels.
+- [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  failed in non-longitudinal projects.
+- `rd_query(report_zeros = TRUE)` failed when every variable had
+  queries.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  and
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  turned alphanumeric record identifiers into `NA`; identifiers are now
+  sorted naturally.
+- [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  assigned the DAG of the first record to every query, failed without
+  `redcap_event_name.factor` and could pair events with the wrong
+  description. It now explains that it needs a longitudinal project.
+- [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  failed when the record identifier was not called `record_id`.
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  failed with descriptive fields in the dictionary.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  no longer warns about an incomplete final line when reading the event
+  file.
+- Fixed a stray “FALSE” at the end of a
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  warning.
+
 ## REDCapDM 1.0-1
 
 ### Bug fixes
