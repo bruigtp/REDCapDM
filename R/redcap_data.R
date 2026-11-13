@@ -71,7 +71,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     check_string(get(arg), arg, na_ok = TRUE)
   }
   if (!is.character(sep) || length(sep) != 1 || is.na(sep) || nchar(sep) != 1) {
-    stop("`sep` must be a single character, e.g. \",\" or \";\".", call. = FALSE)
+    rd_abort("{.arg sep} must be a single character, e.g. {.val ,} or {.val ;}.", class = "REDCapDM_error_argument")
   }
   check_strings(filter_field, "filter_field")
 
@@ -81,27 +81,27 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Warning: data_path, dic_path and another argument are specified.
   if (all(!c(data_path, dic_path) %in% NA) & any(!c(token, uri) %in% NA)) {
-    stop("Too many arguments. Use `data_path` and `dic_path` for exported data or `uri` and `token` for API connection.", call. = FALSE)
+    rd_abort(c("Too many arguments.", "i" = "Use {.arg data_path} and {.arg dic_path} for exported data or {.arg uri} and {.arg token} for API connection."), class = "REDCapDM_error_argument")
   }
 
   # Warning: token, uri and another argument are specified.
   if (all(!c(token, uri) %in% NA) & any(!c(data_path, dic_path) %in% NA)) {
-    stop("Too many arguments. Use `uri` and `token` for API connection or `data_path` and `dic_path` for exported data.", call. = FALSE)
+    rd_abort(c("Too many arguments.", "i" = "Use {.arg uri} and {.arg token} for API connection or {.arg data_path} and {.arg dic_path} for exported data."), class = "REDCapDM_error_argument")
   }
 
   # Warning: either data_path or dic_path is specified alone
   if ((!is.na(data_path) & is.na(dic_path)) | (is.na(data_path) & !is.na(dic_path))) {
-    stop("Both `data_path` and `dic_path` are required for exported data.", call. = FALSE)
+    rd_abort("Both {.arg data_path} and {.arg dic_path} are required for exported data.", class = "REDCapDM_error_argument")
   }
 
   # Warning: either uri or token is specified alone
   if ((!is.na(uri) & is.na(token)) | (is.na(uri) & !is.na(token))) {
-    stop("Both `uri` and `token` are required for API connection.", call. = FALSE)
+    rd_abort("Both {.arg uri} and {.arg token} are required for API connection.", class = "REDCapDM_error_argument")
   }
   
   # Error: no data source
   if (all(c(data_path, dic_path, uri, token) %in% NA)) {
-    stop("No data to read. Use `data_path` and `dic_path` for exported data or `uri` and `token` for API connection.", call. = FALSE)
+    rd_abort(c("No data to read.", "i" = "Use {.arg data_path} and {.arg dic_path} for exported data or {.arg uri} and {.arg token} for API connection."), class = "REDCapDM_error_argument")
   }
 
   # Error: logical arguments
@@ -113,17 +113,22 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   if (all(!c(data_path, dic_path) %in% NA) & all(c(token, uri) %in% NA)) {
     # Check the extension of the R data file
     if (!grepl("\\.R$", data_path) & !grepl("\\.r$", data_path)) {
-      stop("Unsupported file format. `data_path` must be an R file exported from REDCap.", call. = FALSE)
+      rd_abort(c("Unsupported file format. {.arg data_path} must be an R file exported from REDCap.", "x" = "It is {.file {data_path}}."), class = "REDCapDM_error_file")
     }
     
     # Error: the files do not exist
     paths <- c(data_path = data_path, dic_path = dic_path, event_path = event_path)
     not_found <- paths[!is.na(paths) & !file.exists(paths)]
     if (length(not_found) > 0) {
-      stop(sprintf(
-        "File not found: %s. Relative paths start at the working directory (%s).",
-        paste0("`", names(not_found), "` = '", not_found, "'", collapse = ", "), getwd()
-      ), call. = FALSE)
+      not_found_args <- names(not_found)
+      rd_abort(
+        c(
+          "File not found: {.arg {not_found_args}}.",
+          stats::setNames(sprintf("{.arg {not_found_args[%d]}} = {.file {not_found[%d]}}", seq_along(not_found), seq_along(not_found)), rep("x", length(not_found))),
+          "i" = "Relative paths start at the working directory: {.path {getwd()}}."
+        ),
+        class = "REDCapDM_error_file"
+      )
     }
 
     # Import the data using the R file
@@ -146,7 +151,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     csv_file <- stringr::str_match(file.lines, "read\\.csv\\(['\"]([^'\"]+)['\"]")[, 2]
     csv_file <- csv_file[!is.na(csv_file)]
     if (length(csv_file) > 0 && !file.exists(file.path(dirname(data_path), csv_file[1]))) {
-      stop(sprintf("The R script reads the data from '%s', which must be in the same folder as `data_path` (%s).", csv_file[1], dirname(data_path)), call. = FALSE)
+      rd_abort(
+        c("The R script reads the data from {.file {csv_file[1]}}, which must be in the same folder as {.arg data_path}.", "i" = "Folder of {.arg data_path}: {.path {dirname(data_path)}}."),
+        class = "REDCapDM_error_file"
+      )
     }
     file.lines.collapsed <- paste(file.lines, collapse = "\n")
     command <- paste0("dirname(parent.frame(2)$", "data_path", ")")
@@ -179,7 +187,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       # Read CSV file
       dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE, sep = sep)
     } else {
-      stop("Unsupported dictionary format. Only CSV and XLSX are supported.", call. = FALSE)
+      rd_abort(c("Unsupported dictionary format: {.file {dic_path}}.", "i" = "Only CSV and XLSX are supported."), class = "REDCapDM_error_file")
     }
 
     # Process the dictionary: clean names
@@ -215,13 +223,14 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         # Read CSV file -> REDCap exports this file without a final newline: readLines(warn = FALSE) avoids the "incomplete final line" warning of read.csv()
         event_form <- utils::read.csv(text = readLines(event_path, warn = FALSE, encoding = "UTF-8"))
       } else {
-        stop("Unsupported event mapping format. Only CSV and XLSX are supported.", call. = FALSE)
+        rd_abort(c("Unsupported event mapping format: {.file {event_path}}.", "i" = "Only CSV and XLSX are supported."), class = "REDCapDM_error_file")
       }
 
       # Error if the exported event_form file is not the correct one! (using events instead of instrument-event)
       if ("event_name" %in% names(event_form)) {
-        stop("Invalid file provided in `event_path`.\n\nPlease download the instrument-event mapping file from the 'Designate Instruments for My Events' tab of your REDCap project and try again.",
-          call. = FALSE
+        rd_abort(
+          c("Invalid file provided in {.arg event_path}.", "i" = "Please download the instrument-event mapping file from the {.emph Designate Instruments for My Events} tab of your REDCap project and try again."),
+          class = "REDCapDM_error_file"
         )
       }
 
@@ -231,7 +240,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     } else {
       # If no event is specified and the project is longitudinal
       if (longitudinal) {
-        warning("The project is longitudinal. Consider providing `event_path` for event-form correspondence.", call. = FALSE)
+        rd_warn("The project is longitudinal. Consider providing {.arg event_path} for event-form correspondence.")
       }
 
       data_def <- list(data = data, dictionary = dic)
@@ -253,11 +262,14 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       },
       error = function(e) {
         if (grepl("REDCap's PHP code is likely trying to process too much text in one bite", e$message) & !is.null(filter_field)) {
-          stop("The `record_id` or equivalent variable is missing on the `filter_field` argument.", call. = FALSE)
+          rd_abort("The {.var record_id} or equivalent variable is missing on the {.arg filter_field} argument.", class = "REDCapDM_error_argument", call = NULL)
         } else if (grepl("SSL peer certificate", e$message)) {
-          stop("Unable to establish a secure connection.\nConsider bypassing SSL verification:\nhttr::with_config(httr::config(ssl_verifypeer = FALSE), ... <- readcap_data(...)).", call. = FALSE)
+          rd_abort(
+            c("Unable to establish a secure connection.", "i" = "Consider bypassing SSL verification: {.code httr::with_config(httr::config(ssl_verifypeer = FALSE), redcap_data(...))}."),
+            class = "REDCapDM_error_api", call = NULL
+          )
         } else {
-          stop(e)
+          rd_abort("The data couldn't be read from the REDCap API.", class = "REDCapDM_error_api", parent = e, call = NULL)
         }
       }
     )
@@ -266,7 +278,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     if (nrow(labels) > 0) {
       names(labels)[1] <- "record_id"
     } else {
-      stop("Data retrieval is currently unavailable. Please check the status of the REDCap server, confirm the existence of records within the project and verify that you have the necessary data export and API permissions to perform this operation.", call. = FALSE)
+      rd_abort(
+        c("Data retrieval is currently unavailable.", "i" = "Please check the status of the REDCap server, confirm the existence of records within the project and verify that you have the necessary data export and API permissions to perform this operation."),
+        class = "REDCapDM_error_api"
+      )
     }
 
     # Save the factor version of the default variables of redcap
@@ -312,7 +327,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     if (nrow(data_api) > 0) {
       names(data_api)[1] <- "record_id"
     } else {
-      stop("Observational data retrieval is currently unavailable. Please verify the status of the REDCap server or confirm the existence of records within the project.", call. = FALSE)
+      rd_abort(
+        c("Observational data retrieval is currently unavailable.", "i" = "Please verify the status of the REDCap server or confirm the existence of records within the project."),
+        class = "REDCapDM_error_api"
+      )
     }
 
     # Fetch metadata dictionary using the REDCap API
@@ -384,7 +402,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
             )
           },
           error = function(e) {
-            warning(stringr::str_glue("The following variable could not be replicated in its factor version: {i}. Please manually create a factor version of this variable named '{i}.factor' to properly execute the rd_transform() function."), call. = FALSE)
+            rd_warn("The following variable could not be replicated in its factor version: {.var {i}}. Please manually create a factor version of this variable named {.var {paste0(i, '.factor')}} to properly execute the {.fn rd_transform} function.")
           }
         )
       }
@@ -401,7 +419,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # Handle event path or fetch event-form correspondence via API
     if (!is.na(event_path)) {
       # Warning: event_path not necessary while using API connection
-      warning("The event_path argument is not required when using an API connection.")
+      rd_warn("The {.arg event_path} argument is not required when using an API connection.")
 
       setwd(oldwd)
 
@@ -415,13 +433,14 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         # Read CSV file -> REDCap exports this file without a final newline: readLines(warn = FALSE) avoids the "incomplete final line" warning of read.csv()
         event_form <- utils::read.csv(text = readLines(event_path, warn = FALSE, encoding = "UTF-8"))
       } else {
-        stop("Unsupported file format. Only XLSX and CSV formats are supported.")
+        rd_abort(c("Unsupported event mapping format: {.file {event_path}}.", "i" = "Only CSV and XLSX are supported."), class = "REDCapDM_error_file")
       }
 
       # Error if the exported event_form file is not the correct one! (using events instead of instrument-event)
       if ("event_name" %in% names(event_form)) {
-        stop("Invalid file provided in `event_path`.\n\nPlease download the instrument-event mapping file from the 'Designate Instruments for My Events' tab of your REDCap project and try again.",
-          call. = FALSE
+        rd_abort(
+          c("Invalid file provided in {.arg event_path}.", "i" = "Please download the instrument-event mapping file from the {.emph Designate Instruments for My Events} tab of your REDCap project and try again."),
+          class = "REDCapDM_error_file"
         )
       }
 
@@ -474,7 +493,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   if (!is.null(event_form)) {
     # Error: the event file is not the instrument-event mapping of this project
     if (!"form" %in% names(event_form) || !any(event_form$form %in% data_def$dictionary$form_name)) {
-      stop("The file in `event_path` is not the instrument-event mapping of this project: none of its forms is in the dictionary. Download it from the 'Designate Instruments for My Events' tab of your REDCap project.", call. = FALSE)
+      rd_abort(
+        c("The file in {.arg event_path} is not the instrument-event mapping of this project: none of its forms is in the dictionary.", "i" = "Download it from the {.emph Designate Instruments for My Events} tab of your REDCap project."),
+        class = "REDCapDM_error_file"
+      )
     }
 
     var_noevent <- data_def$dictionary |>
@@ -483,13 +505,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     if (length(var_noevent) > 0) {
 
-      vars_str <- paste(var_noevent, collapse = ", ")
-
-      warning(
-        sprintf("The following variable%s were removed since they are not linked to any event: %s",
-                ifelse(length(var_noevent) > 1, "s", ""), vars_str),
-        call. = FALSE
-      )
+      rd_warn("The following variable{?s} {?was/were} removed since {?it is/they are} not linked to any event: {.var {var_noevent}}.")
 
       var_noevent <- intersect(var_noevent, names(data))
 
@@ -595,7 +611,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         )
       )
     if (length(removed_checkbox_cols) > 0 || n_mdc_values > 0) {
-      warning("All the Missing Data Codes have been removed.", call. = FALSE)
+      rd_warn("All the Missing Data Codes have been removed.")
     }
   } else {
 
@@ -616,7 +632,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         mdc_col <- paste0(var, "_mdc")
 
         if (mdc_col %in% colnames(data_def$data)) {
-          warning(stringr::str_glue("The Missing Data Codes of `{var}` can't be kept because the dataset already has a `{mdc_col}` column. They are set to NA."), call. = FALSE)
+          rd_warn("The Missing Data Codes of {.var {var}} can't be kept because the dataset already has a {.var {mdc_col}} column. They are set to NA.")
         } else {
           data_def$data[[mdc_col]] <- ifelse(is_mdc, val_char, NA_character_)
           data_def$data <- data_def$data |>
@@ -629,10 +645,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     }
 
     if (length(mdc_fields) > 0) {
-      warning(stringr::str_glue(
-        "Missing Data Codes found in validated fields ({paste(mdc_fields, collapse = ', ')}). ",
-        "They are set to NA and kept in the new columns {paste0(mdc_fields, '_mdc', collapse = ', ')}."
-      ), call. = FALSE)
+      mdc_new_cols <- paste0(mdc_fields, "_mdc")
+      rd_warn("Missing Data Codes found in validated fields ({.var {mdc_fields}}). They are set to NA and kept in the new column{?s} {.var {mdc_new_cols}}.")
     }
 
     # Process categorical variables
@@ -752,15 +766,13 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   data_fields <- unique(sub("___.*$", "", data_fields[!grepl("^redcap_|\\.factor$|_complete$|_timestamp$|_mdc$", data_fields)]))
   not_in_dic <- setdiff(data_fields, c("record_id", data_def$dictionary$field_name))
   if (length(not_in_dic) > 0) {
-    warning(sprintf(
-      "%d variable(s) of the data are not in the dictionary: %s. Check that the dictionary is the current one of this project.",
-      length(not_in_dic), paste(utils::head(not_in_dic, 10), collapse = ", ")
-    ), call. = FALSE)
+    shown_vars <- utils::head(not_in_dic, 10)
+    rd_warn(c("{length(not_in_dic)} variable{?s} of the data {?is/are} not in the dictionary: {.var {shown_vars}}.", "i" = "Check that the dictionary is the current one of this project."))
   }
 
   # Warning: project without records
   if (nrow(data_def$data) == 0) {
-    warning("The project has no records yet: the data has 0 rows.", call. = FALSE)
+    rd_warn("The project has no records yet: the data has 0 rows.")
   }
 
   # Return the result

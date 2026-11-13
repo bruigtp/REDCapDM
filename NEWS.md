@@ -63,6 +63,8 @@
 - `rd_delete_vars()` never removes the REDCap columns of events and repetitions through `pattern`, and `rd_dates()` and `rd_rlogic()` work with a dataset without rows.
 - Every function checks that the dictionary has the columns it needs, and `rd_split()` names the variables of the data that are not in the dictionary.- Errors about wrong arguments and the informative messages use cli: they show the function that was called and the value received, and are formatted in the console. Errors, warnings and messages have the classes `REDCapDM_error` (`REDCapDM_error_argument` for wrong arguments), `REDCapDM_warning` and `REDCapDM_message`.
 - The informative messages (e.g. the progress of `rd_transform()`) can be hidden with `options(REDCapDM.quiet = TRUE)`.
+- `redcap_data()` and `rd_query()` report all their errors and warnings with cli. Problems with the files have the class `REDCapDM_error_file`, and problems with the REDCap API the class `REDCapDM_error_api`, which keeps the original error of the API as its parent.
+- `rd_query()` informs with a message, instead of a warning, when it applies the branching logic automatically.
 
 # REDCapDM 1.0-1
 

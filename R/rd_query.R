@@ -86,7 +86,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.", class = "REDCapDM_error_argument")
   }
   
   # Error: invalid arguments
@@ -98,7 +98,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     addTo <- NA
   }
   if (!is.list(link)) {
-    stop("`link` must be a list with `domain`, `redcap_version`, `proj_id` and, in longitudinal projects, `event_id`.", call. = FALSE)
+    rd_abort("{.arg link} must be a list with {.field domain}, {.field redcap_version}, {.field proj_id} and, in longitudinal projects, {.field event_id}.", class = "REDCapDM_error_argument")
   }
 
   # Ensure data and dictionary are data frames
@@ -123,11 +123,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Error: no variables or no expression
   if (all(is.na(variables))) {
-    stop("Specify the variable(s) to check with the `variables` argument.", call. = FALSE)
+    rd_abort("Specify the variable(s) to check with the {.arg variables} argument.", class = "REDCapDM_error_argument")
   }
 
   if (all(is.na(expression))) {
-    stop("Specify the condition that defines a query with the `expression` argument, e.g. `expression = \"is.na(x)\"` for missing values.", call. = FALSE)
+    rd_abort("Specify the condition that defines a query with the {.arg expression} argument, e.g. {.code expression = \"is.na(x)\"} for missing values.", class = "REDCapDM_error_argument")
   }
 
   # Error: logical arguments
@@ -137,7 +137,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Error: `addTo` must be the output of a previous rd_query()
   if (!(length(addTo) == 1 && !is.list(addTo) && is.na(addTo)) && !(is.list(addTo) && is.data.frame(addTo$queries))) {
-    stop("`addTo` must be the output of a previous `rd_query()`.", call. = FALSE)
+    rd_abort("{.arg addTo} must be the output of a previous {.fn rd_query}.", class = "REDCapDM_error_argument")
   }
 
   # Error: specified variables do not exist in the dataset
@@ -145,11 +145,15 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     not_found <- setdiff(variables, names(data))
     checkboxes <- intersect(not_found, dic$field_name[dic$field_type %in% "checkbox"])
 
-    stop(paste0(
-      "Specified variables do not exist in the dataset: ", paste0("'", not_found, "'", collapse = ", "), ".",
-      if (length(checkboxes) > 0) paste0(" Checkboxes are checked option by option (e.g. '", checkboxes[1], "___1')."),
-      " Please review the `variables` argument."
-    ), call. = FALSE)
+    checkbox_example <- paste0(checkboxes[1], "___1")
+    rd_abort(
+      c(
+        "Specified variables do not exist in the dataset: {.val {not_found}}.",
+        if (length(checkboxes) > 0) c("i" = "Checkboxes are checked option by option (e.g. {.val {checkbox_example}})."),
+        "i" = "Please review the {.arg variables} argument."
+      ),
+      class = "REDCapDM_error_argument"
+    )
   }
   
   # Error: dictionary columns needed to check the variables
@@ -164,7 +168,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Warning: event not specified
   if (all(is.na(event)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) & is.null(event_form)) {
-    warning("No event or event-form has been specified. Therefore, the function will automatically consider observations from all events in the dataset. Ensure that the selected variable(s) is(are) collected in all specified events. This will avoid overestimating the number of queries.", call. = FALSE)
+    rd_warn(c("No event or event-form has been specified. Therefore, the function will automatically consider observations from all events in the dataset.", "i" = "Ensure that the selected variable(s) is(are) collected in all specified events. This will avoid overestimating the number of queries."))
   }
 
   # Handle events automatically based on event_form and dictionary
@@ -185,19 +189,19 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Error: event variable is missing in dataset
     if (all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      stop("Event specified, but no event variable found in the dataset. Please review the `event` argument.")
+      rd_abort(c("Event specified, but no event variable found in the dataset.", "i" = "Please review the {.arg event} argument."), class = "REDCapDM_error_argument")
     }
 
     # Error: specified events are not in the dataset
     if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
       if (any(!event %in% data$redcap_event_name) & any(!event %in% data$redcap_event_name.factor)) {
-        stop("One or more specified events are not found in the dataset. Please review the `event` argument.")
+        rd_abort(c("One or more specified events are not found in the dataset.", "i" = "Please review the {.arg event} argument."), class = "REDCapDM_error_argument")
       }
     }
 
     # Warning: multiple events are specified
     if (length(event) > 1 & is.null(event_form)) {
-      warning("Multiple events specified. Ensure variables are collected across all events to avoid overestimation.", call. = FALSE)
+      rd_warn("Multiple events specified. Ensure variables are collected across all events to avoid overestimation.")
     }
 
     # Filter data by events - factor version
@@ -212,23 +216,23 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Warning: identifiers are missing observations in any event (it only appears when checking for missings - %in%NA)
     if (length(unique(data0$record_id)) != length(unique(data$record_id)) & any(grepl("%in%NA", gsub(" ", "", expression)))) {
-      warning("Some identifiers are missing observations in specified events.\nUse 'rd_event' to check which identifiers are missing.", call. = FALSE)
+      rd_warn(c("Some identifiers are missing observations in specified events.", "i" = "Use {.fn rd_event} to check which identifiers are missing."))
     }
   }
 
   # Error: by_dag is TRUE but no DAG variable exists
   if (by_dag %in% TRUE & all(!c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data))) {
-    stop("DAG-based reporting requested, but no DAG variable found in the dataset. Use `by_dag = FALSE` to continue.")
+    rd_abort(c("DAG-based reporting requested, but no DAG variable found in the dataset.", "i" = "Use {.code by_dag = FALSE} to continue."), class = "REDCapDM_error_argument")
   }
 
   # Warning: Validate 'link' argument and ensure completeness
   if (!is.null(names(link))) {
     if (!all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      stop("Incomplete 'link' argument. To properly use it, please provide domain, redcap_version, project ID, and event ID.", call. = FALSE)
+      rd_abort(c("Incomplete 'link' argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version}, {.field proj_id} and {.field event_id}."), class = "REDCapDM_error_argument")
     }
 
     if (!all(c("domain", "redcap_version", "proj_id") %in% names(link)) & !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      stop("Incomplete 'link' argument. To properly use it, please provide domain, redcap_version and project ID.", call. = FALSE)
+      rd_abort(c("Incomplete 'link' argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version} and {.field proj_id}."), class = "REDCapDM_error_argument")
     }
   }
 
@@ -276,7 +280,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         data[, "event_id"] <- as.numeric(link[["event_id"]])
       } else {
         # Error: More than one event_id is specified and the project is non-longitudinal
-        stop("Non-longitudinal project. Please provide only one event ID.", call. = FALSE)
+        rd_abort("Non-longitudinal project. Please provide only one event ID.", class = "REDCapDM_error_argument")
       }
     }
   }
@@ -284,26 +288,12 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Ensure expressions and variables match in length
   if (length(variables) != length(expression)) {
     if (length(variables) > length(expression)) {
-      warning(
-        paste0(
-          "Number of variables (", length(variables),
-          ") is greater than the number of expressions (", length(expression), "). ",
-          "The first expression will be applied to all variables."
-        ),
-        call. = FALSE
-      )
+      rd_warn("Number of variables ({length(variables)}) is greater than the number of expressions ({length(expression)}). The first expression will be applied to all variables.")
 
       # Repeat the first expression for remaining variables
       expression <- rep(expression[1], length(variables))
     } else {
-      warning(
-        paste0(
-          "Number of expressions (", length(expression),
-          ") is greater than the number of variables (", length(variables), "). ",
-          "The first variable will be used for all expressions."
-        ),
-        call. = FALSE
-      )
+      rd_warn("Number of expressions ({length(expression)}) is greater than the number of variables ({length(variables)}). The first variable will be used for all expressions.")
 
       # Repeat the first variable for remaining expressions
       variables <- rep(variables[1], length(expression))
@@ -318,14 +308,15 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     evaluation <- try(eval(parse(text = command)), silent = TRUE)
 
     if (inherits(evaluation, "try-error")) {
-      stop("Invalid filter logic. Please review the `filter` argument.")
+      filter_error <- trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(evaluation))))
+      rd_abort(c("Invalid filter logic. Please review the {.arg filter} argument.", "x" = "R error: {filter_error}"), class = "REDCapDM_error_argument")
     } else {
       eval(parse(text = command))
     }
 
     # Error: filter results in zero observations
     if (nrow(data) == 0) {
-      warning("Filter applied successfully, but no matching observations found. Please review the `filter` argument.")
+      rd_warn("Filter applied successfully, but no matching observations found. Please review the {.arg filter} argument.")
     }
   }
 
@@ -365,7 +356,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
       # Issue warning for logic that could not be converted
       if (!is.null(logics) & nrow(data) > 0) {
-        warning(stringr::str_glue("The branching logic of the following variables could not be converted into R logic: {paste0('\n - ', unique(logics))}\nCheck the results element of the output(...$results) for details."), call. = FALSE)
+        unconverted <- unique(logics)
+        rd_warn(c("The branching logic of the following variables could not be converted into R logic: {.var {unconverted}}.", "i" = "Check the {.field results} element of the output for details."))
       }
     }
 
@@ -377,7 +369,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     ## Warning branching logic in multi-event REDCap projects
     if (is.null(event_form) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      warning("One or more variables checked for missing values have branching logic.\nSee results (...$results) for details.", call. = FALSE)
+      rd_warn(c("One or more variables checked for missing values have branching logic.", "i" = "See the {.field results} element of the output for details."))
     }
   }
 
@@ -433,7 +425,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Warning: a text variable compared with a number (the comparison is alphabetical, e.g. '10' < '9')
     if (is.character(raw0[[variables[i]]]) && grepl("\\bx\\s*(<|>|<=|>=)\\s*-?[0-9.]+", expression[i])) {
-      warning(sprintf("'%s' is text: the comparison '%s' is made alphabetically, not numerically.", variables[i], expression[i]), call. = FALSE)
+      rd_warn("{.var {variables[i]}} is text: the comparison {.code {expression[i]}} is made alphabetically, not numerically.")
     }
 
     # Apply custom expression filters
@@ -443,10 +435,15 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Error: the expression can't be evaluated
     if (inherits(evaluation, "error")) {
-      stop(sprintf(
-        "The expression '%s' could not be evaluated for the variable '%s'. It must be an R condition that returns TRUE or FALSE, where `x` is the variable (e.g. \"is.na(x)\" or \"x > 100\"). R error: %s",
-        expression[i], variables[i], gsub("\\s+", " ", conditionMessage(evaluation))
-      ), call. = FALSE)
+      expression_error <- gsub("\\s+", " ", conditionMessage(evaluation))
+      rd_abort(
+        c(
+          "The expression {.code {expression[i]}} could not be evaluated for the variable {.var {variables[i]}}.",
+          "i" = "It must be an R condition that returns TRUE or FALSE, where {.code x} is the variable (e.g. {.code is.na(x)} or {.code x > 100}).",
+          "x" = "R error: {expression_error}"
+        ),
+        class = "REDCapDM_error_argument"
+      )
     }
 
     # Transform the expression so it does not contain "x"
@@ -467,16 +464,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
         # Filtering results in zero observations
         if (nrow(definitive) == 0) {
-          warning(
-            paste0(
-              "The filter for variable '", variables[i], "' resulted in no matching observations. Verify the filter logic."
-            ),
-            call. = FALSE
-          )
+          rd_warn("The filter for variable {.var {variables[i]}} resulted in no matching observations. Verify the filter logic.")
         }
       } else {
         # Error: number of filters is different from the number of variables
-        stop("Mismatch in the number of filters and variables. Ensure each variable has a corresponding filter.", call. = FALSE)
+        rd_abort("Mismatch in the number of filters and variables. Ensure each variable has a corresponding filter.", class = "REDCapDM_error_argument")
       }
     } else {
       definitive <- raw
@@ -528,7 +520,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
               instrument[i]
             } else {
               if (length(instrument) != length(variables) & length(instrument) > 1) {
-                stop("Multiple instruments specified, but the number of instruments is different from the number of variables. Please match each variable to each instrument.", call. = FALSE)
+                rd_abort("Multiple instruments specified, but the number of instruments is different from the number of variables. Please match each variable to each instrument.", class = "REDCapDM_error_argument")
               }
             }
           }
@@ -549,7 +541,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
               variables_names[i]
             } else {
               if (length(variables_names) != length(variables) & length(variables_names) > 1) {
-                stop("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", call. = FALSE)
+                rd_abort("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", class = "REDCapDM_error_argument")
               }
             }
           }
@@ -562,7 +554,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
               query_name[i]
             } else {
               if (!length(query_name) %in% length(variables) & length(query_name) > 1) {
-                stop("Multiple query names specified, but the number of query names is different from the number of variables. Please match each variable to each query name.", call. = FALSE)
+                rd_abort("Multiple query names specified, but the number of query names is different from the number of variables. Please match each variable to each query name.", class = "REDCapDM_error_argument")
               }
             }
           }
@@ -631,7 +623,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
               variables_names[i]
             } else {
               if (length(variables_names) != length(variables) & length(variables_names) > 1) {
-                stop("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", call. = FALSE)
+                rd_abort("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", class = "REDCapDM_error_argument")
               }
             }
           }
@@ -653,7 +645,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
               query_name[i]
             } else {
               if (length(query_name) != length(variables) & length(query_name) > 1) {
-                stop("Multiple query names specified, but the number of query names is different from the number of variables. Please match each variable to each query name.", call. = FALSE)
+                rd_abort("Multiple query names specified, but the number of query names is different from the number of variables. Please match each variable to each query name.", class = "REDCapDM_error_argument")
               }
             }
           }
@@ -675,17 +667,15 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Warnings: variables where branching logic could not be applied automatically
   if (!is.null(br_eval) & nrow(data) > 0) {
-    warning(stringr::str_glue("The branching logic for the following variables could not be applied automatically: {paste0('\n- ', unique(br_eval))}\nCheck the results element of the output(...$results) for details."), call. = FALSE)
+    not_applied <- unique(br_eval)
+    rd_warn(c("The branching logic for the following variables could not be applied automatically: {.var {not_applied}}.", "i" = "Check the {.field results} element of the output for details."))
   }
 
   # Report variables where branching logic was applied automatically
   if (!is.null(compatible)) {
-    if (length(compatible) > 1) {
-      sentence <- stringr::str_glue("The branching logic of the following variables were applied automatically: {paste0('\n- ', unique(compatible), collapse = '')}")
-    } else {
-      sentence <- stringr::str_glue("The branching logic of the following variables were applied automatically: {unique(compatible)}")
-    }
-    warning(sentence, call. = FALSE)
+    # Informative: the branching logic is applied as expected
+    applied <- unique(compatible)
+    rd_inform(c("i" = "The branching logic of the following variables {?was/were} applied automatically: {.var {applied}}."))
   }
 
 
@@ -856,7 +846,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     report_title <- "Report of queries"
   } else {
     if (length(report_title) > 1) {
-      stop("Multiple report titles found. Please specify only one.", call. = FALSE)
+      rd_abort("Multiple report titles found. Please specify only one.", class = "REDCapDM_error_argument")
     }
   }
 

@@ -193,7 +193,7 @@ test_that("API branch: when event_path is provided it warns and attempts to read
 
   expect_warning(
     out <- redcap_data(uri = "https://api.example", token = "tok", event_path = tmp_event),
-    "The event_path argument is not required when using an API connection."
+    "argument is not required when using an API connection"
   )
 
   expect_true("event_form" %in% names(out))
@@ -273,7 +273,7 @@ test_that("Variables not linked to event_form are removed with warning", {
 
   expect_warning(
     out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic, event_path = tmp_event),
-    "removed since they are not linked"
+    "removed since it is not linked"
   )
   expect_false("extra" %in% names(out$data))
 })

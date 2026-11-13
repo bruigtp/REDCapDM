@@ -25,3 +25,21 @@ test_that("the messages can be hidden with options(REDCapDM.quiet = TRUE)", {
 test_that("the warnings have a class", {
   expect_warning(rd_warn("Careful"), "Careful", class = "REDCapDM_warning")
 })
+
+test_that("redcap_data() and rd_query() signal classed conditions", {
+  expect_error(redcap_data(data_path = "no_such_file.r", dic_path = "no_such_dic.csv"), class = "REDCapDM_error_file")
+  expect_error(redcap_data(data_path = "a.r", dic_path = "d.csv", uri = "u", token = "t"), class = "REDCapDM_error_argument")
+  expect_error(rd_query(covican, variables = "agee", expression = "is.na(x)"), class = "REDCapDM_error_argument")
+  expect_error(rd_query(covican, variables = "copd", expression = "x >> 3"), class = "REDCapDM_error_argument")
+
+  no_event_form <- covican[c("data", "dictionary")]
+  expect_warning(rd_query(no_event_form, variables = "copd", expression = "is.na(x)"), "No event or event-form", class = "REDCapDM_warning")
+})
+
+test_that("rd_query() informs, without a warning, when it applies the branching logic", {
+  fx <- make_cross_event()
+
+  expect_no_warning(
+    expect_message(rd_query(fx, variables = "preg", expression = "is.na(x)"), "applied automatically", class = "REDCapDM_message")
+  )
+})

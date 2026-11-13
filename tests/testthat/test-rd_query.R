@@ -780,7 +780,7 @@ test_that("rd_query applies the branching logic the same way before and after rd
 
   for (v in c("type_dm", "acute_leuk", "potassium")) {
     before <- suppressWarnings(rd_query(covican, variables = v, expression = "is.na(x)"))
-    expect_warning(
+    expect_message(
       after <- rd_query(fac, variables = v, expression = "is.na(x)"),
       "applied automatically"
     )
@@ -848,11 +848,11 @@ test_that("rd_query explains the mistakes in its arguments", {
 
   expect_error(rd_query(fx, variables = "age"), "Specify the condition that defines a query")
   expect_error(rd_query(fx, expression = "is.na(x)"), "Specify the variable")
-  expect_error(rd_query(fx, variables = "age", expression = "x >> 3"), "The expression 'x >> 3' could not be evaluated for the variable 'age'")
+  expect_error(rd_query(fx, variables = "age", expression = "x >> 3"), "The expression `x >> 3` could not be evaluated for the variable `age`")
   expect_error(rd_query(fx, variables = "age", expression = "x > lim"), "could not be evaluated")
   expect_error(rd_query(fx, variables = "age", expression = "is.na(x)", negate = "yes"), "`negate` must be TRUE or FALSE")
   expect_error(rd_query(fx, variables = "age", expression = "is.na(x)", addTo = data.frame(a = 1)), "`addTo` must be the output")
-  expect_error(rd_query(fx, variables = c("age", "agee"), expression = "is.na(x)"), "'agee'")
+  expect_error(rd_query(fx, variables = c("age", "agee"), expression = "is.na(x)"), "agee")
   expect_error(rd_query(fx$data, variables = "age", expression = "is.na(x)", dic = fx$dictionary), "not a data frame")
 })
 

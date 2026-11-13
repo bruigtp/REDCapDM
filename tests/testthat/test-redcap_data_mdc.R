@@ -144,7 +144,7 @@ test_that("rm_mdc = FALSE assigns a placeholder numeric code (not a real categor
 test_that("rm_mdc = FALSE keeps the Missing Data Codes of validated text fields in a `_mdc` column", {
   expect_warning(
     out <- run_redcap_data_mdc(rm_mdc = FALSE),
-    "Missing Data Codes found in validated fields \\(lab_value\\)\\. They are set to NA and kept in the new columns lab_value_mdc\\."
+    "Missing Data Codes found in validated fields \\(`lab_value`\\)\\. They are set to NA and kept in the new column `lab_value_mdc`\\."
   )
 
   # the field keeps its type, with NA where there was a code
