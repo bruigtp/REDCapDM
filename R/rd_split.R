@@ -59,7 +59,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
   }
   
   # Error: invalid arguments
-  check_inputs(data, dic, dic_cols = c("field_name", "form_name"))
+  check_inputs(data, dic, dic_cols = c("field_name", "form_name"), dic_rows = TRUE)
   check_strings(which, "which")
   check_flag(wide, "wide")
 
@@ -157,7 +157,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
     if (length(other_less_vars) > 0) {
       # General message for other cases
-      stop("There are extra variables in the dataset not found in the dictionary.\nTransformation halted.",
+      stop(paste0("There are extra variables in the dataset not found in the dictionary: ", paste(utils::head(other_less_vars, 10), collapse = ", "), ".\nCheck that the dictionary is the one of this project. Transformation halted."),
            call. = FALSE
       )
     }

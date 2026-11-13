@@ -65,7 +65,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   }
   
   # Error: invalid arguments
-  check_inputs(data, dic, dic_cols = c("field_name", "form_name", "field_type", "choices_calculations_or_slider_labels", "branching_logic_show_field_only_if"))
+  check_inputs(data, dic, dic_cols = c("field_name", "form_name", "field_type", "choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "field_label", "text_validation_type_or_show_slider_number"))
   if (!is.character(final_format) || length(final_format) != 1 || !final_format %in% c("raw", "by_event", "by_form")) {
     stop("final_format argument has to be one of the following: 'raw', 'by_event', 'by_form'", call. = FALSE)
   }

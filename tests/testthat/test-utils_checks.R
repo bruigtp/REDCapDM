@@ -69,3 +69,32 @@ test_that("rd_dates and rd_rlogic work with a dataset without rows", {
   expect_equal(nrow(suppressWarnings(rd_dates(empty))$data), 0)
   expect_length(suppressWarnings(rd_rlogic(empty, logic = "[age] > 70", var = "age"))$eval, 0)
 })
+
+
+test_that("the functions name the dictionary columns they need", {
+  no_col <- function(col) {
+    x <- covican
+    x$dictionary[[col]] <- NULL
+    x
+  }
+
+  expect_error(rd_dates(no_col("text_validation_type_or_show_slider_number")), "`text_validation_type_or_show_slider_number`")
+  expect_error(rd_recalculate(no_col("field_type")), "doesn't have the column\\(s\\) `field_type`")
+  expect_error(rd_checkbox(no_col("branching_logic_show_field_only_if")), "`branching_logic_show_field_only_if`")
+  expect_error(rd_rlogic(no_col("field_name"), logic = "[age] > 70", var = "age"), "`field_name`")
+  expect_error(rd_split(no_col("field_name")), "`field_name`")
+  expect_error(rd_delete_vars(no_col("field_name"), vars = "age"), "`field_name`")
+  expect_error(rd_insert_na(no_col("form_name"), vars = "age", filter = "copd == 1"), "`form_name`")
+  expect_error(suppressWarnings(rd_query(no_col("field_label"), variables = "age", expression = "is.na(x)")), "`field_label`")
+  expect_error(rd_transform(no_col("field_label")), "`field_label`")
+
+  empty_dic <- covican
+  empty_dic$dictionary <- empty_dic$dictionary[0, ]
+  expect_error(rd_split(empty_dic), "The dictionary has no rows")
+})
+
+test_that("rd_split names the variables of the data that are not in the dictionary", {
+  x <- covican
+  x$data$extra_var <- 1
+  expect_error(rd_split(x), "not found in the dictionary: extra_var")
+})

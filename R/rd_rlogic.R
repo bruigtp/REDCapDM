@@ -57,7 +57,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   }
   
   # Error: invalid arguments
-  check_inputs(data, dic)
+  check_inputs(data, dic, dic_cols = c("field_name", "text_validation_type_or_show_slider_number"))
   check_strings(logic, "logic", null_ok = FALSE)
   check_strings(var, "var", null_ok = FALSE)
 

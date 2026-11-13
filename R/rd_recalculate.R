@@ -64,7 +64,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   }
   
   # Error: invalid arguments
-  check_inputs(data, dic)
+  check_inputs(data, dic, dic_cols = c("field_name", "field_type", "choices_calculations_or_slider_labels", "text_validation_type_or_show_slider_number"))
   check_strings(exclude, "exclude")
 
   # Extract labels from the data to reapply later

@@ -59,6 +59,7 @@
 - `rd_event()` asks for the `event`, `rd_split()` explains why it can't split by event, `rd_transform()` asks for `delete_pattern` before splitting the data, `check_queries()` checks that it receives query reports, `rd_missplot()` checks `max_vars` and the number of rows, and `rd_checkbox()` checks `checkbox_labels`.
 - Every function checks its arguments: a wrong value (e.g. `NULL`, `NA`, a vector instead of a single value or a text instead of TRUE/FALSE) stops with a message that names the argument and what it expects, instead of an internal R error.
 - `rd_delete_vars()` never removes the REDCap columns of events and repetitions through `pattern`, and `rd_dates()` and `rd_rlogic()` work with a dataset without rows.
+- Every function checks that the dictionary has the columns it needs, and `rd_split()` names the variables of the data that are not in the dictionary.
 
 # REDCapDM 1.0-1
 

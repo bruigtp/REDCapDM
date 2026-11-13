@@ -117,14 +117,19 @@ check_number <- function(x, arg, min = 1, null_ok = TRUE) {
 #'
 #' @param data,dic The data and the dictionary.
 #' @param dic_cols Columns of the dictionary that the function needs.
+#' @param dic_rows Whether the function needs a dictionary with rows.
 #' @noRd
-check_inputs <- function(data, dic, dic_cols = NULL) {
+check_inputs <- function(data, dic, dic_cols = NULL, dic_rows = FALSE) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame: the `data` element of the output of redcap_data().", call. = FALSE)
   }
 
   if (!is.data.frame(dic)) {
     stop("`dic` must be a data frame: the `dictionary` element of the output of redcap_data().", call. = FALSE)
+  }
+
+  if (dic_rows && nrow(dic) == 0) {
+    stop("The dictionary has no rows. Please use the dictionary returned by redcap_data().", call. = FALSE)
   }
 
   not_found <- setdiff(dic_cols, names(dic))

@@ -155,7 +155,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
   
   # Error: dictionary columns needed to check the variables
-  check_inputs(data, dic, dic_cols = c("field_name", "form_name"))
+  check_inputs(data, dic, dic_cols = c("field_name", "form_name", "field_label"))
   
   # Repeating instruments of the complete dataset (before any event or filter subsetting)
   rep_pairs <- repeat_info(data)$pairs

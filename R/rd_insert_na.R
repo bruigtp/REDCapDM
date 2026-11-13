@@ -59,7 +59,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   }
   
   # Error: invalid arguments
-  check_inputs(data, dic)
+  check_inputs(data, dic, dic_cols = c("field_name", "form_name"))
   check_strings(vars, "vars", null_ok = FALSE)
   check_strings(filter, "filter", null_ok = FALSE)
 

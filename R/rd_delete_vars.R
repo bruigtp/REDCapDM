@@ -65,7 +65,8 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
   }
   
   # Error: invalid arguments
-  check_inputs(data, dic)
+  check_inputs(data, dic, dic_cols = "field_name")
+  
   for (arg in c("vars", "pattern", "forms")) {
     check_strings(get(arg), arg)
   }
