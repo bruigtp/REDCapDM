@@ -29,6 +29,7 @@
 #' result <- rd_dates(covican)
 #' transformed_data <- result$data
 #'
+#' @family process functions
 #' @export
 #' @importFrom stats na.omit
 

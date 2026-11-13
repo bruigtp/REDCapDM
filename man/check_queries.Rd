@@ -101,3 +101,10 @@ head(res$queries)
 res$results
 
 }
+\seealso{
+Other query functions:
+\code{\link[=rd_event]{rd_event()}},
+\code{\link[=rd_export]{rd_export()}},
+\code{\link[=rd_query]{rd_query()}}
+}
+\concept{query functions}

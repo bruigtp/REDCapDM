@@ -44,6 +44,7 @@
 #' )
 #' }
 #'
+#' @family process functions
 #' @export
 #' @importFrom rlang :=
 #' @importFrom stats na.omit

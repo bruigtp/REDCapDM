@@ -164,7 +164,7 @@ In both cases, a message will be generated in the console informing you that the
 <br>
 <br>
 
-**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html**
+**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/query-management.html**
 
 <br>
 <br>

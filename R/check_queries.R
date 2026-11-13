@@ -88,6 +88,7 @@
 #' # HTML summary (if in an RMarkdown or interactive viewer)
 #' res$results
 #'
+#' @family query functions
 #' @export
 
 check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {

@@ -48,6 +48,7 @@
 #'   forms = "laboratory_findings"
 #' )
 #'
+#' @family process functions
 #' @export
 
 rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, vars = NULL, pattern = NULL, forms = NULL) {

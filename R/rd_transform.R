@@ -42,6 +42,7 @@
 #'                       which_form = "laboratory_findings",
 #'                       wide = TRUE)
 #'
+#' @family process functions
 #' @export
 
 rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, checkbox_labels = c("No", "Yes"), na_logic = "none", exclude_recalc = NULL, exclude_factor = NULL, delete_vars = NULL, delete_pattern = NULL, final_format = "raw", which_event = NULL, which_form = NULL, wide = NULL) {

@@ -178,7 +178,7 @@ dataset$data
 2. Are API calls failing? Verify `uri`, `token` and your project's export
    permissions.
 
-**For more information, consult the complete vignette available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html**
+**For more information, consult the complete vignettes available at: https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html and https://bruigtp.github.io/REDCapDM/articles/data-processing.html**
 
 <br>
 <br>

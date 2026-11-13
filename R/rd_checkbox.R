@@ -47,6 +47,7 @@
 #'                    event_form = covican$event_form,,
 #'                    na_logic = "eval")
 #'
+#' @family process functions
 #' @export
 #' @importFrom stats setNames na.omit
 

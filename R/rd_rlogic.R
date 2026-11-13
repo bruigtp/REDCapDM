@@ -41,6 +41,7 @@
 #'   )
 #' 
 #' @importFrom lubridate time_length interval
+#' @family process functions
 #' @export
 
 rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, logic, var) {

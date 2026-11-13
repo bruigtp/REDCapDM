@@ -31,6 +31,7 @@
 #' updated_dic <- result$dictionary
 #' }
 #'
+#' @family process functions
 #' @export
 #' @importFrom stats setNames na.omit
 

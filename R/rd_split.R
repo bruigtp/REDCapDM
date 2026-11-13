@@ -41,6 +41,7 @@
 #'
 #' print(result)
 #'
+#' @family process functions
 #' @export
 
 rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, which = NULL, by = "form", wide = FALSE) {

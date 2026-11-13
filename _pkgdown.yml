@@ -8,3 +8,51 @@ template:
     link-color: "#fa8011"
     link-hover-color: "#f8a85f"
     dropdown-link-hover-bg: "#bb5b04"
+
+reference:
+- title: Import data
+  contents:
+  - redcap_data
+- title: Explore data
+  contents:
+  - rd_missplot
+- title: Process data
+  desc: >
+    Clean and transform the data and the dictionary, step by step or all at
+    once with `rd_transform()`.
+  contents:
+  - rd_transform
+  - rd_delete_vars
+  - rd_dates
+  - rd_recalculate
+  - rd_checkbox
+  - rd_factor
+  - rd_dictionary
+  - rd_split
+  - rd_insert_na
+  - rd_rlogic
+- title: Queries
+  desc: >
+    Identify queries and missing events, follow up their correction and export
+    the reports.
+  contents:
+  - rd_query
+  - rd_event
+  - check_queries
+  - rd_export
+- title: Data
+  contents:
+  - covican
+
+articles:
+- title: Vignettes
+  navbar: Vignettes
+  contents:
+  - missing-data
+  - data-processing
+  - query-management
+- title: Quick guides
+  navbar: Quick guides
+  contents:
+  - articles/Data-reading-and-processing
+  - articles/Queries

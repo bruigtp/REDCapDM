@@ -24,6 +24,7 @@
 #' )
 #' }
 #'
+#' @family query functions
 #' @export
 
 rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name = NULL, path = NULL, password = NULL) {

@@ -68,6 +68,11 @@
 - `rd_query()` informs with a message, instead of a warning, when it applies the branching logic automatically.
 - All the other functions also report their errors and warnings with cli, naming the variables, forms and events involved. Logic that can't be translated or evaluated has the class `REDCapDM_error_logic` (with the translated logic and the R error), a dataset that doesn't match its dictionary the class `REDCapDM_error_data`, and a folder that doesn't exist in `rd_export()` the class `REDCapDM_error_file`. A filter of `rd_insert_na()` that can't be evaluated keeps the original R error as its parent.
 
+## Documentation
+
+- The vignette is split into four: getting started (`vignette("REDCapDM")`), missing data (`vignette("missing-data")`), data processing (`vignette("data-processing")`) and queries (`vignette("query-management")`).
+- The reference of the website groups the functions by task, and the help of each function links to the related functions.
+
 ## Internal changes
 
 - Code cleanup following lintr: the conditions of `if()` use `&&` and `||`, and the query codes are numbered with `dplyr::row_number()`, which also works with zero rows.

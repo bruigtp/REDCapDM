@@ -31,6 +31,7 @@
 #' transformed_data <- result$data
 #' }
 #'
+#' @family process functions
 #' @export
 #' @importFrom stats na.omit
 

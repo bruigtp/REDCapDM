@@ -53,6 +53,7 @@
 #' # HTML summary (in RMarkdown or Viewer)
 #' res$results
 #'
+#' @family query functions
 #' @export
 #' @importFrom rlang .data
 

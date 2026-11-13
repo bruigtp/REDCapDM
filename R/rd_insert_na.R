@@ -39,6 +39,7 @@
 #' table(data$potassium)
 #' }
 #'
+#' @family process functions
 #' @export
 #' @importFrom rlang .data parse_expr eval_tidy
 

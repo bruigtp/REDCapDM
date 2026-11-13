@@ -118,3 +118,10 @@ result <- rd_query(covican,
 }
 
 }
+\seealso{
+Other query functions:
+\code{\link[=check_queries]{check_queries()}},
+\code{\link[=rd_event]{rd_event()}},
+\code{\link[=rd_export]{rd_export()}}
+}
+\concept{query functions}

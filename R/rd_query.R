@@ -72,6 +72,7 @@
 #' )
 #' }
 #'
+#' @family query functions
 #' @export
 #' @importFrom rlang .data
 
