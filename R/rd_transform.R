@@ -50,7 +50,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   ind <- 1
 
   # validate na_logic against allowed choices
-  na_logic <- match.arg(na_logic, choices = c("none", "missing", "eval"))
+  na_logic <- check_choice(na_logic, "na_logic", c("none", "missing", "eval"), partial = TRUE)
 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
@@ -63,7 +63,21 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
-
+  
+  # Error: invalid arguments
+  check_inputs(data, dic, dic_cols = c("field_name", "form_name", "field_type", "choices_calculations_or_slider_labels", "branching_logic_show_field_only_if"))
+  if (!is.character(final_format) || length(final_format) != 1 || !final_format %in% c("raw", "by_event", "by_form")) {
+    stop("final_format argument has to be one of the following: 'raw', 'by_event', 'by_form'", call. = FALSE)
+  }
+  for (arg in c("exclude_recalc", "exclude_factor", "delete_vars", "delete_pattern")) {
+    check_strings(get(arg), arg)
+  }
+  for (arg in c("which_event", "which_form")) {
+    check_string(get(arg), arg, null_ok = TRUE)
+  }
+  if (!is.null(wide)) {
+    check_flag(wide, "wide")
+  }
 
   # Check if the project is longitudinal (has more than one event) or not:
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)

@@ -92,6 +92,18 @@ rd_event <- function(project = NULL,
   if (missing(event)) {
     stop("Specify the event(s) to check with the `event` argument (unique event name or label).", call. = FALSE)
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
+  check_strings(event, "event", null_ok = FALSE)
+  check_string(filter, "filter", na_ok = TRUE)
+  for (arg in c("query_name", "report_title")) {
+    check_text(get(arg), arg)
+  }
+  check_flag(report_zeros, "report_zeros")
+  if (!is.list(link)) {
+    stop("`link` must be a list with `domain`, `redcap_version`, `proj_id` and `event_id`.", call. = FALSE)
+  }
 
   # Create an empty data frame to store identified queries
   queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
@@ -216,7 +228,7 @@ rd_event <- function(project = NULL,
           } else {
             "-"
           },
-          Query = if (!is.na(query_name)) {
+          Query = if (!all(is.na(query_name))) {
             if (length(query_name) > 1) {
               query_name[k]
             } else {

@@ -62,6 +62,10 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
+  check_strings(exclude, "exclude")
 
   # Extract labels from the data to reapply later
   labels <- labels <- purrr::map_chr(data, function(x) {

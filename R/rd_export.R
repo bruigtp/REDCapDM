@@ -40,6 +40,17 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
   if (is.null(queries)) {
     stop("There are no queries to export: provide the output of rd_query() or rd_event() in `project`, or a data frame in `queries`.", call. = FALSE)
   }
+  
+  # Error: invalid arguments
+  if (!is.data.frame(queries)) {
+    stop("`queries` must be a data frame. With `rd_query(by_dag = TRUE)` the queries are a list with one data frame per DAG: export each of them.", call. = FALSE)
+  }
+  if (ncol(queries) == 0) {
+    stop("`queries` has no columns: there is nothing to export.", call. = FALSE)
+  }
+  for (arg in c("column", "sheet_name", "path", "password")) {
+    check_string(get(arg), arg, null_ok = TRUE)
+  }
 
   # Ensure `queries` is a data frame
   queries <- as.data.frame(queries)

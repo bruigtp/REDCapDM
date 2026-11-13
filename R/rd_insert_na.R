@@ -57,6 +57,11 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
+  check_strings(vars, "vars", null_ok = FALSE)
+  check_strings(filter, "filter", null_ok = FALSE)
 
   # Determine if the dataset is longitudinal
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)

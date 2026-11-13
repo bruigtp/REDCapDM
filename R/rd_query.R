@@ -88,6 +88,18 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
+  for (arg in c("event", "filter", "variables_names", "query_name", "instrument", "report_title")) {
+    check_text(get(arg), arg)
+  }
+  if (is.null(addTo)) {
+    addTo <- NA
+  }
+  if (!is.list(link)) {
+    stop("`link` must be a list with `domain`, `redcap_version`, `proj_id` and, in longitudinal projects, `event_id`.", call. = FALSE)
+  }
 
   # Ensure data and dictionary are data frames
   data <- as.data.frame(data)
@@ -126,7 +138,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
 
   # Error: `addTo` must be the output of a previous rd_query()
-  if (!all(is.na(addTo)) && !(is.list(addTo) && is.data.frame(addTo$queries))) {
+  if (!(length(addTo) == 1 && !is.list(addTo) && is.na(addTo)) && !(is.list(addTo) && is.data.frame(addTo$queries))) {
     stop("`addTo` must be the output of a previous `rd_query()`.", call. = FALSE)
   }
 
@@ -141,6 +153,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       " Please review the `variables` argument."
     ), call. = FALSE)
   }
+  
+  # Error: dictionary columns needed to check the variables
+  check_inputs(data, dic, dic_cols = c("field_name", "form_name"))
   
   # Repeating instruments of the complete dataset (before any event or filter subsetting)
   rep_pairs <- repeat_info(data)$pairs

@@ -41,7 +41,14 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     stop("The `ggplot2` package is required for `rd_missplot()`. Install it with `install.packages('ggplot2')`.", call. = FALSE)
   }
 
-  by <- match.arg(by)
+  # Error: invalid arguments
+  by <- if (identical(by, c("vars", "record"))) "vars" else check_choice(by, "by", c("vars", "record"), partial = TRUE)
+  for (arg in c("sort_by_missingness", "show_percentages", "use_field_labels", "drop_complete")) {
+    check_flag(get(arg), arg)
+  }
+  check_number(max_label_length, "max_label_length", min = 4)
+  check_strings(events, "events")
+  check_strings(forms, "forms")
 
   # Extract data frame, dictionary and event-form mapping if nested inside a list (e.g., data_def)
   dictionary_df <- NULL
@@ -65,6 +72,11 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     stop("The 'data' argument must be a data frame or a list containing a 'data' element.")
   }
   
+  # Error: the data must be a data frame
+  if (!is.data.frame(df)) {
+    stop("The 'data' element must be a data frame: use the output of redcap_data().", call. = FALSE)
+  }
+
   # Error: nothing to plot
   if (nrow(df) == 0) {
     stop("There is no data to plot: the data has 0 rows.", call. = FALSE)

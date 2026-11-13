@@ -63,6 +63,12 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.", call. = FALSE)
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
+  for (arg in c("vars", "pattern", "forms")) {
+    check_strings(get(arg), arg)
+  }
 
   # Ensure one of the arguments is fullfilled
   if (is.null(vars) & is.null(pattern) & is.null(forms)) {
@@ -145,8 +151,9 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
       }
     }
 
-    # Variables matching the pattern (never the record identifier)
-    matched <- setdiff(grep(comb_pattern, names(data), value = TRUE, ignore.case = TRUE), "record_id")
+    # Variables matching the pattern (never the record identifier nor the REDCap columns of events and repetitions)
+    matched <- grep(comb_pattern, names(data), value = TRUE, ignore.case = TRUE)
+    matched <- matched[!matched %in% "record_id" & !grepl("^redcap_(event_name|repeat_instrument|repeat_instance)(\\.factor)?$", matched)]
 
     if (length(matched) == 0) {
       warning(stringr::str_glue("No variable matches the pattern(s) {paste0(\"'\", pattern, \"'\", collapse = ', ')}: nothing was removed."), call. = FALSE)

@@ -65,6 +65,15 @@
 redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, sep = ",", filter_field = NULL, survey_fields = FALSE, rm_mdc = TRUE) {
 
   event_form <- NULL
+  
+  # Error: invalid arguments
+  for (arg in c("data_path", "dic_path", "event_path", "uri", "token")) {
+    check_string(get(arg), arg, na_ok = TRUE)
+  }
+  if (!is.character(sep) || length(sep) != 1 || is.na(sep) || nchar(sep) != 1) {
+    stop("`sep` must be a single character, e.g. \",\" or \";\".", call. = FALSE)
+  }
+  check_strings(filter_field, "filter_field")
 
   # Save the current working directory and ensure it is restored on exit
   oldwd <- getwd()

@@ -99,6 +99,10 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
     stop("There is more than one title for the report, please choose only one.", call. = FALSE)
   }
   
+  # Error: invalid arguments
+  check_string(report_title, "report_title", null_ok = TRUE)
+  check_flag(return_viewer, "return_viewer")
+  
   # Error: both must be query reports
   needed <- c("Identifier", "Description", "Query")
   not_found <- unique(c(setdiff(needed, names(old)), setdiff(needed, names(new))))

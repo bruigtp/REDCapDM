@@ -50,6 +50,9 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
 
   # Checking if there was already a transformation of the original variables into factors
   factors <- data |>

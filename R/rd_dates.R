@@ -46,6 +46,9 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
 
   # Extract labels from the data to reapply later
   labels <- labels <- purrr::map_chr(data, function(x) {
@@ -90,7 +93,7 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
       dplyr::mutate_at(var_date, as.Date) |>
       # Convert datetime variables to `POSIXct` class, handling empty strings as NA
       dplyr::mutate_at(var_datetime, function(x) {
-        x <- dplyr::case_when(x == "" ~ NA, TRUE ~ x)
+        x[x %in% ""] <- NA
         as.POSIXct(x, origin = "1970-01-01", tz = "UTC")
       })
   }

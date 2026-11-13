@@ -57,6 +57,11 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic, dic_cols = c("field_name", "form_name"))
+  check_strings(which, "which")
+  check_flag(wide, "wide")
 
   # Error: invalid `by`
   if (!isTRUE(by %in% c("form", "event"))) {

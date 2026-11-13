@@ -55,6 +55,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
+  check_strings(logic, "logic", null_ok = FALSE)
+  check_strings(var, "var", null_ok = FALSE)
 
   # Check if the project is longitudinal (more than one event present in the data)
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
@@ -326,7 +331,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
 
   # If there's an error or the result is empty, stop the process
-  if (inherits(rlogic_eval, "try-error") | length(rlogic_eval) == 0) {
+  if (inherits(rlogic_eval, "try-error") | (length(rlogic_eval) == 0 & nrow(data) > 0)) {
     stop(paste0(
       "The logic could not be evaluated after translation. R logic: ", rlogic,
       if (inherits(rlogic_eval, "try-error")) paste0(" | R error: ", trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(rlogic_eval)))))

@@ -54,7 +54,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   rlogic_eval <- NULL
 
   # validate na_logic against allowed choices
-  na_logic <- match.arg(na_logic, choices = c("none", "missing", "eval"))
+  na_logic <- check_choice(na_logic, "na_logic", c("none", "missing", "eval"), partial = TRUE)
   
   # Error: one label for unchecked and one for checked
   if (length(checkbox_labels) != 2) {
@@ -71,6 +71,10 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   if (is.null(data) | is.null(dic)) {
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
+  
+  # Error: invalid arguments
+  check_inputs(data, dic)
+  check_flag(checkbox_names, "checkbox_names")
 
   # Extract labels from the data to reapply later
   labels <- labels <- purrr::map_chr(data, function(x) {
