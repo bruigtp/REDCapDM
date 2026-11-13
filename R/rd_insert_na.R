@@ -232,7 +232,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       } else {
         # No rows to change for this variable (possible due to event restriction)
         # We do not stop here; just inform via a message (could be silent depending on preference)
-        message(sprintf("No rows matched for variable '%s' after applying filter and event overlap.", var_j))
+        rd_inform("No rows matched for variable {.var {var_j}} after applying filter and event overlap.")
       }
     }
 

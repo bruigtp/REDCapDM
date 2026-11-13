@@ -325,7 +325,7 @@ rd_event <- function(project = NULL,
     # Handle cases where there are no queries
 
     # Notify the user that no queries were identified
-    message("No queries identified.")
+    rd_inform("No queries identified.")
 
     # Create an empty report with placeholders for events
     report <- as.data.frame(matrix(ncol = 2, nrow = length(event)))

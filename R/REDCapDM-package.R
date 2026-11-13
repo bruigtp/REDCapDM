@@ -35,6 +35,16 @@
 #' - `check_queries`: Compares historical and current query reports to track changes and additions.
 #' - `rd_export`: Exports a summary report of identified queries to an Excel (.xlsx) file.
 #'
+#' @section Package options:
+#' - `REDCapDM.quiet`: set `options(REDCapDM.quiet = TRUE)` to hide the informative messages of the package (e.g. the
+#'   progress of `rd_transform()` or the packages attached at startup). Errors and warnings are always shown.
+#'
+#' @section Errors and warnings:
+#' The errors, warnings and messages of the package have the classes `REDCapDM_error`, `REDCapDM_warning` and
+#' `REDCapDM_message`, so they can be handled programmatically, e.g.
+#' `tryCatch(rd_query(...), REDCapDM_error = function(e) ...)`. Errors caused by a wrong argument value also have the
+#' class `REDCapDM_error_argument`.
+#'
 #'
 #' @examples
 #' \dontrun{

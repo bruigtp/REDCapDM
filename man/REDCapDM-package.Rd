@@ -39,6 +39,22 @@ Core Functions:
 \item \code{rd_export}: Exports a summary report of identified queries to an Excel (.xlsx) file.
 }
 }
+\section{Package options}{
+
+\itemize{
+\item \code{REDCapDM.quiet}: set \code{options(REDCapDM.quiet = TRUE)} to hide the informative messages of the package (e.g. the
+progress of \code{rd_transform()} or the packages attached at startup). Errors and warnings are always shown.
+}
+}
+
+\section{Errors and warnings}{
+
+The errors, warnings and messages of the package have the classes \code{REDCapDM_error}, \code{REDCapDM_warning} and
+\code{REDCapDM_message}, so they can be handled programmatically, e.g.
+\code{tryCatch(rd_query(...), REDCapDM_error = function(e) ...)}. Errors caused by a wrong argument value also have the
+class \code{REDCapDM_error_argument}.
+}
+
 \examples{
 \dontrun{
 # Install REDCapDM from CRAN:

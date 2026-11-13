@@ -128,7 +128,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     warning("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
   }
 
-  message("\u23F3 Transformation in progress...")
+  rd_inform("\u23F3 Transformation in progress...")
 
   labels <- purrr::map_chr(data, function(x) {
     lab <- attr(x, "label")

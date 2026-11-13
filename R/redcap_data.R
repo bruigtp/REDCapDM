@@ -106,9 +106,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Error: logical arguments
   for (arg in c("survey_fields", "rm_mdc")) {
-    if (!isTRUE(get(arg)) && !isFALSE(get(arg))) {
-      stop(sprintf("`%s` must be TRUE or FALSE.", arg), call. = FALSE)
-    }
+    check_flag(get(arg), arg)
   }
 
   # Process data from exported files
@@ -243,7 +241,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   # Process data from API connection
   if (all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)) {
     # Message: Begin data import process
-    message("Importing data from REDCap API...")
+    rd_inform("Importing data from REDCap API...")
 
     # Read labels from REDCap
 
@@ -297,7 +295,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     labels <- gsub("\\.{3}\\d+$", "", names(labels))
 
     # Message: Intermediate status update
-    message("Almost done...")
+    rd_inform("Almost done...")
 
     # Fetch main data using the REDCap API
     data_api <- REDCapR::redcap_read(
@@ -452,7 +450,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     }
 
     # Message:  Completion
-    message("API data import completed.")
+    rd_inform(c("v" = "API data import completed."))
   }
 
   # Apply UTF-8 encoding to character columns

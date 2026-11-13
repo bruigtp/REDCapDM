@@ -161,7 +161,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   elapsed <- as.numeric(Sys.time() - start_time, units = "secs")
 
   if (elapsed > 10) {
-    message("\u23F3 Almost done!")
+    rd_inform("\u23F3 Almost done!")
   }
 
   # Identify rows in the dictionary with calculations that need evaluation

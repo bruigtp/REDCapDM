@@ -42,15 +42,22 @@ fill_data <- function(which_event, which_var, data) {
 #' @param dic A data dictionary (optional) that may be overridden if provided in the `project` object.
 #' @param event_form An optional event-form object that may be overridden if provided in the `project`.
 #' @noRd
-check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL) {
+check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call = rlang::caller_env()) {
   # Ensure 'project' is a list
   if (!is.list(project)) {
-    stop("The 'project' argument must be a list.", call. = FALSE)
+    rd_abort(
+      c("{.arg project} must be a list, not {.obj_type_friendly {project}}.", "i" = "Use the output of {.fn redcap_data}."),
+      class = "REDCapDM_error_argument", call = call
+    )
   }
   
   # Error: a data frame instead of the list of redcap_data()
   if (is.data.frame(project)) {
-    stop("The 'project' argument must be the list returned by redcap_data() (with `data` and `dictionary`), not a data frame. To use a data frame, pass it with `data` and the dictionary with `dic`.", call. = FALSE)
+    rd_abort(
+      c("{.arg project} must be the list returned by {.fn redcap_data} (with {.field data} and {.field dictionary}), not a data frame.",
+        "i" = "To use a data frame, pass it with {.arg data} and the dictionary with {.arg dic}."),
+      class = "REDCapDM_error_argument", call = call
+    )
   }
 
   # Check for `data` duplication

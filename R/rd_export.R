@@ -134,9 +134,9 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
   if (!is.null(password)) {
     openxlsx::protectWorksheet(wb, sheet = sheet, password = password)
     openxlsx::saveWorkbook(wb, path, overwrite = TRUE)
-    message(paste0("The file has been successfully created in '", path, "' with password protection."))
+    rd_inform(c("v" = "The file has been successfully created in {.file {path}} with password protection."))
   } else {
     openxlsx::saveWorkbook(wb, path, overwrite = TRUE)
-    message(paste0("The file has been successfully created in '", path, "'."))
+    rd_inform(c("v" = "The file has been successfully created in {.file {path}}."))
   }
 }

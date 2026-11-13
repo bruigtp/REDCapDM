@@ -132,9 +132,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Error: logical arguments
   for (arg in c("negate", "report_zeros", "by_dag")) {
-    if (!isTRUE(get(arg)) && !isFALSE(get(arg))) {
-      stop(sprintf("`%s` must be TRUE or FALSE.", arg), call. = FALSE)
-    }
+    check_flag(get(arg), arg)
   }
 
   # Error: `addTo` must be the output of a previous rd_query()
@@ -845,7 +843,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   } else {
     # If no queries identified, return a report with zero queries
     if (nrow(data) > 0) {
-      message("No queries were identified in the dataset.")
+      rd_inform("No queries were identified in the dataset.")
     }
 
     report <- excel_zero

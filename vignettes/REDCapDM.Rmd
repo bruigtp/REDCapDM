@@ -550,7 +550,7 @@ If the variable has a `.factor` version, it is also set to missing, so that a la
 
 ### **rd_rlogic**
 
-This is also an auxiliar function that transforms the REDCap logic into logic that can be evaluated in R. This function is used internally in multiple functions, for example, `rd_dictionary()`. It returns a list with:
+This is also an auxiliary function that transforms the REDCap logic into logic that can be evaluated in R. This function is used internally in multiple functions, for example, `rd_dictionary()`. It returns a list with:
 
 - `rlogic`: the transformed logic.
 

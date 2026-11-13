@@ -21,7 +21,7 @@ test_that("the argument checks accept valid values and name the argument otherwi
   expect_error(check_text(NULL, "x"), "`x` must be text")
 
   expect_equal(check_choice("ev", "x", c("none", "eval"), partial = TRUE), "eval")
-  expect_error(check_choice("ev", "x", c("none", "eval")), "`x` should be one of \"none\", \"eval\"")
+  expect_error(check_choice("ev", "x", c("none", "eval")), "`x` should be one of \"none\" or \"eval\"")
   expect_error(check_choice(NA, "x", c("none", "eval")), "should be one of")
 
   expect_silent(check_number(5, "x"))
@@ -31,7 +31,7 @@ test_that("the argument checks accept valid values and name the argument otherwi
 
   expect_error(check_inputs(as.matrix(covican$data), covican$dictionary), "`data` must be a data frame")
   expect_error(check_inputs(covican$data, "dic"), "`dic` must be a data frame")
-  expect_error(check_inputs(covican$data, covican$dictionary[, 1, drop = FALSE], dic_cols = "form_name"), "doesn't have the column\\(s\\) `form_name`")
+  expect_error(check_inputs(covican$data, covican$dictionary[, 1, drop = FALSE], dic_cols = "form_name"), "doesn't have the column `form_name`")
 })
 
 test_that("the functions explain wrong argument values instead of failing with an R error", {
@@ -79,7 +79,7 @@ test_that("the functions name the dictionary columns they need", {
   }
 
   expect_error(rd_dates(no_col("text_validation_type_or_show_slider_number")), "`text_validation_type_or_show_slider_number`")
-  expect_error(rd_recalculate(no_col("field_type")), "doesn't have the column\\(s\\) `field_type`")
+  expect_error(rd_recalculate(no_col("field_type")), "doesn't have the column `field_type`")
   expect_error(rd_checkbox(no_col("branching_logic_show_field_only_if")), "`branching_logic_show_field_only_if`")
   expect_error(rd_rlogic(no_col("field_name"), logic = "[age] > 70", var = "age"), "`field_name`")
   expect_error(rd_split(no_col("field_name")), "`field_name`")

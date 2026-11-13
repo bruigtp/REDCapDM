@@ -282,7 +282,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     if (drop_complete) {
       complete_vars <- names(total_missing)[total_missing == 0]
       if (length(complete_vars) > 0) {
-        message(paste0("Note: ", length(complete_vars), " fully complete variable(s) (0% missing) were hidden from the plot. Set drop_complete = FALSE to display them."))
+        rd_inform(c("i" = "{length(complete_vars)} fully complete variable{?s} (0% missing) {?was/were} hidden from the plot. Set {.code drop_complete = FALSE} to display {?it/them}."))
         total_missing <- total_missing[total_missing > 0]
       }
     }
@@ -403,7 +403,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     if (drop_complete) {
       complete_count <- sum(missing_summary$missing_count == 0)
       if (complete_count > 0) {
-        message(paste0("Note: ", complete_count, " fully complete variable(s) (0% missing) were hidden from the plot. Set drop_complete = FALSE to display them."))
+        rd_inform(c("i" = "{complete_count} fully complete variable{?s} (0% missing) {?was/were} hidden from the plot. Set {.code drop_complete = FALSE} to display {?it/them}."))
         missing_summary <- missing_summary |>
           dplyr::filter(.data$missing_count > 0)
       }
@@ -532,7 +532,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
         dplyr::pull(.data$display_label)
 
       if (length(complete_vars) > 0) {
-        message(paste0("Note: ", length(complete_vars), " fully complete variable(s) (0% missing across all events) were hidden from the heatmap. Set drop_complete = FALSE to display them."))
+        rd_inform(c("i" = "{length(complete_vars)} fully complete variable{?s} (0% missing across all events) {?was/were} hidden from the heatmap. Set {.code drop_complete = FALSE} to display {?it/them}."))
         missing_longitudinal <- missing_longitudinal |>
           dplyr::filter(!.data$display_label %in% complete_vars)
       }
