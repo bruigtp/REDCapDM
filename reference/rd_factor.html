@@ -99,6 +99,7 @@ Converts variables in a REDCap dataset with associated .factor columns into actu
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function looks for columns ending in <code>.factor</code> and replaces the original variable values with those <code>.factor</code> values (converted to factors). It preserves variable labels. The <code>exclude</code> argument must contain base variable names (no <code>.factor</code> suffix); if any <code>.factor</code> names are passed to <code>exclude</code> the function will throw an informative error. The columns <code>redcap_event_name</code>, <code>redcap_repeat_instrument</code> and <code>redcap_data_access_group</code> (and their <code>.factor</code> counterparts) are handled specially to avoid altering event or access-group data.</p>
+<p>Use <code>rd_factor()</code> before <code><a href="rd_dictionary.html">rd_dictionary()</a></code>: the branching logic and calculations that <code><a href="rd_dictionary.html">rd_dictionary()</a></code> translates to R compare the variables with their original codes, so they stop working once the variables are factors. If the dictionary already has logic translated to R that uses any of the converted variables, a warning is shown.</p>
     </div>
 
     <div class="section level2">

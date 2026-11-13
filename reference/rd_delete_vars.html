@@ -53,7 +53,8 @@ Deletes selected variables from a REDCap dataset and its dictionary, keeping the
 <span>  dic <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  event_form <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  vars <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  pattern <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  pattern <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  forms <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -84,6 +85,10 @@ Deletes selected variables from a REDCap dataset and its dictionary, keeping the
 <dt id="arg-pattern">pattern<a class="anchor" aria-label="anchor" href="#arg-pattern"></a></dt>
 <dd><p>Optional. A character vector of regular expression patterns. Variables matching these patterns will be removed from the dataset and dictionary.</p></dd>
 
+
+<dt id="arg-forms">forms<a class="anchor" aria-label="anchor" href="#arg-forms"></a></dt>
+<dd><p>Optional. A character vector of form names (as in the <code>form_name</code> column of the dictionary). All the variables of these forms will be removed from the dataset and dictionary.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -94,7 +99,7 @@ Deletes selected variables from a REDCap dataset and its dictionary, keeping the
 <dd><p>The updated REDCap dictionary.</p></dd>
 
 <dt>event_form</dt>
-<dd><p>The original event-form mapping (if applicable).</p></dd>
+<dd><p>The event-form mapping (if applicable), without the removed forms.</p></dd>
 
 <dt>results</dt>
 <dd><p>A summary message describing the variable removal operation.</p></dd>
@@ -104,10 +109,11 @@ Deletes selected variables from a REDCap dataset and its dictionary, keeping the
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
-<ul><li><p>Ensure that at least one of <code>vars</code> or <code>pattern</code> is specified.</p></li>
+<ul><li><p>Ensure that at least one of <code>vars</code>, <code>pattern</code> or <code>forms</code> is specified.</p></li>
 <li><p>Removes specified variables and their factor versions (e.g., <code>variable.factor</code>) from the dataset.</p></li>
 <li><p>Removes matching variables from the dictionary.</p></li>
 <li><p>Warns about factor versions of variables matching patterns, recommending use of <code><a href="rd_factor.html">rd_factor()</a></code> if necessary.</p></li>
+<li><p>With <code>forms</code>, every variable of the form is removed: its factor versions, checkbox options, recalculated versions (<code>_recalc</code>) and the form's <code>_complete</code> and <code>_timestamp</code> fields. The record identifier is always kept. The forms are also removed from <code>event_form</code>, and so are the rows of the repeating instruments among them.</p></li>
 </ul></div>
 
     <div class="section level2">
@@ -123,6 +129,12 @@ Deletes selected variables from a REDCap dataset and its dictionary, keeping the
 <span class="r-in"><span>  data <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">data</span>,</span></span>
 <span class="r-in"><span>  dic <span class="op">=</span> <span class="va">covican</span><span class="op">$</span><span class="va">dictionary</span>,</span></span>
 <span class="r-in"><span>  pattern <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"_complete$"</span>, <span class="st">"_other$"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Delete every variable of a form</span></span></span>
+<span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">rd_delete_vars</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  project <span class="op">=</span> <span class="va">covican</span>,</span></span>
+<span class="r-in"><span>  forms <span class="op">=</span> <span class="st">"laboratory_findings"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

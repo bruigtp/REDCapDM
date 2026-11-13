@@ -77,6 +77,15 @@ error. The columns `redcap_event_name`, `redcap_repeat_instrument` and
 `redcap_data_access_group` (and their `.factor` counterparts) are
 handled specially to avoid altering event or access-group data.
 
+Use `rd_factor()` before
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md):
+the branching logic and calculations that
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+translates to R compare the variables with their original codes, so they
+stop working once the variables are factors. If the dictionary already
+has logic translated to R that uses any of the converted variables, a
+warning is shown.
+
 ## Examples
 
 ``` r
