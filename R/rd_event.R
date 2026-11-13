@@ -87,6 +87,11 @@ rd_event <- function(project = NULL,
   if (!any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
     stop("rd_event() needs a longitudinal project: the dataset has no `redcap_event_name` column.", call. = FALSE)
   }
+  
+  # Error: the event to check is required
+  if (missing(event)) {
+    stop("Specify the event(s) to check with the `event` argument (unique event name or label).", call. = FALSE)
+  }
 
   # Create an empty data frame to store identified queries
   queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
@@ -129,6 +134,20 @@ rd_event <- function(project = NULL,
     if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data0))) {
       if (any(!event %in% data0$redcap_event_name) & any(!event %in% data0$redcap_event_name.factor)) {
         stop("One or more specified events do not exist in the dataset. Please review the 'event' argument.", call. = FALSE)
+      }
+    }
+
+    
+    # Events given by their label: use their unique event name
+    if ("redcap_event_name.factor" %in% names(data0)) {
+      for (k in which(!event %in% data0$redcap_event_name)) {
+        names_k <- unique(data0$redcap_event_name[data0$redcap_event_name.factor %in% event[k]])
+
+        if (length(names_k) > 1) {
+          stop(sprintf("The event label '%s' is shared by several events (%s). Please use the unique event name in the 'event' argument.", event[k], paste(names_k, collapse = ", ")), call. = FALSE)
+        }
+
+        event[k] <- names_k
       }
     }
 

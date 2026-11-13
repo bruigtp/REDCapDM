@@ -44,14 +44,16 @@ Converts a REDCap logic expression into R-compatible logic. Processes one logic 
 \item Translates REDCap operators and functions into R equivalents:
 \itemize{
 \item \code{=} → \code{==}, \verb{<>} → \code{!=}, \code{and} → \code{&}, \code{or} → \code{|}.
-\item Converts functions like \verb{if()}, \code{rounddown()}, \code{datediff()}, \code{sum()} to R equivalents.
+\item Converts the functions \verb{if()}, \code{datediff()}, \code{round()}, \code{rounddown()}, \code{roundup()}, \code{sum()}, \code{mean()}, \code{median()}, \code{min()}, \code{max()}, \code{mod()}, \code{exponential()}, \code{isnumber()}, \code{contains()} and \code{length()} to R equivalents.
+\item As in REDCap, \code{sum()}, \code{mean()}, \code{median()}, \code{min()} and \code{max()} are computed for each row and ignore blank values.
 }
 \item Handles date transformations and empty strings (\code{''}) → \code{NA}.
 \item Adjusts logic for longitudinal data using \code{event_form} if provided.
 \item Evaluates the translated R logic against the dataset and returns the results.
 \item With repeated instruments and repeating events, the logic is evaluated in the rows where \code{var} is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
 \item As in REDCap, \code{datediff()} returns the absolute difference unless its last argument is \code{true}, its units are \code{"y"}, \code{"M"} (months), \code{"d"}, \code{"h"}, \code{"m"} (minutes) and \code{"s"}, and \code{"today"} is the current date.
-\item Logic with smart variables, or multiple events per variable may require manual inspection.
+\item The same variable can be used in several events (e.g. \verb{[visit_2_arm_1][weight] - [visit_1_arm_1][weight]}).
+\item Logic with smart variables or other REDCap functions may require manual inspection.
 }
 }
 \examples{

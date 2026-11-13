@@ -27,13 +27,14 @@ test_that("rd_insert_na inserts NA when filter condition is met (using event_for
 
   filter_expr <- paste0(v1, " < ", threshold_value)
 
-  result <- rd_insert_na(
+  # The filter can match no row in these records (rd_insert_na() then warns)
+  result <- suppressWarnings(rd_insert_na(
     data = df,
     dic = dic,
     vars = v2,
     filter = filter_expr,
     event_form = covican$event_form
-  )
+  ))
 
   # construct expected result
   expected <- df[[v2]]
@@ -72,12 +73,15 @@ test_that("rd_insert_na leaves data unchanged when filter matches no rows (with 
 
   # an impossible filter so no rows match
   filter_expr <- paste0(v1, " > 1e12")
-  result <- rd_insert_na(
-    data = df,
-    dic = dic,
-    vars = v2,
-    filter = filter_expr,
-    event_form = covican$event_form
+  expect_warning(
+    result <- rd_insert_na(
+      data = df,
+      dic = dic,
+      vars = v2,
+      filter = filter_expr,
+      event_form = covican$event_form
+    ),
+    "No row meets the filter"
   )
 
   expect_equal(result$data, df)  # nothing should change
@@ -191,11 +195,12 @@ test_that("rd_insert_na reapplies variable labels after transformation", {
 
   filter_expr <- "inc_1== 1 & resp_rate== 1"
 
-  result <- rd_insert_na(
+  # No record meets the filter (rd_insert_na() then warns)
+  result <- suppressWarnings(rd_insert_na(
       data = covican$data, dic = covican$dictionary,
       vars = "copd", filter = filter_expr,
       event_form = covican$event_form
-  )
+  ))
 
   expect_equal(labelled::var_label(result$data)[["type_dm"]], "Type of diabetes")
 })

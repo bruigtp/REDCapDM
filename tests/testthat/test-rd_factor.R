@@ -86,3 +86,8 @@ test_that("rd_factor lists at most 10 affected variables in the warning", {
 
   expect_warning(rd_factor(data = data, dic = dic), "\\(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, \\.\\.\\.\\)")
 })
+
+
+test_that("rd_factor warns about excluded variables that are not in the data", {
+  expect_warning(rd_factor(covican, exclude = c("copd", "no_such_var")), "no_such_var")
+})

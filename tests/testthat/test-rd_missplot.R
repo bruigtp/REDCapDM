@@ -354,3 +354,12 @@ test_that("by = 'record' leaves out the rows without any of the plotted variable
   expect_setequal(levels(droplevels(p$data$row_id)), c("1 (ae-1)", "1 (ae-2)", "2 (ae-1)"))
   expect_false("Not collected in this row" %in% p$data$status)
 })
+
+
+test_that("rd_missplot explains why it can't plot", {
+  fx <- make_repeat_classic()
+  expect_error(rd_missplot(fx, max_vars = 0), "`max_vars` must be a positive number")
+
+  fx$data <- fx$data[0, ]
+  expect_error(rd_missplot(fx), "the data has 0 rows")
+})

@@ -56,6 +56,9 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     dplyr::select(dplyr::any_of(dic$field_name) & dplyr::where(is.factor)) |>
     colnames()
 
+  # Factors with their categories in the dictionary (yes/no and true/false fields have none)
+  factors <- intersect(factors, dic$field_name[!dic$choices_calculations_or_slider_labels %in% c(NA, "")])
+
   if (length(factors) > 0) {
     # Select the branching logic for any variables that are being transformed into factors
     cat_factors <- dic |>

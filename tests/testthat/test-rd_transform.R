@@ -205,3 +205,11 @@ test_that("rd_transform recalculates and translates the dictionary with repeated
   expect_match(report, "Converting every branching logic")
   expect_equal(res$dictionary$branching_logic_show_field_only_if[res$dictionary$field_name == "ae_double"], "data$age > 40")
 })
+
+
+test_that("rd_transform asks to remove the status fields before splitting by form", {
+  expect_error(
+    rd_transform(data = cbind(covican$data, demographics_complete = 2), dic = covican$dictionary, event_form = covican$event_form, final_format = "by_form"),
+    "delete_pattern = \"_complete\""
+  )
+})

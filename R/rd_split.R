@@ -58,6 +58,20 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
   }
 
+  # Error: invalid `by`
+  if (!isTRUE(by %in% c("form", "event"))) {
+    stop("Invalid `by` argument. Please specify either 'form' or 'event'.", call. = FALSE)
+  }
+
+  # Error: splitting by event needs a longitudinal project and its event-form correspondence
+  if (by == "event" && !"redcap_event_name" %in% names(data)) {
+    stop("The data has no events: use `by = 'form'` to split a project without events.", call. = FALSE)
+  }
+
+  if (by == "event" && is.null(event_form)) {
+    stop("The event-form correspondence (`event_form`) is required to split the data by event.", call. = FALSE)
+  }
+
   # Extract labels from the data to reapply later
   labels <- purrr::map_chr(data, function(x) {
     lab <- attr(x, "label")
@@ -264,7 +278,8 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
                             max_id = n()) |>
               dplyr::ungroup() |>
               dplyr::pull(max_id) |>
-              max()
+              # 0 when the form has no rows (e.g. a project without records)
+              max(0)
           ),
           df = purrr::pmap(list(.data$vars, .data$df, if (longitudinal) .data$events else as.list(rep(NA, dplyr::n()))), function(x, y, z) {
 

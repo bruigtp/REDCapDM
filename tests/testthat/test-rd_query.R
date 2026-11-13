@@ -821,3 +821,48 @@ test_that("rd_query checks each variable only in the events of its form when sev
   # copd is only collected at baseline
   expect_equal(unique(together$queries$Event[together$queries$Field == "copd"]), "Baseline visit")
 })
+
+
+test_that("rd_query applies branching logic that uses a variable of another event", {
+  fx <- make_cross_event()
+
+  # Checked alone, the follow-up rows don't contain `sex`: the logic is evaluated in the complete dataset
+  res <- suppressWarnings(rd_query(fx, variables = "preg", expression = "is.na(x)"))
+
+  expect_equal(nrow(res$queries), 1)
+  expect_equal(as.character(res$queries$Identifier), "2")
+  expect_equal(as.character(res$queries$Repetition), "2")
+})
+
+test_that("rd_query reports no query when no row meets the branching logic", {
+  fx <- make_cross_event()
+  fx$data$sex <- ifelse(fx$data$sex %in% 2, 1, fx$data$sex)
+
+  # There are no women: `preg` is never shown
+  res <- suppressWarnings(rd_query(fx, variables = "preg", expression = "is.na(x)"))
+  expect_equal(nrow(res$queries), 0)
+})
+
+test_that("rd_query explains the mistakes in its arguments", {
+  fx <- make_repeat_classic()
+
+  expect_error(rd_query(fx, variables = "age"), "Specify the condition that defines a query")
+  expect_error(rd_query(fx, expression = "is.na(x)"), "Specify the variable")
+  expect_error(rd_query(fx, variables = "age", expression = "x >> 3"), "The expression 'x >> 3' could not be evaluated for the variable 'age'")
+  expect_error(rd_query(fx, variables = "age", expression = "x > lim"), "could not be evaluated")
+  expect_error(rd_query(fx, variables = "age", expression = "is.na(x)", negate = "yes"), "`negate` must be TRUE or FALSE")
+  expect_error(rd_query(fx, variables = "age", expression = "is.na(x)", addTo = data.frame(a = 1)), "`addTo` must be the output")
+  expect_error(rd_query(fx, variables = c("age", "agee"), expression = "is.na(x)"), "'agee'")
+  expect_error(rd_query(fx$data, variables = "age", expression = "is.na(x)", dic = fx$dictionary), "not a data frame")
+})
+
+test_that("rd_query suggests the options of a checkbox and warns about text compared with numbers", {
+  fx <- make_repeat_classic()
+  fx$data$symp___1 <- c(1, NA, NA, 0, NA)
+  fx$dictionary <- rbind(fx$dictionary, data.frame(field_name = "symp", form_name = "demo", field_type = "checkbox", field_label = "Symptoms",
+                                                   choices_calculations_or_slider_labels = "1, Fever", text_validation_type_or_show_slider_number = NA,
+                                                   branching_logic_show_field_only_if = ""))
+
+  expect_error(rd_query(fx, variables = "symp", expression = "is.na(x)"), "symp___1")
+  expect_warning(rd_query(fx, variables = "ae_term", expression = "x > 3"), "is text")
+})

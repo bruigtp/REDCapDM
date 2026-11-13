@@ -42,7 +42,21 @@
 - `redcap_data()` no longer warns about an incomplete final line when reading the event file.
 - Fixed a stray "FALSE" at the end of a `rd_query()` warning.
 - `rd_rlogic()` translated `datediff()` differently from REDCap: it now returns the absolute difference unless the last argument is `true`, accepts any date format (`"ymd"`, `"mdy"`...), uses `"M"` for months and `"m"` for minutes, and understands `"today"`.
+- `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()` and `rd_dictionary()`) translated several REDCap functions wrongly: `min()` and `max()` returned a single value for the whole dataset, `sum()` didn't ignore blank values, `rounddown(x, d)` rounded instead of rounding down and several `rounddown()` in the same logic were mistranslated. `mean()`, `median()`, `roundup()`, `mod()`, `exponential()`, `isnumber()`, `contains()` and `length()` are now translated too.
+- `rd_query()` ignored the branching logic that uses a variable of another event (e.g. `[baseline_arm_1][sex] = '2'`) when the variable was checked alone, and checked every row when no row met the branching logic.
+- `rd_delete_vars()` could remove `record_id`, also through `pattern`.
+- `rd_export()` reported success when the folder of the file didn't exist.
+- `rd_event()` failed with event labels.
+- `rd_dictionary()` failed after `rd_factor()` when the only factors were yes/no or true/false fields.
+- `redcap_data(rm_mdc = FALSE)`, `rd_split()` and `rd_missplot()` failed or warned in projects without records.
 
+## Clearer messages
+
+- `redcap_data()` explains when a file is not found, when the csv file read by the R script is not in its folder and when the event file is not the instrument-event mapping of the project. It warns when variables of the data are not in the dictionary and when the project has no records yet.
+- `rd_query()` names the variables that don't exist (and how to check a checkbox), explains why an expression can't be evaluated, warns when a text variable is compared with a number and checks `negate`, `report_zeros`, `by_dag` and `addTo`.
+- `rd_rlogic()` names the variables it can't find and shows the translated logic and the R error when it can't be evaluated.
+- `rd_delete_vars()` warns when `pattern` matches no variable, `rd_insert_na()` when no row meets the filter, and `rd_factor()` and `rd_recalculate()` when `exclude` has unknown variables.
+- `rd_event()` asks for the `event`, `rd_split()` explains why it can't split by event, `rd_transform()` asks for `delete_pattern` before splitting the data, `check_queries()` checks that it receives query reports, `rd_missplot()` checks `max_vars` and the number of rows, and `rd_checkbox()` checks `checkbox_labels`.
 
 # REDCapDM 1.0-1
 

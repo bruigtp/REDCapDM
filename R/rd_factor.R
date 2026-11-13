@@ -106,6 +106,12 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
         )
       }
     }
+    
+    # Warning: excluded variables that are not in the data
+    if (any(!exclude %in% names(data))) {
+      warning(sprintf("The following variables of `exclude` are not in the data: %s.", paste(setdiff(exclude, names(data)), collapse = ", ")), call. = FALSE)
+    }
+
     # Exclude specified variables that should not be converted to factors
     factors <- setdiff(factors, exclude)
 

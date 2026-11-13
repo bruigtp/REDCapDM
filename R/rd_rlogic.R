@@ -15,13 +15,15 @@
 #' @details
 #' * Translates REDCap operators and functions into R equivalents:
 #'   - `=` → `==`, `<>` → `!=`, `and` → `&`, `or` → `|`.
-#'   - Converts functions like `if()`, `rounddown()`, `datediff()`, `sum()` to R equivalents.
+#'   - Converts the functions `if()`, `datediff()`, `round()`, `rounddown()`, `roundup()`, `sum()`, `mean()`, `median()`, `min()`, `max()`, `mod()`, `exponential()`, `isnumber()`, `contains()` and `length()` to R equivalents.
+#'   - As in REDCap, `sum()`, `mean()`, `median()`, `min()` and `max()` are computed for each row and ignore blank values.
 #' * Handles date transformations and empty strings (`''`) → `NA`.
 #' * Adjusts logic for longitudinal data using `event_form` if provided.
 #' * Evaluates the translated R logic against the dataset and returns the results.
 #' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
 #' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"`, `"M"` (months), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, and `"today"` is the current date.
-#' * Logic with smart variables, or multiple events per variable may require manual inspection.
+#' * The same variable can be used in several events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
+#' * Logic with smart variables or other REDCap functions may require manual inspection.
 #'
 #' @return A list with:
 #' \describe{
@@ -137,7 +139,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Error: any variable in logic is not found in the data
   if (any(!check_lgl)) {
-    stop("REDCap logic contains variables that are not found in the database (possibly a smart variable).")
+    stop(sprintf("REDCap logic contains variables that are not found in the database (possibly a smart variable or an event that doesn't exist): %s", paste0("[", unique(rlogic_var[!check_lgl]), "]", collapse = ", ")), call. = FALSE)
   }
 
   # Proceed to transcribe REDCap logic to R logic
@@ -170,13 +172,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Convert REDCap functions to equivalent R functions
   rlogic <- gsub("if\\s?\\(", "ifelse(", rlogic)
-  rlogic <- gsub("rounddown(.*),0\\)", "floor\\1)", rlogic)
-  rlogic <- gsub("rounddown(.*),1\\)", "round\\1, 1)", rlogic)
-  rlogic <- gsub("rounddown(.*),2\\)", "round\\1, 2)", rlogic)
-  rlogic <- gsub("rounddown(.*),3\\)", "round\\1, 3)", rlogic)
-  rlogic <- gsub("rounddown(.*)\\)", "floor\\1)", rlogic)
   rlogic <- gsub("datediff\\s?", "lubridate::time_length(lubridate::interval", rlogic)
-  rlogic <- gsub("sum\\((.*?)\\)", "rowSums(cbind(\\1))", rlogic)
   rlogic <- gsub("year\\((.*?)\\)", "lubridate::year(\\1)", rlogic)
 
   # Handle date formats in logic
@@ -276,6 +272,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("<>", "!=", rlogic)
   rlogic <- gsub(" and ", " & ", rlogic)
   rlogic <- gsub(" or ", " | ", rlogic)
+  
+  # REDCap functions (after the operators, so that the `=` of their translation is not changed)
+  rlogic <- translate_functions(rlogic)
 
   # Remove '' (empty strings) after comparison operators like <, >, <=, >=
   rlogic <- gsub("\\s?<\\s?'([\\d\\.]+)'", " < \\1", rlogic, perl = TRUE)
@@ -328,7 +327,10 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # If there's an error or the result is empty, stop the process
   if (inherits(rlogic_eval, "try-error") | length(rlogic_eval) == 0) {
-    stop("The logic could not be evaluated after translation.")
+    stop(paste0(
+      "The logic could not be evaluated after translation. R logic: ", rlogic,
+      if (inherits(rlogic_eval, "try-error")) paste0(" | R error: ", trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(rlogic_eval)))))
+    ), call. = FALSE)
   } else {
     # If there's more than one event, return the evaluation only for the specified event(s):
     if (!is.null(event_form)) {
@@ -508,4 +510,110 @@ datediff_absolute <- function(logic) {
   }
 
   paste0(out, rest)
+}
+
+
+#' Replace the calls to a REDCap function with their R translation
+#'
+#' Finds every call to `fun` (with nested parentheses and quoted text in its arguments) and replaces it with the code that
+#' `translate` builds from its arguments.
+#'
+#' @param x A logic.
+#' @param fun Name of the REDCap function.
+#' @param translate A function that receives the arguments of a call (character vector) and returns its R code.
+#' @return The logic with the calls translated.
+#' @noRd
+replace_function <- function(x, fun, translate) {
+  pattern <- paste0("(?<![\\w.$])", fun, "\\s*\\(")
+  out <- ""
+  rest <- x
+
+  repeat {
+    start <- regexpr(pattern, rest, perl = TRUE)
+
+    if (start == -1) {
+      break
+    }
+
+    chars <- strsplit(rest, "")[[1]]
+    open <- start + attr(start, "match.length") - 1
+
+    # Closing parenthesis of the call and its arguments (commas at the first level, outside quotes)
+    depth <- 0
+    quote <- ""
+    close <- NA
+    commas <- integer(0)
+    for (k in open:length(chars)) {
+      if (nzchar(quote)) {
+        if (chars[k] == quote) quote <- ""
+      } else if (chars[k] %in% c("'", "\"")) {
+        quote <- chars[k]
+      } else if (chars[k] == "(") {
+        depth <- depth + 1
+      } else if (chars[k] == ")") {
+        depth <- depth - 1
+        if (depth == 0) {
+          close <- k
+          break
+        }
+      } else if (chars[k] == "," && depth == 1) {
+        commas <- c(commas, k)
+      }
+    }
+
+    # Unbalanced parentheses: leave the rest as it is
+    if (is.na(close)) {
+      break
+    }
+
+    bounds <- c(open, commas, close)
+    args <- trimws(substring(rest, bounds[-length(bounds)] + 1, bounds[-1] - 1))
+
+    # The arguments can contain other calls to the same function
+    args <- vapply(args, replace_function, character(1), fun = fun, translate = translate, USE.NAMES = FALSE)
+
+    out <- paste0(out, substr(rest, 1, start - 1), translate(args))
+    rest <- substr(rest, close + 1, nchar(rest))
+  }
+
+  paste0(out, rest)
+}
+
+#' Translate the REDCap functions to R
+#'
+#' As in REDCap, `sum()`, `mean()`, `median()`, `min()` and `max()` ignore blank values and are computed for each row
+#' (blank when all the values are blank); `rounddown()` and `roundup()` keep the requested decimals.
+#'
+#' @param x A logic.
+#' @return The logic with the functions translated.
+#' @noRd
+translate_functions <- function(x) {
+  values <- function(args) paste0("cbind(", paste(args, collapse = ", "), ")")
+  digits <- function(args) if (length(args) > 1) args[2] else "0"
+  rounding <- function(r_fun) function(args) {
+    if (digits(args) %in% c("0", "'0'", "\"0\"")) {
+      paste0(r_fun, "(", args[1], ")")
+    } else {
+      paste0(r_fun, "((", args[1], ") * 10^", digits(args), ") / 10^", digits(args))
+    }
+  }
+
+  x <- replace_function(x, "rounddown", rounding("floor"))
+  x <- replace_function(x, "roundup", rounding("ceiling"))
+  x <- replace_function(x, "sum", function(args) {
+    paste0("ifelse(rowSums(!is.na(", values(args), ")) == 0, NA, rowSums(", values(args), ", na.rm = TRUE))")
+  })
+  x <- replace_function(x, "mean", function(args) {
+    paste0("ifelse(rowSums(!is.na(", values(args), ")) == 0, NA, rowMeans(", values(args), ", na.rm = TRUE))")
+  })
+  x <- replace_function(x, "median", function(args) paste0("apply(", values(args), ", 1, stats::median, na.rm = TRUE)"))
+  x <- replace_function(x, "min", function(args) paste0("pmin(", paste(args, collapse = ", "), ", na.rm = TRUE)"))
+  x <- replace_function(x, "max", function(args) paste0("pmax(", paste(args, collapse = ", "), ", na.rm = TRUE)"))
+  x <- replace_function(x, "mod", function(args) paste0("((", args[1], ") %% (", args[2], "))"))
+  x <- replace_function(x, "exponential", function(args) paste0("exp(", args[1], ")"))
+  x <- replace_function(x, "isnumber", function(args) paste0("!is.na(suppressWarnings(as.numeric(", args[1], ")))"))
+  x <- replace_function(x, "contains", function(args) paste0("grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)"))
+  x <- replace_function(x, "length", function(args) paste0("ifelse(is.na(", args[1], "), 0, nchar(as.character(", args[1], ")))"))
+
+  x
 }

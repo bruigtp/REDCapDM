@@ -37,7 +37,7 @@ test_that("rd_export warns if links detected but no column argument and no 'Link
 })
 
 test_that("rd_export errors when 'column' argument is provided but column doesn't exist", {
-  df <- head(covican$queries, 2)
+  df <- head(covican$data, 2)
   path <- tempfile(fileext = ".xlsx")
 
   expect_error(
@@ -102,3 +102,7 @@ test_that("rd_export saves with password and returns password-protection message
 })
 
 
+test_that("rd_export stops when there is nothing to export or the folder doesn't exist", {
+  expect_error(rd_export(queries = NULL), "There are no queries to export")
+  expect_error(rd_export(queries = head(covican$data, 2), path = file.path(tempfile(), "q.xlsx")), "does not exist")
+})

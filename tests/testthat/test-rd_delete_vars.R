@@ -12,10 +12,14 @@ test_that("rd_delete_vars removes specified vars and updates dictionary in covic
 })
 
 test_that("rd_delete_vars removes by pattern and dictionary updated in covican", {
-  out <- rd_delete_vars(
-    data = covican$data,
-    dic = covican$dictionary,
-    pattern = c("_factor$", "_complete$")
+  # covican has no `_factor`/`_complete` variables: nothing is removed, with a warning
+  expect_warning(
+    out <- rd_delete_vars(
+      data = covican$data,
+      dic = covican$dictionary,
+      pattern = c("_factor$", "_complete$")
+    ),
+    "No variable matches the pattern"
   )
 
   # factor/complete variables should be gone
@@ -162,4 +166,14 @@ test_that("rd_delete_vars also removes the `_mdc` columns of redcap_data(rm_mdc 
   # deleting another variable keeps it
   out <- rd_delete_vars(mdc, vars = "fio2")
   expect_true("potassium_mdc" %in% names(out$data))
+})
+
+
+test_that("rd_delete_vars never removes the record identifier", {
+  expect_error(rd_delete_vars(covican, vars = "record_id"), "`record_id` can't be removed")
+
+  # A pattern that matches the identifier keeps it
+  expect_warning(out <- rd_delete_vars(covican, pattern = "^record"), "nothing was removed")
+  expect_true("record_id" %in% names(out$data))
+  expect_true("record_id" %in% out$dictionary$field_name)
 })

@@ -122,3 +122,8 @@ test_that("rd_checkbox returns a project without checkboxes unchanged, with a wa
   expect_identical(res$data, fx$data)
   expect_identical(res$dictionary, fx$dictionary)
 })
+
+
+test_that("rd_checkbox needs two labels in checkbox_labels", {
+  expect_error(rd_checkbox(covican, checkbox_labels = "Yes"), "must have two labels")
+})

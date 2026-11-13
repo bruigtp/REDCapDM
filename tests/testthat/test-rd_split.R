@@ -278,3 +278,21 @@ test_that("rd_split wide gives one row per record with repeated instruments", {
   expect_true(all(c("ae_term_1", "ae_term_2", "ae_grade_1", "ae_grade_2") %in% names(ae)))
   expect_equal(res$data$max_repeated_instance[res$data$form == "ae"], 2)
 })
+
+
+test_that("rd_split explains why it can't split by event", {
+  fx <- make_repeat_classic()
+  expect_error(rd_split(fx, by = "event"), "The data has no events")
+  expect_error(rd_split(fx, by = "events"), "Invalid `by` argument")
+
+  lx <- make_cross_event()
+  expect_error(rd_split(data = lx$data, dic = lx$dictionary, by = "event"), "`event_form`")
+})
+
+test_that("rd_split works with a project without records", {
+  fx <- make_repeat_classic()
+  fx$data <- fx$data[0, ]
+
+  res <- expect_silent(rd_split(fx, by = "form", wide = TRUE))
+  expect_true(all(res$data$max_repeated_instance == 0))
+})

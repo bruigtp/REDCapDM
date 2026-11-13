@@ -98,6 +98,13 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   if (!is.null(report_title) && length(report_title) > 1) {
     stop("There is more than one title for the report, please choose only one.", call. = FALSE)
   }
+  
+  # Error: both must be query reports
+  needed <- c("Identifier", "Description", "Query")
+  not_found <- unique(c(setdiff(needed, names(old)), setdiff(needed, names(new))))
+  if (length(not_found) > 0) {
+    stop(sprintf("The 'old' and 'new' arguments must be query reports (the `queries` element of rd_query() or rd_event()). Missing columns: %s.", paste(not_found, collapse = ", ")), call. = FALSE)
+  }
 
   # Columns that identify a query. Event and Repetition are used when both reports have them, so the same variable in different events or instances of a repeated instrument are different queries.
   key_cols <- c("Identifier", intersect(c("Event", "Repetition"), intersect(names(old), names(new))), "Description")

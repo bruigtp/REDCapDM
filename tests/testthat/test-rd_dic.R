@@ -117,3 +117,15 @@ test_that("Works with project-style input (list)", {
 
   expect_true(all(c("data", "dictionary", "event_form") %in% names(result)))
 })
+
+
+test_that("rd_dictionary works after rd_factor when the only factors are yes/no fields", {
+  fx <- make_cross_event()
+  fx$dictionary$choices_calculations_or_slider_labels <- NA
+  fx$dictionary$field_type <- c("text", "yesno", "yesno")
+  fx$data$preg.factor <- factor(fx$data$preg, levels = 0:1, labels = c("No", "Yes"))
+  fx$data$sex <- NULL
+
+  ff <- suppressWarnings(rd_factor(data = fx$data, dic = fx$dictionary[-2, ], event_form = fx$event_form))
+  expect_no_error(suppressWarnings(rd_dictionary(ff)))
+})

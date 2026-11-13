@@ -176,3 +176,8 @@ test_that("rd_recalculate compares values, not attributes such as the variable l
   expect_match(paste(res$results, collapse = "\n"), "\\|\\s+bmi\\s+\\|\\s+Yes\\s+\\|\\s+TRUE\\s+\\|\\s+0\\s+\\|")
   expect_false("bmi_recalc" %in% names(res$data))
 })
+
+
+test_that("rd_recalculate warns about excluded variables that are not calculated fields", {
+  expect_warning(rd_recalculate(covican, exclude = "copd"), "not calculated fields of the dictionary: copd")
+})

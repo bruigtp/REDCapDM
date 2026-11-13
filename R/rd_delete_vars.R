@@ -86,6 +86,11 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     if (length(vars_missing) > 0) {
       stop(stringr::str_glue("The following variables are not present in the dataset: {paste0(vars_missing, collapse = ', ')}.\nPlease remove them from the `vars` argument."), call. = FALSE)
     }
+    
+    # Error: the record identifier is needed by every other function
+    if ("record_id" %in% vars) {
+      stop("`record_id` can't be removed: the other functions need the record identifier.", call. = FALSE)
+    }
 
     # Columns with the Missing Data Codes of the variables (redcap_data(rm_mdc = FALSE))
     mdc_cols <- mdc_columns(names(data), dic$field_name)
@@ -140,13 +145,20 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
       }
     }
 
+    # Variables matching the pattern (never the record identifier)
+    matched <- setdiff(grep(comb_pattern, names(data), value = TRUE, ignore.case = TRUE), "record_id")
+
+    if (length(matched) == 0) {
+      warning(stringr::str_glue("No variable matches the pattern(s) {paste0(\"'\", pattern, \"'\", collapse = ', ')}: nothing was removed."), call. = FALSE)
+    }
+
     # Remove variables matching the pattern from the dataset
     data <- data |>
-      dplyr::select(!dplyr::matches(comb_pattern))
+      dplyr::select(!dplyr::all_of(matched))
 
     # Remove variables matching the pattern from the dictionary
     dic <- dic |>
-      dplyr::filter(!grepl(comb_pattern, .data$field_name))
+      dplyr::filter(!grepl(comb_pattern, .data$field_name) | .data$field_name == "record_id")
   }
 
   

@@ -65,3 +65,35 @@ make_repeat_longitudinal <- function() {
 
   list(data = data, dictionary = dic, event_form = event_form)
 }
+
+
+# Longitudinal project with a repeating event whose branching logic uses a variable of another event:
+# `preg` (follow-up, repeating event) is only shown to women (`[baseline_arm_1][sex] = '2'`).
+# Record 1 (man) has two visits without `preg`; record 2 (woman) has two visits, the second one without `preg`.
+make_cross_event <- function() {
+  data <- data.frame(
+    record_id = c("1", "1", "1", "2", "2", "2"),
+    redcap_event_name = c("baseline_arm_1", "follow_up_arm_1", "follow_up_arm_1", "baseline_arm_1", "follow_up_arm_1", "follow_up_arm_1"),
+    redcap_repeat_instrument = NA,
+    redcap_repeat_instance = c(NA, 1, 2, NA, 1, 2),
+    sex = c(1, NA, NA, 2, NA, NA),
+    preg = c(NA, NA, NA, NA, 0, NA),
+    stringsAsFactors = FALSE
+  )
+  data$redcap_event_name.factor <- factor(data$redcap_event_name, levels = c("baseline_arm_1", "follow_up_arm_1"), labels = c("Baseline", "Follow-up"))
+
+  dic <- data.frame(
+    field_name = c("record_id", "sex", "preg"),
+    form_name = c("demo", "demo", "visit"),
+    field_type = c("text", "radio", "yesno"),
+    field_label = c("Record ID", "Sex", "Pregnant?"),
+    choices_calculations_or_slider_labels = c(NA, "1, Man | 2, Woman", NA),
+    text_validation_type_or_show_slider_number = NA,
+    branching_logic_show_field_only_if = c("", "", "[baseline_arm_1][sex] = '2'"),
+    stringsAsFactors = FALSE
+  )
+
+  event_form <- data.frame(arm_num = 1, unique_event_name = c("baseline_arm_1", "follow_up_arm_1"), form = c("demo", "visit"), stringsAsFactors = FALSE)
+
+  list(data = data, dictionary = dic, event_form = event_form)
+}

@@ -48,6 +48,11 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL) {
   if (!is.list(project)) {
     stop("The 'project' argument must be a list.", call. = FALSE)
   }
+  
+  # Error: a data frame instead of the list of redcap_data()
+  if (is.data.frame(project)) {
+    stop("The 'project' argument must be the list returned by redcap_data() (with `data` and `dictionary`), not a data frame. To use a data frame, pass it with `data` and the dictionary with `dic`.", call. = FALSE)
+  }
 
   # Check for `data` duplication
   if (!is.null(data)) {
@@ -98,7 +103,7 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL) {
 #' round(3.14159, 2)
 #' round(c(-2.718, 3.14159), 1)
 #'
-round <- function(x, digits) {
+round <- function(x, digits = 0) {
   posneg <- sign(x)
   z <- abs(x) * 10^digits
   z <- z + 0.5 + sqrt(.Machine$double.eps)

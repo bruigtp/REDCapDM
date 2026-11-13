@@ -38,7 +38,7 @@ test_that("Exported-files path: successful import returns data, dictionary and e
   tmp_event <- tempfile(fileext = ".csv")
   write.csv(event_form, tmp_event, row.names = FALSE, quote = FALSE)
 
-  out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic, event_path = tmp_event)
+  expect_warning(out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic, event_path = tmp_event), "not in the dictionary")
 
   expect_true(is.list(out))
   expect_true("data" %in% names(out))
@@ -250,7 +250,7 @@ test_that("Empty strings are converted to NA in character columns", {
   tmp_dic <- tempfile(fileext = ".csv")
   write.csv(dic_rows, tmp_dic, row.names = FALSE)
 
-  out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic)
+  expect_warning(out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic), "not in the dictionary")
   expect_true(is.na(out$data$textcol[2]))
 })
 
@@ -342,7 +342,7 @@ test_that("API branch: checkbox fields get factor versions", {
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_meta)
 
-  out <- redcap_data(uri = "https://api.example", token = "tok")
+  expect_warning(out <- redcap_data(uri = "https://api.example", token = "tok"), "not in the dictionary")
   expect_true("var___1.factor" %in% names(out$data))
 })
 
@@ -367,7 +367,7 @@ test_that("API branch: radio/dropdown fields produce factor versions", {
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_meta)
 
-  out <- redcap_data(uri = "https://api.example", token = "tok")
+  expect_warning(out <- redcap_data(uri = "https://api.example", token = "tok"), "not in the dictionary")
   expect_true("record_id.factor" %in% names(out$data))
   expect_true(is.factor(out$data$record_id.factor))
 })
@@ -441,4 +441,47 @@ test_that("Event file exported by REDCap without a final newline is read without
   )
   expect_equal(out$event_form$unique_event_name, "baseline_arm_1")
   expect_equal(out$event_form$form, "demographics")
+})
+
+
+test_that("redcap_data explains the mistakes in its arguments and files", {
+  sample_data <- data.frame(id = 1:2, x = c(1, 2))
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(sample_data, tmp_r)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = c("id", "x"), form_name = "f1", field_type = "text"), tmp_dic, row.names = FALSE)
+
+  expect_error(redcap_data(), "No data to read")
+  expect_error(redcap_data(data_path = "no_such_file.r", dic_path = tmp_dic), "File not found: `data_path`")
+  expect_error(redcap_data(data_path = tmp_r, dic_path = "no_such_dic.csv"), "File not found: `dic_path`")
+  expect_error(redcap_data(data_path = tmp_r, dic_path = tmp_dic, rm_mdc = "yes"), "`rm_mdc` must be TRUE or FALSE")
+
+  # The event file of another project
+  tmp_event <- tempfile(fileext = ".csv")
+  write.csv(data.frame(arm_num = 1, unique_event_name = "visit_arm_1", form = "other_form"), tmp_event, row.names = FALSE)
+  expect_error(redcap_data(data_path = tmp_r, dic_path = tmp_dic, event_path = tmp_event), "not the instrument-event mapping of this project")
+})
+
+test_that("redcap_data stops when the csv file read by the R script is not next to it", {
+  dir <- tempfile()
+  dir.create(dir)
+  r_file <- file.path(dir, "PROJ_R.r")
+  writeLines(c("#Clear existing data and graphics", "rm(list=ls())", "data=read.csv('PROJ_DATA.csv')"), r_file)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = "record_id", form_name = "f1", field_type = "text"), tmp_dic, row.names = FALSE)
+
+  expect_error(redcap_data(data_path = r_file, dic_path = tmp_dic), "PROJ_DATA.csv")
+})
+
+test_that("redcap_data warns about a project without records and keeps working with rm_mdc = FALSE", {
+  sample_data <- data.frame(id = character(0), x = character(0), stringsAsFactors = FALSE)
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(sample_data, tmp_r)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = c("id", "x"), form_name = "f1", field_type = c("text", "radio"),
+                       select_choices_or_calculations = c("", "1, A | 2, B")), tmp_dic, row.names = FALSE)
+
+  expect_warning(out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic), "no records yet")
+  expect_equal(nrow(out$data), 0)
+  expect_warning(redcap_data(data_path = tmp_r, dic_path = tmp_dic, rm_mdc = FALSE), "no records yet")
 })

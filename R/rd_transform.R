@@ -88,6 +88,22 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   if (!is.null(wide) & final_format != "by_form") {
     stop("The argument wide has been specified but the final format is not to split the data by form", call. = FALSE)
   }
+  
+  # Error: the form status and survey timestamp fields must be removed to split the data by event or form
+  if (final_format %in% c("by_event", "by_form")) {
+    kept <- setdiff(names(data), delete_vars)
+    if (!is.null(delete_pattern)) {
+      kept <- kept[!grepl(paste(delete_pattern, collapse = "|"), kept, ignore.case = TRUE)]
+    }
+    status_fields <- c("_complete", "_timestamp")[c(any(grepl("_complete$", kept)), any(grepl("_timestamp$", kept)))]
+
+    if (length(status_fields) > 0) {
+      stop(sprintf(
+        "To split the data by %s, remove the REDCap status fields with `delete_pattern = %s`.",
+        sub("by_", "", final_format), if (length(status_fields) > 1) "c(\"_complete\", \"_timestamp\")" else paste0("\"", status_fields, "\"")
+      ), call. = FALSE)
+    }
+  }
 
   if (!final_format %in% c("raw", "by_event", "by_form")) {
     stop("final_format argument has to be one of the following: 'raw', 'by_event', 'by_form'", call. = FALSE)

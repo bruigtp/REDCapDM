@@ -89,6 +89,18 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   if ((!is.na(uri) & is.na(token)) | (is.na(uri) & !is.na(token))) {
     stop("Both `uri` and `token` are required for API connection.", call. = FALSE)
   }
+  
+  # Error: no data source
+  if (all(c(data_path, dic_path, uri, token) %in% NA)) {
+    stop("No data to read. Use `data_path` and `dic_path` for exported data or `uri` and `token` for API connection.", call. = FALSE)
+  }
+
+  # Error: logical arguments
+  for (arg in c("survey_fields", "rm_mdc")) {
+    if (!isTRUE(get(arg)) && !isFALSE(get(arg))) {
+      stop(sprintf("`%s` must be TRUE or FALSE.", arg), call. = FALSE)
+    }
+  }
 
   # Process data from exported files
   if (all(!c(data_path, dic_path) %in% NA) & all(c(token, uri) %in% NA)) {
@@ -96,10 +108,26 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     if (!grepl("\\.R$", data_path) & !grepl("\\.r$", data_path)) {
       stop("Unsupported file format. `data_path` must be an R file exported from REDCap.", call. = FALSE)
     }
+    
+    # Error: the files do not exist
+    paths <- c(data_path = data_path, dic_path = dic_path, event_path = event_path)
+    not_found <- paths[!is.na(paths) & !file.exists(paths)]
+    if (length(not_found) > 0) {
+      stop(sprintf(
+        "File not found: %s. Relative paths start at the working directory (%s).",
+        paste0("`", names(not_found), "` = '", not_found, "'", collapse = ", "), getwd()
+      ), call. = FALSE)
+    }
 
     # Import the data using the R file
     tmp_env <- new.env()
     file.lines <- scan(data_path, what = character(), skip = 2, sep = "\n", quiet = TRUE)
+    # Error: the csv file that the R script reads must be in the same folder
+    csv_file <- stringr::str_match(file.lines, "read\\.csv\\(['\"]([^'\"]+)['\"]")[, 2]
+    csv_file <- csv_file[!is.na(csv_file)]
+    if (length(csv_file) > 0 && !file.exists(file.path(dirname(data_path), csv_file[1]))) {
+      stop(sprintf("The R script reads the data from '%s', which must be in the same folder as `data_path` (%s).", csv_file[1], dirname(data_path)), call. = FALSE)
+    }
     file.lines.collapsed <- paste(file.lines, collapse = "\n")
     command <- paste0("dirname(parent.frame(2)$", "data_path", ")")
     setwd(eval(parse(text = command)))
@@ -424,6 +452,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Remove variables with no corresponding event
   if (!is.null(event_form)) {
+    # Error: the event file is not the instrument-event mapping of this project
+    if (!"form" %in% names(event_form) || !any(event_form$form %in% data_def$dictionary$form_name)) {
+      stop("The file in `event_path` is not the instrument-event mapping of this project: none of its forms is in the dictionary. Download it from the 'Designate Instruments for My Events' tab of your REDCap project.", call. = FALSE)
+    }
+
     var_noevent <- data_def$dictionary |>
       dplyr::filter(!.data$form_name %in% event_form$form) |>
       dplyr::pull(.data$field_name)
@@ -592,8 +625,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         # Make sure that MDC labels are in the .factor version
         data_def$data[[factor_var]] <- dplyr::coalesce(
           as.character(data_def$data[[factor_var]]),
-          ifelse(toupper(as.character(data_def$data[[var]])) %in% missing_codes,
-                 as.character(data_def$data[[var]]), NA_character_)
+          as.character(ifelse(toupper(as.character(data_def$data[[var]])) %in% missing_codes,
+                 as.character(data_def$data[[var]]), NA_character_))
         )
 
         # Assign a numerical sequential code to MDC in the original variable
@@ -693,6 +726,22 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       class(x) <- setdiff(class(x), "labelled")
       x
     })
+
+  # Warning: variables of the data that are not in the dictionary (the dictionary of another project or an old one)
+  data_fields <- names(data_def$data)
+  data_fields <- unique(sub("___.*$", "", data_fields[!grepl("^redcap_|\\.factor$|_complete$|_timestamp$|_mdc$", data_fields)]))
+  not_in_dic <- setdiff(data_fields, c("record_id", data_def$dictionary$field_name))
+  if (length(not_in_dic) > 0) {
+    warning(sprintf(
+      "%d variable(s) of the data are not in the dictionary: %s. Check that the dictionary is the current one of this project.",
+      length(not_in_dic), paste(utils::head(not_in_dic, 10), collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  # Warning: project without records
+  if (nrow(data_def$data) == 0) {
+    warning("The project has no records yet: the data has 0 rows.", call. = FALSE)
+  }
 
   # Return the result
   return(data_def)

@@ -55,6 +55,11 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   # validate na_logic against allowed choices
   na_logic <- match.arg(na_logic, choices = c("none", "missing", "eval"))
+  
+  # Error: one label for unchecked and one for checked
+  if (length(checkbox_labels) != 2) {
+    stop("`checkbox_labels` must have two labels: the first for unchecked and the second for checked (e.g. c(\"No\", \"Yes\")).", call. = FALSE)
+  }
 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
@@ -109,7 +114,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     stop("No checkbox fields found in the dictionary.")
   }
   if (length(var_check) == 0 & length(var_check_dic) > 0) {
-    stop("No checkbox fields found in the data.")
+    stop("No checkbox fields found in the data. If they have already been transformed (e.g. with rd_checkbox() or rd_transform()), there is nothing left to do.", call. = FALSE)
   }
 
   # Remove factor-type checkbox variables from the data

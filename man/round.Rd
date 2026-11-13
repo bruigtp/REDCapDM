@@ -4,7 +4,7 @@
 \alias{round}
 \title{Round Numbers to a Specified Number of Digits ----}
 \usage{
-round(x, digits)
+round(x, digits = 0)
 }
 \arguments{
 \item{x}{A numeric vector to be rounded.}

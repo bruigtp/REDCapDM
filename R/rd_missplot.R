@@ -64,6 +64,16 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   } else {
     stop("The 'data' argument must be a data frame or a list containing a 'data' element.")
   }
+  
+  # Error: nothing to plot
+  if (nrow(df) == 0) {
+    stop("There is no data to plot: the data has 0 rows.", call. = FALSE)
+  }
+
+  # Error: invalid number of variables
+  if (!is.null(max_vars) && (!is.numeric(max_vars) || length(max_vars) != 1 || max_vars < 1)) {
+    stop("`max_vars` must be a positive number.", call. = FALSE)
+  }
 
   # Detect if the study is longitudinal
   event_col <- "redcap_event_name"

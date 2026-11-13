@@ -141,6 +141,11 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     if (!is.logical(rows_mask) || length(rows_mask) != nrow(data)) {
       stop(sprintf("Filter '%s' did not return a logical vector with length equal to nrow(data).", filter[1]))
     }
+    
+    # Warning: no row meets the filter
+    if (!any(rows_mask %in% TRUE)) {
+      warning(sprintf("No row meets the filter '%s': no value was changed.", filter[1]), call. = FALSE)
+    }
 
     # Validate that provided vars exist in data and in dictionary
     missing_vars_in_data <- vars[!vars %in% names(data)]

@@ -109,13 +109,45 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     names(data)[1] <- "record_id"
   }
 
+  # Error: no variables or no expression
+  if (all(is.na(variables))) {
+    stop("Specify the variable(s) to check with the `variables` argument.", call. = FALSE)
+  }
+
+  if (all(is.na(expression))) {
+    stop("Specify the condition that defines a query with the `expression` argument, e.g. `expression = \"is.na(x)\"` for missing values.", call. = FALSE)
+  }
+
+  # Error: logical arguments
+  for (arg in c("negate", "report_zeros", "by_dag")) {
+    if (!isTRUE(get(arg)) && !isFALSE(get(arg))) {
+      stop(sprintf("`%s` must be TRUE or FALSE.", arg), call. = FALSE)
+    }
+  }
+
+  # Error: `addTo` must be the output of a previous rd_query()
+  if (!all(is.na(addTo)) && !(is.list(addTo) && is.data.frame(addTo$queries))) {
+    stop("`addTo` must be the output of a previous `rd_query()`.", call. = FALSE)
+  }
+
   # Error: specified variables do not exist in the dataset
   if (any(!variables %in% names(data))) {
-    stop("Specified variables do not exist in the dataset. Please review the `variables` argument.")
+    not_found <- setdiff(variables, names(data))
+    checkboxes <- intersect(not_found, dic$field_name[dic$field_type %in% "checkbox"])
+
+    stop(paste0(
+      "Specified variables do not exist in the dataset: ", paste0("'", not_found, "'", collapse = ", "), ".",
+      if (length(checkboxes) > 0) paste0(" Checkboxes are checked option by option (e.g. '", checkboxes[1], "___1')."),
+      " Please review the `variables` argument."
+    ), call. = FALSE)
   }
   
   # Repeating instruments of the complete dataset (before any event or filter subsetting)
   rep_pairs <- repeat_info(data)$pairs
+  
+  # The branching logic is evaluated in the complete dataset, because it can use variables of rows that are left out below (e.g. `[baseline_arm_1][sex]` when only the follow-up events are checked). `.rd_row` matches each row with its evaluation.
+  data_all <- data
+  data$.rd_row <- seq_len(nrow(data))
 
   # Warning: event not specified
   if (all(is.na(event)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) & is.null(event_form)) {
@@ -307,7 +339,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     # Convert REDCap logic into R-compatible logic
     if ((!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & all(stringr::str_detect(branch$branch, paste(c("\\[", "\\]"), collapse = "|")))) {
       for (j in seq_len(nrow(branch))) {
-        evaluation <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j]), silent = TRUE)
+        evaluation <- try(rd_rlogic(data = data_all, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j]), silent = TRUE)
 
         if (!inherits(evaluation, "try-error")) {
           branch$branch[j] <- evaluation$rlogic
@@ -351,8 +383,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         # Evaluate branching logic: with the evaluation of rd_rlogic() when available, otherwise with the logic itself
         branch_rows <- branch_eval[[variables[i]]]
 
-        if (length(branch_rows) == nrow(data)) {
-          branch_rows <- as.logical(branch_rows) %in% TRUE
+        if (length(branch_rows) == nrow(data_all)) {
+          branch_rows <- as.logical(branch_rows[data$.rd_row]) %in% TRUE
           branching <- dplyr::filter(data, !!branch_rows)
         } else {
           command <- paste0("branching", "<-dplyr::filter(data,", gsub(pattern = "data\\$", replacement = "data$", x = logic), ")")
@@ -360,7 +392,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           eval(parse(text = command))
         }
 
-        if (nrow(branching) > 0) {
+        # When the logic was evaluated, no row meeting it means that the field is never shown: there is nothing to check
+        if (nrow(branching) > 0 | length(branch_eval[[variables[i]]]) == nrow(data_all)) {
           compatible <- rbind(compatible, variables[i])
           raw0 <- branching
         } else {
@@ -385,10 +418,23 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       }
     }
 
+    # Warning: a text variable compared with a number (the comparison is alphabetical, e.g. '10' < '9')
+    if (is.character(raw0[[variables[i]]]) && grepl("\\bx\\s*(<|>|<=|>=)\\s*-?[0-9.]+", expression[i])) {
+      warning(sprintf("'%s' is text: the comparison '%s' is made alphabetically, not numerically.", variables[i], expression[i]), call. = FALSE)
+    }
+
     # Apply custom expression filters
     x <- variables[i]
     command <- paste0("raw", "<-dplyr::filter(raw0,", gsub("\\bx\\b", x, expression[i]), ")")
-    eval(parse(text = command))
+    evaluation <- tryCatch(eval(parse(text = command)), error = function(e) e)
+
+    # Error: the expression can't be evaluated
+    if (inherits(evaluation, "error")) {
+      stop(sprintf(
+        "The expression '%s' could not be evaluated for the variable '%s'. It must be an R condition that returns TRUE or FALSE, where `x` is the variable (e.g. \"is.na(x)\" or \"x > 100\"). R error: %s",
+        expression[i], variables[i], gsub("\\s+", " ", conditionMessage(evaluation))
+      ), call. = FALSE)
+    }
 
     # Transform the expression so it does not contain "x"
     expression[i] <- gsub("\\bx\\b", "", expression[i])
@@ -407,7 +453,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         eval(parse(text = command))
 
         # Filtering results in zero observations
-        if (nrow(data) == 0) {
+        if (nrow(definitive) == 0) {
           warning(
             paste0(
               "The filter for variable '", variables[i], "' resulted in no matching observations. Verify the filter logic."

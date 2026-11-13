@@ -280,15 +280,41 @@ test_that("rd_rlogic translates rounddown(...) to floor/round variants", {
   expect_equal(as.numeric(out0$eval), floor(df$x))
 })
 
-test_that("rd_rlogic converts sum(...) to rowSums and evaluates correctly", {
-  df <- data.frame(a = c(1,2), b = c(3, NA), stringsAsFactors = FALSE)
+test_that("rd_rlogic translates sum(...) ignoring blank values, as REDCap", {
+  df <- data.frame(a = c(1, 2, NA), b = c(3, NA, NA), stringsAsFactors = FALSE)
   dic <- make_dic(c("a", "b"))
   out <- rd_rlogic(data = df, dic = dic,
                    logic = "sum([a],[b])",
                    var = "a")
   expect_true(grepl("rowSums\\(", out$rlogic))
-  # result should equal rowSums with NA treated as NA (default)
-  expect_equal(as.numeric(out$eval), rowSums(cbind(df$a, df$b)))
+  # blank values are ignored; blank when all the values are blank
+  expect_equal(as.numeric(out$eval), c(4, 2, NA))
+})
+
+test_that("rd_rlogic translates the REDCap functions row by row, as REDCap", {
+  df <- data.frame(a = c(7.25, NA, 2.5, NA), b = c(3.333, 5, NA, NA), t = c("Abc", "x", NA, NA), stringsAsFactors = FALSE)
+  dic <- make_dic(c("a", "b", "t"))
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "a")$eval)
+
+  # aggregate functions ignore blank values
+  expect_equal(ev("min([a],[b])"), c(3.333, 5, 2.5, NA))
+  expect_equal(ev("max([a],[b])"), c(7.25, 5, 2.5, NA))
+  expect_equal(ev("mean([a],[b])"), c(5.2915, 5, 2.5, NA))
+  expect_equal(ev("median([a],[b])"), c(5.2915, 5, 2.5, NA))
+  expect_equal(ev("sum(min([a],[b]),max([a],[b]))"), c(10.583, 10, 5, NA))
+
+  # rounding keeps the decimals requested
+  expect_equal(ev("rounddown([a],1)"), c(7.2, NA, 2.5, NA))
+  expect_equal(ev("roundup([b],2)"), c(3.34, 5, NA, NA))
+  expect_equal(ev("rounddown([a],0) + rounddown([b],0)"), c(10, NA, NA, NA))
+  expect_equal(ev("round([a])"), c(7, NA, 3, NA))
+
+  # other functions
+  expect_equal(ev("mod([b],2)"), c(3.333 %% 2, 1, NA, NA))
+  expect_equal(ev("exponential([a])"), exp(df$a))
+  expect_equal(ev("isnumber([a])"), c(TRUE, FALSE, TRUE, FALSE))
+  expect_equal(ev("contains([t],'b')"), c(TRUE, FALSE, FALSE, FALSE))
+  expect_equal(ev("length([t])"), c(3, 1, 0, 0))
 })
 
 test_that("rd_rlogic translates logic that uses the same variable in different events", {
@@ -524,4 +550,13 @@ test_that("rd_rlogic translates the date format, the units and 'today' of datedi
   # 'today'
   out <- rd_rlogic(data = df, dic = dic, logic = "datediff([d1],'today','d')", var = "res")
   expect_equal(out$eval, as.numeric(Sys.Date() - df$d1))
+})
+
+
+test_that("rd_rlogic names the variables it can't find and shows the translation it can't evaluate", {
+  df <- data.frame(a = c(1, 2), stringsAsFactors = FALSE)
+  dic <- make_dic("a")
+
+  expect_error(rd_rlogic(data = df, dic = dic, logic = "[b] > 1", var = "a"), "\\[b\\]")
+  expect_error(rd_rlogic(data = df, dic = dic, logic = "stdev([a],[a])", var = "a"), "R logic: stdev\\(data\\$a,data\\$a\\)")
 })

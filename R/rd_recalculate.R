@@ -110,6 +110,11 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     #   z*posneg
     # }
 
+    # Warning: excluded fields that are not calculated fields of the dictionary
+    if (any(!exclude %in% dic$field_name[dic$field_type == "calc"])) {
+      warning(sprintf("The following variables of `exclude` are not calculated fields of the dictionary: %s.", paste(setdiff(exclude, dic$field_name[dic$field_type == "calc"]), collapse = ", ")), call. = FALSE)
+    }
+
     # Process calculated fields: evaluate, transcribe logic, and compare results
     calc <- tibble::tibble(dic) |>
       # The `_recalc` fields added by a previous rd_recalculate() are not recalculated again
@@ -217,7 +222,8 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
       ) |>
       dplyr::mutate(
         text1 = stringr::str_glue("{no_trans} ({round(no_trans*100/N, 2)}%)"),
-        text2 = stringr::str_glue("{no_equal} ({round(no_equal*100/trans, 2)}%)")
+        # No field could be transcribed: there is no percentage
+        text2 = stringr::str_glue("{no_equal} ({ifelse(trans == 0, 0, round(no_equal*100/trans, 2))}%)")
       ) |>
       dplyr::select("Total calculated fields" = "N", "Non-transcribed fields" = "text1", "Recalculated different fields" = "text2")
 

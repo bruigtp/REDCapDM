@@ -167,3 +167,19 @@ test_that("rd_event only expects the event in the records of its arm", {
   res <- rd_event(data = data, dic = data.frame(), event = "visit_arm_1")
   expect_equal(sort(as.character(res$queries$Identifier)), c("2", "4"))
 })
+
+
+test_that("rd_event accepts event labels and asks for the event when it is missing", {
+  fx <- make_cross_event()
+
+  by_label <- rd_event(fx, event = "Follow-up")
+  by_name <- rd_event(fx, event = "follow_up_arm_1")
+  expect_equal(by_label$queries, by_name$queries)
+
+  expect_error(rd_event(fx), "Specify the event")
+
+  # A label shared by events of different arms is ambiguous
+  data <- data.frame(record_id = c("1", "2"), redcap_event_name = c("visit_arm_1", "visit_arm_2"), stringsAsFactors = FALSE)
+  data$redcap_event_name.factor <- factor(c("Visit", "Visit"))
+  expect_error(rd_event(data = data, dic = data.frame(), event = "Visit"), "shared by several events")
+})

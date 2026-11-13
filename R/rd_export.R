@@ -35,6 +35,11 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
     }
     queries <- project$queries
   }
+  
+  # Error: nothing to export
+  if (is.null(queries)) {
+    stop("There are no queries to export: provide the output of rd_query() or rd_event() in `project`, or a data frame in `queries`.", call. = FALSE)
+  }
 
   # Ensure `queries` is a data frame
   queries <- as.data.frame(queries)
@@ -107,6 +112,11 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
     path
   } else {
     paste0(getwd(), "/example.xlsx")
+  }
+  
+  # Error: the folder of the file must exist
+  if (!dir.exists(dirname(path))) {
+    stop(sprintf("The folder '%s' does not exist. Please create it or review the `path` argument.", dirname(path)), call. = FALSE)
   }
 
   # Save the workbook with or without password protection
