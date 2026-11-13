@@ -244,3 +244,14 @@ test_that("rd_split errors if data or dic are missing", {
   expect_error(rd_split(data = tibble(record_id = 1), dic = NULL), regexp = "must be provided")
 })
 
+
+test_that("rd_split ignores the descriptive fields of the dictionary", {
+  dic <- rbind(covican$dictionary, covican$dictionary[nrow(covican$dictionary), ])
+  dic$field_name[nrow(dic)] <- "info_text"
+  dic$field_type[nrow(dic)] <- "descriptive"
+
+  res <- rd_split(data = covican$data, dic = dic, event_form = covican$event_form, by = "form")
+  ref <- rd_split(covican, by = "form")
+
+  expect_equal(res$data, ref$data)
+})

@@ -83,6 +83,11 @@ rd_event <- function(project = NULL,
   # Ensure the input data is a data frame
   data <- as.data.frame(data)
 
+  # Error: the project has no events
+  if (!any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+    stop("rd_event() needs a longitudinal project: the dataset has no `redcap_event_name` column.", call. = FALSE)
+  }
+
   # Create an empty data frame to store identified queries
   queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
   colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")

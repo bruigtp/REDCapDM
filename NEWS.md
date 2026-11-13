@@ -2,8 +2,13 @@
 
 ## New features
 
-- New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects).
+- New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank.
 - New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
+- New `forms` argument in `rd_delete_vars()` to remove every variable of a form.
+- `rd_recalculate()` reports the number of different values of each calculated field.
+- `rd_rlogic()` returns `eval_data`, the evaluation next to the record identifier, event and repetition of each row.
+- `rd_insert_na()` also updates the `.factor` version of the variables.
+- `rd_factor()` warns when the dictionary logic was already translated to R with `rd_dictionary()`.
 
 ## Repeated instruments and repeating events
 
@@ -15,11 +20,18 @@
 
 ## Bug fixes
 
+- `rd_rlogic()`, `rd_recalculate()` and `rd_query()` gave wrong results when the variables had already been converted to factors with `rd_factor()`.
+- `rd_recalculate()` applied twice duplicated the `_recalc` fields.
+- `rd_checkbox()` and `rd_recalculate()` gave wrong results with tibbles, and `rd_checkbox()` couldn't name the options of data without variable labels.
 - `rd_insert_na()` failed in non-longitudinal projects.
 - `rd_query(report_zeros = TRUE)` failed when every variable had queries.
 - `rd_query()`, `rd_event()` and `check_queries()` turned alphanumeric record identifiers into `NA`; identifiers are now sorted naturally.
-- `rd_event()` assigned the DAG of the first record to every query, failed without `redcap_event_name.factor` and could pair events with the wrong description.
+- `rd_event()` assigned the DAG of the first record to every query, failed without `redcap_event_name.factor` and could pair events with the wrong description. It now explains that it needs a longitudinal project.
+- `rd_transform()` failed when the record identifier was not called `record_id`.
+- `rd_split()` failed with descriptive fields in the dictionary.
+- `redcap_data()` no longer warns about an incomplete final line when reading the event file.
 - Fixed a stray "FALSE" at the end of a `rd_query()` warning.
+
 
 # REDCapDM 1.0-1
 

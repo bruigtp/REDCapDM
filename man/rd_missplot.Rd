@@ -2,7 +2,7 @@
 % Please edit documentation in R/rd_missplot.R
 \name{rd_missplot}
 \alias{rd_missplot}
-\title{Plot Missing Data Overview (Barplot or Longitudinal Heatmap)}
+\title{Plot Missing Data Overview (Barplot, Longitudinal Heatmap or Record Map)}
 \usage{
 rd_missplot(
   data,
@@ -10,7 +10,11 @@ rd_missplot(
   max_vars = NULL,
   show_percentages = TRUE,
   use_field_labels = TRUE,
-  drop_complete = TRUE
+  drop_complete = TRUE,
+  max_label_length = 40,
+  by = c("vars", "record"),
+  events = NULL,
+  forms = NULL
 )
 }
 \arguments{
@@ -20,20 +24,42 @@ rd_missplot(
 
 \item{max_vars}{Integer. If specified, only the top \code{max_vars} variables are plotted (by missingness, or by original column order if \code{sort_by_missingness = FALSE}). Default \code{NULL} (show all variables).}
 
-\item{show_percentages}{Logical. Displays missingness as percentages. Default \code{TRUE}.}
+\item{show_percentages}{Logical. Displays missingness as percentages. Only used with \code{by = "vars"}. Default \code{TRUE}.}
 
 \item{use_field_labels}{Logical. Uses field labels from the dictionary for axis labels instead of variable names. Default \code{TRUE}.}
 
 \item{drop_complete}{Logical. Variables with 0 missing values are excluded from the plot. Default \code{TRUE}.}
+
+\item{max_label_length}{Integer. Maximum number of characters of the axis labels. Use \code{NULL} to keep them complete. Default \code{40}.}
+
+\item{by}{Character. \code{"vars"} (default) summarises the missing values of each variable; \code{"record"} shows them record by record.}
+
+\item{events}{Character vector. Only for longitudinal projects: events to plot, by their unique name (e.g. \code{"baseline_arm_1"}) or the name shown in the plot (e.g. \code{"Baseline"}). Use \code{"all"} to plot every event. Default \code{NULL}: every event with \code{by = "vars"} and the first event with \code{by = "record"}.}
+
+\item{forms}{Character vector. Only plot the variables of these forms (instrument names as in the \code{form_name} column of the dictionary). Needs the dictionary. Default \code{NULL} (every form).}
 }
 \value{
-A \code{ggplot2} object representing either a missingness barplot or a longitudinal missingness heatmap.
+A \code{ggplot2} object representing a missingness barplot, a longitudinal missingness heatmap or a record-level missingness map.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Generates a visual summary of missing data for variables in a REDCap dataset or list structure. For cross-sectional (single-event) studies, it displays a barplot showing the proportion or count of missing values per variable. For longitudinal (multi-event) studies, it generates a heatmap illustrating missingness across events and variables.
+Generates a visual summary of missing data for variables in a REDCap dataset or list structure. With \code{by = "vars"} (default), cross-sectional (single-event) studies get a barplot showing the proportion or count of missing values per variable, and longitudinal (multi-event) studies get a heatmap illustrating missingness across events and variables. With \code{by = "record"}, the plot shows one row per record and one column per variable, with the missing values painted.
 }
 \details{
 The function automatically detects whether the input dataset contains longitudinal event information. If \code{redcap_event_name} is detected in the data columns, a missingness heatmap grouped by event is produced.
+When the event-form mapping is available (\code{event_form} element of the list), each variable is only evaluated in the events where its form is collected; the other cells of the heatmap are left blank.
+
+With \code{by = "record"}, longitudinal projects get one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning); use \code{events} to choose others. Records without data in an event are shown in grey in that event's panel. Every row is labelled with its record identifier.
+}
+\examples{
+\dontrun{
+# Missing values per variable and event
+rd_missplot(covican)
+
+# Missing values record by record in the baseline laboratory findings
+rd_missplot(covican, by = "record", events = "baseline_visit_arm_1",
+            forms = "laboratory_findings")
+}
+
 }

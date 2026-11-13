@@ -81,3 +81,68 @@ test_that("recalculate stops for longitudinal project without event_form", {
   )
 })
 
+
+# ---- Number of different values ----
+
+test_that("rd_recalculate reports the number of values that differ from the recalculation", {
+  res <- rd_recalculate(covican)
+  report <- paste(res$results, collapse = "\n")
+
+  expect_match(report, "Different values", fixed = TRUE)
+  # age differs only in record 102-73 (74 in the data, 75 recalculated)
+  expect_match(report, "\\|\\s+age\\s+\\|\\s+Yes\\s+\\|\\s+FALSE\\s+\\|\\s+1\\s+\\|")
+  expect_match(report, "\\|\\s+screening_fail_crit\\s+\\|\\s+Yes\\s+\\|\\s+TRUE\\s+\\|\\s+0\\s+\\|")
+})
+
+test_that("count_differences compares like the 'Is equal?' column", {
+  # numbers rounded to 3 decimals
+  expect_equal(count_differences(c(1, 2.0001, 3), c(1, 2, 4)), 1L)
+  # a value missing in only one version counts as different, missing in both doesn't
+  expect_equal(count_differences(c(1, NA, NA), c(NA, 2, NA)), 2L)
+  # non-numeric values are compared as text
+  expect_equal(count_differences(c("a", "b"), c("a", "c")), 1L)
+  expect_equal(count_differences(as.Date(c("2024-01-01", NA)), as.Date(c("2024-01-01", NA))), 0L)
+  # a one-column data frame is handled as its column
+  expect_equal(count_differences(data.frame(x = c(1, 2)), c(1, 3)), 1L)
+  # not transcribed
+  expect_identical(count_differences(c(1, 2), NULL), NA_integer_)
+})
+
+
+# ---- After rd_factor() and applied twice ----
+
+test_that("rd_recalculate gives the same results after rd_factor()", {
+  before <- rd_recalculate(covican)
+  after <- suppressWarnings(rd_recalculate(suppressWarnings(rd_factor(covican))))
+
+  report <- paste(after$results, collapse = "\n")
+  expect_match(report, "\\|\\s+screening_fail_crit\\s+\\|\\s+Yes\\s+\\|\\s+TRUE\\s+\\|\\s+0\\s+\\|")
+  expect_false("screening_fail_crit_recalc" %in% names(after$data))
+  expect_equal(after$data$age_recalc, before$data$age_recalc)
+})
+
+test_that("rd_recalculate applied twice doesn't duplicate the recalculated fields", {
+  once <- rd_recalculate(covican)
+  twice <- rd_recalculate(once)
+
+  expect_equal(sum(names(twice$data) == "age_recalc"), 1)
+  expect_false(any(grepl("recalc\\.", names(twice$data))))
+  expect_equal(names(twice$data), names(once$data))
+  expect_equal(twice$dictionary, once$dictionary)
+  expect_equal(twice$data$age_recalc, once$data$age_recalc, ignore_attr = TRUE)
+  # age_recalc is not recalculated as another calculated field
+  expect_false(grepl("age_recalc", paste(twice$results, collapse = "\n")))
+})
+
+
+# ---- tibble ----
+
+test_that("rd_recalculate gives the same result with a tibble", {
+  tib <- covican
+  tib$data <- tibble::as_tibble(covican$data)
+
+  res_tib <- rd_recalculate(tib)
+
+  expect_equal(names(res_tib$data), names(rd_recalculate(covican)$data))
+  expect_false("screening_fail_crit_recalc" %in% names(res_tib$data))
+})

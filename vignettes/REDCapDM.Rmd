@@ -42,11 +42,15 @@ All main functions are listed below (and described in detail in the examples):
 
 - `redcap_data()`: Read REDCap data into R.
 
+## Explore data
+
+- `rd_missplot()`: Plot the missing values per variable and event, or record by record.
+
 ## Process data
 
 - `rd_dates()`: Standardize date and datetime fields.
 
-- `rd_delete_vars()`: Remove specified variables (by name or pattern).
+- `rd_delete_vars()`: Remove specified variables (by name, pattern or form).
 
 - `rd_recalculate()`: Recompute calculated fields and compare with REDCap values.
 
@@ -191,13 +195,58 @@ In this case, there is no need to specify the event-form file since the function
 
 The `redcap_data()` function returns a list with three elements: imported data, dictionary and event-form mapping(if included).
 
+
+If the project uses REDCap's Missing Data Codes (e.g. `NI`, `UNK`, `ASKU`), by default (`rm_mdc = TRUE`) they are replaced by missing values (`NA`) and a warning is shown. With `rm_mdc = FALSE`, they are kept in the multiple-choice variables as an additional category, while they are still replaced by `NA` in the validated text fields (numbers, dates, ...):
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+dataset <- redcap_data(data_path = "C:/Users/username/example.r",
+                       dic_path = "C:/Users/username/example_dictionary.csv",
+                       rm_mdc = FALSE)
+```
+
+
+<br>
+<br>
+
+## **Explore data**
+
+### **rd_missplot**
+
+The `rd_missplot()` function gives a visual summary of the missing values of the dataset. It needs the `ggplot2` package.
+
+By default (`by = "vars"`), it shows the percentage of missing values of each variable. In longitudinal projects, it is a heatmap with one row per event. When the event-form mapping is available, each variable is only evaluated in the events where its form is collected, and the other cells are left blank:
+
+```{r message=FALSE, warning=FALSE, fig.width=8, fig.height=5, eval=requireNamespace("ggplot2", quietly = TRUE)}
+rd_missplot(covican)
+```
+
+With `by = "record"`, the plot shows one row per record and one column per variable, with the missing values painted. In longitudinal projects there is one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning), so use the `events` argument to choose others (`events = "all"` for every event). Records without data in an event are shown in grey. In this example we use the first 30 records, so that their identifiers can be read:
+
+```{r message=FALSE, warning=FALSE, fig.width=8, fig.height=7, eval=requireNamespace("ggplot2", quietly = TRUE)}
+covican_30 <- covican
+covican_30$data <- covican$data |> 
+  dplyr::filter(record_id %in% unique(record_id)[1:30])
+
+rd_missplot(covican_30, by = "record", events = "all", forms = c("vital_signs", "laboratory_findings"))
+```
+
+Other useful arguments:
+
+- `events` and `forms`: plot only some events or forms, in both modes.
+
+- `drop_complete`: hide the variables without missing values (default `TRUE`).
+
+- `max_vars`: plot only the variables with the most missing values.
+
+- `use_field_labels` and `max_label_length`: use the labels of the dictionary for the variables, shortened to a maximum number of characters (default 40).
+
 ## **Process**
 
 Given any data imported from REDCap with `redcap_data()`, this would be the pipeline of an entire processing workflow:
 
 ```{r message=FALSE, warning=FALSE, eval = FALSE, comment="#>", collapse = TRUE}
 data |> 
-    rd_delete_vars(delete_pattern = c("_complete", "_timestamp") |>
+    rd_delete_vars(pattern = c("_complete", "_timestamp")) |>
     rd_dates() |>
     rd_recalculate() |> 
     rd_checkbox() |> 
@@ -225,7 +274,7 @@ All the functions that can be used in each step of a processing workflow are det
 
 This function removes unwanted variables from both a REDCap dataset and its dictionary. This is especially useful for eliminating automatically generated fields such as form completion flags (`*_complete`) or timestamps (`*_timestamp`).
 
-You can delete variables either by specifying their exact names or by using regular expression patterns:
+You can delete variables by specifying their exact names, by using regular expression patterns or by choosing whole forms:
 
 ```{r}
 # Option A: delete by variable name
@@ -235,6 +284,10 @@ covican_deleted <- covican |>
 # Option B: delete by regex pattern
 covican_deleted <- covican |> 
   rd_delete_vars(pattern = c("_complete$", "_timestamp$"))
+
+# Option C: delete every variable of a form
+covican_deleted <- covican |> 
+  rd_delete_vars(forms = "laboratory_findings")
 ```
 
 When variables are deleted:
@@ -242,6 +295,8 @@ When variables are deleted:
 - They are removed from both the dataset and dictionary.
 
 - Factor versions of deleted variables (if present) are also removed.
+
+- With `forms`, the checkbox options, recalculated versions (`_recalc`) and the `_complete`/`_timestamp` fields of the form are removed too, and the form is removed from the event-form mapping. The record identifier is always kept.
 
 <br>
 
@@ -294,7 +349,7 @@ The `results` object includes:
 
 - A summary report outlining the total number of calculated fields, how many were successfully transcribed into R, and how many showed differences between the REDCap values and the recalculated ones.
 
-- A field-level report listing each calculated field, whether the logic was successfully converted to R, and whether the recalculated values match the originals.
+- A field-level report listing each calculated field, whether the logic was successfully converted to R, whether the recalculated values match the originals and how many values are different.
 
 You can also exclude specific fields from recalculation (e.g., complex multi-event calculations) to reduce computation time and avoid unnecessary warnings.
 
@@ -310,7 +365,9 @@ After running this function:
 
 - A new variable with the suffix `_recalc` is added to the dataset, placed immediately after the original variable and containing the recalculated values.
 
-- The data dictionary is updated with a corresponding entry, where the original variable label is extended with `"(Recalculated)"` to make these fields easy to identify.
+- The data dictionary is updated with a corresponding entry, where the original variable label is extended with `"(Recalculate)"` to make these fields easy to identify.
+
+The recalculation gives the same results if the variables used in the calculations have already been converted to factors with `rd_factor()`. Running the function again on its own output updates the `_recalc` variables instead of duplicating them.
 
 <br>
 
@@ -326,7 +383,7 @@ cb <- covican |>
 str(cb$data$underlying_disease_hemato_acute_myeloid_leukemia)
 ```
 
-For example, consider the checkbox field of the type of underlying disease present in the `covican` dataset. Originally, the variables were named `type_underlying_disease__0` and `type_underlying_disease__1`, while the option labels were ‘Haematological cancer’ and ‘Solid tumour’. After running the function, the variables are renamed to `type_underlying_disease_haematological_cancer` and `type_underlying_disease_solid_tumour`, reflecting the option text in a readable format..
+For example, consider the checkbox field of the type of underlying disease present in the `covican` dataset. Originally, the variables were named `type_underlying_disease___0` and `type_underlying_disease___1`, while the option labels were ‘Haematological cancer’ and ‘Solid tumour’. After running the function, the variables are renamed to `type_underlying_disease_haematological_cancer` and `type_underlying_disease_solid_tumour`, reflecting the option text in a readable format.
 
 To preserve the original REDCap-style names (e.g., `varname___1`, `varname___2`) instead of renaming variables based on option text:
 
@@ -338,11 +395,11 @@ cb <- covican |>
 str(cb$data$underlying_disease_hemato___1)
 ```
 
-If a checkbox field has a branching logic, the function will not modify any values. However, you can use the `na_logic` argument, which accepts the following options:
+If a checkbox field has a branching logic, the `na_logic` argument controls how missing values are set, with the following options:
 
-- `"none"` (default): do not set `NA` based on branching logic during transform.
+- `"none"`: do not set `NA` based on branching logic.
 
-- `"missing"`: set `NA` only where the branching logic evaluation is `NA`.
+- `"missing"` (default): set `NA` only where the branching logic evaluation is `NA`.
 
 - `"eval"`: set `NA` where the branching logic evaluates to `FALSE` (i.e., logic not satisfied or missing).
 
@@ -381,14 +438,16 @@ If you need to keep certain variables in their raw form, you can list them in th
 factored <- covican |> 
   rd_factor(exclude = c("available_analytics", "urine_culture"))
 
-# Checking class of both versions of the variable
-str(covican$data$available_analytics)
-str(covican$data$available_analytics.factor)
+# The excluded variables keep both versions
+str(factored$data$available_analytics)
+str(factored$data$available_analytics.factor)
 ```
 
 > Note: the function automatically excludes these system variables from conversion: `redcap_event_name`, `redcap_repeat_instrument`, `redcap_data_access_group`. These variables are retained as-is to avoid interfering with longitudinal event mappings or user access groups.
 
 After conversion only the cleaned factor variables remain in the dataset, the original numeric version of those variables is dropped.
+
+> Note: use `rd_factor()` before `rd_dictionary()`. The branching logic and calculations translated to R by `rd_dictionary()` compare the variables with their original codes, so they stop working once the variables are factors. If `rd_factor()` detects this situation, it shows a warning.
 
 <br>
 
@@ -399,8 +458,8 @@ When working with REDCap exports, the data dictionary contains field metadata, b
 ```{r}
 # Update dictionary after cleaning
 dict_result <- covican |>
-  rd_factor() |>
   rd_checkbox() |>
+  rd_factor() |>
   rd_dictionary()
 ```
 
@@ -482,15 +541,23 @@ cb2 <- covican |>
 table(cb2$data$type_underlying_disease_haematological_cancer)
 ```
 
-> Note that both the variable to be transformed (`age`) and the variable included in the filter (`type_underlying_disease_haematological_cancer`) are in the same event. If the variable to be transformed and the filter didn't have any event in common then the transformation would give an error. Furthermore, if the variable to be transformed was in more events than the filter, only the rows of the events in common would be converted.
+If the variable has a `.factor` version, it is also set to missing, so that a later `rd_factor()` doesn't bring the values back.
+
+> Note that both the variable to be transformed (`type_underlying_disease_haematological_cancer`) and the variable included in the filter (`age`) are in the same event. If the variable to be transformed and the filter didn't have any event in common then the transformation would give an error. Furthermore, if the variable to be transformed was in more events than the filter, only the rows of the events in common would be converted.
 
 <br>
 
 ### **rd_rlogic**
 
-This is also an auxiliar/bonus function that transforms the REDCap logic into logic that can be evaluated in R. It returns both the transformed logic and the result of the evaluation of the logic in R. This function is used internally in multiple functions, for example, `rd_dictionary()`.
+This is also an auxiliar/bonus function that transforms the REDCap logic into logic that can be evaluated in R. This function is used internally in multiple functions, for example, `rd_dictionary()`. It returns a list with:
 
-> This function only returns the transformed logic, so it has to be used outside the transform workflow.
+- `rlogic`: the transformed logic.
+
+- `eval`: the result of the evaluation of the logic in R, one value per row of the dataset.
+
+- `eval_data`: a data frame with the record identifier, the event (and repetition, if any) and `eval`, to identify the record of each evaluated value.
+
+> This function doesn't modify the dataset, so it has to be used outside the transform workflow.
 
 Let's see how it transforms the logic of one of the calculated fields in the built-in dataset:
 
@@ -499,8 +566,12 @@ logic_trans <- covican |>
   rd_rlogic(logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
             var = "screening_fail_crit")
 
-str(logic_trans)
+logic_trans$rlogic
+
+head(logic_trans$eval_data)
 ```
+
+The variables of the logic that have already been converted to factors with `rd_factor()` are evaluated with their original codes, so the result is the same before and after the conversion.
 
 <br>
 

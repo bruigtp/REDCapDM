@@ -43,6 +43,7 @@ Sets selected variables to \code{NA} when a filter condition is satisfied. Usefu
 \details{
 \itemize{
 \item Each variable is only updated in rows/events where both the variable and filter are present.
+\item If the variable has a \code{.factor} version, it is updated too.
 \item For longitudinal projects, \code{event_form} must be provided for proper event-level filtering.
 \item Only one filter expression is allowed.
 \item Variables and filter columns must exist in both \code{data} and \code{dictionary}.

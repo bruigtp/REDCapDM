@@ -291,6 +291,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   compatible <- NULL
   logics <- NULL
   br_eval <- NULL
+  branch_eval <- list()
 
   if (length(var_logic) > 0) {
     # Create a data frame of variables, labels, and their branching logic
@@ -306,10 +307,12 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     # Convert REDCap logic into R-compatible logic
     if ((!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & all(stringr::str_detect(branch$branch, paste(c("\\[", "\\]"), collapse = "|")))) {
       for (j in seq_len(nrow(branch))) {
-        evaluation <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j])$rlogic, silent = TRUE)
+        evaluation <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j]), silent = TRUE)
 
         if (!inherits(evaluation, "try-error")) {
-          branch$branch[j] <- rd_rlogic(data = data, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j])$rlogic
+          branch$branch[j] <- evaluation$rlogic
+          # Keep the evaluation of rd_rlogic(): it uses the original codes of the variables that are already factors (rd_factor())
+          branch_eval[[branch$var[j]]] <- evaluation$eval
         } else {
           logics <- rbind(logics, branch$var[j])
         }
@@ -345,10 +348,17 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
         branching <- NULL
 
-        # Evaluate branching logic
-        command <- paste0("branching", "<-dplyr::filter(data,", gsub(pattern = "data\\$", replacement = "data$", x = logic), ")")
+        # Evaluate branching logic: with the evaluation of rd_rlogic() when available, otherwise with the logic itself
+        branch_rows <- branch_eval[[variables[i]]]
 
-        eval(parse(text = command))
+        if (length(branch_rows) == nrow(data)) {
+          branch_rows <- as.logical(branch_rows) %in% TRUE
+          branching <- dplyr::filter(data, !!branch_rows)
+        } else {
+          command <- paste0("branching", "<-dplyr::filter(data,", gsub(pattern = "data\\$", replacement = "data$", x = logic), ")")
+
+          eval(parse(text = command))
+        }
 
         if (nrow(branching) > 0) {
           compatible <- rbind(compatible, variables[i])

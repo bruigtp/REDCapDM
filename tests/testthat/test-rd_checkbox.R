@@ -79,3 +79,27 @@ test_that("non-checkbox fields remain unchanged", {
   expect_equal(result$data$potassium, covican$data$potassium)
 })
 
+
+# ---- Other data structures ----
+
+test_that("rd_checkbox gives the same result with a tibble", {
+  tib <- covican
+  tib$data <- tibble::as_tibble(covican$data)
+
+  res_df <- rd_checkbox(covican)
+  res_tib <- rd_checkbox(tib)
+
+  expect_equal(as.data.frame(res_tib$data), as.data.frame(res_df$data), ignore_attr = TRUE)
+  expect_true(any(!is.na(res_tib$data$type_underlying_disease_solid_tumour)))
+})
+
+test_that("rd_checkbox names the options from the dictionary when the data has no variable labels", {
+  no_labels <- covican
+  no_labels$data[] <- lapply(covican$data, function(x) { attr(x, "label") <- NULL; x })
+
+  res <- suppressWarnings(rd_checkbox(no_labels))
+
+  expect_true(all(c("type_underlying_disease_haematological_cancer", "type_underlying_disease_solid_tumour") %in% names(res$data)))
+  expect_false(any(grepl("_x(\\.\\d+)?$", names(res$data))))
+  expect_equal(names(res$data), names(rd_checkbox(covican)$data))
+})

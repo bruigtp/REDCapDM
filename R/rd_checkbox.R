@@ -79,7 +79,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   # Identify if the project is longitudinal or includes repeated instruments
   longitudinal <- "redcap_event_name" %in% names(data)
-  repeat_instrument <- any("redcap_repeat_instrument" %in% names(data) & !is.na(data$redcap_repeat_instrument))
+  repeat_instrument <- "redcap_repeat_instrument" %in% names(data) && any(!is.na(data[["redcap_repeat_instrument"]]))
 
   # Identify checkbox variables in the data (those with '___' in their names)
   var_check <- names(data)[grep("___", names(data))]
@@ -203,12 +203,12 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
           # Set missing values where logic is not satisfied
           if (na_logic == "eval") {
             for (j in seq_along(vars_data)) {
-              data[, vars_data[j]] <- ifelse(rlogic_eval, as.character(data[, vars_data[j]]), NA)
+              data[[vars_data[j]]] <- ifelse(rlogic_eval, as.character(data[[vars_data[j]]]), NA)
             }
           } else if (na_logic == "missing") {
             # Set missing values only where logic evaluation is missing
             for (j in seq_along(vars_data)) {
-              data[, vars_data[j]] <- ifelse(!is.na(rlogic_eval), as.character(data[, vars_data[j]]), NA)
+              data[[vars_data[j]]] <- ifelse(!is.na(rlogic_eval), as.character(data[[vars_data[j]]]), NA)
             }
           }
         } else {
@@ -270,6 +270,17 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     label <- labels[svar_check]
     label <- gsub(".*choice=", "", label)
     label <- gsub("\\)", "", label)
+
+    # Data without variable labels: take the option labels from the dictionary choices
+    choices <- dic$choices_calculations_or_slider_labels[dic$field_name == names_trim[i]]
+    if (length(choices) == 1 && !is.na(choices)) {
+      parts <- trimws(strsplit(choices, "\\|")[[1]])
+      parts <- parts[grepl(",", parts)]
+      dic_label <- stats::setNames(trimws(sub("^[^,]*,\\s*", "", parts)), trimws(sub(",.*$", "", parts)))
+      dic_label <- unname(dic_label[sub("^.*___", "", svar_check)])
+      no_label <- is.na(label) | !nzchar(label)
+      label[no_label] <- dic_label[no_label]
+    }
 
     # Add rows to dictionary for each checkbox option
     new_row <- dic |>

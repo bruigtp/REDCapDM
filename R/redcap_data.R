@@ -164,8 +164,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         # Read XLSX file
         event_form <- openxlsx::read.xlsx(event_path, detectDates = TRUE, sheet = 1)
       } else if (extension == "csv") {
-        # Read CSV file
-        event_form <- utils::read.csv(event_path, encoding = "UTF-8")
+        # Read CSV file -> REDCap exports this file without a final newline: readLines(warn = FALSE) avoids the "incomplete final line" warning of read.csv()
+        event_form <- utils::read.csv(text = readLines(event_path, warn = FALSE, encoding = "UTF-8"))
       } else {
         stop("Unsupported event mapping format. Only CSV and XLSX are supported.", call. = FALSE)
       }
@@ -364,8 +364,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         # Read XLSX file
         event_form <- openxlsx::read.xlsx(event_path, detectDates = TRUE, sheet = 1)
       } else if (extension == "csv") {
-        # Read CSV file
-        event_form <- utils::read.csv(event_path, encoding = "UTF-8")
+        # Read CSV file -> REDCap exports this file without a final newline: readLines(warn = FALSE) avoids the "incomplete final line" warning of read.csv()
+        event_form <- utils::read.csv(text = readLines(event_path, warn = FALSE, encoding = "UTF-8"))
       } else {
         stop("Unsupported file format. Only XLSX and CSV formats are supported.")
       }

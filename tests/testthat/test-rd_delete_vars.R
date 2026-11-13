@@ -71,3 +71,79 @@ test_that("rd_delete_vars warns about factor-suffixed columns in covican", {
   )
 })
 
+
+# ---- forms ----
+
+test_that("rd_delete_vars removes every variable of a form", {
+  lab_fields <- covican$dictionary$field_name[covican$dictionary$form_name == "laboratory_findings"]
+  out <- rd_delete_vars(project = covican, forms = "laboratory_findings")
+
+  expect_false(any(lab_fields %in% names(out$data)))
+  expect_false(any(paste0(lab_fields, ".factor") %in% names(out$data)))
+  expect_false(any(lab_fields %in% out$dictionary$field_name))
+  expect_false("laboratory_findings" %in% out$dictionary$form_name)
+  expect_false("laboratory_findings" %in% out$event_form$form)
+
+  # the rest is untouched
+  expect_equal(nrow(out$data), nrow(covican$data))
+  expect_true(all(c("record_id", "redcap_event_name", "copd", "copd.factor") %in% names(out$data)))
+  expect_equal(nrow(out$dictionary), nrow(covican$dictionary) - length(lab_fields))
+  expect_equal(attr(out$data$dm, "label"), "Diabetes (treated with insulin or antidiabetic oral drugs)")
+})
+
+test_that("rd_delete_vars never removes the record identifier with forms", {
+  out <- rd_delete_vars(project = covican, forms = "inclusionexclusion_criteria")
+
+  expect_true("record_id" %in% names(out$data))
+  expect_true("record_id" %in% out$dictionary$field_name)
+  expect_false("inc_1" %in% names(out$data))
+  expect_false("inc_1" %in% out$dictionary$field_name)
+})
+
+test_that("rd_delete_vars removes checkboxes, recalculated, _complete fields and repeating rows of a form", {
+  data <- data.frame(
+    record_id = c(1, 1, 2),
+    redcap_repeat_instrument = c(NA, "visits", NA),
+    redcap_repeat_instance = c(NA, 1, NA),
+    age = c(50, NA, 60),
+    age_recalc = c(50, NA, 61),
+    symp___1 = c(1, NA, 0),
+    symp___1.factor = c("Checked", NA, "Unchecked"),
+    demo_complete = c(2, NA, 2),
+    visit_date = c(NA, "2024-01-01", NA),
+    visits_complete = c(NA, 2, NA)
+  )
+  dic <- data.frame(
+    field_name = c("record_id", "age", "age_recalc", "symp", "visit_date"),
+    form_name = c("demo", "demo", "demo", "demo", "visits")
+  )
+
+  out <- rd_delete_vars(data = data, dic = dic, forms = "demo")
+  expect_equal(names(out$data), c("record_id", "redcap_repeat_instrument", "redcap_repeat_instance", "visit_date", "visits_complete"))
+  expect_equal(out$dictionary$field_name, c("record_id", "visit_date"))
+  expect_equal(nrow(out$data), 3)
+
+  out <- rd_delete_vars(data = data, dic = dic, forms = "visits")
+  expect_false(any(c("visit_date", "visits_complete") %in% names(out$data)))
+  # the rows of the removed repeating instrument are dropped
+  expect_equal(nrow(out$data), 2)
+  expect_true(all(is.na(out$data$redcap_repeat_instrument)))
+})
+
+test_that("rd_delete_vars combines forms with vars", {
+  out <- rd_delete_vars(project = covican, forms = "laboratory_findings", vars = "copd")
+
+  expect_false(any(c("copd", "potassium") %in% names(out$data)))
+  expect_false(any(c("copd", "potassium") %in% out$dictionary$field_name))
+})
+
+test_that("rd_delete_vars errors with unknown forms or without vars, pattern or forms", {
+  expect_error(
+    rd_delete_vars(project = covican, forms = c("laboratory_findings", "labs")),
+    "The following forms are not present in the dictionary: labs"
+  )
+  expect_error(
+    rd_delete_vars(project = covican),
+    "At least one of the 'vars', 'pattern' or 'forms' arguments must be provided"
+  )
+})

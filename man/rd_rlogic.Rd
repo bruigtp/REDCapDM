@@ -31,6 +31,7 @@ A list with:
 \describe{
 \item{rlogic}{The translated R-compatible logic as a string.}
 \item{eval}{The evaluation of the translated logic on the provided dataset, filtered by event if applicable.}
+\item{eval_data}{A \code{data.frame} with the record identifier, the event and repetition columns present in the dataset (\code{redcap_event_name}, \code{redcap_repeat_instrument}, \code{redcap_repeat_instance}) and \code{eval}, to identify the record of each evaluated value.}
 }
 }
 \description{

@@ -420,3 +420,25 @@ test_that("Supplying only uri or only token errors", {
     "Both `uri` and `token` are required"
   )
 })
+
+
+test_that("Event file exported by REDCap without a final newline is read without warnings", {
+  sample_data <- data.frame(id = 1:2, x = c(1, 2))
+  dic_rows <- data.frame(field_name = c("id", "x"), form_name = "demographics", field_type = "text")
+
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(sample_data, tmp_r)
+
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(dic_rows, tmp_dic, row.names = FALSE, quote = FALSE)
+
+  # Same layout as the instrument-event mapping downloaded from REDCap: no final newline
+  tmp_event <- tempfile(fileext = ".csv")
+  cat("arm_num,unique_event_name,form\n1,baseline_arm_1,demographics", file = tmp_event)
+
+  expect_no_warning(
+    out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic, event_path = tmp_event)
+  )
+  expect_equal(out$event_form$unique_event_name, "baseline_arm_1")
+  expect_equal(out$event_form$form, "demographics")
+})
