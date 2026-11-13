@@ -77,7 +77,7 @@ rd_event <- function(project = NULL,
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
 
   # Ensure the input data is a data frame
@@ -85,12 +85,12 @@ rd_event <- function(project = NULL,
 
   # Error: the project has no events
   if (!any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-    stop("rd_event() needs a longitudinal project: the dataset has no `redcap_event_name` column.", call. = FALSE)
+    rd_abort("rd_event() needs a longitudinal project: the dataset has no {.code redcap_event_name} column.")
   }
   
   # Error: the event to check is required
   if (missing(event)) {
-    stop("Specify the event(s) to check with the `event` argument (unique event name or label).", call. = FALSE)
+    rd_abort("Specify the event(s) to check with the {.arg event} argument (unique event name or label).")
   }
   
   # Error: invalid arguments
@@ -102,7 +102,7 @@ rd_event <- function(project = NULL,
   }
   check_flag(report_zeros, "report_zeros")
   if (!is.list(link)) {
-    stop("`link` must be a list with `domain`, `redcap_version`, `proj_id` and `event_id`.", call. = FALSE)
+    rd_abort("{.arg link} must be a list with {.code domain}, {.code redcap_version}, {.code proj_id} and {.code event_id}.")
   }
 
   # Create an empty data frame to store identified queries
@@ -116,7 +116,7 @@ rd_event <- function(project = NULL,
 
   # Error: Stop if more than one filter is provided
   if (!is.na(filter) & length(filter) > 1) {
-    stop("More than one filter applied, please select only one.", call. = FALSE)
+    rd_abort("More than one filter applied, please select only one.")
   }
 
   # Save the original dataset for reference
@@ -130,14 +130,14 @@ rd_event <- function(project = NULL,
     evaluation <- try(eval(parse(text = command)), silent = TRUE)
 
     if (inherits(evaluation, "try-error")) {
-      stop("Invalid `filter` argument logic. Please review and correct the expression.", call. = FALSE)
+      rd_abort("Invalid {.arg filter} argument logic. Please review and correct the expression.")
     } else {
       eval(parse(text = command))
     }
 
     # Warn if the filter results in no observations
     if (nrow(data) == 0) {
-      warning("The filter applied does not match any records. Please review the `filter` argument.", call. = FALSE)
+      rd_warn("The filter applied does not match any records. Please review the {.arg filter} argument.")
     }
   }
 
@@ -145,7 +145,7 @@ rd_event <- function(project = NULL,
   if (all(!is.na(event))) {
     if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data0))) {
       if (any(!event %in% data0$redcap_event_name) & any(!event %in% data0$redcap_event_name.factor)) {
-        stop("One or more specified events do not exist in the dataset. Please review the 'event' argument.", call. = FALSE)
+        rd_abort("One or more specified events do not exist in the dataset. Please review the {.arg event} argument.", class = "REDCapDM_error_argument")
       }
     }
 
@@ -156,7 +156,7 @@ rd_event <- function(project = NULL,
         names_k <- unique(data0$redcap_event_name[data0$redcap_event_name.factor %in% event[k]])
 
         if (length(names_k) > 1) {
-          stop(sprintf("The event label '%s' is shared by several events (%s). Please use the unique event name in the 'event' argument.", event[k], paste(names_k, collapse = ", ")), call. = FALSE)
+          rd_abort(c("The event label {.val {event[k]}} is shared by several events ({.val {names_k}}).", "i" = "Please use the unique event name in the {.arg event} argument."), class = "REDCapDM_error_argument")
         }
 
         event[k] <- names_k
@@ -345,7 +345,7 @@ rd_event <- function(project = NULL,
   } else {
     # Ensure only one report title is provided
     if (length(report_title) > 1) {
-      stop("Multiple titles provided for the report. Please specify only one..", call. = FALSE)
+      rd_abort("Multiple titles provided for the report. Please specify only one..")
     }
   }
 

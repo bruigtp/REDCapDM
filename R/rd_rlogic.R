@@ -54,7 +54,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -70,16 +70,16 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Error: data is longitudinal, but event_form isn't provided
   if (is.null(event_form) & longitudinal) {
-    stop("There is more than one event in the data, but the event-form correspondence hasn't been specified.")
+    rd_abort("There is more than one event in the data, but the event-form correspondence hasn't been specified.")
   }
 
   # If user accidentally passes multiple logic expressions or multiple vars
   if (length(logic) > 1) {
-    warning("`logic` contains more than one expression; rd_rlogic processes only one logic at a time. Using the first element.", call. = FALSE)
+    rd_warn("{.arg logic} contains more than one expression; rd_rlogic processes only one logic at a time. Using the first element.")
     logic <- logic[[1]]
   }
   if (length(var) > 1) {
-    warning("`var` contains more than one variable name; rd_rlogic processes only one variable at a time. Using the first element.", call. = FALSE)
+    rd_warn("{.arg var} contains more than one variable name; rd_rlogic processes only one variable at a time. Using the first element.")
     var <- var[[1]]
   }
 
@@ -131,10 +131,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     other_rep <- !is.na(logic_forms) & logic_forms != ifelse(is.na(target_form), "", target_form) &
       logic_forms %in% rep_pairs$form[rep_pairs$event %in% target_events]
     if (any(other_rep)) {
-      stop(sprintf(
-        "This function cannot translate logic that uses variables of another repeated instrument, because their instance can't be determined. Review the following variables manually: %s",
-        paste0(logic_fields[other_rep], " (form:", logic_forms[other_rep], ")", collapse = ", ")
-      ), call. = FALSE)
+      other_rep_fields <- paste0(logic_fields[other_rep], " (form: ", logic_forms[other_rep], ")")
+      rd_abort(
+        c("This function cannot translate logic that uses variables of another repeated instrument, because their instance can't be determined.", "i" = "Review the following variables manually: {other_rep_fields}"),
+        class = "REDCapDM_error_logic"
+      )
     }
 
     # `var` belongs to a repeating instrument: as in REDCap, the variables of the other forms take the value of the base row of the same record and event
@@ -145,7 +146,8 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Error: any variable in logic is not found in the data
   if (any(!check_lgl)) {
-    stop(sprintf("REDCap logic contains variables that are not found in the database (possibly a smart variable or an event that doesn't exist): %s", paste0("[", unique(rlogic_var[!check_lgl]), "]", collapse = ", ")), call. = FALSE)
+    unknown_vars <- paste0("[", unique(rlogic_var[!check_lgl]), "]")
+    rd_abort("REDCap logic contains variables that are not found in the database (possibly a smart variable or an event that doesn't exist): {.code {unknown_vars}}", class = "REDCapDM_error_logic")
   }
 
   # Proceed to transcribe REDCap logic to R logic
@@ -321,7 +323,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     dplyr::pull(.data$field_name)
 
   if (any(purrr::map(data |> dplyr::select(dplyr::all_of(date_class)), class) == "character")) {
-    warning("The dataset contains date fields stored as character class, which may lead to incorrect evaluation results. To format these date fields, use the `rd_dates` function before proceeding.", call. = FALSE)
+    rd_warn("The dataset contains date fields stored as character class, which may lead to incorrect evaluation results. To format these date fields, use the {.fn rd_dates} function before proceeding.")
 
     # Evaluate the logic in the R format
     rlogic_eval <- suppressWarnings(try(eval(parse(text = rlogic)), silent = TRUE))
@@ -333,10 +335,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # If there's an error or the result is empty, stop the process
   if (inherits(rlogic_eval, "try-error") | (length(rlogic_eval) == 0 & nrow(data) > 0)) {
-    stop(paste0(
-      "The logic could not be evaluated after translation. R logic: ", rlogic,
-      if (inherits(rlogic_eval, "try-error")) paste0(" | R error: ", trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(rlogic_eval)))))
-    ), call. = FALSE)
+    logic_error <- if (inherits(rlogic_eval, "try-error")) trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(rlogic_eval))))
+    rd_abort(
+      c("The logic could not be evaluated after translation.", "i" = "R logic: {.code {rlogic}}", if (!is.null(logic_error)) c("x" = "R error: {logic_error}")),
+      class = "REDCapDM_error_logic"
+    )
   } else {
     # If there's more than one event, return the evaluation only for the specified event(s):
     if (!is.null(event_form)) {

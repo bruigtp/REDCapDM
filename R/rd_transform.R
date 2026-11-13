@@ -61,13 +61,13 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "form_name", "field_type", "choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "field_label", "text_validation_type_or_show_slider_number"))
   if (!is.character(final_format) || length(final_format) != 1 || !final_format %in% c("raw", "by_event", "by_form")) {
-    stop("final_format argument has to be one of the following: 'raw', 'by_event', 'by_form'", call. = FALSE)
+    rd_abort("{.arg final_format} has to be one of the following: {.val raw}, {.val by_event}, {.val by_form}.", class = "REDCapDM_error_argument")
   }
   for (arg in c("exclude_recalc", "exclude_factor", "delete_vars", "delete_pattern")) {
     check_strings(get(arg), arg)
@@ -83,24 +83,24 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
   if (final_format == "by_event" & is.null(event_form)) {
-    stop("To split the data by event the event_form has to be provided", call. = FALSE)
+    rd_abort("To split the data by event the event_form has to be provided")
   }
 
   # If the project is not longitudinal 'by_form' can be used without event_form:
   if (final_format == "by_form" & is.null(event_form) & longitudinal) {
-    stop("To split the data by form the event_form has to be provided in a longitudinal project", call. = FALSE)
+    rd_abort("To split the data by form the event_form has to be provided in a longitudinal project")
   }
 
   if (!is.null(which_event) & final_format != "by_event") {
-    stop("Which event has been specified but the final format is not to split the data by event", call. = FALSE)
+    rd_abort("Which event has been specified but the final format is not to split the data by event")
   }
 
   if (!is.null(which_form) & final_format != "by_form") {
-    stop("Which form has been specified but the final format is not to split the data by form", call. = FALSE)
+    rd_abort("Which form has been specified but the final format is not to split the data by form")
   }
 
   if (!is.null(wide) & final_format != "by_form") {
-    stop("The argument wide has been specified but the final format is not to split the data by form", call. = FALSE)
+    rd_abort("The argument wide has been specified but the final format is not to split the data by form")
   }
   
   # Error: the form status and survey timestamp fields must be removed to split the data by event or form
@@ -112,20 +112,19 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     status_fields <- c("_complete", "_timestamp")[c(any(grepl("_complete$", kept)), any(grepl("_timestamp$", kept)))]
 
     if (length(status_fields) > 0) {
-      stop(sprintf(
-        "To split the data by %s, remove the REDCap status fields with `delete_pattern = %s`.",
-        sub("by_", "", final_format), if (length(status_fields) > 1) "c(\"_complete\", \"_timestamp\")" else paste0("\"", status_fields, "\"")
-      ), call. = FALSE)
+      split_by <- sub("by_", "", final_format)
+      pattern_code <- paste0("delete_pattern = ", if (length(status_fields) > 1) "c(\"_complete\", \"_timestamp\")" else paste0("\"", status_fields, "\""))
+      rd_abort("To split the data by {split_by}, remove the REDCap status fields with {.code {pattern_code}}.", class = "REDCapDM_error_argument")
     }
   }
 
   if (!final_format %in% c("raw", "by_event", "by_form")) {
-    stop("final_format argument has to be one of the following: 'raw', 'by_event', 'by_form'", call. = FALSE)
+    rd_abort("{.arg final_format} has to be one of the following: {.val raw}, {.val by_event}, {.val by_form}.", class = "REDCapDM_error_argument")
   }
 
   # If the project is longitudinal and the event hasn't been specified:
   if (longitudinal & is.null(event_form)) {
-    warning("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
+    rd_warn("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
   }
 
   rd_inform("\u23F3 Transformation in progress...")

@@ -55,7 +55,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -68,12 +68,12 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # Error: For longitudinal data, ensure `event_form` is specified
   if (is.null(event_form) & longitudinal) {
-    stop("The dataset contains multiple events, but the `event_form` mapping was not provided. Please specify it.")
+    rd_abort("The dataset contains multiple events, but the {.arg event_form} mapping was not provided. Please specify it.")
   }
 
   # Validate there is exactly one filter and allow multiple vars
   if (length(filter) != 1) {
-    stop("Please provide exactly one filter.")
+    rd_abort("Please provide exactly one filter.")
   } else {
     # Parse variables within the single filter expression once
     vars_filter <- trimws(unlist(stringr::str_split(filter[1], "[&|]")))
@@ -86,25 +86,13 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     # check filter vars exist in the dataset
     missing_in_data <- vars_filter[!vars_filter %in% names(data)]
     if (length(missing_in_data) > 0) {
-      stop(
-        sprintf(
-          "Filter variable(s) not found in data: %s",
-          paste(shQuote(missing_in_data), collapse = ", ")
-        ),
-        call. = FALSE
-      )
+      rd_abort("Filter variable(s) not found in data: {.val {missing_in_data}}", class = "REDCapDM_error_argument")
     }
 
     # check filter vars exist in the dictionary
     missing_in_dic <- vars_filter[!vars_filter %in% dic$field_name]
     if (length(missing_in_dic) > 0) {
-      stop(
-        sprintf(
-          "Filter variable(s) not found in dictionary: %s",
-          paste(shQuote(missing_in_dic), collapse = ", ")
-        ),
-        call. = FALSE
-      )
+      rd_abort("Filter variable(s) not found in dictionary: {.val {missing_in_dic}}", class = "REDCapDM_error_argument")
     }
 
     # Events are only relevant in longitudinal projects
@@ -125,41 +113,43 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
       # Stop if there are no common events among filter variables
       if (length(events) == 0) {
-        stop("The variables in the filter belong to different events.")
+        rd_abort("The variables in the filter belong to different events.")
       }
     }
     
     # Evaluate the filter expression once to get logical mask for rows
+    # (the errors inside tryCatch() name rd_insert_na() through fn_env)
+    fn_env <- environment()
     filter_expr <- tryCatch({
       rlang::parse_expr(filter[1])
     }, error = function(e) {
-      stop(sprintf("Unable to parse filter expression '%s'.", filter[1]), call. = FALSE)
+      rd_abort("Unable to parse filter expression {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
     })
 
     rows_mask <- tryCatch({
       # Evaluate in the context of `data`; result should be logical vector of length nrow(data)
       rlang::eval_tidy(filter_expr, data = data)
     }, error = function(e) {
-      stop(sprintf("Error evaluating filter '%s'.", filter[1]), call. = FALSE)
+      rd_abort("Error evaluating filter {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
     })
 
     if (!is.logical(rows_mask) || length(rows_mask) != nrow(data)) {
-      stop(sprintf("Filter '%s' did not return a logical vector with length equal to nrow(data).", filter[1]))
+      rd_abort("Filter {.code {filter[1]}} did not return a logical vector with length equal to {.code nrow(data)}.", class = "REDCapDM_error_argument")
     }
     
     # Warning: no row meets the filter
     if (!any(rows_mask %in% TRUE)) {
-      warning(sprintf("No row meets the filter '%s': no value was changed.", filter[1]), call. = FALSE)
+      rd_warn("No row meets the filter {.code {filter[1]}}: no value was changed.")
     }
 
     # Validate that provided vars exist in data and in dictionary
     missing_vars_in_data <- vars[!vars %in% names(data)]
     if (length(missing_vars_in_data) > 0) {
-      stop(sprintf("Variable(s) not found in data: %s", paste(shQuote(missing_vars_in_data), collapse = ", ")), call. = FALSE)
+      rd_abort("Variable(s) not found in data: {.val {missing_vars_in_data}}", class = "REDCapDM_error_argument")
     }
     missing_vars_in_dic <- vars[!vars %in% dic$field_name]
     if (length(missing_vars_in_dic) > 0) {
-      stop(sprintf("Variable(s) not found in dictionary: %s", paste(shQuote(missing_vars_in_dic), collapse = ", ")), call. = FALSE)
+      rd_abort("Variable(s) not found in dictionary: {.val {missing_vars_in_dic}}", class = "REDCapDM_error_argument")
     }
 
     # Try to detect an event column in `data` (common names or values matching event_form)
@@ -195,14 +185,11 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
         # Error: no overlapping events between the variable and the filter
         if (length(match_events) == 0) {
-          stop(stringr::str_glue("The variable `{var_j}` and the filter do not overlap in any events."), call. = FALSE)
+          rd_abort("The variable {.var {var_j}} and the filter do not overlap in any events.", class = "REDCapDM_error_argument")
         } else {
           # Warn: variable present in more events than the filter
           if (!all(event_var %in% match_events)) {
-            warning(stringr::str_glue(
-              "The variable `{var_j}` is present in more events than the filter. ",
-              "Only rows in common events ({paste(match_events, collapse = ', ')}) will be transformed."
-            ))
+            rd_warn("The variable {.var {var_j}} is present in more events than the filter. Only rows in common events ({.val {match_events}}) will be transformed.")
           }
         }
       } else {
@@ -218,7 +205,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
         ids <- ids[which(data[[event_col]][ids] %in% match_events)]
       } else if (longitudinal && is.null(event_col)) {
         # No event column found in data — warn that event-level restriction cannot be applied
-        warning("No event column detected in `data`. The filter will be applied across all rows (event-level restriction skipped).")
+        rd_warn("No event column detected in {.arg data}. The filter will be applied across all rows (event-level restriction skipped).")
       }
 
       # Apply the transformation (set selected rows for var_j to NA), also in its .factor version so that a later rd_factor() doesn't bring the values back

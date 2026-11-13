@@ -93,10 +93,10 @@
 check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   # Ensure both objects provided are dataframes
   if (!is.data.frame(old) | !is.data.frame(new)) {
-    stop("The 'old' and 'new' arguments must be a data frame.", call. = FALSE)
+    rd_abort("The {.arg old} and {.arg new} arguments must be a data frame.", class = "REDCapDM_error_argument")
   }
   if (!is.null(report_title) && length(report_title) > 1) {
-    stop("There is more than one title for the report, please choose only one.", call. = FALSE)
+    rd_abort("There is more than one title for the report, please choose only one.")
   }
   
   # Error: invalid arguments
@@ -107,7 +107,10 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   needed <- c("Identifier", "Description", "Query")
   not_found <- unique(c(setdiff(needed, names(old)), setdiff(needed, names(new))))
   if (length(not_found) > 0) {
-    stop(sprintf("The 'old' and 'new' arguments must be query reports (the `queries` element of rd_query() or rd_event()). Missing columns: %s.", paste(not_found, collapse = ", ")), call. = FALSE)
+    rd_abort(
+      c("The {.arg old} and {.arg new} arguments must be query reports (the {.field queries} element of {.fn rd_query} or {.fn rd_event}).", "x" = "Missing columns: {.field {not_found}}."),
+      class = "REDCapDM_error_argument"
+    )
   }
 
   # Columns that identify a query. Event and Repetition are used when both reports have them, so the same variable in different events or instances of a repeated instrument are different queries.
@@ -181,7 +184,7 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
     report_title <- "Comparison report"
   } else {
     if (length(report_title) > 1) {
-      stop("There is more than one title for the report, please choose only one.", call. = FALSE)
+      rd_abort("There is more than one title for the report, please choose only one.")
     }
   }
 

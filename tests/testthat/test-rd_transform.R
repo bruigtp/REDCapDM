@@ -7,7 +7,7 @@ test_that("function stops if data or dic is missing", {
 
 test_that("final_format argument validation works", {
   expect_error(rd_transform(data = covican$data, dic = covican$dictionary, final_format = "invalid"),
-               "final_format argument has to be one of")
+               "`final_format` has to be one of", class = "REDCapDM_error_argument")
 })
 
 test_that("which_event and which_form validation works", {

@@ -125,5 +125,6 @@ test_that("check_queries keeps alphanumeric identifiers and sorts them naturally
 
 test_that("check_queries needs query reports", {
   q <- suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)"))$queries
-  expect_error(check_queries(old = q, new = data.frame(a = 1)), "Missing columns: Identifier, Description, Query")
+  err <- expect_error(check_queries(old = q, new = data.frame(a = 1)), class = "REDCapDM_error_argument")
+  expect_match(conditionMessage(err), "Missing columns: Identifier, Description, and Query", fixed = TRUE)
 })

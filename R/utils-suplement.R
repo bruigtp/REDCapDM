@@ -12,7 +12,7 @@
 fill_data <- function(which_event, which_var, data) {
 
   if (!which_event %in% data$redcap_event_name) {
-    stop("The logic can't be evaluated after the translation", call. = FALSE)
+    rd_abort("The logic can't be evaluated after the translation", call = rlang::caller_env())
   }
 
   fill_values <- data |>
@@ -62,12 +62,12 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 
   # Check for `data` duplication
   if (!is.null(data)) {
-    warning("Data has been provided twice. The function will ignore the `data` argument.")
+    rd_warn("Data has been provided twice. The function will ignore the {.arg data} argument.")
   }
 
   # Check for `dic` duplication
   if (!is.null(dic)) {
-    warning("Dictionary has been provided twice. The function will ignore the `dic` argument.")
+    rd_warn("Dictionary has been provided twice. The function will ignore the {.arg dic} argument.")
   }
 
   # Extract data and dictionary from the project
@@ -77,7 +77,7 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
   # Handle `event_form` duplication
   if ("event_form" %in% names(project)) {
     if (!is.null(event_form)) {
-      warning("Event-form has been provided twice. The function will ignore the `event_form` argument.")
+      rd_warn("Event-form has been provided twice. The function will ignore the {.arg event_form} argument.")
     }
     event_form <- project$event_form
   }

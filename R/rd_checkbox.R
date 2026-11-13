@@ -59,7 +59,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   
   # Error: one label for unchecked and one for checked
   if (length(checkbox_labels) != 2) {
-    stop("`checkbox_labels` must have two labels: the first for unchecked and the second for checked (e.g. c(\"No\", \"Yes\")).", call. = FALSE)
+    rd_abort("{.arg checkbox_labels} must have two labels: the first for unchecked and the second for checked (e.g. c(\"No\", \"Yes\")).")
   }
 
   # Handle potential overwriting when both `project` and other arguments are provided
@@ -70,7 +70,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -102,7 +102,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   # Ensure there are checkbox fields in either the data or the dictionary
   # A project without checkboxes is returned unchanged, so that the function can be part of any pipeline
   if (length(var_check) == 0 & length(var_check_dic) == 0) {
-    warning("The project has no checkbox fields: the data is returned unchanged.", call. = FALSE)
+    rd_warn("The project has no checkbox fields: the data is returned unchanged.")
 
     return(
       list(
@@ -116,10 +116,10 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   }
   # Check for missing checkbox fields in either the data or the dictionary
   if (length(var_check) > 0 & length(var_check_dic) == 0) {
-    stop("No checkbox fields found in the dictionary.")
+    rd_abort("No checkbox fields found in the dictionary.")
   }
   if (length(var_check) == 0 & length(var_check_dic) > 0) {
-    stop("No checkbox fields found in the data. If they have already been transformed (e.g. with rd_checkbox() or rd_transform()), there is nothing left to do.", call. = FALSE)
+    rd_abort("No checkbox fields found in the data. If they have already been transformed (e.g. with rd_checkbox() or rd_transform()), there is nothing left to do.")
   }
 
   # Remove factor-type checkbox variables from the data
@@ -174,14 +174,12 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   # Evaluate branching logic for checkbox variables if applicable
   if (any(dic$field_type == "checkbox" & dic$branching_logic_show_field_only_if != "")) {
     if (is.null(event_form) & longitudinal) {
-      warning("Branching logic evaluation could not be performed because the project contains multiple events and the event-form correspondence was not specified. Please provide the `event_form` argument to enable branching logic evaluation.", call. = FALSE)
+      rd_warn("Branching logic evaluation could not be performed because the project contains multiple events and the event-form correspondence was not specified. Please provide the {.arg event_form} argument to enable branching logic evaluation.")
     } else {
 
       # Handle the fact that a rd_factor was performed before this function
       if (length(var_check_factors) == 0 & all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {
-        warning(
-          "The checkboxes are already in factor form. To properly evaluate checkbox branching logic, please run `rd_dictionary()` first.", call. = FALSE
-        )
+        rd_warn("The checkboxes are already in factor form. To properly evaluate checkbox branching logic, please run {.fn rd_dictionary} first.")
       }
 
       caption <- "Checkbox variables advisable to be reviewed"
@@ -339,11 +337,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
         # If the name was changed to ensure uniqueness, issue a warning
         if (out[j] != out0) {
-          warning(
-            stringr::str_glue(
-              "The transformed checkbox name '{out0}' already exists in the dataset. It has been renamed to '{out[j]}' to avoid conflicts."
-            )
-          )
+          rd_warn("The transformed checkbox name {.var {out0}} already exists in the dataset. It has been renamed to {.var {out[j]}} to avoid conflicts.")
 
           correspondence[,"out"] <- ifelse(correspondence[,"out"] == out0, out[j], correspondence[,"out"])
         }

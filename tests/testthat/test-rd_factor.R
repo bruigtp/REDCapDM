@@ -57,10 +57,10 @@ test_that("event_form is returned unchanged", {
 test_that("rd_factor warns when the dictionary has R logic that uses the converted variables", {
   dic_r <- suppressWarnings(rd_dictionary(covican))
 
-  expect_warning(
-    rd_factor(dic_r),
-    "already translated to R uses the original codes of variables now converted to factors \\(.*dm.*\\)\\. Run rd_factor\\(\\) before rd_dictionary\\(\\)\\."
-  )
+  w <- expect_warning(rd_factor(dic_r), class = "REDCapDM_warning")
+  expect_match(conditionMessage(w), "already\\s+translated\\s+to\\s+R\\s+uses\\s+the\\s+original\\s+codes")
+  expect_match(conditionMessage(w), "\\bdm\\b")
+  expect_match(conditionMessage(w), "Run `rd_factor()` before `rd_dictionary()`", fixed = TRUE)
 })
 
 test_that("rd_factor doesn't warn with the original dictionary or when the R logic doesn't use the converted variables", {

@@ -44,7 +44,7 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -82,7 +82,7 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
 
   # Validation for Date/Datetime Formatting
   if (identical(var_date, var_date_valid) & identical(var_datetime, var_datetime_valid)) {
-    warning("All date and datetime variables are already in the correct format. No transformation applied.", call. = FALSE)
+    rd_warn("All date and datetime variables are already in the correct format. No transformation applied.")
   } else {
     var_date <- setdiff(var_date, var_date_valid)
 

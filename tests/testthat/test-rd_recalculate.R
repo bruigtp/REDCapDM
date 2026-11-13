@@ -179,5 +179,7 @@ test_that("rd_recalculate compares values, not attributes such as the variable l
 
 
 test_that("rd_recalculate warns about excluded variables that are not calculated fields", {
-  expect_warning(rd_recalculate(covican, exclude = "copd"), "not calculated fields of the dictionary: copd")
+  w <- expect_warning(rd_recalculate(covican, exclude = "copd"), class = "REDCapDM_warning")
+  expect_match(conditionMessage(w), "not\\s+calculated\\s+fields")
+  expect_match(conditionMessage(w), "`copd`", fixed = TRUE)
 })

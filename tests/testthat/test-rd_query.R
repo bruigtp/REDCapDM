@@ -71,7 +71,8 @@ test_that("rd_query complains about incomplete link when events present", {
   link_incomplete <- list(domain = "example.com", redcap_version = "10.0", proj_id = 1)
   expect_error(
     rd_query(data = toy_data, dic = toy_dic, variables = "age", expression = "is.na(x)", link = link_incomplete) |> suppressWarnings(),
-    regexp = "Incomplete 'link' argument"
+    regexp = "Incomplete `link` argument",
+    class = "REDCapDM_error_argument"
   )
 })
 

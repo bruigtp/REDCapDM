@@ -31,22 +31,22 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
     if (!is.null(queries)) {
-      warning("Queries has been provided twice. The function will ignore the `queries` argument.")
+      rd_warn("Queries has been provided twice. The function will ignore the {.arg queries} argument.")
     }
     queries <- project$queries
   }
   
   # Error: nothing to export
   if (is.null(queries)) {
-    stop("There are no queries to export: provide the output of rd_query() or rd_event() in `project`, or a data frame in `queries`.", call. = FALSE)
+    rd_abort("There are no queries to export: provide the output of rd_query() or rd_event() in {.arg project}, or a data frame in {.arg queries}.")
   }
   
   # Error: invalid arguments
   if (!is.data.frame(queries)) {
-    stop("`queries` must be a data frame. With `rd_query(by_dag = TRUE)` the queries are a list with one data frame per DAG: export each of them.", call. = FALSE)
+    rd_abort("{.arg queries} must be a data frame. With {.code rd_query(by_dag = TRUE)} the queries are a list with one data frame per DAG: export each of them.")
   }
   if (ncol(queries) == 0) {
-    stop("`queries` has no columns: there is nothing to export.", call. = FALSE)
+    rd_abort("{.arg queries} has no columns: there is nothing to export.")
   }
   for (arg in c("column", "sheet_name", "path", "password")) {
     check_string(get(arg), arg, null_ok = TRUE)
@@ -57,7 +57,7 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
 
   # Warning: links detected but the column argument is not specified.
   if (is.null(column) & !"Link" %in% names(queries) & any(queries |> dplyr::summarise_all(~ any(grepl("https", .))))) {
-    warning("Links were detected in the dataset. To convert them into hyperlinks in the Excel file, specify the `column` argument.", call. = FALSE)
+    rd_warn("Links were detected in the dataset. To convert them into hyperlinks in the Excel file, specify the {.arg column} argument.")
   }
 
   # Create a new workbook
@@ -79,7 +79,7 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
         column
       } else {
         # Error: Stop execution if the specified column doesn't exist
-        stop("The specified column for hyperlinks does not exist in the dataset. Please review the `column` argument.", call. = FALSE)
+        rd_abort("The specified column for hyperlinks does not exist in the dataset. Please review the {.arg column} argument.")
       }
     } else {
       "Link"
@@ -127,7 +127,7 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
   
   # Error: the folder of the file must exist
   if (!dir.exists(dirname(path))) {
-    stop(sprintf("The folder '%s' does not exist. Please create it or review the `path` argument.", dirname(path)), call. = FALSE)
+    rd_abort(c("The folder {.path {dirname(path)}} does not exist.", "i" = "Please create it or review the {.arg path} argument."), class = "REDCapDM_error_file")
   }
 
   # Save the workbook with or without password protection

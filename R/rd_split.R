@@ -55,7 +55,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -65,16 +65,16 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
   # Error: invalid `by`
   if (!isTRUE(by %in% c("form", "event"))) {
-    stop("Invalid `by` argument. Please specify either 'form' or 'event'.", call. = FALSE)
+    rd_abort("Invalid {.arg by} argument. Please specify either {.val form} or {.val event}.", class = "REDCapDM_error_argument")
   }
 
   # Error: splitting by event needs a longitudinal project and its event-form correspondence
   if (by == "event" && !"redcap_event_name" %in% names(data)) {
-    stop("The data has no events: use `by = 'form'` to split a project without events.", call. = FALSE)
+    rd_abort("The data has no events: use {.code by = 'form'} to split a project without events.")
   }
 
   if (by == "event" && is.null(event_form)) {
-    stop("The event-form correspondence (`event_form`) is required to split the data by event.", call. = FALSE)
+    rd_abort("The event-form correspondence ({.arg event_form}) is required to split the data by event.")
   }
 
   # Extract labels from the data to reapply later
@@ -119,7 +119,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     other_check_vars <- setdiff(vars_more, check_vars)
 
     if (length(other_check_vars) > 0) {
-      stop("There are variables in the dictionary that are not present in the dataset.\nPlease ensure that the dictionary matches the dataset. Transformation has been halted.", call. = FALSE)
+      rd_abort(c("There are variables in the dictionary that are not present in the dataset.", "i" = "Please ensure that the dictionary matches the dataset. Transformation has been halted."))
     }
 
   }
@@ -157,8 +157,10 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
     if (length(other_less_vars) > 0) {
       # General message for other cases
-      stop(paste0("There are extra variables in the dataset not found in the dictionary: ", paste(utils::head(other_less_vars, 10), collapse = ", "), ".\nCheck that the dictionary is the one of this project. Transformation halted."),
-           call. = FALSE
+      shown_vars <- utils::head(other_less_vars, 10)
+      rd_abort(
+        c("There are extra variables in the dataset not found in the dictionary: {.var {shown_vars}}.", "i" = "Check that the dictionary is the one of this project. Transformation halted."),
+        class = "REDCapDM_error_data"
       )
     }
   }
@@ -166,13 +168,14 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
   # single stop with full list (if anything found)
   if (length(actions) > 0) {
-    header <- c(
-      "Detected issues that must be resolved BEFORE running rd_split():",
-      ""
+    rd_abort(
+      c(
+        "Detected issues that must be resolved BEFORE running {.fn rd_split}:",
+        stats::setNames(sprintf("%d. {actions[%d]}", seq_along(actions), seq_along(actions)), rep("x", length(actions))),
+        "i" = "Suggested order: {.code list(data, dic, ...) |> rd_delete_vars(pattern = ...) |> rd_split(...)}"
+      ),
+      class = "REDCapDM_error_data"
     )
-    body <- unlist(lapply(seq_along(actions), function(i) paste0(i, ". ", actions[i])))
-    footer <- c("", "Suggested order: list(data, dic, ...) |> rd_delete_vars(pattern = ...) |> rd_split(...)")
-    stop(paste(c(header, body, footer), collapse = "\n"), call. = FALSE)
   }
 
   if (by == "form") {
@@ -181,7 +184,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     longitudinal <- "redcap_event_name" %in% names(data)
 
     if (longitudinal & is.null(event_form)) {
-      stop("The event-form correspondence is required to split the data by form in a longitudinal project. Please provide the `event_form` argument to proceed.", call. = FALSE)
+      rd_abort("The event-form correspondence is required to split the data by form in a longitudinal project. Please provide the {.arg event_form} argument to proceed.")
     }
 
     if (longitudinal) {
@@ -360,7 +363,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       )
 
   } else {
-    stop("Invalid `by` argument. Please specify either 'form' or 'event'.")
+    rd_abort("Invalid {.arg by} argument. Please specify either {.val form} or {.val event}.", class = "REDCapDM_error_argument")
   }
 
   # Order columns
@@ -377,22 +380,20 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
   # Handle the `which` argument if provided
   if (!is.null(which)) {
     if (length(which) > 1) {
-      warning("The `which` argument is designed to specify a single form or event. Multiple inputs were provided; only the first will be used.")
+      rd_warn("The {.arg which} argument is designed to specify a single form or event. Multiple inputs were provided; only the first will be used.")
 
       which <- which[1]
     }
 
     if (by == "form") {
       if(!which %in% form){
-        stop("The form specified in the `which` argument was not found in this project.\n",
-             "Please select one of the available REDCap forms:\n", paste0("-", form, "\n"), call. = FALSE)
+        rd_abort(c("The form specified in the {.arg which} argument was not found in this project.", "i" = "Please select one of the available REDCap forms: {.val {form}}."), class = "REDCapDM_error_argument")
       }
     }
 
     if (by == "event") {
       if(!which %in% list_events){
-        stop("The event specified in the `which` argument was not found in this project.\n",
-             "Please select one of the available REDCap events:\n", paste0("-", list_events, "\n"), call. = FALSE)
+        rd_abort(c("The event specified in the {.arg which} argument was not found in this project.", "i" = "Please select one of the available REDCap events: {.val {list_events}}."), class = "REDCapDM_error_argument")
       }
     }
 

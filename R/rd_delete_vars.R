@@ -61,7 +61,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.", call. = FALSE)
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -73,7 +73,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
   # Ensure one of the arguments is fullfilled
   if (is.null(vars) & is.null(pattern) & is.null(forms)) {
-    stop("At least one of the 'vars', 'pattern' or 'forms' arguments must be provided.", call. = FALSE)
+    rd_abort("At least one of the {.arg vars}, {.arg pattern} or {.arg forms} arguments must be provided.", class = "REDCapDM_error_argument")
   }
 
   # Extract labels from the data to reapply later
@@ -91,12 +91,12 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     vars_missing <- setdiff(vars, names(data))
 
     if (length(vars_missing) > 0) {
-      stop(stringr::str_glue("The following variables are not present in the dataset: {paste0(vars_missing, collapse = ', ')}.\nPlease remove them from the `vars` argument."), call. = FALSE)
+      rd_abort(c("The following variables are not present in the dataset: {.var {vars_missing}}.", "i" = "Please remove them from the {.arg vars} argument."), class = "REDCapDM_error_argument")
     }
     
     # Error: the record identifier is needed by every other function
     if ("record_id" %in% vars) {
-      stop("`record_id` can't be removed: the other functions need the record identifier.", call. = FALSE)
+      rd_abort("{.code record_id} can't be removed: the other functions need the record identifier.")
     }
 
     # Columns with the Missing Data Codes of the variables (redcap_data(rm_mdc = FALSE))
@@ -148,7 +148,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
       # Warn if factor versions of the variables matching the patterns are present in the dataset
       if (any(pattern_factor %in% names(vars_eliminated)) & any(grepl("\\$", pattern))) {
-        warning("The dataset contains factor versions of variables matching the specified patterns. To properly remove them, use the `rd_factor` function first.", call. = FALSE)
+        rd_warn("The dataset contains factor versions of variables matching the specified patterns. To properly remove them, use the {.fn rd_factor} function first.")
       }
     }
 
@@ -157,7 +157,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     matched <- matched[!matched %in% "record_id" & !grepl("^redcap_(event_name|repeat_instrument|repeat_instance)(\\.factor)?$", matched)]
 
     if (length(matched) == 0) {
-      warning(stringr::str_glue("No variable matches the pattern(s) {paste0(\"'\", pattern, \"'\", collapse = ', ')}: nothing was removed."), call. = FALSE)
+      rd_warn("No variable matches the pattern(s) {.val {pattern}}: nothing was removed.")
     }
 
     # Remove variables matching the pattern from the dataset
@@ -173,13 +173,13 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
   # If `forms` is specified, remove every variable of these forms
   if (!is.null(forms)) {
     if (!"form_name" %in% names(dic)) {
-      stop("The dictionary doesn't have the `form_name` column, needed to use the `forms` argument.", call. = FALSE)
+      rd_abort("The dictionary doesn't have the {.code form_name} column, needed to use the {.arg forms} argument.")
     }
 
     forms_missing <- setdiff(forms, dic$form_name)
 
     if (length(forms_missing) > 0) {
-      stop(stringr::str_glue("The following forms are not present in the dictionary: {paste0(forms_missing, collapse = ', ')}.\nPlease remove them from the `forms` argument."), call. = FALSE)
+      rd_abort(c("The following forms are not present in the dictionary: {.val {forms_missing}}.", "i" = "Please remove them from the {.arg forms} argument."), class = "REDCapDM_error_argument")
     }
 
     # The record identifier (first field of the dictionary) is never removed

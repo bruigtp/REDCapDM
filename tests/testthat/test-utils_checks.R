@@ -96,7 +96,9 @@ test_that("the functions name the dictionary columns they need", {
 test_that("rd_split names the variables of the data that are not in the dictionary", {
   x <- covican
   x$data$extra_var <- 1
-  expect_error(rd_split(x), "not found in the dictionary: extra_var")
+  err <- expect_error(rd_split(x), class = "REDCapDM_error_data")
+  expect_match(conditionMessage(err), "not\\s+found\\s+in\\s+the\\s+dictionary")
+  expect_match(conditionMessage(err), "`extra_var`", fixed = TRUE)
 })
 
 

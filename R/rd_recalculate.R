@@ -60,7 +60,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -88,7 +88,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
   # Warn if datetime variables need transformation
   if (any(purrr::map(data |> dplyr::select(dplyr::all_of(vars_date)), class) == "character")) {
-    warning("The dataset contains date fields stored as character class, which may lead to incorrect or inconsistent date transcription results. Use the `rd_dates` function before this one to properly format these date fields.", call. = FALSE)
+    rd_warn("The dataset contains date fields stored as character class, which may lead to incorrect or inconsistent date transcription results. Use the {.fn rd_dates} function before this one to properly format these date fields.")
   }
 
   # Proceed only if the project is not longitudinal or has event-form mapping
@@ -116,7 +116,8 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     # Warning: excluded fields that are not calculated fields of the dictionary
     if (any(!exclude %in% dic$field_name[dic$field_type == "calc"])) {
-      warning(sprintf("The following variables of `exclude` are not calculated fields of the dictionary: %s.", paste(setdiff(exclude, dic$field_name[dic$field_type == "calc"]), collapse = ", ")), call. = FALSE)
+      not_calc <- setdiff(exclude, dic$field_name[dic$field_type == "calc"])
+      rd_warn("The following variables of {.arg exclude} are not calculated fields of the dictionary: {.var {not_calc}}.")
     }
 
     # Process calculated fields: evaluate, transcribe logic, and compare results
@@ -244,10 +245,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     results <- stringr::str_glue("{results}")
   } else {
     # Stop if recalculation is not possible due to missing event-form mapping in longitudinal projects
-    stop(
-      "\nRecalculation cannot proceed because the project has more than one event, but the event-form correspondence has not been provided. Please specify the event-form mapping for accurate recalculation.\n",
-      call. = FALSE
-    )
+    rd_abort("Recalculation cannot proceed because the project has more than one event, but the event-form correspondence has not been provided. Please specify the event-form mapping for accurate recalculation.")
   }
 
   # Return updated datasets and results

@@ -51,7 +51,7 @@ test_that("rd_missplot errors when data is neither a data frame nor a list with 
 })
 
 test_that("rd_missplot errors when the list provided lacks a 'data' element", {
-  expect_error(rd_missplot(list(foo = 1)), "'data' element")
+  expect_error(rd_missplot(list(foo = 1)), "`data` element", class = "REDCapDM_error_argument")
 })
 
 test_that("rd_missplot does not crash on a NA field_label and falls back to the variable name", {
@@ -306,8 +306,8 @@ test_that("rd_missplot validates by, events and forms", {
   fx <- make_missplot_data()
 
   expect_error(rd_missplot(covican, by = "patient"), "should be one of")
-  expect_error(rd_missplot(covican, events = c("baseline_visit_arm_1", "visit_99")), "Event\\(s\\) not found in the data: 'visit_99'")
-  expect_error(rd_missplot(covican, forms = "labs"), "Form\\(s\\) not found in the dictionary: 'labs'")
+  expect_error(rd_missplot(covican, events = c("baseline_visit_arm_1", "visit_99")), "Event\\(s\\) not found in the data: \"visit_99\"", class = "REDCapDM_error_argument")
+  expect_error(rd_missplot(covican, forms = "labs"), "Form\\(s\\) not found in the dictionary: \"labs\"", class = "REDCapDM_error_argument")
   expect_error(rd_missplot(fx$data, forms = "demo"), "`forms` needs the dictionary")
   expect_warning(suppressMessages(rd_missplot(fx$data, events = "baseline")), "`events` is ignored")
   expect_error(suppressMessages(rd_missplot(list(data = fx$data[, c("record_id", "height")]), by = "record")), "There are no variables to plot")

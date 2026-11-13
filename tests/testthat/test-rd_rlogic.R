@@ -492,10 +492,9 @@ test_that("rd_rlogic takes the variables of the other forms from the base row, a
 test_that("rd_rlogic errors when the logic uses a variable of another repeating instrument", {
   fx <- make_repeat_classic()
 
-  expect_error(
-    rd_rlogic(fx, logic = "[ae_grade] = '1'", var = "age"),
-    "variables of another repeated instrument.*ae_grade \\(form:ae\\)"
-  )
+  err <- expect_error(rd_rlogic(fx, logic = "[ae_grade] = '1'", var = "age"), class = "REDCapDM_error_logic")
+  expect_match(conditionMessage(err), "variables\\s+of\\s+another\\s+repeated\\s+instrument")
+  expect_match(conditionMessage(err), "ae_grade (form: ae)", fixed = TRUE)
 })
 
 test_that("rd_rlogic handles forms repeating in only some events", {
@@ -558,5 +557,7 @@ test_that("rd_rlogic names the variables it can't find and shows the translation
   dic <- make_dic("a")
 
   expect_error(rd_rlogic(data = df, dic = dic, logic = "[b] > 1", var = "a"), "\\[b\\]")
-  expect_error(rd_rlogic(data = df, dic = dic, logic = "stdev([a],[a])", var = "a"), "R logic: stdev\\(data\\$a,data\\$a\\)")
+  err <- expect_error(rd_rlogic(data = df, dic = dic, logic = "stdev([a],[a])", var = "a"), class = "REDCapDM_error_logic")
+  expect_match(conditionMessage(err), "R logic: `stdev(data$a,data$a)`", fixed = TRUE)
+  expect_match(conditionMessage(err), "could not find function", fixed = TRUE)
 })

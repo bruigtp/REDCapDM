@@ -48,7 +48,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -236,7 +236,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     warnings_env$msgs <- warnings_env$msgs |> unique()
 
     for (i in warnings_env$msgs) {
-      warning(i, call. = FALSE)
+      rd_warn("{i}")
     }
   }
 

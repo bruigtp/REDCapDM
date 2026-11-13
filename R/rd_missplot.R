@@ -38,7 +38,7 @@
 rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_percentages = TRUE, use_field_labels = TRUE, drop_complete = TRUE, max_label_length = 40, by = c("vars", "record"), events = NULL, forms = NULL) {
 
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("The `ggplot2` package is required for `rd_missplot()`. Install it with `install.packages('ggplot2')`.", call. = FALSE)
+    rd_abort("The {.code ggplot2} package is required for {.fn rd_missplot}. Install it with {.code install.packages('ggplot2')}.")
   }
 
   # Error: invalid arguments
@@ -58,7 +58,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     if ("data" %in% names(data)) {
       df <- data$data
     } else {
-      stop("The list provided does not contain a 'data' element.")
+      rd_abort("The list provided does not contain a {.code data} element.", class = "REDCapDM_error_argument")
     }
     if ("dictionary" %in% names(data)) {
       dictionary_df <- data$dictionary
@@ -69,22 +69,22 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   } else if (is.data.frame(data)) {
     df <- data
   } else {
-    stop("The 'data' argument must be a data frame or a list containing a 'data' element.")
+    rd_abort("The {.arg data} argument must be a data frame or a list containing a {.code data} element.", class = "REDCapDM_error_argument")
   }
   
   # Error: the data must be a data frame
   if (!is.data.frame(df)) {
-    stop("The 'data' element must be a data frame: use the output of redcap_data().", call. = FALSE)
+    rd_abort("The {.code data} element must be a data frame: use the output of {.fn redcap_data}.", class = "REDCapDM_error_argument")
   }
 
   # Error: nothing to plot
   if (nrow(df) == 0) {
-    stop("There is no data to plot: the data has 0 rows.", call. = FALSE)
+    rd_abort("There is no data to plot: the data has 0 rows.")
   }
 
   # Error: invalid number of variables
   if (!is.null(max_vars) && (!is.numeric(max_vars) || length(max_vars) != 1 || max_vars < 1)) {
-    stop("`max_vars` must be a positive number.", call. = FALSE)
+    rd_abort("{.arg max_vars} must be a positive number.")
   }
 
   # Detect if the study is longitudinal
@@ -112,7 +112,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   # Events to plot
   if (!is_longitudinal) {
     if (!is.null(events)) {
-      warning("`events` is ignored: the dataset has no events.", call. = FALSE)
+      rd_warn("{.arg events} is ignored: the dataset has no events.")
     }
   } else {
     raw_events <- as.character(df[[event_col]])
@@ -126,10 +126,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
       selected_events <- if (by == "record") event_levels[1] else event_levels
 
       if (by == "record" && length(event_levels) > 1) {
-        warning(stringr::str_glue(
-          "Only the first event ({shown_name[1]}) is plotted. ",
-          "Use `events` to choose other events or `events = \"all\"` to plot all of them."
-        ), call. = FALSE)
+        rd_warn(c("Only the first event ({shown_name[1]}) is plotted.", "i" = "Use {.arg events} to choose other events or {.code events = \"all\"} to plot all of them."))
       }
     } else if (length(events) == 1 && tolower(events) == "all") {
       selected_events <- event_levels
@@ -138,11 +135,8 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
       events_raw <- ifelse(events %in% event_levels, events, event_levels[match(events, shown_name)])
 
       if (anyNA(events_raw)) {
-        stop(sprintf(
-          "Event(s) not found in the data: %s. Available events: %s.",
-          paste0("'", events[is.na(events_raw)], "'", collapse = ", "),
-          paste0("'", event_levels, "'", collapse = ", ")
-        ), call. = FALSE)
+        unknown_events <- events[is.na(events_raw)]
+        rd_abort(c("Event(s) not found in the data: {.val {unknown_events}}.", "i" = "Available events: {.val {event_levels}}."), class = "REDCapDM_error_argument")
       }
 
       selected_events <- event_levels[event_levels %in% events_raw]
@@ -211,12 +205,12 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   # Variables of the selected forms
   if (!is.null(forms)) {
     if (!has_forms) {
-      stop("`forms` needs the dictionary: provide a list with a `dictionary` element that includes `field_name` and `form_name`.", call. = FALSE)
+      rd_abort("{.arg forms} needs the dictionary: provide a list with a {.code dictionary} element that includes {.code field_name} and {.code form_name}.")
     }
 
     unknown_forms <- setdiff(forms, dictionary_df$form_name)
     if (length(unknown_forms) > 0) {
-       stop(sprintf("Form(s) not found in the dictionary: %s.", paste0("'", unknown_forms, "'", collapse = ", ")), call. = FALSE)
+       rd_abort("Form(s) not found in the dictionary: {.val {unknown_forms}}.", class = "REDCapDM_error_argument")
     }
 
     df_cleaned <- df_cleaned[, get_var_form(colnames(df_cleaned)) %in% forms, drop = FALSE]
@@ -226,7 +220,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   plot_vars <- colnames(df_cleaned)
 
   if (nrow(rep_pairs) > 0 && is.null(dictionary_df)) {
-    warning("The data contains repeated instruments but no dictionary was provided, so missingness may be overestimated. Pass the output of `redcap_data()` (a list with `data` and `dictionary`) for accurate results.", call. = FALSE)
+    rd_warn("The data contains repeated instruments but no dictionary was provided, so missingness may be overestimated. Pass the output of {.fn redcap_data} (a list with {.arg data} and {.code dictionary}) for accurate results.")
   }
 
   home_rows <- lapply(stats::setNames(plot_vars, plot_vars), function(v) {
@@ -240,7 +234,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     df_cleaned <- df_cleaned[, setdiff(colnames(df_cleaned), id_col), drop = FALSE]
 
     if (ncol(df_cleaned) == 0) {
-      stop("There are no variables to plot.", call. = FALSE)
+      rd_abort("There are no variables to plot.")
     }
 
     # Row of the plot: the record, and its repetition if the row belongs to a repeating instrument or event
@@ -288,7 +282,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     }
 
     if (length(total_missing) == 0) {
-      stop("There are no variables to plot: none of the selected variables has missing values. Set `drop_complete = FALSE` to plot them.", call. = FALSE)
+      rd_abort("There are no variables to plot: none of the selected variables has missing values. Set {.code drop_complete = FALSE} to plot them.")
     }
 
     # Variable order (columns)

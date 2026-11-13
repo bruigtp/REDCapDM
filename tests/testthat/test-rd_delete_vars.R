@@ -144,11 +144,13 @@ test_that("rd_delete_vars combines forms with vars", {
 test_that("rd_delete_vars errors with unknown forms or without vars, pattern or forms", {
   expect_error(
     rd_delete_vars(project = covican, forms = c("laboratory_findings", "labs")),
-    "The following forms are not present in the dictionary: labs"
+    "The following forms are not present in the dictionary: \"labs\"",
+    class = "REDCapDM_error_argument"
   )
   expect_error(
     rd_delete_vars(project = covican),
-    "At least one of the 'vars', 'pattern' or 'forms' arguments must be provided"
+    "At least one of the `vars`, `pattern` or `forms` arguments must be provided",
+    class = "REDCapDM_error_argument"
   )
 })
 

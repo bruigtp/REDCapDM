@@ -228,11 +228,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Warning: Validate 'link' argument and ensure completeness
   if (!is.null(names(link))) {
     if (!all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      rd_abort(c("Incomplete 'link' argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version}, {.field proj_id} and {.field event_id}."), class = "REDCapDM_error_argument")
+      rd_abort(c("Incomplete {.arg link} argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version}, {.field proj_id} and {.field event_id}."), class = "REDCapDM_error_argument")
     }
 
     if (!all(c("domain", "redcap_version", "proj_id") %in% names(link)) & !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      rd_abort(c("Incomplete 'link' argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version} and {.field proj_id}."), class = "REDCapDM_error_argument")
+      rd_abort(c("Incomplete {.arg link} argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version} and {.field proj_id}."), class = "REDCapDM_error_argument")
     }
   }
 

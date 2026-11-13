@@ -47,7 +47,7 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
   if (is.null(data) | is.null(dic)) {
-    stop("Both `data` and `dic` (data and dictionary) arguments must be provided.")
+    rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
   # Error: invalid arguments
@@ -82,12 +82,7 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   orphan <- factor_cols[!factors %in% names(data)]
 
   if (length(orphan) > 0) {
-    warning(
-      stringr::str_glue(
-        "Removed {length(orphan)} '.factor' column(s) whose original variables no longer exist. This usually happens if the original variables were deleted earlier using `rd_delete_vars` and the '.factor' version was kept."
-      ),
-      call. = FALSE
-    )
+    rd_warn(c("Removed {length(orphan)} '.factor' column{?s} whose original variables no longer exist.", "i" = "This usually happens if the original variables were deleted earlier using {.fn rd_delete_vars} and the '.factor' version was kept."))
     # Remove orphan columns
     data <- data[, setdiff(names(data), orphan)]
     # Update factors vector after removal
@@ -96,24 +91,19 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # If there are no factor variables, stop the function
   if (length(factors) == 0) {
-    warning("There are no variables in the data which can be converted to factors.", call. = FALSE)
+    rd_warn("There are no variables in the data which can be converted to factors.")
   } else {
     if (!is.null(exclude)) {
       bad_vars <- exclude[grepl("\\.factor$", exclude)]
       if (length(bad_vars) > 0) {
-        stop(
-          sprintf(
-            "Please use the original form of the variable(s) without '.factor' in the exclude argument: %s",
-            paste(bad_vars, collapse = ", ")
-          ),
-          call. = FALSE
-        )
+        rd_abort("Please use the original form of the variable(s) without '.factor' in the exclude argument: {.var {bad_vars}}", class = "REDCapDM_error_argument")
       }
     }
     
     # Warning: excluded variables that are not in the data
     if (any(!exclude %in% names(data))) {
-      warning(sprintf("The following variables of `exclude` are not in the data: %s.", paste(setdiff(exclude, names(data)), collapse = ", ")), call. = FALSE)
+      not_in_data <- setdiff(exclude, names(data))
+      rd_warn("The following variables of {.arg exclude} are not in the data: {.var {not_in_data}}.")
     }
 
     # Exclude specified variables that should not be converted to factors
@@ -121,7 +111,7 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
     # If no variables are left to convert, stop and ask to review the exclude argument
     if (length(factors) == 0) {
-      stop("All variables in the data which can be converted to factors are specified in the `exclude` argument. Please, review the `exclude` argument.", call. = FALSE)
+      rd_abort("All variables in the data which can be converted to factors are specified in the {.arg exclude} argument. Please, review the {.arg exclude} argument.")
     }
 
     # Perform the transformation of factor columns into actual factor variables
@@ -146,10 +136,7 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
         shown <- paste0(shown, ", ...")
       }
 
-      warning(stringr::str_glue(
-        "Dictionary logic already translated to R uses the original codes of variables now converted to factors ({shown}). ",
-        "Run rd_factor() before rd_dictionary()."
-      ), call. = FALSE)
+      rd_warn(c("Dictionary logic already translated to R uses the original codes of variables now converted to factors ({shown}).", "i" = "Run {.fn rd_factor} before {.fn rd_dictionary}."))
     }
   }
 
