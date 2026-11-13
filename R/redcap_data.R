@@ -80,22 +80,22 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   on.exit(setwd(oldwd))
 
   # Warning: data_path, dic_path and another argument are specified.
-  if (all(!c(data_path, dic_path) %in% NA) & any(!c(token, uri) %in% NA)) {
+  if (all(!c(data_path, dic_path) %in% NA) && any(!c(token, uri) %in% NA)) {
     rd_abort(c("Too many arguments.", "i" = "Use {.arg data_path} and {.arg dic_path} for exported data or {.arg uri} and {.arg token} for API connection."), class = "REDCapDM_error_argument")
   }
 
   # Warning: token, uri and another argument are specified.
-  if (all(!c(token, uri) %in% NA) & any(!c(data_path, dic_path) %in% NA)) {
+  if (all(!c(token, uri) %in% NA) && any(!c(data_path, dic_path) %in% NA)) {
     rd_abort(c("Too many arguments.", "i" = "Use {.arg uri} and {.arg token} for API connection or {.arg data_path} and {.arg dic_path} for exported data."), class = "REDCapDM_error_argument")
   }
 
   # Warning: either data_path or dic_path is specified alone
-  if ((!is.na(data_path) & is.na(dic_path)) | (is.na(data_path) & !is.na(dic_path))) {
+  if ((!is.na(data_path) && is.na(dic_path)) || (is.na(data_path) && !is.na(dic_path))) {
     rd_abort("Both {.arg data_path} and {.arg dic_path} are required for exported data.", class = "REDCapDM_error_argument")
   }
 
   # Warning: either uri or token is specified alone
-  if ((!is.na(uri) & is.na(token)) | (is.na(uri) & !is.na(token))) {
+  if ((!is.na(uri) && is.na(token)) || (is.na(uri) && !is.na(token))) {
     rd_abort("Both {.arg uri} and {.arg token} are required for API connection.", class = "REDCapDM_error_argument")
   }
   
@@ -110,9 +110,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   }
 
   # Process data from exported files
-  if (all(!c(data_path, dic_path) %in% NA) & all(c(token, uri) %in% NA)) {
+  if (all(!c(data_path, dic_path) %in% NA) && all(c(token, uri) %in% NA)) {
     # Check the extension of the R data file
-    if (!grepl("\\.R$", data_path) & !grepl("\\.r$", data_path)) {
+    if (!grepl("\\.R$", data_path) && !grepl("\\.r$", data_path)) {
       rd_abort(c("Unsupported file format. {.arg data_path} must be an R file exported from REDCap.", "x" = "It is {.file {data_path}}."), class = "REDCapDM_error_file")
     }
     
@@ -248,7 +248,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   }
 
   # Process data from API connection
-  if (all(!c(token, uri) %in% NA) & all(c(data_path, dic_path) %in% NA)) {
+  if (all(!c(token, uri) %in% NA) && all(c(data_path, dic_path) %in% NA)) {
     # Message: Begin data import process
     rd_inform("Importing data from REDCap API...")
 

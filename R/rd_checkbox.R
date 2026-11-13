@@ -69,7 +69,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
@@ -101,7 +101,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   # Ensure there are checkbox fields in either the data or the dictionary
   # A project without checkboxes is returned unchanged, so that the function can be part of any pipeline
-  if (length(var_check) == 0 & length(var_check_dic) == 0) {
+  if (length(var_check) == 0 && length(var_check_dic) == 0) {
     rd_warn("The project has no checkbox fields: the data is returned unchanged.")
 
     return(
@@ -115,10 +115,10 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     )
   }
   # Check for missing checkbox fields in either the data or the dictionary
-  if (length(var_check) > 0 & length(var_check_dic) == 0) {
+  if (length(var_check) > 0 && length(var_check_dic) == 0) {
     rd_abort("No checkbox fields found in the dictionary.")
   }
-  if (length(var_check) == 0 & length(var_check_dic) > 0) {
+  if (length(var_check) == 0 && length(var_check_dic) > 0) {
     rd_abort("No checkbox fields found in the data. If they have already been transformed (e.g. with rd_checkbox() or rd_transform()), there is nothing left to do.")
   }
 
@@ -173,12 +173,12 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   # Evaluate branching logic for checkbox variables if applicable
   if (any(dic$field_type == "checkbox" & dic$branching_logic_show_field_only_if != "")) {
-    if (is.null(event_form) & longitudinal) {
+    if (is.null(event_form) && longitudinal) {
       rd_warn("Branching logic evaluation could not be performed because the project contains multiple events and the event-form correspondence was not specified. Please provide the {.arg event_form} argument to enable branching logic evaluation.")
     } else {
 
       # Handle the fact that a rd_factor was performed before this function
-      if (length(var_check_factors) == 0 & all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {
+      if (length(var_check_factors) == 0 && all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {
         rd_warn("The checkboxes are already in factor form. To properly evaluate checkbox branching logic, please run {.fn rd_dictionary} first.")
       }
 
@@ -195,10 +195,10 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
         logic <- dic$branching_logic_show_field_only_if[dic$field_name == var_check_dic[i]]
 
         # If there is branching logic, attempt to translate and evaluate it
-        if (!is.na(logic) & !logic %in% "") {
+        if (!is.na(logic) && !logic %in% "") {
 
           # Checking if the logic is already in R format
-          if (grepl("<>|\\[.*?\\]", logic) & !grepl("==|!=|\\$", logic)) {
+          if (grepl("<>|\\[.*?\\]", logic) && !grepl("==|!=|\\$", logic)) {
             # Translate REDCap logic to R language using rd_rlogic function
             rlogic <- try(rd_rlogic(data = data, dic = dic, event_form = event_form, logic = logic, var = var_check_dic[i]), silent = TRUE)
 

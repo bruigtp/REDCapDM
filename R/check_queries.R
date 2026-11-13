@@ -92,7 +92,7 @@
 
 check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   # Ensure both objects provided are dataframes
-  if (!is.data.frame(old) | !is.data.frame(new)) {
+  if (!is.data.frame(old) || !is.data.frame(new)) {
     rd_abort("The {.arg old} and {.arg new} arguments must be a data frame.", class = "REDCapDM_error_argument")
   }
   if (!is.null(report_title) && length(report_title) > 1) {
@@ -165,7 +165,7 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   # Assign new codes to each query to match the old dataset
   check <- data.frame(check |>
     dplyr::group_by(.data$Identifier) |>
-    dplyr::mutate(cod = 1:dplyr::n()))
+    dplyr::mutate(cod = dplyr::row_number()))
   check$Code <- paste0(as.character(check$Identifier), "-", check$cod)
   check <- check |>
     dplyr::select(-dplyr::any_of("cod"))

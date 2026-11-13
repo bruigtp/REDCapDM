@@ -59,7 +59,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
@@ -92,7 +92,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   }
 
   # Proceed only if the project is not longitudinal or has event-form mapping
-  if (!(longitudinal & is.null(event_form))) {
+  if (!(longitudinal && is.null(event_form))) {
 
     # Replace `NA` in branching logic fields with empty strings
     if (any(is.na(dic$branching_logic_show_field_only_if))) {
@@ -223,7 +223,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
         trans = sum(!is.na(.data$trans)),
         N = sum(.data$n),
         no_trans = .data$N - .data$trans,
-        no_equal = sum(!.data$is_equal, na.rm = TRUE),
+        no_equal = sum(!.data$is_equal, na.rm = TRUE)
       ) |>
       dplyr::mutate(
         text1 = stringr::str_glue("{no_trans} ({round(no_trans*100/N, 2)}%)"),

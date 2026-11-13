@@ -54,7 +54,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
@@ -183,7 +183,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     form <- unique(dic$form_name)
     longitudinal <- "redcap_event_name" %in% names(data)
 
-    if (longitudinal & is.null(event_form)) {
+    if (longitudinal && is.null(event_form)) {
       rd_abort("The event-form correspondence is required to split the data by form in a longitudinal project. Please provide the {.arg event_form} argument to proceed.")
     }
 

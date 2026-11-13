@@ -60,7 +60,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
@@ -72,7 +72,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
   }
 
   # Ensure one of the arguments is fullfilled
-  if (is.null(vars) & is.null(pattern) & is.null(forms)) {
+  if (is.null(vars) && is.null(pattern) && is.null(forms)) {
     rd_abort("At least one of the {.arg vars}, {.arg pattern} or {.arg forms} arguments must be provided.", class = "REDCapDM_error_argument")
   }
 
@@ -147,7 +147,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
         dplyr::select(!dplyr::matches(comb_pattern))
 
       # Warn if factor versions of the variables matching the patterns are present in the dataset
-      if (any(pattern_factor %in% names(vars_eliminated)) & any(grepl("\\$", pattern))) {
+      if (any(pattern_factor %in% names(vars_eliminated)) && any(grepl("\\$", pattern))) {
         rd_warn("The dataset contains factor versions of variables matching the specified patterns. To properly remove them, use the {.fn rd_factor} function first.")
       }
     }

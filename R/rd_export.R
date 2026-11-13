@@ -56,7 +56,7 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
   queries <- as.data.frame(queries)
 
   # Warning: links detected but the column argument is not specified.
-  if (is.null(column) & !"Link" %in% names(queries) & any(queries |> dplyr::summarise_all(~ any(grepl("https", .))))) {
+  if (is.null(column) && !"Link" %in% names(queries) && any(queries |> dplyr::summarise_all(~ any(grepl("https", .))))) {
     rd_warn("Links were detected in the dataset. To convert them into hyperlinks in the Excel file, specify the {.arg column} argument.")
   }
 
@@ -72,7 +72,7 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
   sheet <- openxlsx::addWorksheet(wb, sheet_name)
 
   # Handle hyperlink conversion if a column is specified or `Link` is present
-  if (!is.null(column) | "Link" %in% names(queries)) {
+  if (!is.null(column) || "Link" %in% names(queries)) {
     # Determine the column name
     column <- if (!is.null(column)) {
       if (column %in% names(queries)) {

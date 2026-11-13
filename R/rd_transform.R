@@ -60,7 +60,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
@@ -82,24 +82,24 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   # Check if the project is longitudinal (has more than one event) or not:
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
-  if (final_format == "by_event" & is.null(event_form)) {
+  if (final_format == "by_event" && is.null(event_form)) {
     rd_abort("To split the data by event the event_form has to be provided")
   }
 
   # If the project is not longitudinal 'by_form' can be used without event_form:
-  if (final_format == "by_form" & is.null(event_form) & longitudinal) {
+  if (final_format == "by_form" && is.null(event_form) && longitudinal) {
     rd_abort("To split the data by form the event_form has to be provided in a longitudinal project")
   }
 
-  if (!is.null(which_event) & final_format != "by_event") {
+  if (!is.null(which_event) && final_format != "by_event") {
     rd_abort("Which event has been specified but the final format is not to split the data by event")
   }
 
-  if (!is.null(which_form) & final_format != "by_form") {
+  if (!is.null(which_form) && final_format != "by_form") {
     rd_abort("Which form has been specified but the final format is not to split the data by form")
   }
 
-  if (!is.null(wide) & final_format != "by_form") {
+  if (!is.null(wide) && final_format != "by_form") {
     rd_abort("The argument wide has been specified but the final format is not to split the data by form")
   }
   
@@ -123,7 +123,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   }
 
   # If the project is longitudinal and the event hasn't been specified:
-  if (longitudinal & is.null(event_form)) {
+  if (longitudinal && is.null(event_form)) {
     rd_warn("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
   }
 
@@ -186,7 +186,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   ind <- ind + 1
 
   # If the project is longitudinal and the event hasn't been specified no recalculation is possible
-  if (longitudinal & is.null(event_form)) {
+  if (longitudinal && is.null(event_form)) {
     results <- c(results, "\nNo recalculation is possible as the project has more than one event and the event-form correspondence has not been specified\n")
   } else {
     recalc <- rd_recalculate(data = data, dic = dic, event_form = event_form, exclude = exclude_recalc)
@@ -211,7 +211,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   # If there is some checkbox:
   if (length(names(data)[grep("___", names(data))]) > 0) {
     # If the event_form is not provided and the project is longitudinal
-    if (is.null(event_form) & longitudinal) {
+    if (is.null(event_form) && longitudinal) {
       results <- c(results, "\nBranching logic evaluation is not possible as the project has more than one event and the event-form correspondence has not been specified\n")
     } else {
       # Transform missings of checkboxes with branching logic:
@@ -279,7 +279,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
 
   # If an event_form is specified or if the project has only one event and by_form has been specified
-  if (!is.null(event_form) | (final_format == "by_form" & !longitudinal)) {
+  if (!is.null(event_form) || (final_format == "by_form" && !longitudinal)) {
     if (!is.null(event_form)) {
       var_noevent <- dic$field_name[!dic$form_name %in% event_form$form]
 

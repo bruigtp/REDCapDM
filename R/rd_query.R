@@ -85,7 +85,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.", class = "REDCapDM_error_argument")
   }
   
@@ -167,12 +167,12 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   data$.rd_row <- seq_len(nrow(data))
 
   # Warning: event not specified
-  if (all(is.na(event)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) & is.null(event_form)) {
+  if (all(is.na(event)) && any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) && is.null(event_form)) {
     rd_warn(c("No event or event-form has been specified. Therefore, the function will automatically consider observations from all events in the dataset.", "i" = "Ensure that the selected variable(s) is(are) collected in all specified events. This will avoid overestimating the number of queries."))
   }
 
   # Handle events automatically based on event_form and dictionary
-  if (all(is.na(event)) & !is.null(event_form)) {
+  if (all(is.na(event)) && !is.null(event_form)) {
     var_form <- dic |>
       dplyr::filter(.data$field_name %in% variables) |>
       dplyr::pull(.data$form_name)
@@ -194,18 +194,18 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Error: specified events are not in the dataset
     if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      if (any(!event %in% data$redcap_event_name) & any(!event %in% data$redcap_event_name.factor)) {
+      if (any(!event %in% data$redcap_event_name) && any(!event %in% data$redcap_event_name.factor)) {
         rd_abort(c("One or more specified events are not found in the dataset.", "i" = "Please review the {.arg event} argument."), class = "REDCapDM_error_argument")
       }
     }
 
     # Warning: multiple events are specified
-    if (length(event) > 1 & is.null(event_form)) {
+    if (length(event) > 1 && is.null(event_form)) {
       rd_warn("Multiple events specified. Ensure variables are collected across all events to avoid overestimation.")
     }
 
     # Filter data by events - factor version
-    if ("redcap_event_name.factor" %in% names(data) & all(event %in% data$redcap_event_name.factor)) {
+    if ("redcap_event_name.factor" %in% names(data) && all(event %in% data$redcap_event_name.factor)) {
       data <- dplyr::filter(data, data$redcap_event_name.factor %in% event)
     }
 
@@ -215,23 +215,23 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     }
 
     # Warning: identifiers are missing observations in any event (it only appears when checking for missings - %in%NA)
-    if (length(unique(data0$record_id)) != length(unique(data$record_id)) & any(grepl("%in%NA", gsub(" ", "", expression)))) {
+    if (length(unique(data0$record_id)) != length(unique(data$record_id)) && any(grepl("%in%NA", gsub(" ", "", expression)))) {
       rd_warn(c("Some identifiers are missing observations in specified events.", "i" = "Use {.fn rd_event} to check which identifiers are missing."))
     }
   }
 
   # Error: by_dag is TRUE but no DAG variable exists
-  if (by_dag %in% TRUE & all(!c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data))) {
+  if (by_dag %in% TRUE && all(!c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data))) {
     rd_abort(c("DAG-based reporting requested, but no DAG variable found in the dataset.", "i" = "Use {.code by_dag = FALSE} to continue."), class = "REDCapDM_error_argument")
   }
 
   # Warning: Validate 'link' argument and ensure completeness
   if (!is.null(names(link))) {
-    if (!all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+    if (!all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) && any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
       rd_abort(c("Incomplete {.arg link} argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version}, {.field proj_id} and {.field event_id}."), class = "REDCapDM_error_argument")
     }
 
-    if (!all(c("domain", "redcap_version", "proj_id") %in% names(link)) & !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+    if (!all(c("domain", "redcap_version", "proj_id") %in% names(link)) && !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
       rd_abort(c("Incomplete {.arg link} argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version} and {.field proj_id}."), class = "REDCapDM_error_argument")
     }
   }
@@ -240,7 +240,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   if (!is.null(link[["event_id"]])) {
     if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
       # The event argument is specified and the event_id is specified using the events in the raw version
-      if (all(event %in% names(link[["event_id"]])) & all(event %in% data[, "redcap_event_name"])) {
+      if (all(event %in% names(link[["event_id"]])) && all(event %in% data[, "redcap_event_name"])) {
         event_link <- data.frame(
           "name" = names(link[["event_id"]]),
           "event_id" = as.numeric(link[["event_id"]])
@@ -249,7 +249,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       }
 
       # The event argument is specified and the event_id is specified using the events in the factor version
-      if (all(event %in% names(link[["event_id"]])) & all(event %in% data[, "redcap_event_name.factor"])) {
+      if (all(event %in% names(link[["event_id"]])) && all(event %in% data[, "redcap_event_name.factor"])) {
         event_link <- data.frame(
           "name" = names(link[["event_id"]]),
           "event_id" = as.numeric(link[["event_id"]])
@@ -301,7 +301,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
 
   # Apply filter logic if specified
-  if (all(!is.na(filter)) & length(filter) == 1) {
+  if (all(!is.na(filter)) && length(filter) == 1) {
     # Error: logic used in the filter is incorrect
     command <- paste0("data", "<-dplyr::filter(data,", filter, ")")
 
@@ -341,7 +341,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     branch0 <- branch
 
     # Convert REDCap logic into R-compatible logic
-    if ((!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & all(stringr::str_detect(branch$branch, paste(c("\\[", "\\]"), collapse = "|")))) {
+    if ((!is.null(event_form) || all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) && all(stringr::str_detect(branch$branch, paste(c("\\[", "\\]"), collapse = "|")))) {
       for (j in seq_len(nrow(branch))) {
         evaluation <- try(rd_rlogic(data = data_all, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j]), silent = TRUE)
 
@@ -355,7 +355,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       }
 
       # Issue warning for logic that could not be converted
-      if (!is.null(logics) & nrow(data) > 0) {
+      if (!is.null(logics) && nrow(data) > 0) {
         unconverted <- unique(logics)
         rd_warn(c("The branching logic of the following variables could not be converted into R logic: {.var {unconverted}}.", "i" = "Check the {.field results} element of the output for details."))
       }
@@ -368,7 +368,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     names(branch) <- c("Variable", "Label", "Branching logic")
 
     ## Warning branching logic in multi-event REDCap projects
-    if (is.null(event_form) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+    if (is.null(event_form) && any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
       rd_warn(c("One or more variables checked for missing values have branching logic.", "i" = "See the {.field results} element of the output for details."))
     }
   }
@@ -376,7 +376,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Apply expression filters to variables
   for (i in seq_along(expression)) {
     # If the chosen variable has a branching logic
-    if (length(var_logic) > 0 & (!is.null(event_form) | all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) & any(!variables[i] %in% logics)) {
+    if (length(var_logic) > 0 && (!is.null(event_form) || all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) && any(!variables[i] %in% logics)) {
       if (any(variables[i] == var_logic)) {
         # Retrieve branching logic for the current variable
         logic <- branch |>
@@ -398,7 +398,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         }
 
         # When the logic was evaluated, no row meeting it means that the field is never shown: there is nothing to check
-        if (nrow(branching) > 0 | length(branch_eval[[variables[i]]]) == nrow(data_all)) {
+        if (nrow(branching) > 0 || length(branch_eval[[variables[i]]]) == nrow(data_all)) {
           compatible <- rbind(compatible, variables[i])
           raw0 <- branching
         } else {
@@ -450,12 +450,12 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     expression[i] <- gsub("\\bx\\b", "", expression[i])
 
     # Handle negation if specified
-    if (negate == TRUE) {
+    if (negate) {
       raw <- suppressMessages(dplyr::anti_join(raw0, raw))
     }
 
     # Handle multiple filters
-    if (all(!filter %in% NA) & length(filter) > 1) {
+    if (all(!filter %in% NA) && length(filter) > 1) {
       # If the number of filters is equal to the number of variables
       if (length(filter) == length(variables)) {
         # Apply each filter individually
@@ -559,7 +559,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
             }
           }
         } else {
-          if (negate == TRUE) {
+          if (negate) {
             trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", "<=", ">=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", " greater than ", " less than or equal to ", " greater than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE))))
           } else {
             trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", "<=", ">=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", "greater than ", " less than or equal to ", " greater than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE))))
@@ -577,11 +577,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       }
 
       # Add link to each query
-      if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) & any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+      if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) && any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
         excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"], link_instance)
       }
 
-      if (all(c("domain", "redcap_version", "proj_id") %in% names(link)) & !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
+      if (all(c("domain", "redcap_version", "proj_id") %in% names(link)) && !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
         excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"], link_instance)
       }
 
@@ -650,7 +650,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
             }
           }
         } else {
-          if (negate == TRUE) {
+          if (negate) {
             gsub("  ", " ", paste("The value should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE)))
           } else {
             gsub("  ", " ", paste("The value should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE)))
@@ -666,7 +666,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
 
   # Warnings: variables where branching logic could not be applied automatically
-  if (!is.null(br_eval) & nrow(data) > 0) {
+  if (!is.null(br_eval) && nrow(data) > 0) {
     not_applied <- unique(br_eval)
     rd_warn(c("The branching logic for the following variables could not be applied automatically: {.var {not_applied}}.", "i" = "Check the {.field results} element of the output for details."))
   }
@@ -708,7 +708,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       dplyr::select(-"Code"))
     queries <- data.frame(queries |>
       dplyr::group_by(.data$Identifier) |>
-      dplyr::mutate(cod = 1:dplyr::n()))
+      dplyr::mutate(cod = dplyr::row_number()))
     queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
     queries <- queries |> dplyr::select(-"cod")
 
@@ -771,7 +771,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
 
     # Handle variables with zero queries
-    if (report_zeros == TRUE) {
+    if (report_zeros) {
       # Total number of queries by variable, event and DAG
       report <- report |>
         dplyr::group_by(.data$dag, .data$var, .data$event, .data$query_descr, .drop = FALSE) |>
@@ -851,7 +851,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
 
   # Add branching logic information to the report if applicable
-  if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & (!is.null(br_eval) | any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)))) {
+  if (length(var_logic) > 0 && (!is.null(logics) || is.null(event_form)) && (!is.null(br_eval) || any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)))) {
     # Truncate variable names to ensure they don't exceed 26 characters
     branch0$Variable <- stringr::str_trunc(branch0$Variable, 26)
 
@@ -898,7 +898,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   } else {
     # Handle case when 'by_dag' argument is FALSE
     # Ensure branching logic is retained if applicable
-    if (length(var_logic) > 0 & (!is.null(logics) | is.null(event_form)) & (!is.null(br_eval) | any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)))) {
+    if (length(var_logic) > 0 && (!is.null(logics) || is.null(event_form)) && (!is.null(br_eval) || any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)))) {
       report <- report |>
         dplyr::select(-"DAG") |>
         dplyr::group_by(.data$Variables, .data$Description, .data$Event, .data$Query, .data$`Branching logic`, .drop = FALSE) |>
@@ -913,7 +913,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # If report_zeros is TRUE, handle zero total values
     if (any(!report$Total %in% 0)) {
-      if (report_zeros == TRUE) {
+      if (report_zeros) {
         report <- report |>
           dplyr::arrange(dplyr::desc(.data$Total))
 

@@ -46,7 +46,7 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   

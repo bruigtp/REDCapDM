@@ -54,7 +54,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
@@ -67,7 +67,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
   # Error: For longitudinal data, ensure `event_form` is specified
-  if (is.null(event_form) & longitudinal) {
+  if (is.null(event_form) && longitudinal) {
     rd_abort("The dataset contains multiple events, but the {.arg event_form} mapping was not provided. Please specify it.")
   }
 

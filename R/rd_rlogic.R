@@ -53,7 +53,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
   
@@ -69,7 +69,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rep_pairs <- repeat_info(data)$pairs
 
   # Error: data is longitudinal, but event_form isn't provided
-  if (is.null(event_form) & longitudinal) {
+  if (is.null(event_form) && longitudinal) {
     rd_abort("There is more than one event in the data, but the event-form correspondence hasn't been specified.")
   }
 
@@ -334,7 +334,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
 
   # If there's an error or the result is empty, stop the process
-  if (inherits(rlogic_eval, "try-error") | (length(rlogic_eval) == 0 & nrow(data) > 0)) {
+  if (inherits(rlogic_eval, "try-error") || (length(rlogic_eval) == 0 && nrow(data) > 0)) {
     logic_error <- if (inherits(rlogic_eval, "try-error")) trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(rlogic_eval))))
     rd_abort(
       c("The logic could not be evaluated after translation.", "i" = "R logic: {.code {rlogic}}", if (!is.null(logic_error)) c("x" = "R error: {logic_error}")),

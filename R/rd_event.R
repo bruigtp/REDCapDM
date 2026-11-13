@@ -76,7 +76,7 @@ rd_event <- function(project = NULL,
   }
 
   # Ensure both `data` and `dic` are provided; stop if either is missing
-  if (is.null(data) | is.null(dic)) {
+  if (is.null(data) || is.null(dic)) {
     rd_abort("Both {.arg data} and {.arg dic} (data and dictionary) arguments must be provided.")
   }
 
@@ -114,16 +114,11 @@ rd_event <- function(project = NULL,
     names(data)[1] <- "record_id"
   }
 
-  # Error: Stop if more than one filter is provided
-  if (!is.na(filter) & length(filter) > 1) {
-    rd_abort("More than one filter applied, please select only one.")
-  }
-
   # Save the original dataset for reference
   data0 <- data
 
   # Apply the filter expression to the dataset if provided
-  if (!is.na(filter) & length(filter) == 1) {
+  if (!is.na(filter) && length(filter) == 1) {
     command <- paste0("data", "<-dplyr::filter(data,", filter, ")")
 
     # Test the validity of the filter logic
@@ -144,7 +139,7 @@ rd_event <- function(project = NULL,
   # Validate that the specified events are present in the dataset
   if (all(!is.na(event))) {
     if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data0))) {
-      if (any(!event %in% data0$redcap_event_name) & any(!event %in% data0$redcap_event_name.factor)) {
+      if (any(!event %in% data0$redcap_event_name) && any(!event %in% data0$redcap_event_name.factor)) {
         rd_abort("One or more specified events do not exist in the dataset. Please review the {.arg event} argument.", class = "REDCapDM_error_argument")
       }
     }
@@ -166,7 +161,7 @@ rd_event <- function(project = NULL,
     # Iterate over each specified event to identify missing records
     for (k in seq_along(event)) {
       # Find record IDs associated with the current event (factor form)
-      if (any(names(data0) == "redcap_event_name.factor") & all(event %in% data0$redcap_event_name.factor)) {
+      if (any(names(data0) == "redcap_event_name.factor") && all(event %in% data0$redcap_event_name.factor)) {
         ids <- data0$record_id[data0$redcap_event_name.factor %in% event[k]]
       }
 
@@ -179,7 +174,7 @@ rd_event <- function(project = NULL,
       # Identify records missing the current event
       raw <- data |>
         dplyr::filter(!data$record_id %in% ids) |>
-        dplyr::slice(rep(1:dplyr::n(), each = length(event[k])))
+        dplyr::slice(rep(seq_len(dplyr::n()), each = length(event[k])))
 
       
       # Multi-arm projects: only the records of the arm of the event can have it
@@ -289,7 +284,7 @@ rd_event <- function(project = NULL,
     # Assign a unique code to each query based on Identifier
     queries <- data.frame(queries |>
       dplyr::group_by(.data$Identifier) |>
-      dplyr::mutate(cod = 1:dplyr::n()))
+      dplyr::mutate(cod = dplyr::row_number()))
     queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
     queries <- queries |> dplyr::select(-"cod")
 
@@ -312,7 +307,7 @@ rd_event <- function(project = NULL,
     }
 
     # Include all variables in the report, with or without zero queries, based on 'report_zeros'
-    if (report_zeros == TRUE) {
+    if (report_zeros) {
       report <- report |>
         dplyr::group_by(.data$var, .drop = FALSE) |>
         dplyr::summarise("total" = dplyr::n())
