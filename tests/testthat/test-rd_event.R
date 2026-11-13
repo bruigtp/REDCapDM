@@ -96,3 +96,14 @@ test_that("report_zeros toggles presence of zero lines in covican", {
     )
   )
 })
+
+
+test_that("rd_event explains that it needs a longitudinal project", {
+  base <- covican$data[covican$data$redcap_event_name == "baseline_visit_arm_1", ]
+  base <- base[, !names(base) %in% c("redcap_event_name", "redcap_event_name.factor")]
+
+  expect_error(
+    rd_event(data = base, dic = covican$dictionary, event = "baseline_visit_arm_1"),
+    "rd_event\\(\\) needs a longitudinal project"
+  )
+})

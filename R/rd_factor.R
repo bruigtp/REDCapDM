@@ -22,6 +22,8 @@
 #' @details
 #' The function looks for columns ending in `.factor` and replaces the original variable values with those `.factor` values (converted to factors). It preserves variable labels. The `exclude` argument must contain base variable names (no `.factor` suffix); if any `.factor` names are passed to `exclude` the function will throw an informative error. The columns `redcap_event_name`, `redcap_repeat_instrument` and `redcap_data_access_group` (and their `.factor` counterparts) are handled specially to avoid altering event or access-group data.
 #'
+#' Use `rd_factor()` before `rd_dictionary()`: the branching logic and calculations that `rd_dictionary()` translates to R compare the variables with their original codes, so they stop working once the variables are factors. If the dictionary already has logic translated to R that uses any of the converted variables, a warning is shown.
+#'
 #' @examples
 #' \dontrun{
 #' result <- rd_factor(covican)
@@ -119,6 +121,26 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
         stringr::str_glue("{dplyr::cur_column()}.factor")
       ))) |>
       dplyr::select(-stringr::str_glue("{factors}.factor"))
+
+    # Branching logic or calculations already translated to R (rd_dictionary) compare the variables with their
+    # original codes, so they no longer work once these variables are factors
+    logic_cols <- intersect(c("branching_logic_show_field_only_if", "choices_calculations_or_slider_labels"), names(dic))
+    r_logic <- unlist(lapply(dic[logic_cols], as.character), use.names = FALSE)
+    r_logic <- r_logic[!is.na(r_logic) & grepl("data\\$", r_logic)]
+    logic_vars <- unique(unlist(stringr::str_extract_all(r_logic, "(?<=data\\$)\\w+")))
+    affected <- intersect(factors, logic_vars)
+
+    if (length(affected) > 0) {
+      shown <- paste(utils::head(affected, 10), collapse = ", ")
+      if (length(affected) > 10) {
+        shown <- paste0(shown, ", ...")
+      }
+
+      warning(stringr::str_glue(
+        "Dictionary logic already translated to R uses the original codes of variables now converted to factors ({shown}). ",
+        "Run rd_factor() before rd_dictionary()."
+      ), call. = FALSE)
+    }
   }
 
   # If there were any variables that were excluded from conversion, reattach them to the data

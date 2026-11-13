@@ -117,10 +117,11 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     # Process calculated fields: evaluate, transcribe logic, and compare results
     calc <- tibble::tibble(dic) |>
-      dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude) |>
+      # The `_recalc` fields added by a previous rd_recalculate() are not recalculated again
+      dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude, !.data$field_name %in% paste0(dic$field_name, "_recalc")) |>
       dplyr::mutate(
         calc = purrr::map(.data$field_name, function(x) {
-          val <- data[, x]
+          val <- data[[x]]
           if (is.numeric(val)) {
             as.numeric(val)
           } else {
@@ -161,7 +162,8 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
           } else {
             NA
           }
-        })
+        }),
+        n_diff = purrr::map2_int(.data$calc, .data$recalc, count_differences)
       ) |>
       dplyr::select(-"rlogic")
 
@@ -172,21 +174,28 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     if (nrow(calc_change) > 0) {
       for (i in seq_len(nrow(calc_change))) {
-        name <- stringr::str_glue("{calc_change$field_name[i]}_recalc")
+        name <- as.character(stringr::str_glue("{calc_change$field_name[i]}_recalc"))
 
-        data <- data |>
-          tibble::add_column("{name}" := calc_change$recalc[[i]], .after = as.character(calc_change$field_name[i]))
+        # If rd_recalculate() was already applied, the `_recalc` field is updated instead of duplicated
+        if (name %in% names(data)) {
+          data[[name]] <- calc_change$recalc[[i]]
+        } else {
+          data <- data |>
+            tibble::add_column("{name}" := calc_change$recalc[[i]], .after = as.character(calc_change$field_name[i]))
+        }
 
-        add_row <- dic |>
-          dplyr::filter(.data$field_name == calc_change$field_name[i]) |>
-          dplyr::mutate(
-            field_name = stringr::str_glue("{field_name}_recalc"),
-            field_label = stringr::str_glue("{field_label} (Recalculate)")
-          )
+        if (!name %in% dic$field_name) {
+          add_row <- dic |>
+            dplyr::filter(.data$field_name == calc_change$field_name[i]) |>
+            dplyr::mutate(
+              field_name = stringr::str_glue("{field_name}_recalc"),
+              field_label = stringr::str_glue("{field_label} (Recalculate)")
+            )
 
-        pos <- which(dic$field_name == calc_change$field_name[i])
+          pos <- which(dic$field_name == calc_change$field_name[i])
 
-        dic <- dic |> tibble::add_row(!!!as.list(add_row), .after = pos)
+          dic <- dic |> tibble::add_row(!!!as.list(add_row), .after = pos)
+        }
       }
     }
 
@@ -234,7 +243,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     report2 <- calc |>
       dplyr::mutate(trans2 = ifelse(!is.na(.data$trans), "Yes", "No")) |>
       dplyr::arrange(.data$trans2, .data$is_equal) |>
-      dplyr::select("field_name", "Transcribed?" = "trans2", "Is equal?" = "is_equal")
+      dplyr::select("field_name", "Transcribed?" = "trans2", "Is equal?" = "is_equal", "Different values" = "n_diff")
 
     results <- c(results, "\n", knitr::kable(report2, "pipe", align = "ccc"))
 
@@ -255,4 +264,34 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     results = stringr::str_glue("{results}")
   ) |>
     purrr::compact() # Remove any NULL elements from the output list
+}
+
+
+
+#' Number of values that differ between a calculated field and its recalculation
+#'
+#' Uses the same criteria as the `Is equal?` column: numbers are compared rounded to 3 decimals, and a value that is missing in only one of the two versions counts as different.
+#'
+#' @param x Values of the calculated field in the data.
+#' @param y Recalculated values (`NULL` if the field couldn't be transcribed).
+#' @return Integer, or `NA` when the field couldn't be transcribed.
+#' @noRd
+count_differences <- function(x, y) {
+  if (is.null(y)) {
+    return(NA_integer_)
+  }
+
+  if (is.data.frame(x)) {
+    x <- x[[1]]
+  }
+
+  if (is.numeric(x) && is.numeric(y)) {
+    x <- round(x, 3)
+    y <- round(y, 3)
+  } else {
+    x <- as.character(x)
+    y <- as.character(y)
+  }
+
+  as.integer(sum(xor(is.na(x), is.na(y)) | (!is.na(x) & !is.na(y) & x != y)))
 }

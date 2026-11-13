@@ -170,3 +170,19 @@ test_that("function handles repeated instruments", {
     suppressWarnings()
   expect_true(is.list(res))
 })
+
+
+
+# ---- Identifier with another name ----
+
+test_that("rd_transform works when the identifier is not called record_id", {
+  sid <- covican
+  names(sid$data)[1] <- "study_id"
+  sid$dictionary$field_name[1] <- "study_id"
+
+  res <- suppressWarnings(rd_transform(sid))
+  ref <- suppressWarnings(rd_transform(covican))
+
+  expect_equal(res$data$study_id, ref$data$record_id)
+  expect_equal(nrow(res$data), nrow(ref$data))
+})

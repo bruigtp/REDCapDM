@@ -250,10 +250,10 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   if (longitudinal) {
     if ("redcap_event_name.factor" %in% names(data)) {
       data <- data |>
-        dplyr::arrange(factor(.data$record_id, levels = unique(.data$record_id)), .data$redcap_event_name.factor)
+        dplyr::arrange(factor(.data[[names(data)[1]]], levels = unique(.data[[names(data)[1]]])), .data$redcap_event_name.factor)
     } else {
       data <- data |>
-        dplyr::arrange(factor(.data$record_id, levels = unique(.data$record_id)), .data$redcap_event_name)
+        dplyr::arrange(factor(.data[[names(data)[1]]], levels = unique(.data[[names(data)[1]]])), .data$redcap_event_name)
     }
   }
 

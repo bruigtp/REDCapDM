@@ -46,10 +46,6 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   # Extract data frame, dictionary and event-form mapping if nested inside a list (e.g., data_def)
   dictionary_df <- NULL
   event_form_df <- NULL
-  
-  if ("dictionary" %in% names(data)) {
-    dictionary_df <- data$dictionary
-  }
 
   if (is.list(data) && !is.data.frame(data)) {
     if ("data" %in% names(data)) {

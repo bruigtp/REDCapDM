@@ -39,6 +39,8 @@ Converts variables in a REDCap dataset with associated \code{.factor} columns in
 }
 \details{
 The function looks for columns ending in \code{.factor} and replaces the original variable values with those \code{.factor} values (converted to factors). It preserves variable labels. The \code{exclude} argument must contain base variable names (no \code{.factor} suffix); if any \code{.factor} names are passed to \code{exclude} the function will throw an informative error. The columns \code{redcap_event_name}, \code{redcap_repeat_instrument} and \code{redcap_data_access_group} (and their \code{.factor} counterparts) are handled specially to avoid altering event or access-group data.
+
+Use \code{rd_factor()} before \code{rd_dictionary()}: the branching logic and calculations that \code{rd_dictionary()} translates to R compare the variables with their original codes, so they stop working once the variables are factors. If the dictionary already has logic translated to R that uses any of the converted variables, a warning is shown.
 }
 \examples{
 \dontrun{

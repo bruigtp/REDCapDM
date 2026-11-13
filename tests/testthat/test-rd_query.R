@@ -607,7 +607,10 @@ test_that("rd_query handles multiple event_id on longitudinal dataset correctly"
   link <- list(domain = "redcap", redcap_version = "10", proj_id = 1,
                event_id = setNames(c(101, 102), c("e1","e2")))
 
-  res <- rd_query(data = df, dic = toy_dic, variables = "x", expression = "is.na(x)", link = link)
+  expect_warning(
+    res <- rd_query(data = df, dic = toy_dic, variables = "x", expression = "is.na(x)", link = link),
+    "No event or event-form has been specified"
+  )
   expect_true(all(c("Link","Event") %in% names(res$queries)))
 })
 
@@ -679,4 +682,30 @@ test_that("rd_query addTo preserves Link column when present in addTo$queries", 
   expect_true(is.list(out))
   expect_true("queries" %in% names(out))
   expect_true("Link" %in% names(out$queries))
+})
+
+
+# ---- Branching logic after rd_factor() ----
+
+test_that("rd_query applies the branching logic the same way before and after rd_factor()", {
+  fac <- suppressWarnings(rd_factor(covican))
+
+  for (v in c("type_dm", "acute_leuk", "potassium")) {
+    before <- suppressWarnings(rd_query(covican, variables = v, expression = "is.na(x)"))
+    expect_warning(
+      after <- rd_query(fac, variables = v, expression = "is.na(x)"),
+      "applied automatically"
+    )
+    expect_equal(after$queries, before$queries)
+  }
+
+  # type_dm is only asked to patients with diabetes: 5 queries, not one per patient without it
+  expect_equal(nrow(suppressWarnings(rd_query(fac, variables = "type_dm", expression = "is.na(x)"))$queries), 5)
+})
+
+test_that("rd_query keeps working with the branching logic translated by rd_dictionary() after rd_factor()", {
+  dic_fac <- suppressWarnings(rd_dictionary(suppressWarnings(rd_factor(covican))))
+
+  res <- suppressWarnings(rd_query(dic_fac, variables = "type_dm", expression = "is.na(x)"))
+  expect_equal(nrow(res$queries), 5)
 })

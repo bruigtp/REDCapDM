@@ -87,7 +87,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
   actions <- character()
 
   # Check for missing variables in the dataset compared to the dictionary
-  vars_more <- setdiff(dic$field_name, names(data))
+  vars_more <- setdiff(dic$field_name[!dic$field_type %in% "descriptive"], names(data)) # Descriptive fields are never exported with the data
 
   # Handle cases where variables in the dictionary are missing in the dataset
   if (length(vars_more) > 0) {
@@ -287,7 +287,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
             })
           }
         ) |>
-        dplyr::relocate(.data$max_repeated_instance, .before = .data$vars)
+        dplyr::relocate("max_repeated_instance", .before = "vars")
     }
   } else if (by == "event") {
 
@@ -314,8 +314,8 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
         }
         )
       ) |>
-      tidyr::unnest(.data$redcap_event_name) |>
-      tidyr::unnest(.data$vars) |>
+      tidyr::unnest("redcap_event_name") |>
+      tidyr::unnest("vars") |>
       dplyr::distinct(.data$redcap_event_name, field_name = .data$vars) |>
       dplyr::filter(.data$field_name != "record_id") |>
       tibble::as_tibble()

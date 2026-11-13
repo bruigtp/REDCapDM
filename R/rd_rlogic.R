@@ -25,6 +25,7 @@
 #' \describe{
 #'   \item{rlogic}{The translated R-compatible logic as a string.}
 #'   \item{eval}{The evaluation of the translated logic on the provided dataset, filtered by event if applicable.}
+#'   \item{eval_data}{A `data.frame` with the record identifier, the event and repetition columns present in the dataset (`redcap_event_name`, `redcap_repeat_instrument`, `redcap_repeat_instance`) and `eval`, to identify the record of each evaluated value.}
 #' }
 #'
 #' @examples
@@ -123,37 +124,29 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Proceed to transcribe REDCap logic to R logic
   rlogic <- gsub('"', "'", rlogic) # Replace double quotes with single quotes for R compatibility
 
-  # Verify if any of the variables in the logic is now a factor in the dataset (example: [copd] + [hemato_neo], if we do this it generates a warning)
-  vars_calc <- rlogic |>
-    stringr::str_extract_all("(?<=\\[)[^\\]]+(?=\\]\\s*[+\\-*/])") |>
-    purrr::pluck(1)
-
+  # Variables of the logic that are factors in the dataset (e.g. after rd_factor()) are evaluated with their original
+  # codes, as in REDCap: [dm] = '1' or [copd] + [hemato_neo] give the same result before and after rd_factor().
+  # They are left as factors if the logic compares them with their labels (e.g. [dm] = 'Yes', as rd_dictionary() writes it)
   factors <- data |>
     dplyr::select(dplyr::where(is.factor)) |>
     names()
 
-  vars_calc <- intersect(vars_calc, factors)
+  for (field in intersect(rlogic_var, factors)) {
+    mapping <- factor_code_mapping(field, dic)
 
-  if (length(vars_calc) > 0) {
-    data <- data |>
-      dplyr::mutate(dplyr::across(
-        dplyr::any_of(vars_calc),
-        ~ {
-          field <- dplyr::cur_column()
+    if (length(mapping) == 0) {
+      next
+    }
 
-          choices <- dic$choices_calculations_or_slider_labels[dic$field_name == field]
+    label_pattern <- paste0("\\[", field, "\\]\\s*(=|<>|!=)\\s*'(", paste(escape_regex(names(mapping)), collapse = "|"), ")'")
+    codes <- unname(mapping[as.character(data[[field]])])
 
-          parts <- strsplit(choices, "\\|")[[1]]
-          parts <- parts[grepl(",", parts, fixed = FALSE)]
+    # Leave the variable as it is if the logic uses its labels or if any of its values isn't one of them
+    if (grepl(label_pattern, rlogic, perl = TRUE) || any(!is.na(data[[field]]) & is.na(codes))) {
+      next
+    }
 
-          nums <- trimws(sub(",.*$", "", parts))
-          labs <- trimws(sub("^[^,]*,\\s*", "", parts))
-
-          mapping <- setNames(as.numeric(nums), labs)
-
-          as.numeric(mapping[as.character(data[[field]])])
-        }
-      ))
+    data[[field]] <- if (all(grepl("^-?[0-9]+(\\.[0-9]+)?$", mapping))) as.numeric(codes) else codes
   }
 
   # Convert REDCap functions to equivalent R functions
@@ -309,25 +302,85 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   } else {
     # If there's more than one event, return the evaluation only for the specified event(s):
     if (!is.null(event_form)) {
-      return(
-        list(
-          rlogic = rlogic,
-          eval = data |>
-            dplyr::mutate(
-              calc = rlogic_eval,
-              calc = ifelse(!.data$redcap_event_name %in% event_var, NA, .data$calc)
-            ) |>
-            dplyr::pull(.data$calc)
-        )
-      )
-    } else {
-      # If there is only one event, return the result directly
-      return(
-        list(
-          rlogic = rlogic,
-          eval = rlogic_eval
-        )
-      )
+      rlogic_eval <- data |>
+        dplyr::mutate(
+          calc = rlogic_eval,
+          calc = ifelse(!.data$redcap_event_name %in% event_var, NA, .data$calc)
+        ) |>
+        dplyr::pull(.data$calc)
     }
+
+    return(
+      list(
+        rlogic = rlogic,
+        eval = rlogic_eval,
+        eval_data = rlogic_eval_data(data, rlogic_eval)
+      )
+    )
   }
+}
+
+
+
+#' Evaluation of a logic next to the record it belongs to
+#'
+#' @param data REDCap dataset the logic was evaluated on.
+#' @param eval Evaluation of the logic (one value per row of `data`).
+#' @return A `data.frame` with the record identifier, the event and repetition columns present in `data` and `eval`. `NULL` if `eval` doesn't have one value per row.
+#' @noRd
+rlogic_eval_data <- function(data, eval) {
+  if (!length(eval) %in% c(1, nrow(data))) {
+    return(NULL)
+  }
+
+  # Record identifier: record_id or, if it has another name, the first column
+  id_col <- if ("record_id" %in% names(data)) "record_id" else names(data)[1]
+  key_cols <- intersect(c(id_col, "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance"), names(data))
+
+  eval_data <- as.data.frame(data)[, key_cols, drop = FALSE]
+  eval_data$eval <- eval
+  rownames(eval_data) <- NULL
+
+  eval_data
+}
+
+
+#' Codes of the labels of a factor variable
+#'
+#' @param field Variable name as it appears in the dataset.
+#' @param dic REDCap dictionary.
+#' @return Named character vector: the codes, named by their labels. Empty if
+#'   they can't be determined.
+#' @noRd
+factor_code_mapping <- function(field, dic) {
+  # Checkbox options: REDCap exports them as Unchecked/Checked
+  if (grepl("___", field)) {
+    return(c(Unchecked = "0", Checked = "1"))
+  }
+
+  type <- dic$field_type[match(field, dic$field_name)]
+
+  if (identical(type, "yesno")) {
+    return(c(No = "0", Yes = "1"))
+  }
+  if (identical(type, "truefalse")) {
+    return(c(False = "0", True = "1"))
+  }
+
+  choices <- dic$choices_calculations_or_slider_labels[match(field, dic$field_name)]
+
+  if (length(choices) == 0 || is.na(choices) || !nzchar(choices)) {
+    return(character(0))
+  }
+
+  parts <- trimws(strsplit(choices, "\\|")[[1]])
+  parts <- parts[grepl(",", parts)]
+
+  stats::setNames(trimws(sub(",.*$", "", parts)), trimws(sub("^[^,]*,\\s*", "", parts)))
+}
+
+#' Escape the special characters of a regular expression
+#' @noRd
+escape_regex <- function(x) {
+  gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", x)
 }

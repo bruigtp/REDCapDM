@@ -255,10 +255,13 @@ test_that("rd_rlogic warns when multiple logic expressions or multiple vars are 
   df <- data.frame(a = c(1,0), stringsAsFactors = FALSE)
   dic <- make_dic("a")
   expect_warning(
-    out <- rd_rlogic(data = df, dic = dic,
-                     logic = c("if([a]='1',1,0)", "if([a]='0',1,0)"),
-                     var = c("a", "a")),
-    "`logic` contains more than one expression;|`var` contains more than one variable name"
+    expect_warning(
+      out <- rd_rlogic(data = df, dic = dic,
+                       logic = c("if([a]='1',1,0)", "if([a]='0',1,0)"),
+                       var = c("a", "a")),
+      "`logic` contains more than one expression"
+    ),
+    "`var` contains more than one variable name"
   )
 
   # Should have translated the first logic only
@@ -345,3 +348,98 @@ test_that("rd_rlogic throws an error when final evaluation fails (invalid R code
   )
 })
 
+
+# ---- eval_data ----
+
+test_that("rd_rlogic returns eval_data with the record, the event and eval", {
+  out <- rd_rlogic(covican,
+                   logic = "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)",
+                   var = "screening_fail_crit")
+
+  expect_s3_class(out$eval_data, "data.frame")
+  expect_equal(names(out$eval_data), c("record_id", "redcap_event_name", "eval"))
+  expect_equal(nrow(out$eval_data), nrow(covican$data))
+  expect_equal(as.character(out$eval_data$record_id), as.character(covican$data$record_id))
+  expect_equal(as.character(out$eval_data$redcap_event_name), as.character(covican$data$redcap_event_name))
+  # eval is unchanged and the same as in eval_data
+  expect_true(is.vector(out$eval))
+  expect_identical(out$eval_data$eval, out$eval)
+})
+
+test_that("rd_rlogic eval_data uses the first column as identifier when there is no record_id", {
+  df <- data.frame(patient = c("A", "B", "C"), a = c(1, 0, 1))
+  dic <- data.frame(field_name = c("patient", "a", "b"), form_name = "form1", field_type = c("text", "text", "calc"),
+                    text_validation_type_or_show_slider_number = "", stringsAsFactors = FALSE)
+
+  out <- rd_rlogic(data = df, dic = dic, logic = "[a]='1'", var = "b")
+
+  expect_equal(names(out$eval_data), c("patient", "eval"))
+  expect_equal(out$eval_data$patient, c("A", "B", "C"))
+  expect_equal(out$eval_data$eval, c(TRUE, FALSE, TRUE))
+})
+
+test_that("rlogic_eval_data keeps the repetition columns and needs one value per row", {
+  df <- data.frame(record_id = c(1, 1, 2), redcap_repeat_instrument = c(NA, "visits", NA),
+                   redcap_repeat_instance = c(NA, 1, NA), a = 1:3)
+
+  res <- rlogic_eval_data(df, c(TRUE, FALSE, NA))
+  expect_equal(names(res), c("record_id", "redcap_repeat_instrument", "redcap_repeat_instance", "eval"))
+  expect_equal(res$eval, c(TRUE, FALSE, NA))
+
+  expect_equal(rlogic_eval_data(df, 5)$eval, c(5, 5, 5))
+  expect_null(rlogic_eval_data(df, c(1, 2)))
+})
+
+
+# ---- Variables already converted to factors ----
+
+test_that("rd_rlogic gives the same evaluation before and after rd_factor()", {
+  logic <- "if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)"
+  before <- rd_rlogic(covican, logic = logic, var = "screening_fail_crit")
+  after <- rd_rlogic(suppressWarnings(rd_factor(covican)), logic = logic, var = "screening_fail_crit")
+
+  expect_equal(after$rlogic, before$rlogic)
+  expect_equal(after$eval, before$eval)
+  expect_equal(sum(after$eval == 1, na.rm = TRUE), 4)
+})
+
+test_that("rd_rlogic keeps working with logic that compares factors with their labels", {
+  fac <- suppressWarnings(rd_factor(covican))
+  before <- rd_rlogic(covican, logic = "[dm]='1'", var = "type_dm")
+  after <- rd_rlogic(fac, logic = "[dm]='Yes'", var = "type_dm")
+
+  expect_equal(after$eval, before$eval)
+})
+
+test_that("rd_rlogic evaluates factor checkboxes, yes/no fields and non-numeric codes with their codes", {
+  data <- data.frame(
+    record_id = 1:3,
+    sym___1 = factor(c("Checked", "Unchecked", NA), levels = c("Unchecked", "Checked")),
+    smoker = factor(c("Yes", "No", "Yes"), levels = c("No", "Yes")),
+    group = factor(c("Alpha", "Beta", "Alpha"))
+  )
+  dic <- data.frame(
+    field_name = c("record_id", "sym", "smoker", "group", "res"),
+    form_name = "form1",
+    field_type = c("text", "checkbox", "yesno", "radio", "calc"),
+    choices_calculations_or_slider_labels = c("", "1, Cough | 2, Fever", "", "A, Alpha | B, Beta", ""),
+    text_validation_type_or_show_slider_number = "",
+    stringsAsFactors = FALSE
+  )
+
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[sym(1)]='1'", var = "res")$eval, c(TRUE, FALSE, NA))
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[smoker]='1'", var = "res")$eval, c(TRUE, FALSE, TRUE))
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[group]='B'", var = "res")$eval, c(FALSE, TRUE, FALSE))
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[smoker]+[sym(1)]", var = "res")$eval, c(2, 0, NA))
+})
+
+test_that("rd_rlogic leaves a factor as it is when its values aren't the labels of the dictionary", {
+  data <- data.frame(record_id = 1:2, smoker = factor(c("Si", "No")))
+  dic <- data.frame(
+    field_name = c("record_id", "smoker", "res"), form_name = "form1", field_type = c("text", "radio", "calc"),
+    choices_calculations_or_slider_labels = c("", "0, No | 1, Yes", ""),
+    text_validation_type_or_show_slider_number = "", stringsAsFactors = FALSE
+  )
+
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[smoker]='Si'", var = "res")$eval, c(TRUE, FALSE))
+})
