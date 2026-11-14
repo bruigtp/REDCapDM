@@ -32,11 +32,13 @@ remotes::install_github("bruigtp/REDCapDM")
 To learn more about the package’s functionality, visit the [**REDCapDM website**](https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html). The site includes detailed descriptions of the package's functions and access to vignettes that demonstrate how to use REDCapDM effectively in your projects.
 
 
-### Getting help
+### Getting help and contributing
 
 If you encounter a clear bug, please file an issue with a minimal
 reproducible example on
 [**GitHub: Issues**](https://github.com/bruigtp/REDCapDM/issues).
+
+To propose an improvement or contribute code, read the [contributing guide](https://github.com/bruigtp/REDCapDM/blob/main/.github/CONTRIBUTING.md). Please note that the REDCapDM project is released with a [Contributor Code of Conduct](https://github.com/bruigtp/REDCapDM/blob/main/.github/CODE_OF_CONDUCT.md). By contributing to this project, you agree to abide by its terms.
 
 
 ### Published Work
@@ -81,4 +83,4 @@ License: MIT + file LICENSE
 
 Encoding: UTF-8
 
-Depends: R (>= 3.6.0)
+Depends: R (>= 4.1)
