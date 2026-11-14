@@ -108,3 +108,21 @@ test_that("the reports work without kableExtra", {
   mockery::stub(style_report, "requireNamespace", FALSE)
   expect_identical(style_report(table), table)
 })
+
+test_that("grouped data and dictionaries with factor columns give the same results", {
+  ref_recalc <- suppressWarnings(suppressMessages(rd_recalculate(covican)))
+  ref_transform <- suppressWarnings(suppressMessages(rd_transform(covican)))
+
+  grouped <- covican
+  grouped$data <- dplyr::group_by(grouped$data, record_id)
+  out <- suppressWarnings(suppressMessages(rd_recalculate(grouped)))
+  expect_false(dplyr::is_grouped_df(out$data))
+  expect_equal(names(out$data), names(ref_recalc$data))
+  expect_equal(dim(suppressWarnings(suppressMessages(rd_transform(grouped)))$data), dim(ref_transform$data))
+
+  factor_dic <- covican
+  factor_dic$dictionary[] <- lapply(factor_dic$dictionary, factor)
+  out <- suppressWarnings(suppressMessages(rd_recalculate(factor_dic)))
+  expect_equal(names(out$data), names(ref_recalc$data))
+  expect_equal(dim(suppressWarnings(suppressMessages(rd_transform(factor_dic)))$data), dim(ref_transform$data))
+})

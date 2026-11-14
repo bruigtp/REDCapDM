@@ -50,6 +50,8 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "text_validation_type_or_show_slider_number"))
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
 
   # Extract labels from the data to reapply later
   labels <- labels <- purrr::map_chr(data, function(x) {
@@ -83,7 +85,7 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
 
   # Validation for Date/Datetime Formatting
   if (identical(var_date, var_date_valid) && identical(var_datetime, var_datetime_valid)) {
-    rd_warn("All date and datetime variables are already in the correct format. No transformation applied.")
+    rd_inform("All date and datetime variables are already in the correct format. No transformation applied.")
   } else {
     var_date <- setdiff(var_date, var_date_valid)
 

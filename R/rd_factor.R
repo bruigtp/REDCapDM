@@ -53,6 +53,8 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   
   # Error: invalid arguments
   check_inputs(data, dic)
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   check_strings(exclude, "exclude")
 
   # Extract labels from the data to reapply later

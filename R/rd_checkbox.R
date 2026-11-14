@@ -76,6 +76,8 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "field_type", "field_label", "choices_calculations_or_slider_labels", "branching_logic_show_field_only_if"))
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   check_flag(checkbox_names, "checkbox_names")
 
   # Extract labels from the data to reapply later
@@ -197,6 +199,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
         # If there is branching logic, attempt to translate and evaluate it
         if (!is.na(logic) && !logic %in% "") {
+          rlogic_eval <- NULL
 
           # Checking if the logic is already in R format
           if (grepl("<>|\\[.*?\\]", logic) && !grepl("==|!=|\\$", logic)) {
@@ -206,12 +209,15 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
             if (!inherits(rlogic, "try-error")) {
               # Evaluate the logic and apply missing values accordingly
               rlogic_eval <- rlogic$eval
-            } else {
-              # Track variables that can't be evaluated due to logic issues
-              review2 <- c(review2, var_check_dic[i])
             }
           } else {
-            rlogic_eval <- eval(parse(text = logic))
+            rlogic_eval <- tryCatch(eval(parse(text = logic)), error = function(e) NULL)
+          }
+
+          # Logic that can't be evaluated: the options of this checkbox are left as they are
+          if (is.null(rlogic_eval) || length(rlogic_eval) != nrow(data)) {
+            review2 <- c(review2, var_check_dic[i])
+            next
           }
 
           # Set missing values where logic is not satisfied
@@ -244,6 +250,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       if (!is.null(review2)) {
         results2 <- tibble::tibble("Variables with a logic that can't be transcribed" = review2)
         results <- c(results, knitr::kable(results2, "pipe", align = c("ccc"), caption = caption))
+        rd_warn(c("The branching logic of {cli::qty(length(review2))}the checkbox{?es} {.var {review2}} could not be evaluated: {cli::qty(length(review2))}{?its/their} options were not changed.", "i" = "Check the {.field results} element of the output for details."))
       }
 
       data <- data

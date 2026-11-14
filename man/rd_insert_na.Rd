@@ -51,15 +51,12 @@ Sets selected variables to \code{NA} when a filter condition is satisfied. Usefu
 }
 \examples{
 # Set 'potassium' to NA where age < 65
-\dontrun{
-data <- rd_insert_na(
-  data = covican$data,
-  dic = covican$dictionary,
+result <- rd_insert_na(
+  covican,
   vars = "potassium",
   filter = "age < 65"
 )
-table(data$potassium)
-}
+table(is.na(result$data$potassium))
 
 }
 \seealso{

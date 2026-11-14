@@ -102,6 +102,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   
   # Error: invalid arguments
   check_inputs(data, dic)
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   for (arg in c("event", "filter", "variables_names", "query_name", "instrument", "report_title")) {
     check_text(get(arg), arg)
   }
@@ -156,7 +158,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     not_found <- setdiff(variables, names(data))
     checkboxes <- intersect(not_found, dic$field_name[dic$field_type %in% "checkbox"])
 
-    checkbox_example <- paste0(checkboxes[1], "___1")
+    checkbox_example <- c(grep(paste0("^", checkboxes[1], "___[^.]*$"), names(data), value = TRUE), paste0(checkboxes[1], "___1"))[1]
     rd_abort(
       c(
         "Specified variables do not exist in the dataset: {.val {not_found}}.",
@@ -169,6 +171,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   
   # Error: dictionary columns needed to check the variables
   check_inputs(data, dic, dic_cols = c("field_name", "form_name", "field_label"))
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   
   # Repeating instruments of the complete dataset (before any event or filter subsetting)
   rep_pairs <- repeat_info(data)$pairs
@@ -299,7 +303,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Ensure expressions and variables match in length
   if (length(variables) != length(expression)) {
     if (length(variables) > length(expression)) {
-      rd_warn("Number of variables ({length(variables)}) is greater than the number of expressions ({length(expression)}). The first expression will be applied to all variables.")
+      # One expression for every variable is the usual way; several expressions that don't match the variables, a mistake
+      if (length(expression) > 1) {
+        rd_warn("Number of variables ({length(variables)}) is greater than the number of expressions ({length(expression)}). The first expression will be applied to all variables.")
+      }
 
       # Repeat the first expression for remaining variables
       expression <- rep(expression[1], length(variables))

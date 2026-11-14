@@ -54,6 +54,8 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   
   # Error: invalid arguments
   check_inputs(data, dic)
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
 
   # Checking if there was already a transformation of the original variables into factors
   factors <- data |>

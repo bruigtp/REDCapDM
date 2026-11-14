@@ -74,6 +74,8 @@
 - `rd_rlogic()` (and so `rd_query()`, `rd_checkbox()` and `rd_recalculate()`) treated `[x] <> '1'` as unknown when `x` was blank. As in REDCap, a blank value is different from any value, so the field with this branching logic is shown and checked.
 - `rd_dictionary()` (and so `rd_transform()`) didn't translate the codes of the yes/no and true/false fields converted with `rd_factor()` (e.g. `[smoker] = '1'` must be `[smoker] = 'Yes'`), turned `[x] > 1` of a factor into `[x] <> 'label'`, and wrote the logic with variables of other events (e.g. `[baseline_arm_1][sex] = '2'`) as R logic of each row, which lost the event. This logic is now kept in REDCap syntax and listed in the results.
 - `rd_query()` after `rd_transform()` didn't apply the branching logic that uses variables of other events, and checked every row of a field whose branching logic is never met (without `rd_transform()` there is nothing to check, as in REDCap).
+- Grouped data (`dplyr::group_by()` without `ungroup()`) and dictionaries with factor columns (e.g. read with `stringsAsFactors = TRUE`) made several functions fail, and `rd_recalculate()` skipped calculated fields without warning. All functions now use them as plain data frames.
+- `rd_checkbox(na_logic = "eval")` and `na_logic = "missing"` failed when the branching logic of a checkbox could not be evaluated, or applied to it the logic of the previous checkbox. Its options are now left unchanged, with a warning.
 
 ## Clearer messages
 
@@ -92,6 +94,8 @@
 - All the other functions also report their errors and warnings with cli, naming the variables, forms and events involved. Logic that can't be translated or evaluated has the class `REDCapDM_error_logic` (with the translated logic and the R error), a dataset that doesn't match its dictionary the class `REDCapDM_error_data`, and a folder that doesn't exist in `rd_export()` the class `REDCapDM_error_file`. A filter of `rd_insert_na()` that can't be evaluated keeps the original R error as its parent.
 - `redcap_data()` explains when the R script can't be run, ignores the empty rows of the dictionary (e.g. added by Excel) and warns when a field appears more than once in it.
 - `rd_split()` and `rd_transform()` name the fields of the dictionary that are not in the data and, when whole instruments are missing (data exported with only some instruments), show how to remove them with `rd_delete_vars(forms = ...)`.
+- `rd_query()` suggests an option of the checkbox that exists in the data (e.g. `symptoms___a`) when a checkbox field is given in `variables`.
+- `rd_query()` no longer warns when one expression is given for several variables, the usual way to check them (it still warns when several expressions don't match the variables), and `rd_dates()` informs with a message, instead of a warning, that there are no dates to convert.
 
 ## Documentation
 
@@ -99,6 +103,7 @@
 - The reference of the website groups the functions by task, and the help of each function links to the related functions.
 - New contributing guide, code of conduct and issue templates on GitHub. The README states the R version the package needs (4.1 or later).
 - `rd_checkbox()`, `rd_dates()`, `rd_delete_vars()`, `rd_dictionary()`, `rd_export()`, `rd_factor()`, `rd_recalculate()` and `rd_split()` are now stable (their arguments and results won't change without a deprecation period). `rd_missplot()` remains experimental.
+- The examples of `rd_insert_na()` and `rd_export()` can be run as they are.
 
 ## Internal changes
 

@@ -151,3 +151,19 @@ test_that("rd_checkbox translates the branching logic of checkbox codes with let
   expect_equal(as.character(out$data$cb_negative), c("No", "Yes", "No"))
   expect_equal(unname(logic[c("f1", "f2", "f3", "f4")]), c("[cb_letter]='Yes'", "[cb_negative]='Yes'", "[cb_letter]<>'Yes'", "[cb_negative]<>'Yes'"))
 })
+
+test_that("rd_checkbox leaves unchanged the checkboxes whose branching logic can't be evaluated", {
+  data <- data.frame(record_id = as.character(1:3), sex = c(1, 2, 2), a___1 = c(1, 0, 1), b___1 = c(1, 1, 0))
+  dic <- data.frame(
+    field_name = c("record_id", "sex", "a", "b"), form_name = "form1", field_type = c("text", "radio", "checkbox", "checkbox"),
+    field_label = c("ID", "Sex", "A", "B"), choices_calculations_or_slider_labels = c("", "1, Man | 2, Woman", "1, Yes", "1, Yes"),
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = c("", "", "[sex] = '2'", "[user-role-name] = 'x'"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_warning(out <- rd_checkbox(data = data, dic = dic, na_logic = "eval", checkbox_names = FALSE), "could not be evaluated")
+  # `a` follows its branching logic and `b` is not changed
+  expect_equal(as.character(out$data$a___1), c(NA, "No", "Yes"))
+  expect_equal(as.character(out$data$b___1), c("Yes", "Yes", "No"))
+  expect_match(paste(out$results, collapse = " "), "can't be transcribed")
+})

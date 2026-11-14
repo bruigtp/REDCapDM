@@ -35,13 +35,13 @@ An \code{.xlsx} file written to the specified path.
 Export a query dataset (e.g., from \code{rd_query} or \code{rd_event}) to an \code{.xlsx} file. The function can optionally convert a column of URLs into Excel hyperlinks and apply password protection to the worksheet.
 }
 \examples{
-\dontrun{
-rd_export(
-  queries = my_queries,
-  column = "Link",
-  sheet_name = "My Queries",
-  path = "queries.xlsx"
-)
+if (requireNamespace("openxlsx", quietly = TRUE)) {
+  result <- rd_query(covican, variables = "age", expression = "x > 80")
+  rd_export(
+    result,
+    sheet_name = "My Queries",
+    path = file.path(tempdir(), "queries.xlsx")
+  )
 }
 
 }

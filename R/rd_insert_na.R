@@ -29,15 +29,12 @@
 #'
 #' @examples
 #' # Set 'potassium' to NA where age < 65
-#' \dontrun{
-#' data <- rd_insert_na(
-#'   data = covican$data,
-#'   dic = covican$dictionary,
+#' result <- rd_insert_na(
+#'   covican,
 #'   vars = "potassium",
 #'   filter = "age < 65"
 #' )
-#' table(data$potassium)
-#' }
+#' table(is.na(result$data$potassium))
 #'
 #' @family process functions
 #' @export
@@ -64,6 +61,8 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "form_name"))
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   check_strings(vars, "vars", null_ok = FALSE)
   check_strings(filter, "filter", null_ok = FALSE)
 

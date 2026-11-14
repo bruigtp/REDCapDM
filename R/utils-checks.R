@@ -156,3 +156,28 @@ check_inputs <- function(data, dic, dic_cols = NULL, dic_rows = FALSE, call = rl
 
   invisible(TRUE)
 }
+
+#' Plain data and dictionary
+#'
+#' The functions work with the data and dictionary of `redcap_data()`. Grouped data (`dplyr::group_by()`) is ungrouped
+#' and the factor columns of the dictionary (e.g. read with `stringsAsFactors = TRUE`) are turned into text, so that
+#' they give the same results.
+#'
+#' @param data Data of the project.
+#' @param dic Dictionary of the project.
+#' @return The data without groups, or the dictionary with text columns.
+#' @noRd
+plain_data <- function(data) {
+  if (inherits(data, c("grouped_df", "rowwise_df"))) dplyr::ungroup(data) else data
+}
+
+#' Text columns in the dictionary
+#'
+#' @noRd
+plain_dic <- function(dic) {
+  factors <- vapply(dic, is.factor, logical(1))
+  if (any(factors)) {
+    dic[factors] <- lapply(dic[factors], as.character)
+  }
+  dic
+}

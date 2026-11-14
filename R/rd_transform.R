@@ -67,6 +67,8 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "form_name", "field_type", "choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "field_label", "text_validation_type_or_show_slider_number"))
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   if (!is.character(final_format) || length(final_format) != 1 || !final_format %in% c("raw", "by_event", "by_form")) {
     rd_abort("{.arg final_format} has to be one of the following: {.val raw}, {.val by_event}, {.val by_form}.", class = "REDCapDM_error_argument")
   }
@@ -163,15 +165,6 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
 
   # Change the format of dates
-  # Identify dates that have the tag "date_"/"datetime_"/"datetime_seconds_" in redcap. It will have always the format "Y-M-D" in any case
-  var_date <- dic |>
-    dplyr::filter(grepl("^date_", .data$text_validation_type_or_show_slider_number)) |>
-    dplyr::pull(.data$field_name)
-
-  var_datetime <- dic |>
-    dplyr::filter(grepl("^datetime_", .data$text_validation_type_or_show_slider_number)) |>
-    dplyr::pull(.data$field_name)
-
   data <- rd_dates(data = data, dic = dic)$data
 
   dic <- dic |>

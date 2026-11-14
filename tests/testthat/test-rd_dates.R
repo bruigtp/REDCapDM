@@ -42,7 +42,7 @@ test_that("rd_dates warns if all dates/datetimes are already correct", {
     dplyr::mutate(dob = as.Date(dob),
            appointment = as.POSIXct(appointment, format = "%Y-%m-%d %H:%M", tz = "UTC"))
 
-  expect_warning(
+  expect_message(
     rd_dates(data = data_correct, dic = dic),
     "All date and datetime variables are already in the correct format"
   )

@@ -61,6 +61,8 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "form_name"), dic_rows = TRUE)
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   check_strings(which, "which")
   check_flag(wide, "wide")
 

@@ -107,6 +107,8 @@ rd_event <- function(project = NULL,
   
   # Error: invalid arguments
   check_inputs(data, dic)
+  data <- plain_data(data)
+  dic <- plain_dic(dic)
   check_strings(event, "event", null_ok = FALSE)
   check_string(filter, "filter", na_ok = TRUE)
   for (arg in c("query_name", "report_title")) {

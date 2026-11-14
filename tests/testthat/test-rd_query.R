@@ -115,8 +115,13 @@ test_that("rd_query repeats a single expression for multiple variables (warning 
   )
   toy_dic <- make_toy_dic(list(v1 = list(field_label = "V1", form_name = "f1"),
                                v2 = list(field_label = "V2", form_name = "f1")))
+  # One expression for several variables is the usual way: no warning
+  expect_no_warning(
+    res <- rd_query(data = toy_data, dic = toy_dic, variables = c("v1", "v2"), expression = "is.na(x)")
+  )
+  # Several expressions that don't match the variables: warning
   expect_warning(
-    res <- rd_query(data = toy_data, dic = toy_dic, variables = c("v1", "v2"), expression = "is.na(x)"),
+    rd_query(data = toy_data, dic = toy_dic, variables = c("v1", "v2", "v1"), expression = c("is.na(x)", "x > 1")),
     regexp = "The first expression will be applied to all variables."
   )
   # Both fields should produce queries (identifiers present for the NA rows)
@@ -917,4 +922,11 @@ test_that("rd_query applies the branching logic of other events and of fields ne
   fx$dictionary$branching_logic_show_field_only_if[3] <- "[sex] = '2'"
   after <- suppressWarnings(suppressMessages(rd_query(rd_transform(fx), variables = "preg", expression = "is.na(x)")))
   expect_equal(nrow(after$queries), 0)
+})
+
+test_that("rd_query shows a real option of the checkbox when the checkbox field is given", {
+  toy_data <- data.frame(record_id = as.character(1:2), cb___a = c(1, 0), cb___b = c(0, 1))
+  toy_dic <- data.frame(field_name = c("record_id", "cb"), form_name = "f1", field_type = c("text", "checkbox"), field_label = c("ID", "CB"),
+                        choices_calculations_or_slider_labels = c("", "A, a | B, b"), stringsAsFactors = FALSE)
+  expect_error(rd_query(data = toy_data, dic = toy_dic, variables = "cb", expression = "x == 1"), "cb___a")
 })
