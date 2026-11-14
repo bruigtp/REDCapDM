@@ -10,7 +10,7 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param event Character vector with one or more REDCap event names to check for missing records.
-#' @param filter Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}.
+#' @param filter Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}. It can use objects created in your session or in your function.
 #' @param query_name Optional character vector describing each query. Defaults to a standard format: `The event (event_name) is missing`.
 #' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
 #' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
@@ -70,6 +70,9 @@ rd_event <- function(project = NULL,
                      report_zeros = FALSE,
                      link = list(),
                      addTo = deprecated()) {
+
+  # Environment where the user called the function: the filters and expressions look for their objects there
+  user_env <- rlang::caller_env()
 
   # `addTo` was renamed `add_to` in version 1.2.0
   if (lifecycle::is_present(addTo)) {
@@ -134,16 +137,14 @@ rd_event <- function(project = NULL,
 
   # Apply the filter expression to the dataset if provided
   if (!is.na(filter) && length(filter) == 1) {
-    command <- paste0("data", "<-dplyr::filter(data,", filter, ")")
+    # The filter is evaluated with the columns of the data and the objects of the user's environment
+    filtered <- tryCatch(filter_text(data, filter, user_env), error = function(e) e)
 
-    # Test the validity of the filter logic
-    evaluation <- try(eval(parse(text = command)), silent = TRUE)
-
-    if (inherits(evaluation, "try-error")) {
-      rd_abort("Invalid {.arg filter} argument logic. Please review and correct the expression.")
-    } else {
-      eval(parse(text = command))
+    if (inherits(filtered, "error")) {
+      filter_error <- trimws(gsub("\\s+", " ", conditionMessage(filtered)))
+      rd_abort(c("Invalid {.arg filter} argument logic. Please review and correct the expression.", "x" = "R error: {filter_error}"), class = "REDCapDM_error_argument")
     }
+    data <- filtered
 
     # Warn if the filter results in no observations
     if (nrow(data) == 0) {

@@ -10,7 +10,7 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param vars Character vector of variable names to set to `NA`.
-#' @param filter A single logical expression (as string). Rows where the filter evaluates to `TRUE` will have the corresponding `vars` set to `NA`.
+#' @param filter A single logical expression (as string). Rows where the filter evaluates to `TRUE` will have the corresponding `vars` set to `NA`. It can use objects created in your session or in your function.
 #'
 #' @details
 #' * Each variable is only updated in rows/events where both the variable and filter are present.
@@ -44,6 +44,9 @@
 #' @importFrom rlang .data parse_expr eval_tidy
 
 rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL, vars, filter) {
+
+  # Environment where the user called the function: the filters and expressions look for their objects there
+  user_env <- rlang::caller_env()
 
   results <- NULL
 
@@ -129,7 +132,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
     rows_mask <- tryCatch({
       # Evaluate in the context of `data`; result should be logical vector of length nrow(data)
-      rlang::eval_tidy(filter_expr, data = data)
+      rlang::eval_tidy(filter_expr, data = data, env = rlang::env(user_env, data = data))
     }, error = function(e) {
       rd_abort("Error evaluating filter {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
     })

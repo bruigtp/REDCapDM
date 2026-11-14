@@ -30,7 +30,7 @@ rd_event(
 
 \item{event}{Character vector with one or more REDCap event names to check for missing records.}
 
-\item{filter}{Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}.}
+\item{filter}{Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}. It can use objects created in your session or in your function.}
 
 \item{query_name}{Optional character vector describing each query. Defaults to a standard format: \verb{The event (event_name) is missing}.}
 

@@ -30,13 +30,13 @@ rd_query(
 
 \item{variables}{Character vector of variable names to check for queries.}
 
-\item{expression}{Character vector of R expressions to evaluate for each variable.}
+\item{expression}{Character vector of R conditions, written as text, to evaluate for each variable, where \code{x} stands for the variable (e.g. \code{"is.na(x)"} or \code{"x > 100"}). Several conditions separated by commas must all be met. Besides the columns of the data, they can use objects created in your session or in your function.}
 
 \item{negate}{Logical, if \code{TRUE}, identifies values that \strong{do not} meet the condition. Default is \code{FALSE}.}
 
 \item{event}{Required for longitudinal projects to avoid overestimation. REDCap event(s) to analyze.}
 
-\item{filter}{Optional string of filters to apply to the dataset, such as the branching logic of a variable.}
+\item{filter}{Optional filter of the rows to check, written as text (e.g. \code{"age > 18"}), such as the branching logic of a variable translated by \code{rd_dictionary()}. Give one filter, or one per variable. Several conditions separated by commas must all be met, and the filter can use objects created in your session or in your function.}
 
 \item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended.}
 

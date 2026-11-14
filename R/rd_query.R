@@ -10,13 +10,13 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param variables Character vector of variable names to check for queries.
-#' @param expression Character vector of R expressions to evaluate for each variable.
+#' @param expression Character vector of R conditions, written as text, to evaluate for each variable, where `x` stands for the variable (e.g. `"is.na(x)"` or `"x > 100"`). Several conditions separated by commas must all be met. Besides the columns of the data, they can use objects created in your session or in your function.
 #' @param negate Logical, if `TRUE`, identifies values that **do not** meet the condition. Default is `FALSE`.
 #' @param variables_names Optional character vector of descriptions for each variable. Defaults to the variables labels in the dictionary.
 #' @param query_name Optional character vector describing each query. Defaults to a standard format: `The value is [value] and it should not be [expression]`.
 #' @param event Required for longitudinal projects to avoid overestimation. REDCap event(s) to analyze.
 #' @param instrument Optional REDCap instrument(s) for each variable. Defaults to the instrument reported in the dictionary.
-#' @param filter Optional string of filters to apply to the dataset, such as the branching logic of a variable.
+#' @param filter Optional filter of the rows to check, written as text (e.g. `"age > 18"`), such as the branching logic of a variable translated by `rd_dictionary()`. Give one filter, or one per variable. Several conditions separated by commas must all be met, and the filter can use objects created in your session or in your function.
 #' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
 #' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
@@ -78,6 +78,9 @@
 #' @importFrom rlang .data
 
 rd_query <- function(project = NULL, variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, add_to = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list(), data = NULL, dic = NULL, event_form = NULL, addTo = deprecated()) {
+
+  # Environment where the user called the function: the filters and expressions look for their objects there
+  user_env <- rlang::caller_env()
 
   # `addTo` was renamed `add_to` in version 1.2.0
   if (lifecycle::is_present(addTo)) {
@@ -310,17 +313,15 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Apply filter logic if specified
   if (all(!is.na(filter)) && length(filter) == 1) {
+    # The filter is evaluated with the columns of the data and the objects of the user's environment
+    filtered <- tryCatch(filter_text(data, filter, user_env), error = function(e) e)
+
     # Error: logic used in the filter is incorrect
-    command <- paste0("data", "<-dplyr::filter(data,", filter, ")")
-
-    evaluation <- try(eval(parse(text = command)), silent = TRUE)
-
-    if (inherits(evaluation, "try-error")) {
-      filter_error <- trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(evaluation))))
+    if (inherits(filtered, "error")) {
+      filter_error <- trimws(gsub("\\s+", " ", conditionMessage(filtered)))
       rd_abort(c("Invalid filter logic. Please review the {.arg filter} argument.", "x" = "R error: {filter_error}"), class = "REDCapDM_error_argument")
-    } else {
-      eval(parse(text = command))
     }
+    data <- filtered
 
     # Error: filter results in zero observations
     if (nrow(data) == 0) {
@@ -400,9 +401,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           branch_rows <- as.logical(branch_rows[data$.rd_row]) %in% TRUE
           branching <- dplyr::filter(data, !!branch_rows)
         } else {
-          command <- paste0("branching", "<-dplyr::filter(data,", gsub(pattern = "data\\$", replacement = "data$", x = logic), ")")
-
-          eval(parse(text = command))
+          branching <- filter_text(data, logic, user_env)
         }
 
         # When the logic was evaluated, no row meeting it means that the field is never shown: there is nothing to check
@@ -436,14 +435,12 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       rd_warn("{.var {variables[i]}} is text: the comparison {.code {expression[i]}} is made alphabetically, not numerically.")
     }
 
-    # Apply custom expression filters
-    x <- variables[i]
-    command <- paste0("raw", "<-dplyr::filter(raw0,", gsub("\\bx\\b", x, expression[i]), ")")
-    evaluation <- tryCatch(eval(parse(text = command)), error = function(e) e)
+    # Apply the expression: `x` stands for the variable
+    raw <- tryCatch(filter_text(raw0, expression[i], user_env, x = variables[i]), error = function(e) e)
 
     # Error: the expression can't be evaluated
-    if (inherits(evaluation, "error")) {
-      expression_error <- gsub("\\s+", " ", conditionMessage(evaluation))
+    if (inherits(raw, "error")) {
+      expression_error <- gsub("\\s+", " ", conditionMessage(raw))
       rd_abort(
         c(
           "The expression {.code {expression[i]}} could not be evaluated for the variable {.var {variables[i]}}.",
@@ -467,8 +464,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       # If the number of filters is equal to the number of variables
       if (length(filter) == length(variables)) {
         # Apply each filter individually
-        command <- paste0("definitive", "<-dplyr::filter(raw,", filter[i], ")")
-        eval(parse(text = command))
+        definitive <- tryCatch(filter_text(raw, filter[i], user_env), error = function(e) e)
+        if (inherits(definitive, "error")) {
+          filter_error <- trimws(gsub("\\s+", " ", conditionMessage(definitive)))
+          rd_abort(c("Invalid filter logic for the variable {.var {variables[i]}}. Please review the {.arg filter} argument.", "x" = "R error: {filter_error}"), class = "REDCapDM_error_argument")
+        }
 
         # Filtering results in zero observations
         if (nrow(definitive) == 0) {

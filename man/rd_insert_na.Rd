@@ -24,7 +24,7 @@ rd_insert_na(
 
 \item{vars}{Character vector of variable names to set to \code{NA}.}
 
-\item{filter}{A single logical expression (as string). Rows where the filter evaluates to \code{TRUE} will have the corresponding \code{vars} set to \code{NA}.}
+\item{filter}{A single logical expression (as string). Rows where the filter evaluates to \code{TRUE} will have the corresponding \code{vars} set to \code{NA}. It can use objects created in your session or in your function.}
 }
 \value{
 A list with:

@@ -35,6 +35,8 @@
 
 - `rd_event()` failed when `addTo` received the output of `rd_query()` or `rd_event()`.
 - `rd_split(wide = TRUE)` failed when it was called as `REDCapDM::rd_split()` without loading the package.
+- The `filter` and `expression` of `rd_query()`, and the `filter` of `rd_event()` and `rd_insert_na()`, can use objects created inside a function or a loop: before, only the objects of the global environment were found. They are no longer run with `eval(parse())`, so an "x" inside a text value of `expression` (e.g. `x == 'x'`) is no longer replaced by the variable, and filters can't use the internal objects of the functions. As before, several conditions can be separated by commas and `data$var` refers to the data.
+- `rd_query()` explains the mistake when one of several filters (one per variable) can't be evaluated.
 - `rd_rlogic()`, `rd_recalculate()` and `rd_query()` gave wrong results when the variables had already been converted to factors with `rd_factor()`.
 - `rd_recalculate()` applied twice duplicated the `_recalc` fields.
 - `rd_checkbox()` and `rd_recalculate()` gave wrong results with tibbles, and `rd_checkbox()` couldn't name the options of data without variable labels.
