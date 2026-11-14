@@ -902,3 +902,19 @@ test_that("rd_query applies the branching logic of a checkbox field to its optio
   res <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "preg___1", expression = "x == 0"))
   expect_equal(as.character(res$queries$Identifier), "2")
 })
+
+test_that("rd_query applies the branching logic of other events and of fields never shown after rd_transform", {
+  fx <- make_cross_event()
+  fx$data$sex.factor <- factor(fx$data$sex, levels = 1:2, labels = c("Man", "Woman"))
+  fx$data$preg.factor <- factor(fx$data$preg, levels = c(1, 0), labels = c("Yes", "No"))
+
+  before <- suppressMessages(rd_query(fx, variables = "preg", expression = "is.na(x)"))
+  after <- suppressWarnings(suppressMessages(rd_query(rd_transform(fx), variables = "preg", expression = "is.na(x)")))
+  expect_equal(nrow(after$queries), nrow(before$queries))
+  expect_equal(nrow(after$queries), 1)
+
+  # A field whose (R) logic is never met in the data is not checked
+  fx$dictionary$branching_logic_show_field_only_if[3] <- "[sex] = '2'"
+  after <- suppressWarnings(suppressMessages(rd_query(rd_transform(fx), variables = "preg", expression = "is.na(x)")))
+  expect_equal(nrow(after$queries), 0)
+})

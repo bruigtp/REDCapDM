@@ -275,6 +275,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub(">==", ">=", rlogic)
   rlogic <- gsub("!==", "!=", rlogic)
   rlogic <- gsub("<>", "!=", rlogic)
+
+  # As in REDCap, a blank value is different from any value: [x] <> '1' is TRUE when x is blank
+  rlogic <- gsub("(data\\$\\w+)\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)", "!(\\1 %in% \\2)", rlogic, perl = TRUE)
   rlogic <- gsub(" and ", " & ", rlogic)
   rlogic <- gsub(" or ", " | ", rlogic)
   

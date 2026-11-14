@@ -71,6 +71,9 @@
 - `redcap_data()` with the exported files: the text fields that look like numbers lost their format when the R script of REDCap read them (e.g. a postal code or phone `"0034"` was read as `34`, and `"1.50"` as `1.5`); they now keep the text exported by REDCap. The record identifier also keeps its label when it has another name.
 - `rd_rlogic()` failed with the operator `!=`, which REDCap accepts as `<>`.
 - `rd_transform()` failed with `wide = FALSE` when `final_format` was not `"by_form"`.
+- `rd_rlogic()` (and so `rd_query()`, `rd_checkbox()` and `rd_recalculate()`) treated `[x] <> '1'` as unknown when `x` was blank. As in REDCap, a blank value is different from any value, so the field with this branching logic is shown and checked.
+- `rd_dictionary()` (and so `rd_transform()`) didn't translate the codes of the yes/no and true/false fields converted with `rd_factor()` (e.g. `[smoker] = '1'` must be `[smoker] = 'Yes'`), turned `[x] > 1` of a factor into `[x] <> 'label'`, and wrote the logic with variables of other events (e.g. `[baseline_arm_1][sex] = '2'`) as R logic of each row, which lost the event. This logic is now kept in REDCap syntax and listed in the results.
+- `rd_query()` after `rd_transform()` didn't apply the branching logic that uses variables of other events, and checked every row of a field whose branching logic is never met (without `rd_transform()` there is nothing to check, as in REDCap).
 
 ## Clearer messages
 

@@ -598,7 +598,16 @@ test_that("rd_rlogic translates != as <>, as REDCap does", {
   df <- data.frame(record_id = 1:4, a = c(1, 4, NA, 5))
   dic <- make_dic(c("record_id", "a", "res"))
 
-  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[a] != 4", var = "res")$eval), c(TRUE, FALSE, NA, TRUE))
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[a] != 4", var = "res")$eval), c(TRUE, FALSE, TRUE, TRUE))
   expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[a] != ''", var = "res")$eval), c(TRUE, TRUE, FALSE, TRUE))
   expect_equal(rd_rlogic(data = df, dic = dic, logic = "[a] != 4", var = "res")$rlogic, rd_rlogic(data = df, dic = dic, logic = "[a] <> 4", var = "res")$rlogic)
+})
+
+test_that("rd_rlogic: a blank value is different from any value, as in REDCap", {
+  df <- data.frame(record_id = 1:3, a = c(1, NA, 2), t = c("x", NA, "y"))
+  dic <- make_dic(c("record_id", "a", "t", "res"))
+
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[a] <> '1'", var = "res")$eval), c(FALSE, TRUE, TRUE))
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[t] <> 'x' and [a] <> 2", var = "res")$eval), c(FALSE, TRUE, FALSE))
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "if([a] <> 1, 5, 0)", var = "res")$eval), c(0, 5, 5))
 })

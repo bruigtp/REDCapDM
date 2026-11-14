@@ -60,13 +60,17 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     dplyr::select(dplyr::any_of(dic$field_name) & dplyr::where(is.factor)) |>
     colnames()
 
-  # Factors with their categories in the dictionary (yes/no and true/false fields have none)
-  factors <- intersect(factors, dic$field_name[!dic$choices_calculations_or_slider_labels %in% c(NA, "")])
+  # Categories of the factors (yes/no and true/false fields have them fixed, as in the R script exported by REDCap)
+  factor_choices <- dic$choices_calculations_or_slider_labels
+  if ("field_type" %in% names(dic)) {
+    factor_choices[dic$field_type %in% "yesno"] <- "1, Yes | 0, No"
+    factor_choices[dic$field_type %in% "truefalse"] <- "1, True | 0, False"
+  }
+  factors <- intersect(factors, dic$field_name[!factor_choices %in% c(NA, "")])
 
   if (length(factors) > 0) {
     # Select the branching logic for any variables that are being transformed into factors
-    cat_factors <- dic |>
-      dplyr::select("field_name", "choices_calculations_or_slider_labels") |>
+    cat_factors <- data.frame(field_name = dic$field_name, choices_calculations_or_slider_labels = factor_choices, stringsAsFactors = FALSE) |>
       dplyr::filter(.data$field_name %in% factors)
 
     # Split the `choices_calculations_or_slider_labels` to separate each option in a multi-option field
@@ -92,8 +96,8 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     # Transform each branching logic into R logic
     cat_factors <- cat_factors |>
       dplyr::mutate(
-        redcap_v1 = paste0("\\[", .data$field_name, "\\] ?=? ?'?", .data$num, "'?"),
-        redcap_v2 = paste0("\\[", .data$field_name, "\\] ?<?>? ?'?", .data$num, "'?"),
+        redcap_v1 = paste0("\\[", .data$field_name, "\\] ?= ?['\"]?", .data$num, "['\"]?(?![0-9.])"),
+        redcap_v2 = paste0("\\[", .data$field_name, "\\] ?(<>|!=) ?['\"]?", .data$num, "['\"]?(?![0-9.])"),
         factor_v1 = paste0("[", .data$field_name, "]='", .data$cat, "'"),
         factor_v2 = paste0("[", .data$field_name, "]<>'", .data$cat, "'")
       ) |>
@@ -126,8 +130,21 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   # Identify rows in the dictionary with branching logic that needs evaluation
   pos_branch <- which(!dic$branching_logic_show_field_only_if %in% "")
 
+  # Logic with variables of other events ([event][field]) can't be written as R logic of each row: it is kept in REDCap
+  # syntax, which rd_rlogic() and rd_query() evaluate
+  other_event <- function(logic) {
+    events <- gsub("^\\[|\\]\\[$", "", unlist(stringr::str_extract_all(logic, "\\[[\\w-]+\\]\\[")))
+    !is.null(event_form) && any(events %in% event_form$unique_event_name)
+  }
+  kept <- NULL
+
   # Loop through each row with branching logic
   for (i in pos_branch) {
+    if (other_event(dic$branching_logic_show_field_only_if[i])) {
+      kept <- c(kept, dic$field_name[i])
+      next
+    }
+
     # Attempt to evaluate and convert the branching logic using `rd_rlogic`
     evaluation <- withCallingHandlers(
       {
@@ -170,6 +187,11 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
 
   # Loop through each row with calculations
   for (i in pos_calc) {
+    if (other_event(dic$choices_calculations_or_slider_labels[i])) {
+      kept <- c(kept, dic$field_name[i])
+      next
+    }
+
     # Attempt to evaluate and convert the calculations using `rd_rlogic`
     evaluation <- withCallingHandlers(
       {
@@ -230,6 +252,12 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
 
     # Append the table to the `results` for later reporting
     results <- c(results, "\n", knitr::kable(tabla, "pipe", align = c("ccc"), caption = "Variables with unconverted branching logic"))
+  }
+
+  # Report the variables whose logic uses other events
+  if (!is.null(kept)) {
+    tabla <- tibble::tibble("Variables" = unique(kept))
+    results <- c(results, "\n", knitr::kable(tabla, "pipe", align = c("ccc"), caption = "Variables whose logic uses other events (kept in REDCap syntax)"))
   }
 
   # Generating a global warning if one of the iteractions of the loop generates a warning inside rd_rlogic

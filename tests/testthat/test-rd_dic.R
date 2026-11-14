@@ -129,3 +129,29 @@ test_that("rd_dictionary works after rd_factor when the only factors are yes/no 
   ff <- suppressWarnings(rd_factor(data = fx$data, dic = fx$dictionary[-2, ], event_form = fx$event_form))
   expect_no_error(suppressWarnings(rd_dictionary(ff)))
 })
+
+test_that("rd_dictionary translates the codes of yes/no fields converted with rd_factor and keeps the logic of other events", {
+  fx <- make_cross_event()
+  fx$data$preg[5] <- 1
+  fx$data$preg.factor <- factor(fx$data$preg, levels = c(1, 0), labels = c("Yes", "No"))
+  fx$data$sex.factor <- factor(fx$data$sex, levels = 1:2, labels = c("Man", "Woman"))
+  fx$data$visit_note <- c(NA, "a", NA, NA, NA, NA)
+  fx$dictionary <- rbind(fx$dictionary, data.frame(
+    field_name = c("visit_note", "pain_note"), form_name = "visit", field_type = "text", field_label = c("Note", "Pain note"),
+    choices_calculations_or_slider_labels = NA, text_validation_type_or_show_slider_number = NA,
+    branching_logic_show_field_only_if = c("[preg] <> '1'", "[sex] > 1")
+  ))
+  fx$data$pain_note <- NA
+
+  out <- suppressWarnings(rd_dictionary(rd_factor(fx)))
+  logic <- stats::setNames(out$dictionary$branching_logic_show_field_only_if, out$dictionary$field_name)
+
+  # yes/no codes are translated to the labels of the factor
+  expect_match(logic[["visit_note"]], "'No'|'Yes'")
+  expect_equal(as.vector(eval(parse(text = logic[["visit_note"]]), list(data = rd_factor(fx)$data))), c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE))
+  # a > comparison is not turned into <>
+  expect_false(grepl("<>|!=", logic[["pain_note"]]))
+  # logic with a variable of another event stays in REDCap syntax
+  expect_equal(logic[["preg"]], "[baseline_arm_1][sex]='Woman'")
+  expect_match(paste(out$results, collapse = " "), "other events")
+})
