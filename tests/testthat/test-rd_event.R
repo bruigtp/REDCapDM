@@ -48,7 +48,34 @@ test_that("link generation works when link info provided in covican", {
   )
 })
 
-test_that("addTo merging works when addTo is provided as list(queries=...) in covican", {
+test_that("rd_event appends the output of a previous rd_query() or rd_event() with add_to", {
+  q <- suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))
+  ev <- rd_event(covican, event = "follow_up_visit_da_arm_1")
+  out <- rd_event(covican, event = "follow_up_visit_da_arm_1", add_to = q)
+
+  expect_equal(nrow(out$queries), nrow(q$queries) + nrow(ev$queries))
+  expect_error(rd_event(covican, event = "follow_up_visit_da_arm_1", add_to = data.frame(a = 1)), class = "REDCapDM_error_argument")
+})
+
+test_that("addTo still works, with a deprecation warning", {
+  rlang::local_options(lifecycle_verbosity = "warning")
+  q <- suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))
+
+  expect_warning(
+    old <- rd_query(covican, variables = "age", expression = "is.na(x)", event = "baseline_visit_arm_1", addTo = q),
+    class = "lifecycle_warning_deprecated"
+  )
+  new <- rd_query(covican, variables = "age", expression = "is.na(x)", event = "baseline_visit_arm_1", add_to = q)
+  expect_equal(old, new)
+
+  expect_warning(
+    old <- rd_event(covican, event = "follow_up_visit_da_arm_1", addTo = q),
+    class = "lifecycle_warning_deprecated"
+  )
+  expect_equal(old, rd_event(covican, event = "follow_up_visit_da_arm_1", add_to = q))
+})
+
+test_that("add_to merging works when add_to is provided as list(queries=...) in covican", {
   d0 <- covican$data
   exported <- d0[d0$record_id %in% c("100-6", "100-13"), ]  # restrict to a few rows
 
@@ -77,7 +104,7 @@ test_that("addTo merging works when addTo is provided as list(queries=...) in co
     data = exported,
     dic = covican$dictionary,
     event = "follow_up_visit_da_arm_1",
-    addTo = list(queries = prev)
+    add_to = list(queries = prev)
   )
 
   expect_true("queries" %in% names(res2))

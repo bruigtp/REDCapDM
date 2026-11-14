@@ -153,14 +153,14 @@ test_that("rd_query errors when number of filters differs from number of variabl
   )
 })
 
-test_that("rd_query merges with addTo queries when provided", {
+test_that("rd_query merges with add_to queries when provided", {
   toy_data <- data.frame(record_id = as.character(1:4), age = c(16, 21, NA, 30), height = c(160, NA, 170, 165), stringsAsFactors = FALSE)
   toy_dic <- make_toy_dic(list(age = list(field_label = "Age", form_name = "demo"),
                                height = list(field_label = "Height", form_name = "demo")))
   # First call: identify age missing
   res1 <- rd_query(data = toy_data, dic = toy_dic, variables = "age", expression = "is.na(x)")
   # Second call: height missing and merge previous
-  res2 <- rd_query(data = toy_data, dic = toy_dic, variables = "height", expression = "is.na(x)", addTo = res1)
+  res2 <- rd_query(data = toy_data, dic = toy_dic, variables = "height", expression = "is.na(x)", add_to = res1)
   # merged queries should contain identifiers for both variables
   expect_true(all(unique(res1$queries$Identifier) %in% res2$queries$Identifier))
   expect_true(all(unique(res2$queries$Identifier) %in% res2$queries$Identifier))
@@ -338,11 +338,11 @@ test_that("rd_query filters correctly", {
   expect_equal(nrow(res$queries), 1)
 })
 
-test_that("rd_query can merge with addTo", {
+test_that("rd_query can merge with add_to", {
   toy_data <- data.frame(record_id = 1:3, age = c(NA, 20, 30))
   toy_dic <- make_toy_dic(list(age = list(field_label = "Age", form_name = "demo")))
   res1 <- rd_query(data = toy_data, dic = toy_dic, variables = "age", expression = "is.na(x)")
-  res2 <- rd_query(data = toy_data, dic = toy_dic, variables = "age", expression = "x > 25", addTo = res1)
+  res2 <- rd_query(data = toy_data, dic = toy_dic, variables = "age", expression = "x > 25", add_to = res1)
   expect_gt(nrow(res2$queries), nrow(res1$queries))
 })
 
@@ -667,19 +667,19 @@ test_that("rd_query errors when query_name length mismatches variables", {
   )
 })
 
-test_that("rd_query addTo preserves Link column when present in addTo$queries", {
+test_that("rd_query add_to preserves Link column when present in add_to$queries", {
   data <- data.frame(record_id = 1:2, x = c(1, 2), redcap_event_name = c("ev1","ev1"), stringsAsFactors = FALSE)
   dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "f1")))
 
   # produce a first run with one query
   base <- rd_query(variables = "x", expression = "x>1", data = data, dic = dic, event = "ev1")
 
-  addTo <- list(queries = as.data.frame(base$queries))
+  add_to <- list(queries = as.data.frame(base$queries))
   # add a Link column to mimic an earlier export
-  addTo$queries$Link <- "http://example.com/1"
+  add_to$queries$Link <- "http://example.com/1"
 
-  # call rd_query with addTo; should not error and resulting queries should include a Link column
-  out <- rd_query(variables = "x", expression = "x>0", data = data, dic = dic, event = "ev1", addTo = addTo)
+  # call rd_query with add_to; should not error and resulting queries should include a Link column
+  out <- rd_query(variables = "x", expression = "x>0", data = data, dic = dic, event = "ev1", add_to = add_to)
   expect_true(is.list(out))
   expect_true("queries" %in% names(out))
   expect_true("Link" %in% names(out$queries))
@@ -852,7 +852,7 @@ test_that("rd_query explains the mistakes in its arguments", {
   expect_error(rd_query(fx, variables = "age", expression = "x >> 3"), "The expression `x >> 3` could not be evaluated for the variable `age`")
   expect_error(rd_query(fx, variables = "age", expression = "x > lim"), "could not be evaluated")
   expect_error(rd_query(fx, variables = "age", expression = "is.na(x)", negate = "yes"), "`negate` must be TRUE or FALSE")
-  expect_error(rd_query(fx, variables = "age", expression = "is.na(x)", addTo = data.frame(a = 1)), "`addTo` must be the output")
+  expect_error(rd_query(fx, variables = "age", expression = "is.na(x)", add_to = data.frame(a = 1)), "`add_to` must be the output")
   expect_error(rd_query(fx, variables = c("age", "agee"), expression = "is.na(x)"), "agee")
   expect_error(rd_query(fx$data, variables = "age", expression = "is.na(x)", dic = fx$dictionary), "not a data frame")
 })

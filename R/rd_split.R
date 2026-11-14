@@ -284,7 +284,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
             ~.x |>
               dplyr::group_by(.data$record_id) |>
               dplyr::mutate(id = seq_along(.data$record_id),
-                            max_id = n()) |>
+                            max_id = dplyr::n()) |>
               dplyr::ungroup() |>
               dplyr::pull(max_id) |>
               # 0 when the form has no rows (e.g. a project without records)

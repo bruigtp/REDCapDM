@@ -11,7 +11,7 @@ rd_query(
   negate = FALSE,
   event = NA,
   filter = NA,
-  addTo = NA,
+  add_to = NA,
   variables_names = NA,
   query_name = NA,
   instrument = NA,
@@ -21,7 +21,8 @@ rd_query(
   link = list(),
   data = NULL,
   dic = NULL,
-  event_form = NULL
+  event_form = NULL,
+  addTo = deprecated()
 )
 }
 \arguments{
@@ -37,7 +38,7 @@ rd_query(
 
 \item{filter}{Optional string of filters to apply to the dataset, such as the branching logic of a variable.}
 
-\item{addTo}{Optional data frame from a previous query report to which the new results can be appended.}
+\item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended.}
 
 \item{variables_names}{Optional character vector of descriptions for each variable. Defaults to the variables labels in the dictionary.}
 
@@ -58,6 +59,8 @@ rd_query(
 \item{dic}{A \code{data.frame} with the REDCap dictionary.}
 
 \item{event_form}{Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.}
+
+\item{addTo}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Use \code{add_to} instead.}
 }
 \value{
 A list containing:
@@ -86,7 +89,7 @@ The function performs the following steps:
 \item Field, Repetition, Description, Query statement
 \item Optional link to REDCap entry
 }
-\item Optionally combines results with previous query outputs using \code{addTo}.
+\item Optionally combines results with previous query outputs using \code{add_to}.
 \item Produces a summarized report, optionally including variables with zero queries.
 \item Provides warnings for variables with branching logic that could not be automatically evaluated.
 }

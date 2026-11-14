@@ -1,3 +1,5 @@
+skip_if_not_installed("openxlsx")
+
 test_that("rd_export writes an xlsx file without password and returns success message", {
   df <- head(covican$data, 3)
   path <- tempfile(fileext = ".xlsx")

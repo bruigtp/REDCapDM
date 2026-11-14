@@ -43,7 +43,7 @@ Core Functions:
 
 \itemize{
 \item \code{REDCapDM.quiet}: set \code{options(REDCapDM.quiet = TRUE)} to hide the informative messages of the package (e.g. the
-progress of \code{rd_transform()} or the packages attached at startup). Errors and warnings are always shown.
+progress of \code{rd_transform()}). Errors and warnings are always shown.
 }
 }
 

@@ -53,25 +53,25 @@ test_that("checkbox_names works and renames", {
 })
 
 test_that("split_event handles errors", {
-  data <- tibble(a=1:2, record_id=1:2)
-  dic <- tibble(field_name="a", field_type="text", form_name="f1")
-  event_form <- tibble(form="f1", unique_event_name="e1")
+  data <- tibble::tibble(a=1:2, record_id=1:2)
+  dic <- tibble::tibble(field_name="a", field_type="text", form_name="f1")
+  event_form <- tibble::tibble(form="f1", unique_event_name="e1")
 
   expect_error(suppressWarnings(split_event(data, dic, event_form))) # Missing redcap_event_name
 })
 
 test_that("split_form works with wide and longitudinal", {
-  data <- tibble(record_id = 1:2, redcap_event_name="e1", a=1:2)
-  dic <- tibble(field_name="a", form_name="f1", field_type="text")
-  event_form <- tibble(form="f1", unique_event_name="e1")
+  data <- tibble::tibble(record_id = 1:2, redcap_event_name="e1", a=1:2)
+  dic <- tibble::tibble(field_name="a", form_name="f1", field_type="text")
+  event_form <- tibble::tibble(form="f1", unique_event_name="e1")
 
   res <- suppressWarnings(split_form(data, dic, event_form, wide=TRUE))
   expect_true(is.list(res))
 })
 
 test_that("to_factor converts correctly", {
-  data <- tibble(a = c("x","y"), a.factor=as.factor(a), redcap_event_name="e1", redcap_event_name.factor = "E1", redcap_repeat_instrument=NA, redcap_repeat_instrument.factor =NA)
-  dic <- tibble(field_name="a", choices_calculations_or_slider_labels="1, x | 2, y", field_type="radio", branching_logic_show_field_only_if = "")
+  data <- tibble::tibble(a = c("x","y"), a.factor=as.factor(a), redcap_event_name="e1", redcap_event_name.factor = "E1", redcap_repeat_instrument=NA, redcap_repeat_instrument.factor =NA)
+  dic <- tibble::tibble(field_name="a", choices_calculations_or_slider_labels="1, x | 2, y", field_type="radio", branching_logic_show_field_only_if = "")
 
   res <- suppressWarnings(to_factor(data, dic))
   expect_true(is.factor(res$data$a))

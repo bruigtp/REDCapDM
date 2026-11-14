@@ -267,16 +267,16 @@ There are 184 non missing values in the variable _copd_.
 
 <br>
 
-<u>addTo</u>
+<u>add_to</u>
 
-In order to keep all queries in the same R object, we can use the `addTo` argument to specify the output of another query dataset.
+In order to keep all queries in the same R object, we can use the `add_to` argument to specify the output of another query dataset.
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example2 <- rd_query(covican_transformed,
                      variables = "age",
                      expression = "is.na(x)",
                      event = "baseline_visit_arm_1",
-                     addTo = example)
+                     add_to = example)
 
 # Printing results
 example2$results
@@ -431,7 +431,7 @@ example$results
 
 <br>
 
-> Note: This function also has the arguments `query_name`, `addTo`, `report_title`, `report_zeros` and `link` that work in the same way as in the examples of the `rd_query()` section (*Additional arguments*).
+> Note: This function also has the arguments `query_name`, `add_to`, `report_title`, `report_zeros` and `link` that work in the same way as in the examples of the `rd_query()` section (*Additional arguments*).
 
 # **check_queries**
 

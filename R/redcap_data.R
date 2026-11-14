@@ -182,6 +182,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     extension_dic <- tools::file_ext(dic_path)
     if (extension_dic == "xlsx") {
       # Read XLSX file
+      rlang::check_installed("openxlsx", reason = "to read .xlsx files.")
       dic <- openxlsx::read.xlsx(dic_path, colNames = FALSE, detectDates = TRUE, sheet = 1)
     } else if (extension_dic == "csv") {
       # Read CSV file
@@ -218,6 +219,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       if (extension == "xlsx") {
         # Read XLSX file
+        rlang::check_installed("openxlsx", reason = "to read .xlsx files.")
         event_form <- openxlsx::read.xlsx(event_path, detectDates = TRUE, sheet = 1)
       } else if (extension == "csv") {
         # Read CSV file -> REDCap exports this file without a final newline: readLines(warn = FALSE) avoids the "incomplete final line" warning of read.csv()
@@ -249,6 +251,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Process data from API connection
   if (all(!c(token, uri) %in% NA) && all(c(data_path, dic_path) %in% NA)) {
+    rlang::check_installed("REDCapR", reason = "to read data from the REDCap API.")
+
     # Message: Begin data import process
     rd_inform("Importing data from REDCap API...")
 
@@ -428,6 +432,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       if (extension == "xlsx") {
         # Read XLSX file
+        rlang::check_installed("openxlsx", reason = "to read .xlsx files.")
         event_form <- openxlsx::read.xlsx(event_path, detectDates = TRUE, sheet = 1)
       } else if (extension == "csv") {
         # Read CSV file -> REDCap exports this file without a final newline: readLines(warn = FALSE) avoids the "incomplete final line" warning of read.csv()

@@ -139,6 +139,8 @@ test_that("Descriptive fields are removed from dictionary", {
 
 
 test_that("API branch: SSL error in labels fetch is converted to helpful stop message", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   # Make a stub that raises an error with SSL phrase
   fake_ssl_error <- function(...) stop("SSL peer certificate: something went wrong", call. = FALSE)
 
@@ -151,6 +153,8 @@ test_that("API branch: SSL error in labels fetch is converted to helpful stop me
 })
 
 test_that("API branch: if labels retrieval returns zero rows a friendly error is thrown", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   empty_labels <- data.frame()  # zero-row data.frame
   fake_read_empty_labels <- function(redcap_uri = NULL, token = NULL, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = NULL, export_data_access_groups = NULL, export_survey_fields = NULL, fields = NULL) {
     return(list(data = empty_labels))
@@ -164,6 +168,8 @@ test_that("API branch: if labels retrieval returns zero rows a friendly error is
 })
 
 test_that("API branch: when event_path is provided it warns and attempts to read it", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   # Reuse fake functions that return minimal data (labels + raw) and metadata
   labels_df <- data.frame(record_id = 1L, stringsAsFactors = FALSE, check.names = FALSE)
   data_api <- data.frame(record_id = "1", stringsAsFactors = FALSE, check.names = FALSE)
@@ -279,6 +285,8 @@ test_that("Variables not linked to event_form are removed with warning", {
 })
 
 test_that("API branch: filter_field missing record_id triggers helpful error", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   fake_error <- function(...) {
     stop("REDCap's PHP code is likely trying to process too much text in one bite", call. = FALSE)
   }
@@ -291,6 +299,8 @@ test_that("API branch: filter_field missing record_id triggers helpful error", {
 })
 
 test_that("API branch: observational data retrieval with zero rows errors", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) {
     if (raw_or_label == "label") return(list(data = labels_df))
@@ -309,6 +319,8 @@ test_that("API branch: observational data retrieval with zero rows errors", {
 })
 
 test_that("API branch: descriptive fields are filtered from dictionary", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   data_api <- data.frame(record_id = 1)
   dic_api <- data.frame(field_name = "junk", field_type = "descriptive", form_name = "f1")
@@ -328,6 +340,8 @@ test_that("API branch: descriptive fields are filtered from dictionary", {
 })
 
 test_that("API branch: checkbox fields get factor versions", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   data_api <- data.frame(record_id = 1, var___1 = "1")
   dic_api <- data.frame(field_name = "var", field_type = "checkbox", form_name = "f1")
@@ -347,6 +361,8 @@ test_that("API branch: checkbox fields get factor versions", {
 })
 
 test_that("API branch: radio/dropdown fields produce factor versions", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   data_api <- data.frame(record_id = 1, radio1 = "1")
   dic_api <- data.frame(
@@ -374,6 +390,8 @@ test_that("API branch: radio/dropdown fields produce factor versions", {
 
 
 test_that("API branch: longitudinal without event_path fetches event_form via API", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1, redcap_event_name = "ev1")
   data_api <- labels_df
   dic_api <- data.frame(field_name = "record_id", field_type = "text", form_name = "f1")

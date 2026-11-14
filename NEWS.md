@@ -1,6 +1,13 @@
 # REDCapDM (development version)
 
+## Breaking changes
+
+- `library(REDCapDM)` no longer attaches other packages (dplyr, purrr, stringr, labelled, ...). Load the packages you use in your own code, e.g. `library(dplyr)` to use `filter()` or `%>%`.
+- REDCapR and openxlsx are now suggested packages: they are only needed to read data from the REDCap API or `.xlsx` files and to export queries with `rd_export()`. These functions ask to install them when they are missing.
+
 ## New features
+
+- The `addTo` argument of `rd_query()` and `rd_event()` is now called `add_to`. `addTo` still works, with a deprecation warning.
 
 - New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank.
 - New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
@@ -26,6 +33,8 @@
 
 ## Bug fixes
 
+- `rd_event()` failed when `addTo` received the output of `rd_query()` or `rd_event()`.
+- `rd_split(wide = TRUE)` failed when it was called as `REDCapDM::rd_split()` without loading the package.
 - `rd_rlogic()`, `rd_recalculate()` and `rd_query()` gave wrong results when the variables had already been converted to factors with `rd_factor()`.
 - `rd_recalculate()` applied twice duplicated the `_recalc` fields.
 - `rd_checkbox()` and `rd_recalculate()` gave wrong results with tibbles, and `rd_checkbox()` couldn't name the options of data without variable labels.

@@ -1,7 +1,7 @@
 # ---- 1) Checkbox-specific missing-variable error ----
 test_that("rd_split errors with missing dictionary vars that are checkbox type", {
-  data <- tibble(record_id = 1)
-  dic  <- tibble(
+  data <- tibble::tibble(record_id = 1)
+  dic  <- tibble::tibble(
     field_name = c("record_id", "cb_1"),
     field_type = c("text", "checkbox"),
     form_name  = c("form1", "form1")
@@ -14,13 +14,13 @@ test_that("rd_split errors with missing dictionary vars that are checkbox type",
 
 # ---- 2) _complete / _timestamp extra-variable message ----
 test_that("rd_split errors with default REDCap _complete/_timestamp variables present in data but not dictionary", {
-  data <- tibble(
+  data <- tibble::tibble(
     record_id = 1,
     someform_complete = 1,
     someform_timestamp = Sys.time()
   )
 
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = "record_id",
     field_type = "text",
     form_name  = "meta"
@@ -35,8 +35,8 @@ test_that("rd_split errors with default REDCap _complete/_timestamp variables pr
 
 # ---- 3) Factor-version variables in data not in dictionary -> rd_factor message ----
 test_that("rd_split errors when .factor versions of variables are present but not in dictionary", {
-  data <- tibble(record_id = 1, var1.factor = "A")
-  dic  <- tibble(field_name = "record_id", field_type = "text", form_name = "meta")
+  data <- tibble::tibble(record_id = 1, var1.factor = "A")
+  dic  <- tibble::tibble(field_name = "record_id", field_type = "text", form_name = "meta")
 
   expect_no_error(
     rd_split(data = data, dic = dic)
@@ -45,13 +45,13 @@ test_that("rd_split errors when .factor versions of variables are present but no
 
 # ---- 4) Non-longitudinal split by form (self-contained) ----
 test_that("rd_split splits non-longitudinal data by form (self-contained example)", {
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = c("record_id", "a1", "a2", "b1"),
     field_type = c("text", "text", "text", "text"),
     form_name  = c("meta", "form_a", "form_a", "form_b")
   )
 
-  data <- tibble(
+  data <- tibble::tibble(
     record_id = 1:3,
     a1 = c("x","y","z"),
     a2 = c(10, 20, 30),
@@ -73,19 +73,19 @@ test_that("rd_split splits non-longitudinal data by form (self-contained example
   })
 
   # ensure that form_a DF contains a1 and a2
-  fa_row <- res$data |> filter(form == "form_a") |> pull(df) |> pluck(1)
+  fa_row <- res$data |> dplyr::filter(form == "form_a") |> dplyr::pull(df) |> purrr::pluck(1)
   expect_true(all(c("a1", "a2", "record_id") %in% names(fa_row)))
 })
 
 # ---- 5) Longitudinal form-splitting requires event_form ----
 test_that("rd_split errors when splitting by form in longitudinal project without event_form", {
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = c("record_id", "x1"),
     field_type = c("text", "text"),
     form_name  = c("meta", "formX")
   )
 
-  data <- tibble(
+  data <- tibble::tibble(
     record_id = 1:2,
     redcap_event_name = c("event_1", "event_2"),
     x1 = c("a","b")
@@ -100,19 +100,19 @@ test_that("rd_split errors when splitting by form in longitudinal project withou
 
 # ---- 6) Splitting by event (self-contained) ----
 test_that("rd_split splits longitudinal data by event when event_form is provided", {
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = c("record_id", "a1", "b1"),
     field_type = c("text", "text", "text"),
     branching_logic_show_field_only_if = c("", "", ""),
     form_name  = c("meta", "form_a", "form_b")
   )
 
-  event_form <- tibble(
+  event_form <- tibble::tibble(
     form = c("form_a", "form_b"),
     unique_event_name = c("ev1", "ev2")
   )
 
-  data <- tibble(
+  data <- tibble::tibble(
     record_id = c(1,2,3,4),
     redcap_event_name = c("ev1", "ev1", "ev2", "ev2"),
     a1 = c("x", NA, NA, NA),
@@ -124,14 +124,14 @@ test_that("rd_split splits longitudinal data by event when event_form is provide
   expect_true(all(c("ev1", "ev2") %in% res$data$events))
 
   # each event df should contain record_id
-  ev1_df <- res$data |> filter(events == "ev1") |> pull(df) |> pluck(1)
+  ev1_df <- res$data |> dplyr::filter(events == "ev1") |> dplyr::pull(df) |> purrr::pluck(1)
   expect_true("record_id" %in% names(ev1_df))
 })
 
 # ---- 7) invalid `by` argument is rejected ----
 test_that("rd_split rejects invalid `by` argument", {
-  dic <- tibble(field_name = "record_id", field_type = "text", form_name = "meta")
-  data <- tibble(record_id = 1)
+  dic <- tibble::tibble(field_name = "record_id", field_type = "text", form_name = "meta")
+  data <- tibble::tibble(record_id = 1)
 
   expect_error(
     rd_split(data = data, dic = dic, by = "nonsense"),
@@ -143,8 +143,8 @@ test_that("rd_split rejects invalid `by` argument", {
 # ---- 8) project argument overrides data/dic ----
 test_that("rd_split respects project argument over data/dic", {
   fake_proj <- list(
-    data = tibble(record_id = 1),
-    dic  = tibble(field_name = "record_id", field_type = "text", form_name = "meta"),
+    data = tibble::tibble(record_id = 1),
+    dic  = tibble::tibble(field_name = "record_id", field_type = "text", form_name = "meta"),
     event_form = NULL
   )
 
@@ -163,12 +163,12 @@ test_that("rd_split respects project argument over data/dic", {
 
 # ---- 9) which argument selects a single form ----
 test_that("rd_split returns only selected form when which is supplied", {
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = c("record_id", "a1", "b1"),
     field_type = c("text", "text", "text"),
     form_name  = c("meta", "form_a", "form_b")
   )
-  data <- tibble(record_id = 1:2, a1 = 1:2, b1 = 3:4)
+  data <- tibble::tibble(record_id = 1:2, a1 = 1:2, b1 = 3:4)
 
   res <- rd_split(data = data, dic = dic, by = "form", which = "form_a")
   expect_true(all(c("record_id", "a1") %in% names(res$data)))
@@ -177,12 +177,12 @@ test_that("rd_split returns only selected form when which is supplied", {
 
 # ---- 10) which argument with multiple values warns ----
 test_that("rd_split warns if multiple which values are supplied", {
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = c("record_id", "a1"),
     field_type = c("text", "text"),
     form_name  = c("meta", "form_a")
   )
-  data <- tibble(record_id = 1:2, a1 = c("x", "y"))
+  data <- tibble::tibble(record_id = 1:2, a1 = c("x", "y"))
 
   expect_warning(
     res <- rd_split(data = data, dic = dic, by = "form", which = c("form_a", "form_b")),
@@ -192,32 +192,32 @@ test_that("rd_split warns if multiple which values are supplied", {
 
 # ---- 11) wide = TRUE expands into wide format ----
 test_that("rd_split expands to wide format when wide = TRUE", {
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = c("record_id", "abc", "abc_aba"),
     field_type = c("text", "text", "text"),
     form_name  = c("meta", "meta", "form_a")
   )
-  data <- tibble(
+  data <- tibble::tibble(
     record_id = c(1,1,1,2),
     abc = c("x","x","y","z"),
     abc_aba = c("x", "x","y","z")
   )
 
   res <- rd_split(data = data, dic = dic, by = "form", wide = TRUE)
-  df_form_a <- res$data |> pull(max_repeated_instance)
+  df_form_a <- res$data |> dplyr::pull(max_repeated_instance)
 
   expect_true(length(df_form_a) > 1)
 })
 
 # ---- 12) repeated instruments branch ----
 test_that("rd_split handles repeated instruments correctly", {
-  dic <- tibble(
+  dic <- tibble::tibble(
     field_name = c("record_id", "var0", "var1"),
     field_type = c("text", "text", "text"),
     form_name  = c("formX", "formX", "formX")
   )
 
-  data <- tibble(
+  data <- tibble::tibble(
     record_id = c(1,1,2),
     # redcap_event_name = c("visit1", "visit1", "visit1"),
     # redcap_event_name.factor = c("Visit1", "Visit1", "Visit1"),
@@ -231,7 +231,7 @@ test_that("rd_split handles repeated instruments correctly", {
   )
 
   res <- rd_split(data = data, dic = dic, by = "form")
-  df_formX <- res$data |> filter(form == "formX") |> pull(df) |> pluck(1)
+  df_formX <- res$data |> dplyr::filter(form == "formX") |> dplyr::pull(df) |> purrr::pluck(1)
 
   expect_true("var1" %in% names(df_formX))
   expect_false("redcap_repeat_instrument.factor" %in% names(df_formX))
@@ -239,9 +239,9 @@ test_that("rd_split handles repeated instruments correctly", {
 
 # ---- 13) errors if data or dic missing ----
 test_that("rd_split errors if data or dic are missing", {
-  dic <- tibble(field_name = "record_id", field_type = "text", form_name = "meta")
+  dic <- tibble::tibble(field_name = "record_id", field_type = "text", form_name = "meta")
   expect_error(rd_split(data = NULL, dic = dic), regexp = "must be provided")
-  expect_error(rd_split(data = tibble(record_id = 1), dic = NULL), regexp = "must be provided")
+  expect_error(rd_split(data = tibble::tibble(record_id = 1), dic = NULL), regexp = "must be provided")
 })
 
 

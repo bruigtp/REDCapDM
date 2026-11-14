@@ -37,7 +37,7 @@
 #'
 #' @section Package options:
 #' - `REDCapDM.quiet`: set `options(REDCapDM.quiet = TRUE)` to hide the informative messages of the package (e.g. the
-#'   progress of `rd_transform()` or the packages attached at startup). Errors and warnings are always shown.
+#'   progress of `rd_transform()`). Errors and warnings are always shown.
 #'
 #' @section Errors and warnings:
 #' The errors, warnings and messages of the package have the classes `REDCapDM_error`, `REDCapDM_warning` and
@@ -55,5 +55,6 @@
 #' remotes::install_github("bruigtp/REDCapDM")
 #' }
 #'
+#' @import cli
 #' @importFrom lifecycle deprecated
 NULL

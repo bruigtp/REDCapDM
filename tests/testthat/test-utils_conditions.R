@@ -39,10 +39,12 @@ test_that("redcap_data() and rd_query() signal classed conditions", {
 test_that("the rest of the functions also signal classed conditions", {
   expect_error(rd_delete_vars(project = covican, forms = "labs"), class = "REDCapDM_error_argument")
   expect_warning(rd_recalculate(covican, exclude = "copd"), class = "REDCapDM_warning")
-  expect_error(
-    rd_export(queries = data.frame(a = 1), path = file.path(tempdir(), "no_such_folder", "q.xlsx")),
-    class = "REDCapDM_error_file"
-  )
+  if (requireNamespace("openxlsx", quietly = TRUE)) {
+    expect_error(
+      rd_export(queries = data.frame(a = 1), path = file.path(tempdir(), "no_such_folder", "q.xlsx")),
+      class = "REDCapDM_error_file"
+    )
+  }
 
   x <- covican
   x$data$extra_var <- 1

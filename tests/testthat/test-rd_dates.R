@@ -1,11 +1,11 @@
 # Sample data dictionary
-dic <- tibble(
+dic <- tibble::tibble(
   field_name = c("dob", "appointment"),
   text_validation_type_or_show_slider_number = c("date_dmy", "datetime_dmyhm")
 )
 
 # Sample dataset
-data <- tibble(
+data <- tibble::tibble(
   dob = c("1990-01-01", "2000-12-31", ""),
   appointment = c("2025-09-12 14:30", "2025-09-13 09:00", "")
 )
@@ -15,7 +15,7 @@ event_form <- list(baseline = "form1", followup = "form2")
 
 # Add labels
 data <- data |>
-  set_variable_labels(dob = "Date of Birth", appointment = "Appointment DateTime")
+  labelled::set_variable_labels(dob = "Date of Birth", appointment = "Appointment DateTime")
 
 test_that("rd_dates converts character dates and datetimes correctly", {
   res <- rd_dates(data = data, dic = dic, event_form = event_form)
@@ -29,8 +29,8 @@ test_that("rd_dates converts character dates and datetimes correctly", {
   expect_true(is.na(res$data$appointment[3]))
 
   # Labels preserved
-  expect_equal(var_label(res$data$dob), "Date of Birth")
-  expect_equal(var_label(res$data$appointment), "Appointment DateTime")
+  expect_equal(labelled::var_label(res$data$dob), "Date of Birth")
+  expect_equal(labelled::var_label(res$data$appointment), "Appointment DateTime")
 
   # Event form preserved
   expect_equal(res$event_form, event_form)
@@ -39,7 +39,7 @@ test_that("rd_dates converts character dates and datetimes correctly", {
 test_that("rd_dates warns if all dates/datetimes are already correct", {
   # Convert manually to correct classes
   data_correct <- data |>
-    mutate(dob = as.Date(dob),
+    dplyr::mutate(dob = as.Date(dob),
            appointment = as.POSIXct(appointment, format = "%Y-%m-%d %H:%M", tz = "UTC"))
 
   expect_warning(
@@ -56,8 +56,8 @@ test_that("rd_dates stops if data or dic is missing", {
 })
 
 test_that("rd_dates handles empty input gracefully", {
-  empty_data <- tibble(dob = character(), appointment = character())
-  empty_dic <- tibble(field_name = character(), text_validation_type_or_show_slider_number = character())
+  empty_data <- tibble::tibble(dob = character(), appointment = character())
+  empty_dic <- tibble::tibble(field_name = character(), text_validation_type_or_show_slider_number = character())
 
   res <- rd_dates(data = empty_data, dic = empty_dic) |> suppressWarnings()
 
@@ -67,7 +67,7 @@ test_that("rd_dates handles empty input gracefully", {
 
 test_that("rd_dates converts only necessary variables", {
   data_mixed <- data |>
-    mutate(
+    dplyr::mutate(
       dob = as.Date(dob),  # already correct
       appointment = appointment  # still character
     )
@@ -84,6 +84,6 @@ test_that("rd_dates preserves labels correctly", {
 
   res <- rd_dates(data = unlabeled_data, dic = dic)
 
-  expect_equal(var_label(res$data$appointment), "Appointment DateTime")
-  expect_equal(var_label(res$data$dob), "")  # unlabeled stays empty
+  expect_equal(labelled::var_label(res$data$appointment), "Appointment DateTime")
+  expect_equal(labelled::var_label(res$data$dob), "")  # unlabeled stays empty
 })

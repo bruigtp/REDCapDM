@@ -39,7 +39,7 @@ test_that("the functions explain wrong argument values instead of failing with a
   expect_error(redcap_data(data_path = "a.r", dic_path = "d.csv", sep = ";;"), "`sep` must be a single character")
   expect_error(suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)", query_name = NULL)), "`query_name` must be text")
   expect_error(suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)", link = "x")), "`link` must be a list")
-  expect_error(suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)", addTo = data.frame())), "`addTo` must be the output")
+  expect_error(suppressWarnings(rd_query(covican, variables = "copd", expression = "is.na(x)", add_to = data.frame())), "`add_to` must be the output")
   expect_error(rd_event(covican, event = "follow_up_visit_da_arm_1", report_zeros = NA), "`report_zeros` must be TRUE or FALSE")
   expect_error(rd_event(covican, event = "follow_up_visit_da_arm_1", filter = c("a", "b")), "`filter` must be a single text value")
   expect_error(rd_rlogic(covican, logic = NA, var = "age"), "`logic` must be a character vector")

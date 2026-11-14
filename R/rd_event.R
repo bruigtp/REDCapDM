@@ -12,7 +12,8 @@
 #' @param event Character vector with one or more REDCap event names to check for missing records.
 #' @param filter Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}.
 #' @param query_name Optional character vector describing each query. Defaults to a standard format: `The event (event_name) is missing`.
-#' @param addTo Optional data frame from a previous query report to which the new results can be appended.
+#' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
+#' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
 #' @param report_zeros Logical, include variables with zero queries in the report. Default is `FALSE`.
 #' @param link Optional list containing project information (`domain`, `redcap_version`, `proj_id`, `event_id`) to generate clickable links for each query.
@@ -64,10 +65,17 @@ rd_event <- function(project = NULL,
                      event,
                      filter = NA,
                      query_name = NA,
-                     addTo = NA,
+                     add_to = NA,
                      report_title = NA,
                      report_zeros = FALSE,
-                     link = list()) {
+                     link = list(),
+                     addTo = deprecated()) {
+
+  # `addTo` was renamed `add_to` in version 1.2.0
+  if (lifecycle::is_present(addTo)) {
+    lifecycle::deprecate_warn("1.2.0", "rd_event(addTo)", "rd_event(add_to)")
+    add_to <- addTo
+  }
 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
@@ -102,6 +110,12 @@ rd_event <- function(project = NULL,
     check_text(get(arg), arg)
   }
   check_flag(report_zeros, "report_zeros")
+  if (is.null(add_to)) {
+    add_to <- NA
+  }
+  if (!(length(add_to) == 1 && !is.list(add_to) && is.na(add_to)) && !(is.list(add_to) && is.data.frame(add_to$queries))) {
+    rd_abort("{.arg add_to} must be the output of a previous {.fn rd_query} or {.fn rd_event}.", class = "REDCapDM_error_argument")
+  }
   if (!is.list(link)) {
     rd_abort("{.arg link} must be a list with {.code domain}, {.code redcap_version}, {.code proj_id} and {.code event_id}.")
   }
@@ -255,15 +269,15 @@ rd_event <- function(project = NULL,
     }
   }
 
-  # Merge with an existing query data frame if specified in 'addTo'
-  if (!is.na(addTo)) {
+  # Merge with an existing query data frame if specified in 'add_to'
+  if (is.list(add_to)) {
     # Save the column names of the existing queries
     col_names <- names(queries)
 
     # Merge the existing queries with the new ones
     queries <- merge(queries,
-      addTo$queries,
-      by = intersect(names(addTo$queries), names(queries)),
+      add_to$queries,
+      by = intersect(names(add_to$queries), names(queries)),
       all = TRUE
     )
 
@@ -302,7 +316,7 @@ rd_event <- function(project = NULL,
     )
 
     # If no previous report exists, set events and descriptions as factors using the dictionary
-    if (all(addTo %in% NA)) {
+    if (!is.list(add_to)) {
       report$var <- factor(report$var, levels = c(unique(event)))
       report$descr <- factor(report$descr)
     }

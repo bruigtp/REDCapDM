@@ -19,9 +19,7 @@ Encoding: UTF-8
 Imports:
     dplyr,
     janitor,
-    openxlsx,
     purrr,
-    REDCapR,
     rlang (>= 1.0.0),
     stringr,
     tibble,
@@ -41,7 +39,9 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     mockery,
-    ggplot2
+    ggplot2,
+    openxlsx,
+    REDCapR
 VignetteBuilder: knitr
 Depends: 
     R (>= 4.1)

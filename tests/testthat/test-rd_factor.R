@@ -32,7 +32,7 @@ test_that("exclude with .factor suffix throws an error", {
 })
 
 test_that("warning is issued if no factor variables exist", {
-  data_no_factor <- covican$data |>  select(-c(ends_with(".factor") & !starts_with("redcap")))
+  data_no_factor <- covican$data |>  dplyr::select(-c(ends_with(".factor") & !starts_with("redcap")))
   expect_warning(
     rd_factor(data = data_no_factor, dic = covican$dictionary),
     "There are no variables in the data which can be converted to factors"

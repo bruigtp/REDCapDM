@@ -4,19 +4,19 @@ cov_event_form <- covican$event_form
 
 # Select a real calculated field from the dictionary if available
 calc_fields <- cov_dic |>
-  filter(field_type == "calc") |>
-  pull(field_name)
+  dplyr::filter(field_type == "calc") |>
+  dplyr::pull(field_name)
 
 # If none exist, for testing, pick numeric fields as "calc" and create simple logic
 if(length(calc_fields) == 0){
   cov_dic_test <- cov_dic |>
-    filter(field_name %in% c("age", "potassium")) |>
-    mutate(
+    dplyr::filter(field_name %in% c("age", "potassium")) |>
+    dplyr::mutate(
       field_type = "calc",
       choices_calculations_or_slider_labels = c("age", "potassium")
     )
 } else {
-  cov_dic_test <- cov_dic |> filter(field_name %in% calc_fields[1:2])
+  cov_dic_test <- cov_dic |> dplyr::filter(field_name %in% calc_fields[1:2])
 }
 
 test_that("recalculate returns updated data and dictionary", {
@@ -55,7 +55,7 @@ test_that("recalculate works with project list input", {
 })
 
 test_that("recalculate warns for character datetime fields", {
-  dic_date <- tibble(
+  dic_date <- tibble::tibble(
     field_name = "d_admission",
     field_type = "text",
     choices_calculations_or_slider_labels = "",
@@ -64,7 +64,7 @@ test_that("recalculate warns for character datetime fields", {
   )
 
   # Force date column to character
-  data_date <- cov_data |> mutate(d_admission = as.character(d_admission)) |> select(d_admission)
+  data_date <- cov_data |> dplyr::mutate(d_admission = as.character(d_admission)) |> dplyr::select(d_admission)
 
   expect_warning(
     rd_recalculate(data = data_date, dic = dic_date),
@@ -73,7 +73,7 @@ test_that("recalculate warns for character datetime fields", {
 })
 
 test_that("recalculate stops for longitudinal project without event_form", {
-  data_long <- cov_data |> filter(!is.na(redcap_event_name))
+  data_long <- cov_data |> dplyr::filter(!is.na(redcap_event_name))
 
   expect_error(
     rd_recalculate(data = data_long, dic = cov_dic_test),

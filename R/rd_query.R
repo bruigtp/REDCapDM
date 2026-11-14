@@ -17,7 +17,8 @@
 #' @param event Required for longitudinal projects to avoid overestimation. REDCap event(s) to analyze.
 #' @param instrument Optional REDCap instrument(s) for each variable. Defaults to the instrument reported in the dictionary.
 #' @param filter Optional string of filters to apply to the dataset, such as the branching logic of a variable.
-#' @param addTo Optional data frame from a previous query report to which the new results can be appended.
+#' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
+#' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
 #' @param report_zeros Logical, include variables with zero queries in the report. Default is `FALSE`.
 #' @param by_dag Logical, split results by Data Access Group (DAG). Default is `FALSE`.
@@ -35,7 +36,7 @@
 #'   - Event and Instrument
 #'   - Field, Repetition, Description, Query statement
 #'   - Optional link to REDCap entry
-#' * Optionally combines results with previous query outputs using `addTo`.
+#' * Optionally combines results with previous query outputs using `add_to`.
 #' * Produces a summarized report, optionally including variables with zero queries.
 #' * Provides warnings for variables with branching logic that could not be automatically evaluated.
 #'
@@ -76,7 +77,13 @@
 #' @export
 #' @importFrom rlang .data
 
-rd_query <- function(project = NULL, variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, addTo = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list(), data = NULL, dic = NULL, event_form = NULL) {
+rd_query <- function(project = NULL, variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, add_to = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list(), data = NULL, dic = NULL, event_form = NULL, addTo = deprecated()) {
+
+  # `addTo` was renamed `add_to` in version 1.2.0
+  if (lifecycle::is_present(addTo)) {
+    lifecycle::deprecate_warn("1.2.0", "rd_query(addTo)", "rd_query(add_to)")
+    add_to <- addTo
+  }
 
   # Handle potential overwriting when both `project` and other arguments are provided
   if (!is.null(project)) {
@@ -95,8 +102,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   for (arg in c("event", "filter", "variables_names", "query_name", "instrument", "report_title")) {
     check_text(get(arg), arg)
   }
-  if (is.null(addTo)) {
-    addTo <- NA
+  if (is.null(add_to)) {
+    add_to <- NA
   }
   if (!is.list(link)) {
     rd_abort("{.arg link} must be a list with {.field domain}, {.field redcap_version}, {.field proj_id} and, in longitudinal projects, {.field event_id}.", class = "REDCapDM_error_argument")
@@ -136,9 +143,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     check_flag(get(arg), arg)
   }
 
-  # Error: `addTo` must be the output of a previous rd_query()
-  if (!(length(addTo) == 1 && !is.list(addTo) && is.na(addTo)) && !(is.list(addTo) && is.data.frame(addTo$queries))) {
-    rd_abort("{.arg addTo} must be the output of a previous {.fn rd_query}.", class = "REDCapDM_error_argument")
+  # Error: `add_to` must be the output of a previous rd_query()
+  if (!(length(add_to) == 1 && !is.list(add_to) && is.na(add_to)) && !(is.list(add_to) && is.data.frame(add_to$queries))) {
+    rd_abort("{.arg add_to} must be the output of a previous {.fn rd_query} or {.fn rd_event}.", class = "REDCapDM_error_argument")
   }
 
   # Error: specified variables do not exist in the dataset
@@ -680,10 +687,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
 
 
-  # If 'addTo' argument is specified, merge previous queries
-  if (all(!is.na(addTo))) {
-    # Add 'Link' column if it exists in the addTo$queries data frame
-    if ("Link" %in% names(addTo$queries)) {
+  # If 'add_to' argument is specified, merge previous queries
+  if (all(!is.na(add_to))) {
+    # Add 'Link' column if it exists in the add_to$queries data frame
+    if ("Link" %in% names(add_to$queries)) {
       col_names <- c(names(queries), "Link")
     } else {
       col_names <- names(queries)
@@ -691,8 +698,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Merge queries and add 'Link' if present
     queries <- merge(queries,
-      addTo$queries,
-      by = intersect(names(addTo$queries), names(queries)),
+      add_to$queries,
+      by = intersect(names(add_to$queries), names(queries)),
       all = TRUE
     )
     queries <- queries |>
@@ -729,7 +736,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     )
 
     # Convert variables and descriptions to factors if necessary
-    if (all(addTo %in% NA & variables_names %in% NA)) {
+    if (all(add_to %in% NA & variables_names %in% NA)) {
       report$var <- factor(report$var,
         levels = c(unique(variables))
       )
@@ -750,7 +757,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     }
 
     # Handle cases where only variable names are specified
-    if (all(addTo %in% NA & !is.na(variables_names))) {
+    if (all(add_to %in% NA & !is.na(variables_names))) {
       report$var <- factor(report$var,
         levels = c(unique(variables))
       )

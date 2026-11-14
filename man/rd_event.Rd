@@ -12,10 +12,11 @@ rd_event(
   event,
   filter = NA,
   query_name = NA,
-  addTo = NA,
+  add_to = NA,
   report_title = NA,
   report_zeros = FALSE,
-  link = list()
+  link = list(),
+  addTo = deprecated()
 )
 }
 \arguments{
@@ -33,13 +34,15 @@ rd_event(
 
 \item{query_name}{Optional character vector describing each query. Defaults to a standard format: \verb{The event (event_name) is missing}.}
 
-\item{addTo}{Optional data frame from a previous query report to which the new results can be appended.}
+\item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended.}
 
 \item{report_title}{Optional string specifying the title of the final report. Defaults to \code{"Report of queries"}.}
 
 \item{report_zeros}{Logical, include variables with zero queries in the report. Default is \code{FALSE}.}
 
 \item{link}{Optional list containing project information (\code{domain}, \code{redcap_version}, \code{proj_id}, \code{event_id}) to generate clickable links for each query.}
+
+\item{addTo}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Use \code{add_to} instead.}
 }
 \value{
 A named list with two elements:

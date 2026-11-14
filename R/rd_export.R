@@ -61,6 +61,8 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
     rd_warn("Links were detected in the dataset. To convert them into hyperlinks in the Excel file, specify the {.arg column} argument.")
   }
 
+  rlang::check_installed("openxlsx", reason = "to export the queries to an .xlsx file.")
+
   # Create a new workbook
   wb <- openxlsx::createWorkbook()
 
