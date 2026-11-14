@@ -67,6 +67,10 @@
 - `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()`, `rd_dictionary()` and `rd_checkbox()`) didn't translate the checkbox options whose code has letters or is negative (e.g. `[symptoms(A)]` or `[symptoms(-1)]`).
 - `rd_checkbox()` reversed the logic `[field(code)] <> '1'` when it renamed the checkbox options in the dictionary, and didn't translate the codes with letters, the negative codes and the values in double quotes.
 - `rd_rlogic()` counted calendar years and months in `datediff()`: as REDCap, it now counts years of 365.2425 days and months of 30.44 days (e.g. 365 days are 0.9993 years, so `rounddown(datediff(..., 'y'), 0)` gives 0).
+- `redcap_data()` with the API: the text fields and the record identifier lost their labels, the yes/no, true/false and form status fields didn't get their factor version (so `rd_factor()` and `rd_transform()` didn't convert them, as they do with the exported files), and the fields of the forms without any event were not removed although the warning said so.
+- `redcap_data()` with the exported files: the text fields that look like numbers lost their format when the R script of REDCap read them (e.g. a postal code or phone `"0034"` was read as `34`, and `"1.50"` as `1.5`); they now keep the text exported by REDCap. The record identifier also keeps its label when it has another name.
+- `rd_rlogic()` failed with the operator `!=`, which REDCap accepts as `<>`.
+- `rd_transform()` failed with `wide = FALSE` when `final_format` was not `"by_form"`.
 
 ## Clearer messages
 

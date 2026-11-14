@@ -557,3 +557,60 @@ test_that("redcap_data explains that the R script can't be run", {
   expect_error(redcap_data(data_path = file.path(dir, "PROJ_R.r"), dic_path = tmp_dic), class = "REDCapDM_error_file")
   expect_equal(getwd(), wd)
 })
+
+test_that("redcap_data keeps the text of the text fields that look like numbers", {
+  dir <- tempfile()
+  dir.create(dir)
+  writeLines(c("subj,zip,code,weight,f1_complete", "S-1,00123,1.50,70.5,2", "S-2,12000,1e5,80,2"), file.path(dir, "PROJ_DATA.csv"))
+  writeLines(c(
+    "#Clear existing data and graphics", "rm(list=ls())", "data=read.csv('PROJ_DATA.csv')",
+    "label(data$subj)=\"Subject\"", "label(data$zip)=\"Postal code\"", "label(data$code)=\"Code\"", "label(data$weight)=\"Weight\""
+  ), file.path(dir, "PROJ_R.r"))
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(
+    field_name = c("subj", "zip", "code", "weight"), form_name = "f1", field_type = "text",
+    text_validation_type_or_show_slider_number = c("", "zipcode", "", "number")
+  ), tmp_dic, row.names = FALSE)
+
+  out <- redcap_data(data_path = file.path(dir, "PROJ_R.r"), dic_path = tmp_dic)
+
+  expect_equal(out$data$zip, c("00123", "12000"), ignore_attr = TRUE)
+  expect_equal(out$data$code, c("1.50", "1e5"), ignore_attr = TRUE)
+  expect_equal(attr(out$data$zip, "label"), "Postal code")
+  # Numeric fields are not changed
+  expect_equal(out$data$weight, c(70.5, 80), ignore_attr = TRUE)
+  # The label of the record identifier is kept when it has another name
+  expect_equal(attr(out$data$record_id, "label"), "Subject")
+})
+
+test_that("API branch: labels, yes/no and form status factors and forms without event are as in the exported files", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("mockery")
+  data_api <- data.frame(subj = 1:2, redcap_event_name = "visit_arm_1", name = c("Ann", "Bob"), smoker = c(1, 0), f1_complete = c(2, 0), extra = c("a", "b"), f2_complete = 0)
+  labels_df <- data.frame(
+    "Subject" = 1:2, "Event Name" = "Visit", "Name" = c("Ann", "Bob"), "Smoker" = c("Yes", "No"), "Complete?" = c("Complete", "Incomplete"),
+    "Extra" = c("a", "b"), "Complete?...7" = "Incomplete", check.names = FALSE
+  )
+  dic_api <- data.frame(
+    field_name = c("subj", "name", "smoker", "extra"), form_name = c("f1", "f1", "f1", "f2"), field_type = c("text", "text", "yesno", "text"),
+    field_label = c("Subject", "Name", "Smoker", "Extra"), select_choices_or_calculations = NA, branching_logic = NA, question_number = NA
+  )
+  event_api <- data.frame(arm_num = 1, unique_event_name = "visit_arm_1", form = "f1")
+
+  fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) {
+    if (raw_or_label == "label") return(list(data = labels_df))
+    list(data = data_api)
+  }
+  mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
+  mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = dic_api))
+  mockery::stub(redcap_data, "REDCapR::redcap_event_instruments", function(...) list(data = event_api))
+
+  expect_warning(out <- suppressMessages(redcap_data(uri = "https://api.example", token = "tok")), "not linked to any event")
+
+  expect_equal(attr(out$data$record_id, "label"), "Subject")
+  expect_equal(attr(out$data$name, "label"), "Name")
+  expect_equal(as.character(out$data$smoker.factor), c("Yes", "No"))
+  expect_equal(as.character(out$data$f1_complete.factor), c("Complete", "Incomplete"))
+  expect_false("extra" %in% names(out$data))
+  expect_false("extra" %in% out$dictionary$field_name)
+})

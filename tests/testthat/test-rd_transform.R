@@ -213,3 +213,7 @@ test_that("rd_transform asks to remove the status fields before splitting by for
     "delete_pattern = \"_complete\""
   )
 })
+
+test_that("rd_transform accepts wide = FALSE with any final format", {
+  expect_no_error(suppressWarnings(suppressMessages(rd_transform(covican, wide = FALSE))))
+})

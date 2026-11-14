@@ -182,9 +182,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       }
     })
 
-    # Ensure the primary identifier column is correctly named
+    # Ensure the primary identifier column is correctly named (and keep its label)
     if (names(data)[1] != "record_id") {
       names(data)[1] <- "record_id"
+      names(labels)[1] <- "record_id"
     }
 
     # Load the dictionary and validate its format
@@ -227,6 +228,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         dplyr::filter(!.data$field_type %in% "descriptive")
     }
 
+
+    # Text fields that look like numbers (e.g. phones, postal codes or identifiers with leading zeros): read.csv() turns
+    # them into numbers and changes them ("0034" is read as 34). They keep the text exported by REDCap.
+    data <- keep_text_fields(data, dic, if (length(csv_file) > 0) file.path(dirname(data_path), csv_file[1]) else NA)
 
     # Indicator of longitudinal projects
     longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
@@ -301,6 +306,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     # Ensure labels were retrieved and assign a default column name
     if (nrow(labels) > 0) {
+      record_id_label <- names(labels)[1]
       names(labels)[1] <- "record_id"
     } else {
       rd_abort(
@@ -332,7 +338,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       dplyr::select("record_id", default_names$corres)
 
     # Clean up label names by removing suffixes
-    labels <- gsub("\\.{3}\\d+$", "", names(labels))
+    labels <- gsub("\\.{3}\\d+$", "", c(record_id_label, names(labels)[-1]))
 
     # Message: Intermediate status update
     rd_inform("Almost done...")
@@ -374,7 +380,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # Making sure the names of both dictionaries(exported data and API connection) match
     names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
 
-    # Apply labels to the main dataset
+    # Apply labels to the main dataset (named by column, so that they are applied again at the end)
+    if (length(labels) == ncol(data_api)) {
+      names(labels) <- names(data_api)
+    }
     data_api <- purrr::map2(data_api, as.list(labels), ~ {
       if (!is.null(.y)) {
         attr(.x, "label") <- .y
@@ -431,6 +440,17 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
           }
         )
       }
+    }
+
+    # Process yes/no, true/false and form status fields into factors, as the R script exported by REDCap does
+    two_options <- list(yesno = c("1" = "Yes", "0" = "No"), truefalse = c("1" = "True", "0" = "False"))
+    for (type in names(two_options)) {
+      for (i in intersect(dic_api$field_name[dic_api$field_type %in% type], names(data_api))) {
+        data_api[[paste0(i, ".factor")]] <- factor(data_api[[i]], levels = names(two_options[[type]]), labels = unname(two_options[[type]]))
+      }
+    }
+    for (i in intersect(paste0(unique(dic_api$form_name), "_complete"), names(data_api))) {
+      data_api[[paste0(i, ".factor")]] <- factor(data_api[[i]], levels = c("0", "1", "2"), labels = c("Incomplete", "Unverified", "Complete"))
     }
 
     # Merge main_vars with imported data
@@ -533,7 +553,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       rd_warn("The following variable{?s} {?was/were} removed since {?it is/they are} not linked to any event: {.var {var_noevent}}.")
 
-      var_noevent <- intersect(var_noevent, names(data))
+      var_noevent <- intersect(var_noevent, names(data_def$data))
 
       var_noevent <- var_noevent[var_noevent != "record_id"]
 
@@ -803,4 +823,49 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Return the result
   return(data_def)
+}
+
+#' Keep the text of the text fields that read.csv() turned into numbers
+#'
+#' The R script exported by REDCap reads the data with `read.csv()`, which turns
+#' the text fields that look like numbers into numbers and changes their value
+#' (e.g. `"0034"` is read as `34`, `"1.50"` as `1.5` and `"T"` as `TRUE`). The
+#' text fields (and the record identifier) whose value changed take the text of
+#' the csv file again. The fields that kept their value are not changed.
+#'
+#' @param data Data read by the R script, with the record identifier named `record_id`.
+#' @param dic Dictionary of the project.
+#' @param csv_path Path of the csv file read by the R script.
+#' @return `data`, with the text of the changed text fields.
+#' @noRd
+keep_text_fields <- function(data, dic, csv_path) {
+  if (is.na(csv_path) || !file.exists(csv_path) || !all(c("field_name", "field_type") %in% names(dic))) {
+    return(data)
+  }
+
+  validation <- if ("text_validation_type_or_show_slider_number" %in% names(dic)) dic$text_validation_type_or_show_slider_number else rep(NA_character_, nrow(dic))
+  text_fields <- dic$field_name[dic$field_type %in% c("text", "notes") & !grepl("^(number|integer|date|time)", validation)]
+  text_fields <- intersect(c("record_id", text_fields), names(data))
+  text_fields <- text_fields[vapply(data[text_fields], function(x) is.numeric(x) || is.logical(x), logical(1))]
+  if (length(text_fields) == 0) {
+    return(data)
+  }
+
+  csv <- utils::read.csv(csv_path, colClasses = "character", na.strings = c("", "NA"), encoding = "UTF-8")
+  names(csv)[1] <- "record_id"
+  if (nrow(csv) != nrow(data)) {
+    return(data)
+  }
+
+  for (field in intersect(text_fields, names(csv))) {
+    text <- csv[[field]]
+    changed <- !is.na(text) & (is.na(data[[field]]) | as.character(data[[field]]) != text)
+    if (any(changed)) {
+      label <- attr(data[[field]], "label")
+      data[[field]] <- text
+      attr(data[[field]], "label") <- label
+    }
+  }
+
+  data
 }

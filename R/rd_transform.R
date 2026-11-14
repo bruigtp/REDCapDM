@@ -100,7 +100,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     rd_abort("Which form has been specified but the final format is not to split the data by form")
   }
 
-  if (!is.null(wide) && final_format != "by_form") {
+  if (isTRUE(wide) && final_format != "by_form") {
     rd_abort("The argument wide has been specified but the final format is not to split the data by form")
   }
   

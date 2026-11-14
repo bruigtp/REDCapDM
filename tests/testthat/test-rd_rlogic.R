@@ -593,3 +593,12 @@ test_that("rd_rlogic evaluates checkbox options with letters and negative codes"
   expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[cb(A)] = '1'", var = "res")$eval), c(TRUE, FALSE, TRUE))
   expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "sum([cb(A)],[cb(-1)])", var = "res")$eval), c(1, 1, 2))
 })
+
+test_that("rd_rlogic translates != as <>, as REDCap does", {
+  df <- data.frame(record_id = 1:4, a = c(1, 4, NA, 5))
+  dic <- make_dic(c("record_id", "a", "res"))
+
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[a] != 4", var = "res")$eval), c(TRUE, FALSE, NA, TRUE))
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[a] != ''", var = "res")$eval), c(TRUE, TRUE, FALSE, TRUE))
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "[a] != 4", var = "res")$rlogic, rd_rlogic(data = df, dic = dic, logic = "[a] <> 4", var = "res")$rlogic)
+})

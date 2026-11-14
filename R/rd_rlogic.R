@@ -255,7 +255,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Change variable specification from [] to data$
 
   # Change first [.] = '' for is.na(data$.) and [.] <>'' for !is.na(data$.)
-  rlogic <- gsub("\\[(\\w+)\\]\\s?<>\\s?''", "!is.na(data$\\1)", rlogic)
+  rlogic <- gsub("\\[(\\w+)\\]\\s?(<>|!=)\\s?''", "!is.na(data$\\1)", rlogic)
   rlogic <- gsub("\\[(\\w+)\\]\\s?=\\s?''", "is.na(data$\\1)", rlogic)
   rlogic <- gsub("\\[(\\w+)\\]", "data$\\1", rlogic)
 
@@ -273,6 +273,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("=", "==", rlogic)
   rlogic <- gsub("<==", "<=", rlogic)
   rlogic <- gsub(">==", ">=", rlogic)
+  rlogic <- gsub("!==", "!=", rlogic)
   rlogic <- gsub("<>", "!=", rlogic)
   rlogic <- gsub(" and ", " & ", rlogic)
   rlogic <- gsub(" or ", " | ", rlogic)
