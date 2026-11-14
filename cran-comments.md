@@ -6,7 +6,7 @@
 
 * Local: Windows 11, R 4.6.2.
 * GitHub Actions: macOS (R release), Windows (R release) and Ubuntu (R devel, release and oldrel-1).
-* win-builder: R devel. TODO: add the result.
+* win-builder: R devel (2026-11-13 r90888 ucrt): Status OK.
 
 ## Changes in this version
 
@@ -21,4 +21,4 @@ The argument `addTo` of `rd_query()` and `rd_event()` is deprecated in favour of
 
 ## Reverse dependencies
 
-TODO: add the result of the reverse dependency check.
+There are currently no reverse dependencies on CRAN.
