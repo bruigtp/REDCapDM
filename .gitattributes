@@ -1,2 +1,11 @@
-*.R text eol=lf
-DESCRIPTION text eol=lf
+# Line endings: text files are stored with LF in the repository and in the working copy, also on Windows
+* text=auto eol=lf
+
+# Binary files are never converted
+*.rda binary
+*.rds binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.xlsx binary
+*.pdf binary

@@ -1,4 +1,4 @@
-# REDCapDM (development version)
+# REDCapDM 1.2.0
 
 ## Breaking changes
 
@@ -6,9 +6,6 @@
 - REDCapR and openxlsx are now suggested packages: they are only needed to read data from the REDCap API or `.xlsx` files and to export queries with `rd_export()`. These functions ask to install them when they are missing.
 
 ## New features
-
-- The `addTo` argument of `rd_query()` and `rd_event()` is now called `add_to`. `addTo` still works, with a deprecation warning.
-- `rd_query()`, `rd_event()` and `check_queries()` return a list of class `REDCapDM_report`: printed in the console, it shows the number of queries per variable and event (per state in `check_queries()`) instead of the whole list. `$queries`, `$results`, `add_to` and `rd_export()` work as before.
 
 - New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank.
 - New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
@@ -20,6 +17,8 @@
 - `rd_factor()` warns when the dictionary logic was already translated to R with `rd_dictionary()`.
 - `rd_rlogic()` translates logic that uses the same variable in different events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
 - `rd_checkbox()` returns a project without checkbox fields unchanged, with a warning, instead of an error.
+- The `addTo` argument of `rd_query()` and `rd_event()` is now called `add_to`. `addTo` still works, with a deprecation warning.
+- `rd_query()`, `rd_event()` and `check_queries()` return a list of class `REDCapDM_report`: printed in the console, it shows the number of queries per variable and event (per state in `check_queries()`) instead of the whole list. `$queries`, `$results`, `add_to` and `rd_export()` work as before.
 
 ## Repeated instruments and repeating events
 
@@ -67,7 +66,7 @@
 ## Clearer messages
 
 - `redcap_data()` explains when a file is not found, when the csv file read by the R script is not in its folder and when the event file is not the instrument-event mapping of the project. It warns when variables of the data are not in the dictionary and when the project has no records yet.
-- `rd_query()` names the variables that don't exist (and how to check a checkbox), explains why an expression can't be evaluated, warns when a text variable is compared with a number and checks `negate`, `report_zeros`, `by_dag` and `addTo`.
+- `rd_query()` names the variables that don't exist (and how to check a checkbox), explains why an expression can't be evaluated, warns when a text variable is compared with a number and checks `negate`, `report_zeros`, `by_dag` and `add_to`.
 - `rd_rlogic()` names the variables it can't find and shows the translated logic and the R error when it can't be evaluated.
 - `rd_delete_vars()` warns when `pattern` matches no variable, `rd_insert_na()` when no row meets the filter, and `rd_factor()` and `rd_recalculate()` when `exclude` has unknown variables.
 - `rd_event()` asks for the `event`, `rd_split()` explains why it can't split by event, `rd_transform()` asks for `delete_pattern` before splitting the data, `check_queries()` checks that it receives query reports, `rd_missplot()` checks `max_vars` and the number of rows, and `rd_checkbox()` checks `checkbox_labels`.
