@@ -291,7 +291,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       parts <- trimws(strsplit(choices, "\\|")[[1]])
       parts <- parts[grepl(",", parts)]
       dic_label <- stats::setNames(trimws(sub("^[^,]*,\\s*", "", parts)), trimws(sub(",.*$", "", parts)))
-      dic_label <- unname(dic_label[sub("^.*___", "", svar_check)])
+      dic_label <- unname(dic_label[checkbox_code(svar_check, names_trim[i], choices)])
       no_label <- is.na(label) | !nzchar(label)
       label[no_label] <- dic_label[no_label]
     }
@@ -326,7 +326,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       out <- strtrim(out, 60)
 
       # Save correspondence between the old names and the new names
-      x <- cbind(gsub("___(.+)", "\\(\\1\\)", svar_check), out)
+      x <- cbind(paste0(names_trim[i], "(", checkbox_code(svar_check, names_trim[i], choices), ")"), out)
       correspondence <- rbind(correspondence, x)
 
       # For each new variable name, check if it already exists in the dataset
@@ -362,7 +362,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       out <- strtrim(svar_check, 60)
 
       # Save correspondence between the old names and the new names
-      x <- cbind(gsub("___(.+)", "\\(\\1\\)", svar_check), out)
+      x <- cbind(paste0(names_trim[i], "(", checkbox_code(svar_check, names_trim[i], choices), ")"), out)
       correspondence <- rbind(correspondence, x)
     }
   }
@@ -393,16 +393,17 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   cats <- cats |>
     dplyr::mutate(
       factor = paste0("[", .data$field_name, "]='", .data$cat, "'"),
+      factor2 = paste0("[", .data$field_name, "]<>'", .data$cat, "'"),
       V1 = stringi::stri_replace_all_fixed(cats$V1, c("(", ")"), c("\\(", "\\)"), vectorize_all = FALSE),
-      redcap = paste0("\\[", .data$V1, "\\] ?=? ?'?", .data$num, "'?"),
-      redcap2 = paste0("\\[", .data$V1, "\\] ?<?>? ?'?", .data$num, "'?")
+      redcap = paste0("\\[", .data$V1, "\\] ?=? ?['\"]?", .data$num, "['\"]?"),
+      redcap2 = paste0("\\[", .data$V1, "\\] ?<> ?['\"]?", .data$num, "['\"]?")
     ) |>
     dplyr::select(-"V1") |>
     dplyr::arrange(dplyr::desc(.data$redcap))
 
   # Create the final mappings for replacing the branching logic in REDCap with the new factor logic
   replace <- setNames(cats$factor, cats$redcap)
-  replace2 <- setNames(cats$factor, cats$redcap2)
+  replace2 <- setNames(cats$factor2, cats$redcap2)
 
   # Apply the new branching logic to the dictionary by replacing the old logic with the new ones
   dic <- dic |>
@@ -445,4 +446,28 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     results = stringr::str_glue("{results}")
   ) |>
     purrr::compact() # Remove any NULL elements from the output list
+}
+
+#' Codes of the checkbox columns
+#'
+#' REDCap exports each option of a checkbox as the column `field___code`, with
+#' the code in lower case and its `-` and `.` replaced by `_`. This returns the
+#' code of the dictionary that corresponds to each column (e.g. `A` for
+#' `symptoms___a`, `-1` for `symptoms____1`), or the suffix of the column when
+#' it is not among the choices.
+#'
+#' @param columns Checkbox columns of the data (`field___code`).
+#' @param field Name of the checkbox field.
+#' @param choices Choices of the field in the dictionary.
+#' @return Character vector with the code of each column.
+#' @noRd
+checkbox_code <- function(columns, field, choices) {
+  suffix <- substring(columns, nchar(field) + 4)
+  codes <- character(0)
+  if (length(choices) == 1 && !is.na(choices)) {
+    parts <- trimws(strsplit(choices, "\\|")[[1]])
+    codes <- trimws(sub(",.*$", "", parts[grepl(",", parts)]))
+  }
+  code <- codes[match(suffix, gsub("[-.]", "_", tolower(codes)))]
+  ifelse(is.na(code), suffix, code)
 }

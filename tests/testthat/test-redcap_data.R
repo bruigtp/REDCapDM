@@ -532,3 +532,28 @@ test_that("redcap_data reads the R script of REDCap without Hmisc and without cl
   expect_equal("package:Hmisc" %in% search(), attached_before)
   expect_equal(grDevices::dev.cur(), device)
 })
+
+test_that("redcap_data ignores the empty rows of the dictionary and keeps the first row of a repeated field", {
+  sample_data <- data.frame(record_id = 1:2, x = c(1, 2))
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(sample_data, tmp_r)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = c("record_id", "x", "", "x"), form_name = c("f1", "f1", "", "f2"), field_type = c("text", "text", "", "text")), tmp_dic, row.names = FALSE)
+
+  expect_warning(out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic), "more than one row")
+  expect_equal(out$dictionary$field_name, c("record_id", "x"))
+  expect_equal(out$dictionary$form_name, c("f1", "f1"))
+})
+
+test_that("redcap_data explains that the R script can't be run", {
+  dir <- tempfile()
+  dir.create(dir)
+  write.csv(data.frame(record_id = 1:2), file.path(dir, "PROJ_DATA.csv"), row.names = FALSE)
+  writeLines(c("#Clear existing data and graphics", "rm(list=ls())", "data=read.csv('PROJ_DATA.csv')", "label(data$record_id) = = \"ID\""), file.path(dir, "PROJ_R.r"))
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = "record_id", form_name = "f1", field_type = "text"), tmp_dic, row.names = FALSE)
+
+  wd <- getwd()
+  expect_error(redcap_data(data_path = file.path(dir, "PROJ_R.r"), dic_path = tmp_dic), class = "REDCapDM_error_file")
+  expect_equal(getwd(), wd)
+})

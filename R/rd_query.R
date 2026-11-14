@@ -329,8 +329,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     }
   }
 
-  # Handle branching logic for variables
-  var_logic <- variables[which(variables %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])]
+  # Handle branching logic for variables: a checkbox option (`field___code`) takes the branching logic of its field
+  logic_field <- ifelse(variables %in% dic$field_name, variables, sub("___.*$", "", variables))
+  var_logic <- unique(variables[which(logic_field %in% dic[!dic$branching_logic_show_field_only_if %in% c(NA, ""), "field_name"])])
+  logic_field <- logic_field[match(var_logic, variables)]
 
   # Objects to track compatible logic, unconverted logic, and branching evaluations
   compatible <- NULL
@@ -340,11 +342,12 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   if (length(var_logic) > 0) {
     # Create a data frame of variables, labels, and their branching logic
+    dic_row <- match(logic_field, dic$field_name)
     branch <- data.frame(
-      var = dic$field_name[dic$field_name %in% gsub("___\\d*$", "", var_logic)],
-      label = gsub("\\s+", "", gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___\\d*$", "", var_logic)])),
-      branch = dic$branching_logic_show_field_only_if[dic$field_name %in% gsub("___\\d*$", "", var_logic)]
-    )
+      var = var_logic,
+      label = gsub("\\s+", "", gsub("<.*?>", "", dic$field_label[dic_row])),
+      branch = dic$branching_logic_show_field_only_if[dic_row]
+    )[order(dic_row), ]
 
     # Save the original branching logic data for reference
     branch0 <- branch
@@ -598,24 +601,21 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     } else {
 
       # Handle cases with zero queries
+      # One row for each combination of DAG and event present in the data
+      dag_col <- intersect(c("redcap_data_access_group.factor", "redcap_data_access_group"), names(data))[1]
+      event_col <- intersect(c("redcap_event_name.factor", "redcap_event_name"), names(data))[1]
+      zero_rows <- if (nrow(data) > 0) {
+        unique(data.frame(
+          dag = if (is.na(dag_col)) "-" else as.character(data[[dag_col]]),
+          event = if (is.na(event_col)) "-" else as.character(data[[event_col]]),
+          stringsAsFactors = FALSE
+        ))
+      } else {
+        data.frame(dag = "-", event = "-", stringsAsFactors = FALSE)
+      }
+
       excel <- tibble::tibble(
-        DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(data)) & nrow(data) > 0) {
-          if ("redcap_data_access_group.factor" %in% names(data)) {
-            if (all(is.na(event))) {
-              unique(as.character(data[, "redcap_data_access_group.factor"]))
-            } else {
-              unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group.factor"]))
-            }
-          } else {
-            if (all(is.na(event))) {
-              unique(as.character(data[, "redcap_data_access_group"]))
-            } else {
-              unique(as.character(data[data$redcap_event_name %in% event | data$redcap_event_name.factor %in% event, "redcap_data_access_group"]))
-            }
-          }
-        } else {
-          "-"
-        },
+        DAG = zero_rows$dag,
         Variables = variables[i],
         Description = if (all(is.na(variables_names))) {
           if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
@@ -636,15 +636,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
             }
           }
         },
-        Event = if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)) & nrow(data) > 0) {
-          if ("redcap_event_name.factor" %in% names(data)) {
-            unique(as.character(data[, "redcap_event_name.factor"]))
-          } else {
-            unique(as.character(data[, "redcap_event_name"]))
-          }
-        } else {
-          "-"
-        },
+        Event = zero_rows$event,
         Query = if (all(!is.na(query_name))) {
           if (length(query_name) == 1) {
             query_name

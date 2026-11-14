@@ -127,3 +127,27 @@ test_that("rd_checkbox returns a project without checkboxes unchanged, with a wa
 test_that("rd_checkbox needs two labels in checkbox_labels", {
   expect_error(rd_checkbox(covican, checkbox_labels = "Yes"), "must have two labels")
 })
+
+test_that("rd_checkbox translates the branching logic of checkbox codes with letters, negative codes and <>", {
+  data <- data.frame(
+    record_id = as.character(1:3), cb___a = c(1, 0, 0), cb____1 = c(0, 1, 0),
+    f1 = c("x", NA, NA), f2 = c(NA, "y", NA), f3 = c(NA, "z", "z"), f4 = c("w", NA, NA)
+  )
+  dic <- data.frame(
+    field_name = c("record_id", "cb", "f1", "f2", "f3", "f4"), form_name = "form1",
+    field_type = c("text", "checkbox", "text", "text", "text", "text"),
+    field_label = c("ID", "Options", "F1", "F2", "F3", "F4"),
+    choices_calculations_or_slider_labels = c("", "A, Letter | -1, Negative", "", "", "", ""),
+    text_validation_type_or_show_slider_number = "",
+    branching_logic_show_field_only_if = c("", "", "[cb(A)] = '1'", "[cb(-1)] = \"1\"", "[cb(A)] <> '1'", "[cb(-1)] <> '1'"),
+    stringsAsFactors = FALSE
+  )
+
+  out <- rd_checkbox(data = data, dic = dic)
+  logic <- stats::setNames(out$dictionary$branching_logic_show_field_only_if, out$dictionary$field_name)
+
+  expect_true(all(c("cb_letter", "cb_negative") %in% names(out$data)))
+  expect_equal(as.character(out$data$cb_letter), c("Yes", "No", "No"))
+  expect_equal(as.character(out$data$cb_negative), c("No", "Yes", "No"))
+  expect_equal(unname(logic[c("f1", "f2", "f3", "f4")]), c("[cb_letter]='Yes'", "[cb_negative]='Yes'", "[cb_letter]<>'Yes'", "[cb_negative]<>'Yes'"))
+})

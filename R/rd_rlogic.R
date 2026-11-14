@@ -21,7 +21,7 @@
 #' * Adjusts logic for longitudinal data using `event_form` if provided.
 #' * Evaluates the translated R logic against the dataset and returns the results.
 #' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
-#' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"`, `"M"` (months), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, and `"today"` is the current date.
+#' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"` (years of 365.2425 days), `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, and `"today"` is the current date.
 #' * The same variable can be used in several events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
 #' * Logic with smart variables or other REDCap functions may require manual inspection.
 #'
@@ -89,13 +89,8 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # As in REDCap, datediff() returns the absolute difference unless its last argument is `true`
   rlogic <- datediff_absolute(rlogic)
 
-  # Process checkboxes and other specific cases in REDCap logic
-  if (grepl("\\)\\]", rlogic)) {
-    num_vars <- stringr::str_count(rlogic, "]")
-    for (i in 1:num_vars) {
-      rlogic <- gsub("\\[(.+)\\((\\d+)\\)\\]", "[\\1___\\2]", rlogic)
-    }
-  }
+  # Checkboxes: [field(code)] is the column field___code of the data
+  rlogic <- checkbox_columns(rlogic)
 
   # Modify event-name and current-instance occurrences
   rlogic <- gsub("\\[event\\-name\\]\\[", "[", rlogic)
@@ -181,7 +176,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Convert REDCap functions to equivalent R functions
   rlogic <- gsub("if\\s?\\(", "ifelse(", rlogic)
-  rlogic <- gsub("datediff\\s?", "lubridate::time_length(lubridate::interval", rlogic)
+  rlogic <- gsub("datediff\\s?", "(lubridate::time_length(lubridate::interval", rlogic)
   rlogic <- gsub("year\\((.*?)\\)", "lubridate::year(\\1)", rlogic)
 
   # Handle date formats in logic
@@ -205,10 +200,10 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Remove the date format argument of datediff() ('dmy', 'mdy', 'ymd'...): the dates in the logic were converted above
   rlogic <- gsub("(\\,\\s?'[yMdhms]')\\,\\s?'(dmy|mdy|ymd|ydm|myd|dym)'", "\\1", rlogic)
 
-  # Units of datediff(): as in REDCap, 'M' are months and 'm' minutes
-  datediff_units <- c(y = "year", M = "month", d = "day", h = "hour", m = "minute", s = "second")
+  # Units of datediff(): as in REDCap, 'M' are months and 'm' minutes, and years and months are 365.2425 and 30.44 days
+  datediff_units <- c(y = "'day') / 365.2425", M = "'day') / 30.44", d = "'day')", h = "'hour')", m = "'minute')", s = "'second')")
   for (u in names(datediff_units)) {
-    rlogic <- gsub(paste0("\\,\\s?'", u, "'\\)"), paste0("), '", datediff_units[[u]], "')"), rlogic)
+    rlogic <- gsub(paste0("\\,\\s?'", u, "'\\)"), paste0("), ", datediff_units[[u]], ")"), rlogic)
   }
 
   # 'today' in datediff() is the current date
@@ -463,6 +458,27 @@ fill_from_base <- function(data, fields) {
   }
 
   data
+}
+
+#' Columns of the checkbox options in REDCap logic
+#'
+#' REDCap refers to a checkbox option as `[field(code)]` and exports it as the
+#' column `field___code`, with the code in lower case and its `-` and `.`
+#' replaced by `_` (e.g. `[symptoms(A)]` is `symptoms___a` and `[symptoms(-1)]`
+#' is `symptoms____1`).
+#'
+#' @param logic REDCap logic.
+#' @return The logic with each `[field(code)]` replaced by `[field___code]`.
+#' @noRd
+checkbox_columns <- function(logic) {
+  pattern <- "\\[([A-Za-z0-9_]+)\\(([A-Za-z0-9_.-]+)\\)\\]"
+  matches <- gregexpr(pattern, logic)
+  regmatches(logic, matches) <- lapply(regmatches(logic, matches), function(x) {
+    field <- sub(pattern, "\\1", x)
+    code <- gsub("[-.]", "_", tolower(sub(pattern, "\\2", x)))
+    paste0("[", field, "___", code, "]")
+  })
+  logic
 }
 
 #' Absolute value of datediff() unless it is signed

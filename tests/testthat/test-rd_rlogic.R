@@ -543,7 +543,7 @@ test_that("rd_rlogic translates the date format, the units and 'today' of datedi
   }
 
   # 'M' are months and 'm' minutes
-  expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'M')", var = "res")$eval, c(2, 12))
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'M')", var = "res")$eval, c(60, 365) / 30.44)
   expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'m')", var = "res")$eval, c(60, 365) * 24 * 60)
 
   # 'today'
@@ -560,4 +560,36 @@ test_that("rd_rlogic names the variables it can't find and shows the translation
   err <- expect_error(rd_rlogic(data = df, dic = dic, logic = "stdev([a],[a])", var = "a"), class = "REDCapDM_error_logic")
   expect_match(conditionMessage(err), "R logic: `stdev(data$a,data$a)`", fixed = TRUE)
   expect_match(conditionMessage(err), "could not find function", fixed = TRUE)
+})
+
+test_that("datediff() counts years of 365.2425 days and months of 30.44 days, as REDCap does", {
+  df <- data.frame(record_id = 1:2, d1 = as.Date(c("2023-01-01", "2023-01-01")), d2 = as.Date(c("2024-01-01", "2023-07-01")))
+  dic <- make_dic(c("record_id", "d1", "d2", "res"), text_validation = "date_ymd")
+  days <- c(365, 181)
+
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'y')", var = "res")$eval, days / 365.2425)
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d1],[d2],'M')", var = "res")$eval, days / 30.44)
+
+  # A year of 365 days is not a whole year: REDCap gives 0
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "rounddown(datediff([d1],[d2],'y'),0)", var = "res")$eval, c(0, 0))
+
+  # Signed and inside other functions
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "datediff([d2],[d1],'M','ymd',true)", var = "res")$eval, -days / 30.44)
+  expect_equal(rd_rlogic(data = df, dic = dic, logic = "mod(datediff([d1],[d2],'y'),1)", var = "res")$eval, (days / 365.2425) %% 1)
+})
+
+test_that("checkbox_columns translates the checkbox options of any code", {
+  expect_equal(checkbox_columns("[cb(1)] = '1'"), "[cb___1] = '1'")
+  expect_equal(checkbox_columns("[cb(A)] = '1' or [cb(b2)] = '1'"), "[cb___a] = '1' or [cb___b2] = '1'")
+  expect_equal(checkbox_columns("[cb(-1)] = '1'"), "[cb____1] = '1'")
+  expect_equal(checkbox_columns("[visit_1_arm_1][cb(x_y)] = '0'"), "[visit_1_arm_1][cb___x_y] = '0'")
+  expect_equal(checkbox_columns("[a] + 1"), "[a] + 1")
+})
+
+test_that("rd_rlogic evaluates checkbox options with letters and negative codes", {
+  df <- data.frame(record_id = 1:3, cb___a = c(1, 0, 1), cb____1 = c(0, 1, 1))
+  dic <- make_dic(c("record_id", "cb", "res"))
+
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[cb(A)] = '1'", var = "res")$eval), c(TRUE, FALSE, TRUE))
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "sum([cb(A)],[cb(-1)])", var = "res")$eval), c(1, 1, 2))
 })

@@ -867,3 +867,38 @@ test_that("rd_query suggests the options of a checkbox and warns about text comp
   expect_error(rd_query(fx, variables = "symp", expression = "is.na(x)"), "symp___1")
   expect_warning(rd_query(fx, variables = "ae_term", expression = "x > 3"), "is text")
 })
+
+test_that("rd_query reports variables without queries in longitudinal projects with several DAGs", {
+  toy_data <- data.frame(
+    record_id = c("1", "1", "2", "2", "3"),
+    redcap_event_name = c("e1_arm_1", "e2_arm_1", "e1_arm_1", "e2_arm_1", "e1_arm_1"),
+    redcap_data_access_group = c("a", "a", "b", "b", "c"),
+    x = c(1, 2, 3, 4, 5),
+    y = c(1, NA, 3, 4, 5),
+    stringsAsFactors = FALSE
+  )
+  toy_dic <- make_toy_dic(list(x = list(field_label = "X", form_name = "f1"), y = list(field_label = "Y", form_name = "f1")))
+  toy_event <- data.frame(arm_num = 1, unique_event_name = c("e1_arm_1", "e2_arm_1"), form = "f1")
+
+  # A variable without queries: one row for each DAG and event of the data
+  res <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, event_form = toy_event, variables = "x", expression = "is.na(x)"))
+  expect_equal(nrow(res$queries), 0)
+
+  # Variables with and without queries
+  res <- suppressWarnings(rd_query(data = toy_data, dic = toy_dic, event_form = toy_event, variables = c("x", "y"), expression = "is.na(x)", report_zeros = TRUE))
+  expect_equal(nrow(res$queries), 1)
+  expect_equal(as.character(res$queries$Identifier), "1")
+})
+
+test_that("rd_query applies the branching logic of a checkbox field to its options", {
+  toy_data <- data.frame(record_id = as.character(1:4), sex = c(1, 2, 2, 1), preg___1 = c(0, 0, 1, 0), preg___2 = c(0, 1, 0, 0))
+  toy_dic <- data.frame(
+    field_name = c("record_id", "sex", "preg"), form_name = "f1", field_type = c("text", "radio", "checkbox"),
+    field_label = c("ID", "Sex", "Pregnancy"), choices_calculations_or_slider_labels = c("", "1, Man | 2, Woman", "1, First | 2, Second"),
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = c("", "", "[sex] = '2'"),
+    stringsAsFactors = FALSE
+  )
+
+  res <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "preg___1", expression = "x == 0"))
+  expect_equal(as.character(res$queries$Identifier), "2")
+})

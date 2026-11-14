@@ -159,7 +159,17 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     file.lines.collapsed <- paste(file.lines, collapse = "\n")
     command <- paste0("dirname(parent.frame(2)$", "data_path", ")")
     setwd(eval(parse(text = command)))
-    source(textConnection(file.lines.collapsed), local = tmp_env, encoding = "UTF-8")
+
+    # Error: the R script can't be run (e.g. it was edited)
+    tryCatch(
+      source(textConnection(file.lines.collapsed), local = tmp_env, encoding = "UTF-8"),
+      error = function(e) {
+        rd_abort(
+          c("The R script in {.arg data_path} could not be run.", "i" = "Use the R script exported by REDCap without editing it."),
+          class = "REDCapDM_error_file", parent = e, call = NULL
+        )
+      }
+    )
     data <- get("data", envir = tmp_env)
 
     # Saving labels before changes
@@ -196,6 +206,17 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     dic <- dic[-1, ]
     names(dic) <- janitor::make_clean_names(names(dic))
     names(dic)[1] <- "field_name"
+
+    # Rows without a field name are not fields (e.g. empty rows of a dictionary saved with Excel)
+    dic <- dic[!is.na(dic$field_name) & trimws(dic$field_name) != "", ]
+
+    # Warning: fields that appear more than once in the dictionary (only the first one is kept)
+    repeated_fields <- unique(dic$field_name[duplicated(dic$field_name)])
+    if (length(repeated_fields) > 0) {
+      rd_warn("The dictionary has more than one row for {?the field/the fields} {.var {repeated_fields}}: only the first one is kept.")
+      dic <- dic[!duplicated(dic$field_name), ]
+    }
+
     if (dic[1, 1] != "record_id") {
       dic[1, 1] <- "record_id"
     }

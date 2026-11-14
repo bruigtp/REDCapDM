@@ -62,6 +62,11 @@
 - `redcap_data(rm_mdc = FALSE)`, `rd_split()` and `rd_missplot()` failed or warned in projects without records.
 - `redcap_data()` no longer runs the `library(Hmisc)` and `graphics.off()` lines of the R script exported by REDCap: it failed when Hmisc wasn't installed, attached Hmisc (masking e.g. `dplyr::summarize()`) and closed the open plots.
 - knitr and lubridate are now declared dependencies: several functions failed when knitr wasn't installed, and the translation of `datediff()` needed lubridate. kableExtra is optional: without it the HTML reports are not styled.
+- `rd_query()` failed in longitudinal projects with several DAGs when a variable had no queries.
+- `rd_query()` didn't apply the branching logic of a checkbox field when one of its options was queried (e.g. `variables = "symptoms___1"`), and after `rd_checkbox(checkbox_names = FALSE)` it reported the logic as applied without applying it.
+- `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()`, `rd_dictionary()` and `rd_checkbox()`) didn't translate the checkbox options whose code has letters or is negative (e.g. `[symptoms(A)]` or `[symptoms(-1)]`).
+- `rd_checkbox()` reversed the logic `[field(code)] <> '1'` when it renamed the checkbox options in the dictionary, and didn't translate the codes with letters, the negative codes and the values in double quotes.
+- `rd_rlogic()` counted calendar years and months in `datediff()`: as REDCap, it now counts years of 365.2425 days and months of 30.44 days (e.g. 365 days are 0.9993 years, so `rounddown(datediff(..., 'y'), 0)` gives 0).
 
 ## Clearer messages
 
@@ -78,6 +83,8 @@
 - `redcap_data()` and `rd_query()` report all their errors and warnings with cli. Problems with the files have the class `REDCapDM_error_file`, and problems with the REDCap API the class `REDCapDM_error_api`, which keeps the original error of the API as its parent.
 - `rd_query()` informs with a message, instead of a warning, when it applies the branching logic automatically.
 - All the other functions also report their errors and warnings with cli, naming the variables, forms and events involved. Logic that can't be translated or evaluated has the class `REDCapDM_error_logic` (with the translated logic and the R error), a dataset that doesn't match its dictionary the class `REDCapDM_error_data`, and a folder that doesn't exist in `rd_export()` the class `REDCapDM_error_file`. A filter of `rd_insert_na()` that can't be evaluated keeps the original R error as its parent.
+- `redcap_data()` explains when the R script can't be run, ignores the empty rows of the dictionary (e.g. added by Excel) and warns when a field appears more than once in it.
+- `rd_split()` and `rd_transform()` name the fields of the dictionary that are not in the data and, when whole instruments are missing (data exported with only some instruments), show how to remove them with `rd_delete_vars(forms = ...)`.
 
 ## Documentation
 

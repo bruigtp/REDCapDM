@@ -120,7 +120,22 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     other_check_vars <- setdiff(vars_more, check_vars)
 
     if (length(other_check_vars) > 0) {
-      rd_abort(c("There are variables in the dictionary that are not present in the dataset.", "i" = "Please ensure that the dictionary matches the dataset. Transformation has been halted."))
+      shown_vars <- utils::head(other_check_vars, 10)
+
+      # Forms with none of their fields in the data (e.g. data exported with only some instruments)
+      form_fields <- dic[!dic$field_type %in% "descriptive" & dic$field_name != "record_id", c("field_name", "form_name")]
+      missing_forms <- unique(form_fields$form_name[form_fields$field_name %in% other_check_vars])
+      missing_forms <- missing_forms[vapply(missing_forms, function(f) all(form_fields$field_name[form_fields$form_name == f] %in% vars_more), logical(1))]
+      forms_code <- paste0("rd_delete_vars(project, forms = ", paste(deparse(missing_forms), collapse = ""), ")")
+
+      rd_abort(
+        c(
+          "{length(other_check_vars)} variable{?s} of the dictionary {?is/are} not in the data: {.var {shown_vars}}.",
+          "i" = if (length(missing_forms) > 0) "If the data was exported without some instruments, remove them first: {.code {forms_code}}.",
+          "i" = "Please ensure that the dictionary matches the dataset. Transformation has been halted."
+        ),
+        class = "REDCapDM_error_data"
+      )
     }
 
   }

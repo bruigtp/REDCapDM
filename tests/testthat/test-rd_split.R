@@ -296,3 +296,20 @@ test_that("rd_split works with a project without records", {
   res <- expect_silent(rd_split(fx, by = "form", wide = TRUE))
   expect_true(all(res$data$max_repeated_instance == 0))
 })
+
+test_that("rd_split names the fields of the dictionary that are not in the data and the instruments to remove", {
+  data <- tibble::tibble(record_id = 1:2, a = c(1, 2))
+  dic <- tibble::tibble(
+    field_name = c("record_id", "a", "b", "c"),
+    field_type = "text",
+    form_name = c("form1", "form1", "form2", "form2")
+  )
+
+  err <- expect_error(rd_split(data = data, dic = dic), class = "REDCapDM_error_data")
+  expect_match(conditionMessage(err), "`b` and `c`")
+  expect_match(conditionMessage(err), "rd_delete_vars(project, forms = \"form2\")", fixed = TRUE)
+
+  # Once the instrument is removed, the data is split
+  out <- rd_split(rd_delete_vars(data = data, dic = dic, forms = "form2"), by = "form")
+  expect_equal(out$data$form, "form1")
+})
