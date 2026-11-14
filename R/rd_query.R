@@ -41,7 +41,7 @@
 #' * Provides warnings for variables with branching logic that could not be automatically evaluated.
 #'
 #'
-#' @return A list containing:
+#' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), containing:
 #' \describe{
 #'   \item{queries}{A data frame or a list of data frames (if `by_dag = TRUE`) with detailed query information for each record.}
 #'   \item{results}{A formatted report (HTML table) summarizing total queries per variable, event, and DAG if applicable.}
@@ -959,5 +959,5 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   }
 
   # Return the final report output
-  def
+  new_report(def)
 }

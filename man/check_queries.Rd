@@ -22,7 +22,7 @@ summarizing the counts per state is produced and returned in the \code{results} 
 returned list. If \code{FALSE}, no HTML viewer is produced (useful for non-interactive runs).}
 }
 \value{
-A list with two elements:
+A list of class \code{REDCapDM_report}, which prints a short summary (see \code{\link[=print.REDCapDM_report]{print.REDCapDM_report()}}), with two elements:
 \describe{
 \item{\code{queries}}{A data frame containing all queries present in either \code{old} or \code{new}.
 A factor column \code{Modification} indicates the state for each row (levels: \code{Pending},

@@ -28,7 +28,7 @@
 #'   summarizing the counts per state is produced and returned in the \code{results} element of the
 #'   returned list. If \code{FALSE}, no HTML viewer is produced (useful for non-interactive runs).
 #'
-#' @return A list with two elements:
+#' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), with two elements:
 #' \describe{
 #'   \item{\code{queries}}{A data frame containing all queries present in either \code{old} or \code{new}.
 #'     A factor column \code{Modification} indicates the state for each row (levels: \code{Pending},
@@ -197,8 +197,8 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   }
 
   # Return results
-  list(
+  new_report(list(
     queries = check,
     results = viewer
-  )
+  ))
 }

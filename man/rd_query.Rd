@@ -63,7 +63,7 @@ rd_query(
 \item{addTo}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Use \code{add_to} instead.}
 }
 \value{
-A list containing:
+A list of class \code{REDCapDM_report}, which prints a short summary (see \code{\link[=print.REDCapDM_report]{print.REDCapDM_report()}}), containing:
 \describe{
 \item{queries}{A data frame or a list of data frames (if \code{by_dag = TRUE}) with detailed query information for each record.}
 \item{results}{A formatted report (HTML table) summarizing total queries per variable, event, and DAG if applicable.}

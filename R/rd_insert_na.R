@@ -77,7 +77,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # Validate there is exactly one filter and allow multiple vars
   if (length(filter) != 1) {
-    rd_abort("Please provide exactly one filter.")
+    rd_abort("Please provide exactly one filter.", class = "REDCapDM_error_argument")
   } else {
     # Parse variables within the single filter expression once
     vars_filter <- trimws(unlist(stringr::str_split(filter[1], "[&|]")))
@@ -156,19 +156,8 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       rd_abort("Variable(s) not found in dictionary: {.val {missing_vars_in_dic}}", class = "REDCapDM_error_argument")
     }
 
-    # Try to detect an event column in `data` (common names or values matching event_form)
-    event_col <- NULL
-    candidate_names <- c("redcap_event_name", "unique_event_name", "event_name", "event")
-    event_col <- intersect(names(data), candidate_names)[1]
-    if (is.null(event_col)) {
-      for (col in names(data)) {
-        col_values <- unique(data[[col]])
-        if (any(col_values %in% event_form$unique_event_name, na.rm = TRUE)) {
-          event_col <- col
-          break
-        }
-      }
-    }
+    # Event of each row: the project is longitudinal when the data has the column redcap_event_name
+    event_col <- if (longitudinal) "redcap_event_name" else NULL
 
     # Loop through the variables to transform
     for (j in seq_along(vars)) {
@@ -205,11 +194,8 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       ids <- which(rows_mask)
 
       # If longitudinal and an event column is found, restrict ids to the overlapping events for this var
-      if (longitudinal && !is.null(event_col)) {
+      if (longitudinal) {
         ids <- ids[which(data[[event_col]][ids] %in% match_events)]
-      } else if (longitudinal && is.null(event_col)) {
-        # No event column found in data — warn that event-level restriction cannot be applied
-        rd_warn("No event column detected in {.arg data}. The filter will be applied across all rows (event-level restriction skipped).")
       }
 
       # Apply the transformation (set selected rows for var_j to NA), also in its .factor version so that a later rd_factor() doesn't bring the values back

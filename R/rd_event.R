@@ -19,7 +19,7 @@
 #' @param link Optional list containing project information (`domain`, `redcap_version`, `proj_id`, `event_id`) to generate clickable links for each query.
 #'
 #'
-#' @return A named list with two elements:
+#' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), with two elements:
 #' \describe{
 #'   \item{\code{queries}}{A data frame listing records missing the specified events.
 #'     Columns: \code{Identifier}, \code{DAG}, \code{Event}, \code{Instrument},
@@ -389,10 +389,10 @@ rd_event <- function(project = NULL,
   result <- style_report(result)
 
   # Return the queries and the formatted report
-  list(
+  new_report(list(
     queries = queries,
     results = result
-  )
+  ))
 }
 
 

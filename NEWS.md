@@ -8,6 +8,7 @@
 ## New features
 
 - The `addTo` argument of `rd_query()` and `rd_event()` is now called `add_to`. `addTo` still works, with a deprecation warning.
+- `rd_query()`, `rd_event()` and `check_queries()` return a list of class `REDCapDM_report`: printed in the console, it shows the number of queries per variable and event (per state in `check_queries()`) instead of the whole list. `$queries`, `$results`, `add_to` and `rd_export()` work as before.
 
 - New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank.
 - New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
@@ -87,6 +88,7 @@
 
 ## Internal changes
 
+- Snapshot tests keep the text of the printed reports and of the main messages, and new tests cover chained functions and less common arguments.
 - Code cleanup following lintr: the conditions of `if()` use `&&` and `||`, and the query codes are numbered with `dplyr::row_number()`, which also works with zero rows.
 
 # REDCapDM 1.0-1
