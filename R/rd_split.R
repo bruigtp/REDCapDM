@@ -1,7 +1,7 @@
 #' Split a REDCap dataset by form or event
 #'
 #' @description
-#' `r lifecycle::badge('experimental')`
+#' `r lifecycle::badge('stable')`
 #'
 #' Splits a REDCap dataset into separate datasets by **form** or **event** using the data dictionary. Supports both longitudinal and non-longitudinal projects and can return wide or long formats for repeated measures.
 #'

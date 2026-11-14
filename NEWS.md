@@ -83,6 +83,7 @@
 
 - The vignette is split into four: getting started (`vignette("REDCapDM")`), missing data (`vignette("missing-data")`), data processing (`vignette("data-processing")`) and queries (`vignette("query-management")`).
 - The reference of the website groups the functions by task, and the help of each function links to the related functions.
+- `rd_checkbox()`, `rd_dates()`, `rd_delete_vars()`, `rd_dictionary()`, `rd_export()`, `rd_factor()`, `rd_recalculate()` and `rd_split()` are now stable (their arguments and results won't change without a deprecation period). `rd_missplot()` remains experimental.
 
 ## Internal changes
 

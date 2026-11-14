@@ -1,7 +1,7 @@
 #' Recalculate and Verify Calculated Fields in REDCap Data
 #'
 #' @description
-#' `r lifecycle::badge('experimental')`
+#' `r lifecycle::badge('stable')`
 #'
 #' Recalculates fields marked as calculated in the REDCap dictionary, compares them with the original values, and reports discrepancies. If any differences are found, new recalculated fields are added to the dataset and dictionary with `_recalc` appended to the names.
 #'

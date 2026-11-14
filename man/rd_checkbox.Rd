@@ -39,7 +39,7 @@ A list with:
 }
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 This function is used to process checkbox variables in a REDCap dataset. By default, it changes their default categories ("Unchecked" and "Checked") to new ones ("No" and "Yes). Optionally, the function can also evaluate the branching logic for checkbox fields and adjust the data and dictionary accordingly.
 }

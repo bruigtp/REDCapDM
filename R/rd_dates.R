@@ -1,7 +1,7 @@
 #' Transform Dates and Datetimes in REDCap Data
 #'
 #' @description
-#' `r lifecycle::badge('experimental')`
+#' `r lifecycle::badge('stable')`
 #'
 #' Converts date and datetime fields in a REDCap dataset to appropriate R classes.
 #'

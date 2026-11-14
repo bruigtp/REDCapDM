@@ -1,7 +1,7 @@
 #' Convert Variables to Factors in a REDCap Dataset
 #'
 #' @description
-#' `r lifecycle::badge('experimental')`
+#' `r lifecycle::badge('stable')`
 #'
 #' Converts variables in a REDCap dataset with associated `.factor` columns into actual factor variables, while allowing the exclusion of specific variables. Ensures consistency with the dataset and preserves variable labels.
 #'

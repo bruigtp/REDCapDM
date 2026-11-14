@@ -30,7 +30,7 @@ rd_export(
 An \code{.xlsx} file written to the specified path.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Export a query dataset (e.g., from \code{rd_query} or \code{rd_event}) to an \code{.xlsx} file. The function can optionally convert a column of URLs into Excel hyperlinks and apply password protection to the worksheet.
 }

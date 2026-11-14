@@ -1,7 +1,7 @@
 #' Delete Variables from REDCap Dataset and Dictionary
 #'
 #' @description
-#' `r lifecycle::badge('experimental')`
+#' `r lifecycle::badge('stable')`
 #'
 #' Deletes selected variables from a REDCap dataset and its dictionary, keeping them consistent and preserving variable labels.
 #'

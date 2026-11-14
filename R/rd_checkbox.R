@@ -1,7 +1,7 @@
 #' Transform Checkbox Variables in a REDCap Project
 #'
 #' @description
-#' `r lifecycle::badge('experimental')`
+#' `r lifecycle::badge('stable')`
 #'
 #' This function is used to process checkbox variables in a REDCap dataset. By default, it changes their default categories ("Unchecked" and "Checked") to new ones ("No" and "Yes). Optionally, the function can also evaluate the branching logic for checkbox fields and adjust the data and dictionary accordingly.
 #'

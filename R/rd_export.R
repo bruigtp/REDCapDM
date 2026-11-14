@@ -1,7 +1,7 @@
 #' Export Queries to an Excel File
 #'
 #' @description
-#' `r lifecycle::badge('experimental')`
+#' `r lifecycle::badge('stable')`
 #'
 #' Export a query dataset (e.g., from `rd_query` or `rd_event`) to an `.xlsx` file. The function can optionally convert a column of URLs into Excel hyperlinks and apply password protection to the worksheet.
 #'
