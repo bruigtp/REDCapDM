@@ -1,6 +1,6 @@
 # Export Queries to an Excel File
 
-**\[experimental\]**
+**\[stable\]**
 
 Export a query dataset (e.g., from `rd_query` or `rd_event`) to an
 `.xlsx` file. The function can optionally convert a column of URLs into
@@ -52,6 +52,13 @@ rd_export(
 ## Value
 
 An `.xlsx` file written to the specified path.
+
+## See also
+
+Other query functions:
+[`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md),
+[`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
 
 ## Examples
 

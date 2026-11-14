@@ -1,6 +1,6 @@
 # Transform Checkbox Variables in a REDCap Project
 
-**\[experimental\]**
+**\[stable\]**
 
 This function is used to process checkbox variables in a REDCap dataset.
 By default, it changes their default categories ("Unchecked" and
@@ -95,6 +95,19 @@ A list with:
 
 - Fields that cannot be evaluated are listed in `results`.
 
+## See also
+
+Other process functions:
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+
 ## Examples
 
 ``` r
@@ -104,8 +117,8 @@ res <- rd_checkbox(covican)
 # With custom labels
 res <- rd_checkbox(data = covican$data,
                    dic = covican$dictionary,
+                   event_form = covican$event_form,
                    checkbox_labels = c("Not present", "Present"))
-#> Warning: Branching logic evaluation could not be performed because the project contains multiple events and the event-form correspondence was not specified. Please provide the `event_form` argument to enable branching logic evaluation.
 
 # Keep original checkbox names
 res <- rd_checkbox(covican, checkbox_names = FALSE)

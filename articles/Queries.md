@@ -51,9 +51,6 @@ example <- rd_query(covican_transformed,
                     event = "baseline_visit_arm_1")
 ```
 
-    Warning: The branching logic of the following variables were applied
-    automatically: potassium
-
 > Note: if you supply fewer `expression` entries than `variables`, the
 > first expression is repeated for all variables (the function warns
 > you).
@@ -184,7 +181,7 @@ that the file has been created and where it is located.
   
 
 **For more information, consult the complete vignette available at:
-<https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html>**
+<https://bruigtp.github.io/REDCapDM/articles/query-management.html>**
 
   
   

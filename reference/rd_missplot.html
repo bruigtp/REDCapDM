@@ -9,7 +9,7 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,7 +21,14 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
+    <li><a class="dropdown-item" href="../articles/missing-data.html">Explore missing data</a></li>
+    <li><a class="dropdown-item" href="../articles/data-processing.html">Process REDCap data</a></li>
+    <li><a class="dropdown-item" href="../articles/query-management.html">Identify and track queries</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quick guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -113,7 +120,7 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function automatically detects whether the input dataset contains longitudinal event information. If <code>redcap_event_name</code> is detected in the data columns, a missingness heatmap grouped by event is produced.
 When the event-form mapping is available (<code>event_form</code> element of the list), each variable is only evaluated in the events where its form is collected; the other cells of the heatmap are left blank.</p>
-<p>With <code>by = "record"</code>, longitudinal projects get one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning); use <code>events</code> to choose others. Records without data in an event are shown in grey in that event's panel. Every row is labelled with its record identifier.</p>
+<p>With <code>by = "record"</code>, longitudinal projects get one panel per event, each with the variables collected in that event. By default only the first event is plotted (with a warning); use <code>events</code> to choose others. Records without data in an event are shown in grey in that event's panel. With repeated instruments and repeating events, each repetition is a row of its own, and the cells of variables that are not collected in that row are shown in light grey. Every row is labelled with its record identifier.</p>
     </div>
 
     <div class="section level2">

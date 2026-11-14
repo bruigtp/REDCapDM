@@ -124,19 +124,34 @@ A list with elements:
 
   Character summary of transformation steps performed.
 
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+
 ## Examples
 
 ``` r
 # Minimal usage (project object or data + dictionary)
 trans <- rd_transform(covican)
 #> ⏳ Transformation in progress...
-#> Warning: All date and datetime variables are already in the correct format. No transformation applied.
+#> Warning: All date and datetime variables are already in the correct format. No
+#> transformation applied.
 
 # Custom checkbox labels
 trans <- rd_transform(covican,
                       checkbox_labels = c("Not present", "Present"))
 #> ⏳ Transformation in progress...
-#> Warning: All date and datetime variables are already in the correct format. No transformation applied.
+#> Warning: All date and datetime variables are already in the correct format. No
+#> transformation applied.
 
 # Return only a single form (wide)
 trans <- rd_transform(covican,
@@ -144,5 +159,6 @@ trans <- rd_transform(covican,
                       which_form = "laboratory_findings",
                       wide = TRUE)
 #> ⏳ Transformation in progress...
-#> Warning: All date and datetime variables are already in the correct format. No transformation applied.
+#> Warning: All date and datetime variables are already in the correct format. No
+#> transformation applied.
 ```

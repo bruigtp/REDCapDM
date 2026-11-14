@@ -5,8 +5,8 @@
 Converts a REDCap logic expression into R-compatible logic. Processes
 one logic expression (`logic`) for one target variable (`var`) at a
 time. Supports common REDCap operators (`and`, `or`, `=`, `<`, `>`,
-etc.) and handles event-specific logic in longitudinal projects. Logic
-involving smart variables or repeated instruments may require manual
+etc.) and handles event-specific logic in longitudinal projects and
+repeated instruments. Logic involving smart variables may require manual
 review.
 
 ## Usage
@@ -79,8 +79,22 @@ A list with:
 
   - `=` → `==`, `<>` → `!=`, `and` → `&`, `or` → `|`.
 
-  - Converts functions like `if()`, `rounddown()`, `datediff()`,
-    [`sum()`](https://rdrr.io/r/base/sum.html) to R equivalents.
+  - Converts the functions `if()`, `datediff()`,
+    [`round()`](https://rdrr.io/r/base/Round.html), `rounddown()`,
+    `roundup()`, [`sum()`](https://rdrr.io/r/base/sum.html),
+    [`mean()`](https://rdrr.io/r/base/mean.html),
+    [`median()`](https://rdrr.io/r/stats/median.html),
+    [`min()`](https://rdrr.io/r/base/Extremes.html),
+    [`max()`](https://rdrr.io/r/base/Extremes.html), `mod()`,
+    `exponential()`, `isnumber()`, `contains()` and
+    [`length()`](https://rdrr.io/r/base/length.html) to R equivalents.
+
+  - As in REDCap, [`sum()`](https://rdrr.io/r/base/sum.html),
+    [`mean()`](https://rdrr.io/r/base/mean.html),
+    [`median()`](https://rdrr.io/r/stats/median.html),
+    [`min()`](https://rdrr.io/r/base/Extremes.html) and
+    [`max()`](https://rdrr.io/r/base/Extremes.html) are computed for
+    each row and ignore blank values.
 
 - Handles date transformations and empty strings (`''`) → `NA`.
 
@@ -89,8 +103,34 @@ A list with:
 - Evaluates the translated R logic against the dataset and returns the
   results.
 
-- Logic with repeated instruments, smart variables, or multiple events
-  per variable may require manual inspection.
+- With repeated instruments and repeating events, the logic is evaluated
+  in the rows where `var` is collected. As in REDCap, in a repeating
+  instrument the variables of the other forms take the value of the base
+  row of the same record and event. Logic that uses variables of another
+  repeating instrument can't be translated.
+
+- As in REDCap, `datediff()` returns the absolute difference unless its
+  last argument is `true`, its units are `"y"`, `"M"` (months), `"d"`,
+  `"h"`, `"m"` (minutes) and `"s"`, and `"today"` is the current date.
+
+- The same variable can be used in several events (e.g.
+  `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
+
+- Logic with smart variables or other REDCap functions may require
+  manual inspection.
+
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
 
 ## Examples
 

@@ -9,7 +9,7 @@ Updates a REDCap data dictionary by converting branching logic and calculation e
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,7 +21,14 @@ Updates a REDCap data dictionary by converting branching logic and calculation e
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
+    <li><a class="dropdown-item" href="../articles/missing-data.html">Explore missing data</a></li>
+    <li><a class="dropdown-item" href="../articles/data-processing.html">Process REDCap data</a></li>
+    <li><a class="dropdown-item" href="../articles/query-management.html">Identify and track queries</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quick guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -41,7 +48,7 @@ Updates a REDCap data dictionary by converting branching logic and calculation e
     </div>
 
     <div class="ref-description section level2">
-    <p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="figures/lifecycle-experimental.svg" alt="[Experimental]"></a></p>
+    <p><a href="https://lifecycle.r-lib.org/articles/stages.html#stable" class="external-link"><img src="figures/lifecycle-stable.svg" alt="[Stable]"></a></p>
 <p>Updates a REDCap data dictionary by converting branching logic and calculation expressions into valid R expressions. This ensures that conditional display rules and calculated fields in the dictionary can be programmatically evaluated with the dataset. Any variables that cannot be converted are reported in the results.</p>
     </div>
 
@@ -92,6 +99,19 @@ Updates a REDCap data dictionary by converting branching logic and calculation e
 <li><p>Evaluates and converts calculation expressions for fields of type <code>calc</code>.</p></li>
 <li><p>Generates a results summary table listing any variables that could not be converted.</p></li>
 </ul></div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Other process functions:
+<code><a href="rd_checkbox.html">rd_checkbox()</a></code>,
+<code><a href="rd_dates.html">rd_dates()</a></code>,
+<code><a href="rd_delete_vars.html">rd_delete_vars()</a></code>,
+<code><a href="rd_factor.html">rd_factor()</a></code>,
+<code><a href="rd_insert_na.html">rd_insert_na()</a></code>,
+<code><a href="rd_recalculate.html">rd_recalculate()</a></code>,
+<code><a href="rd_rlogic.html">rd_rlogic()</a></code>,
+<code><a href="rd_split.html">rd_split()</a></code>,
+<code><a href="rd_transform.html">rd_transform()</a></code></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

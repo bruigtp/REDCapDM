@@ -19,10 +19,11 @@ rd_event(
   event,
   filter = NA,
   query_name = NA,
-  addTo = NA,
+  add_to = NA,
   report_title = NA,
   report_zeros = FALSE,
-  link = list()
+  link = list(),
+  addTo = deprecated()
 )
 ```
 
@@ -57,17 +58,19 @@ rd_event(
 
   Optional. A single character string containing a filter expression to
   subset the dataset before checking for missing events. Example:
-  `"age >= 18"`.
+  `"age >= 18"`. It can use objects created in your session or in your
+  function.
 
 - query_name:
 
   Optional character vector describing each query. Defaults to a
   standard format: `The event (event_name) is missing`.
 
-- addTo:
+- add_to:
 
-  Optional data frame from a previous query report to which the new
-  results can be appended.
+  Optional output of a previous
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  or `rd_event()` to which the new queries are appended.
 
 - report_title:
 
@@ -85,9 +88,15 @@ rd_event(
   `redcap_version`, `proj_id`, `event_id`) to generate clickable links
   for each query.
 
+- addTo:
+
+  **\[deprecated\]** Use `add_to` instead.
+
 ## Value
 
-A named list with two elements:
+A list of class `REDCapDM_report`, which prints a short summary (see
+[`print.REDCapDM_report()`](https://bruigtp.github.io/REDCapDM/reference/print.REDCapDM_report.md)),
+with two elements:
 
 - `queries`:
 
@@ -101,6 +110,13 @@ A named list with two elements:
   An HTML table (knitr::kable styled with kableExtra) summarising the
   number of missing records per event. Returned as
   [`knitr::kable`](https://rdrr.io/pkg/knitr/man/kable.html) (HTML).
+
+## See also
+
+Other query functions:
+[`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md),
+[`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md),
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
 
 ## Examples
 

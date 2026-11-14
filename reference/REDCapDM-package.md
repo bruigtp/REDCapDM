@@ -62,6 +62,22 @@ Core Functions:
 - `rd_export`: Exports a summary report of identified queries to an
   Excel (.xlsx) file.
 
+## Package options
+
+- `REDCapDM.quiet`: set `options(REDCapDM.quiet = TRUE)` to hide the
+  informative messages of the package (e.g. the progress of
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)).
+  Errors and warnings are always shown.
+
+## Errors and warnings
+
+The errors, warnings and messages of the package have the classes
+`REDCapDM_error`, `REDCapDM_warning` and `REDCapDM_message`, so they can
+be handled programmatically, e.g.
+`tryCatch(rd_query(...), REDCapDM_error = function(e) ...)`. Errors
+caused by a wrong argument value also have the class
+`REDCapDM_error_argument`.
+
 ## Examples
 
 ``` r

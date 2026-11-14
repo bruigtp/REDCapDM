@@ -65,7 +65,7 @@ rd_export: Exports a summary report of identified queries to an Excel (.xlsx) fi
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -77,7 +77,14 @@ rd_export: Exports a summary report of identified queries to an Excel (.xlsx) fi
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
+    <li><a class="dropdown-item" href="../articles/missing-data.html">Explore missing data</a></li>
+    <li><a class="dropdown-item" href="../articles/data-processing.html">Process REDCap data</a></li>
+    <li><a class="dropdown-item" href="../articles/query-management.html">Identify and track queries</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quick guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -123,6 +130,22 @@ data quality and consistency.</p>
 </ul></div>
 
 
+    <div class="section level2">
+    <h2 id="package-options">Package options<a class="anchor" aria-label="anchor" href="#package-options"></a></h2>
+
+
+<ul><li><p><code>REDCapDM.quiet</code>: set <code>options(REDCapDM.quiet = TRUE)</code> to hide the informative messages of the package (e.g. the
+progress of <code><a href="rd_transform.html">rd_transform()</a></code>). Errors and warnings are always shown.</p></li>
+</ul></div>
+    <div class="section level2">
+    <h2 id="errors-and-warnings">Errors and warnings<a class="anchor" aria-label="anchor" href="#errors-and-warnings"></a></h2>
+
+
+<p>The errors, warnings and messages of the package have the classes <code>REDCapDM_error</code>, <code>REDCapDM_warning</code> and
+<code>REDCapDM_message</code>, so they can be handled programmatically, e.g.
+<code>tryCatch(rd_query(...), REDCapDM_error = function(e) ...)</code>. Errors caused by a wrong argument value also have the
+class <code>REDCapDM_error_argument</code>.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -136,7 +159,8 @@ data quality and consistency.</p>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

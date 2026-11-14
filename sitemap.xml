@@ -1,21 +1,25 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://bruigtp.github.io/REDCapDM/404.html</loc></url>
+<url><loc>https://bruigtp.github.io/REDCapDM/CODE_OF_CONDUCT.html</loc></url>
+<url><loc>https://bruigtp.github.io/REDCapDM/CONTRIBUTING.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/LICENSE-text.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/LICENSE.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/articles/Data-reading-and-processing.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/articles/Queries.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/articles/REDCapDM.html</loc></url>
+<url><loc>https://bruigtp.github.io/REDCapDM/articles/data-processing.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/articles/index.html</loc></url>
+<url><loc>https://bruigtp.github.io/REDCapDM/articles/missing-data.html</loc></url>
+<url><loc>https://bruigtp.github.io/REDCapDM/articles/query-management.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/authors.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/index.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/news/index.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/REDCapDM-package.html</loc></url>
-<url><loc>https://bruigtp.github.io/REDCapDM/reference/check_proj.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/check_queries.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/checkbox_names.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/covican.html</loc></url>
-<url><loc>https://bruigtp.github.io/REDCapDM/reference/fill_data.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/index.html</loc></url>
+<url><loc>https://bruigtp.github.io/REDCapDM/reference/print.REDCapDM_report.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/rd_dates.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.html</loc></url>
@@ -32,7 +36,6 @@
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/rd_transform.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/recalculate.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/redcap_data.html</loc></url>
-<url><loc>https://bruigtp.github.io/REDCapDM/reference/round.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/split_event.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/split_form.html</loc></url>
 <url><loc>https://bruigtp.github.io/REDCapDM/reference/to_factor.html</loc></url>

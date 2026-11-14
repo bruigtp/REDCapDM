@@ -57,7 +57,9 @@ check_queries(old, new, report_title = NULL, return_viewer = TRUE)
 
 ## Value
 
-A list with two elements:
+A list of class `REDCapDM_report`, which prints a short summary (see
+[`print.REDCapDM_report()`](https://bruigtp.github.io/REDCapDM/reference/print.REDCapDM_report.md)),
+with two elements:
 
 - `queries`:
 
@@ -109,6 +111,13 @@ HTML summary viewer.
   more than one row shares the same `Identifier + Description` composite
   and a row is otherwise classified as `New` — this signals a likely
   re-issued or modified query for an existing identifier.
+
+## See also
+
+Other query functions:
+[`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
+[`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md),
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
 
 ## Examples
 

@@ -1,6 +1,6 @@
 # Recalculate and Verify Calculated Fields in REDCap Data
 
-**\[experimental\]**
+**\[stable\]**
 
 Recalculates fields marked as calculated in the REDCap dictionary,
 compares them with the original values, and reports discrepancies. If
@@ -82,6 +82,19 @@ A list with:
 
 - Fields with incomplete branching logic or smart variables may fail to
   recalculate.
+
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
 
 ## Examples
 

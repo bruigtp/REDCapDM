@@ -1,6 +1,6 @@
 # Delete Variables from REDCap Dataset and Dictionary
 
-**\[experimental\]**
+**\[stable\]**
 
 Deletes selected variables from a REDCap dataset and its dictionary,
 keeping them consistent and preserving variable labels.
@@ -98,6 +98,19 @@ A list containing:
   always kept. The forms are also removed from `event_form`, and so are
   the rows of the repeating instruments among them.
 
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+
 ## Examples
 
 ``` r
@@ -107,11 +120,11 @@ result <- rd_delete_vars(
   vars = c("potassium", "leuk_lymph")
 )
 
-# Delete variables matching patterns
+# Delete variables matching patterns (here, the inclusion and exclusion criteria)
 result <- rd_delete_vars(
   data = covican$data,
   dic = covican$dictionary,
-  pattern = c("_complete$", "_other$")
+  pattern = c("^inc_", "^exc_")
 )
 
 # Delete every variable of a form

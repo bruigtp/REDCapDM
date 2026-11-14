@@ -1,6 +1,6 @@
 # Transform Dates and Datetimes in REDCap Data
 
-**\[experimental\]**
+**\[stable\]**
 
 Converts date and datetime fields in a REDCap dataset to appropriate R
 classes.
@@ -66,10 +66,24 @@ The function performs the following tasks:
 - Converts datetime fields to `POSIXct` class, treating empty strings as
   `NA`.
 
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+
 ## Examples
 
 ``` r
 result <- rd_dates(covican)
-#> Warning: All date and datetime variables are already in the correct format. No transformation applied.
+#> Warning: All date and datetime variables are already in the correct format. No
+#> transformation applied.
 transformed_data <- result$data
 ```

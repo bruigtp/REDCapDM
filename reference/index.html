@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,7 +19,14 @@
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
+    <li><a class="dropdown-item" href="../articles/missing-data.html">Explore missing data</a></li>
+    <li><a class="dropdown-item" href="../articles/data-processing.html">Process REDCap data</a></li>
+    <li><a class="dropdown-item" href="../articles/query-management.html">Identify and track queries</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quick guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -37,7 +44,7 @@
     </div>
 
     <div class="section level2">
-      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
+      <h2 id="import-data">Import data<a class="anchor" aria-label="anchor" href="#import-data"></a></h2>
 
 
 
@@ -48,87 +55,91 @@
 
       <dl><dt>
 
-          <code><a href="check_proj.html">check_proj()</a></code>
-
-        </dt>
-        <dd>Handle Project Arguments</dd>
-
-        <dt>
-
-          <code><a href="check_queries.html">check_queries()</a></code>
+          <code><a href="redcap_data.html">redcap_data()</a></code>
           <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
-        <dd>Check for Changes Between Two Query Reports</dd>
+        <dd>Read REDCap data</dd>
+      </dl></div><div class="section level2">
+      <h2 id="explore-data">Explore data<a class="anchor" aria-label="anchor" href="#explore-data"></a></h2>
 
-        <dt>
 
-          <code><a href="checkbox_names.html">checkbox_names()</a></code>
 
-        </dt>
-        <dd>Change Checkboxes Names to Option Names</dd>
+      <dl></dl></div><div class="section level2">
 
-        <dt>
 
-          <code><a href="covican.html">covican</a></code>
 
-        </dt>
-        <dd>Subset of COVICAN's Database</dd>
 
-        <dt>
+      <dl><dt>
 
-          <code><a href="fill_data.html">fill_data()</a></code>
-
-        </dt>
-        <dd>Fill Rows with Values from One Event</dd>
-
-        <dt>
-
-          <code><a href="rd_checkbox.html">rd_checkbox()</a></code>
+          <code><a href="rd_missplot.html">rd_missplot()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
-        <dd>Transform Checkbox Variables in a REDCap Project</dd>
+        <dd>Plot Missing Data Overview (Barplot, Longitudinal Heatmap or Record Map)</dd>
+      </dl></div><div class="section level2">
+      <h2 id="process-data">Process data<a class="anchor" aria-label="anchor" href="#process-data"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Clean and transform the data and the dictionary, step by step or all at once with <code><a href="../reference/rd_transform.html">rd_transform()</a></code>.</p></div>
 
-          <code><a href="rd_dates.html">rd_dates()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="rd_transform.html">rd_transform()</a></code>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
-        <dd>Transform Dates and Datetimes in REDCap Data</dd>
+        <dd>Transformation of the Raw Data</dd>
 
         <dt>
 
           <code><a href="rd_delete_vars.html">rd_delete_vars()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
         <dd>Delete Variables from REDCap Dataset and Dictionary</dd>
 
         <dt>
 
+          <code><a href="rd_dates.html">rd_dates()</a></code>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
+        </dt>
+        <dd>Transform Dates and Datetimes in REDCap Data</dd>
+
+        <dt>
+
+          <code><a href="rd_recalculate.html">rd_recalculate()</a></code>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
+        </dt>
+        <dd>Recalculate and Verify Calculated Fields in REDCap Data</dd>
+
+        <dt>
+
+          <code><a href="rd_checkbox.html">rd_checkbox()</a></code>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
+        </dt>
+        <dd>Transform Checkbox Variables in a REDCap Project</dd>
+
+        <dt>
+
+          <code><a href="rd_factor.html">rd_factor()</a></code>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
+        </dt>
+        <dd>Convert Variables to Factors in a REDCap Dataset</dd>
+
+        <dt>
+
           <code><a href="rd_dictionary.html">rd_dictionary()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
         <dd>Transform the data dictionary and handle branching logic</dd>
 
         <dt>
 
-          <code><a href="rd_event.html">rd_event()</a></code>
+          <code><a href="rd_split.html">rd_split()</a></code>
           <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
-        <dd>Identify Missing Events in REDCap Data</dd>
-
-        <dt>
-
-          <code><a href="rd_export.html">rd_export()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Export Queries to an Excel File</dd>
-
-        <dt>
-
-          <code><a href="rd_factor.html">rd_factor()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Convert Variables to Factors in a REDCap Dataset</dd>
+        <dd>Split a REDCap dataset by form or event</dd>
 
         <dt>
 
@@ -139,12 +150,21 @@
 
         <dt>
 
-          <code><a href="rd_missplot.html">rd_missplot()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+          <code><a href="rd_rlogic.html">rd_rlogic()</a></code>
+          <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
-        <dd>Plot Missing Data Overview (Barplot, Longitudinal Heatmap or Record Map)</dd>
+        <dd>Translate REDCap Logic to R Logic</dd>
+      </dl></div><div class="section level2">
+      <h2 id="queries">Queries<a class="anchor" aria-label="anchor" href="#queries"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Identify queries and missing events, follow up their correction and export the reports.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="rd_query.html">rd_query()</a></code>
           <span class="badge lifecycle lifecycle-stable">stable</span>
@@ -153,82 +173,50 @@
 
         <dt>
 
-          <code><a href="rd_recalculate.html">rd_recalculate()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Recalculate and Verify Calculated Fields in REDCap Data</dd>
-
-        <dt>
-
-          <code><a href="rd_rlogic.html">rd_rlogic()</a></code>
+          <code><a href="rd_event.html">rd_event()</a></code>
           <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
-        <dd>Translate REDCap Logic to R Logic</dd>
+        <dd>Identify Missing Events in REDCap Data</dd>
 
         <dt>
 
-          <code><a href="rd_split.html">rd_split()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Split a REDCap dataset by form or event</dd>
-
-        <dt>
-
-          <code><a href="rd_transform.html">rd_transform()</a></code>
+          <code><a href="check_queries.html">check_queries()</a></code>
           <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
-        <dd>Transformation of the Raw Data</dd>
+        <dd>Check for Changes Between Two Query Reports</dd>
 
         <dt>
 
-          <code><a href="recalculate.html">recalculate()</a></code>
-
-        </dt>
-        <dd>Recalculate REDCap Calculated Fields</dd>
-
-        <dt>
-
-          <code><a href="redcap_data.html">redcap_data()</a></code>
+          <code><a href="rd_export.html">rd_export()</a></code>
           <span class="badge lifecycle lifecycle-stable">stable</span>
         </dt>
-        <dd>Read REDCap data</dd>
+        <dd>Export Queries to an Excel File</dd>
 
         <dt>
 
-          <code><a href="round.html">round()</a></code>
+          <code><a href="print.REDCapDM_report.html">print(<i>&lt;REDCapDM_report&gt;</i>)</a></code>
 
         </dt>
-        <dd>Round Numbers to a Specified Number of Digits —-</dd>
+        <dd>Print a query report</dd>
+      </dl></div><div class="section level2">
+      <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a></h2>
 
-        <dt>
 
-          <code><a href="split_event.html">split_event()</a></code>
 
-        </dt>
-        <dd>Creation of a Data Frame with Variables from All Forms of a Specified Event</dd>
+      <dl></dl></div><div class="section level2">
 
-        <dt>
 
-          <code><a href="split_form.html">split_form()</a></code>
 
-        </dt>
-        <dd>Creation of a Data Frame with Variables from a Specified Form</dd>
 
-        <dt>
+      <dl><dt>
 
-          <code><a href="to_factor.html">to_factor()</a></code>
+          <code><a href="covican.html">covican</a></code>
 
         </dt>
-        <dd>Convert Variables to Factors</dd>
-
-        <dt>
-
-          <code><a href="transform_checkboxes.html">transform_checkboxes()</a></code>
-
-        </dt>
-        <dd>Transformation of Checkboxes with Branching Logic</dd>
+        <dd>Subset of COVICAN's Database</dd>
       </dl></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

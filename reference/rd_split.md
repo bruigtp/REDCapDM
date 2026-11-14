@@ -1,6 +1,6 @@
 # Split a REDCap dataset by form or event
 
-**\[experimental\]**
+**\[stable\]**
 
 Splits a REDCap dataset into separate datasets by **form** or **event**
 using the data dictionary. Supports both longitudinal and
@@ -94,6 +94,19 @@ Depending on `which` and `wide`:
 
 - Projects with repeated instruments are handled by filtering on the
   `redcap_repeat_instrument` variable.
+
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
 
 ## Examples
 

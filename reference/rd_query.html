@@ -9,7 +9,7 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,7 +21,14 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
+    <li><a class="dropdown-item" href="../articles/missing-data.html">Explore missing data</a></li>
+    <li><a class="dropdown-item" href="../articles/data-processing.html">Process REDCap data</a></li>
+    <li><a class="dropdown-item" href="../articles/query-management.html">Identify and track queries</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quick guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -54,7 +61,7 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 <span>  negate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  event <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  filter <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  addTo <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  add_to <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  variables_names <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  query_name <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  instrument <span class="op">=</span> <span class="cn">NA</span>,</span>
@@ -64,7 +71,8 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 <span>  link <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dic <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  event_form <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  event_form <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  addTo <span class="op">=</span> <span class="fu">deprecated</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -81,7 +89,7 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 
 
 <dt id="arg-expression">expression<a class="anchor" aria-label="anchor" href="#arg-expression"></a></dt>
-<dd><p>Character vector of R expressions to evaluate for each variable.</p></dd>
+<dd><p>Character vector of R conditions, written as text, to evaluate for each variable, where <code>x</code> stands for the variable (e.g. <code>"is.na(x)"</code> or <code>"x &gt; 100"</code>). Several conditions separated by commas must all be met. Besides the columns of the data, they can use objects created in your session or in your function.</p></dd>
 
 
 <dt id="arg-negate">negate<a class="anchor" aria-label="anchor" href="#arg-negate"></a></dt>
@@ -93,11 +101,11 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 
 
 <dt id="arg-filter">filter<a class="anchor" aria-label="anchor" href="#arg-filter"></a></dt>
-<dd><p>Optional string of filters to apply to the dataset, such as the branching logic of a variable.</p></dd>
+<dd><p>Optional filter of the rows to check, written as text (e.g. <code>"age &gt; 18"</code>), such as the branching logic of a variable translated by <code><a href="rd_dictionary.html">rd_dictionary()</a></code>. Give one filter, or one per variable. Several conditions separated by commas must all be met, and the filter can use objects created in your session or in your function.</p></dd>
 
 
-<dt id="arg-addto">addTo<a class="anchor" aria-label="anchor" href="#arg-addto"></a></dt>
-<dd><p>Optional data frame from a previous query report to which the new results can be appended.</p></dd>
+<dt id="arg-add-to">add_to<a class="anchor" aria-label="anchor" href="#arg-add-to"></a></dt>
+<dd><p>Optional output of a previous <code>rd_query()</code> or <code><a href="rd_event.html">rd_event()</a></code> to which the new queries are appended.</p></dd>
 
 
 <dt id="arg-variables-names">variables_names<a class="anchor" aria-label="anchor" href="#arg-variables-names"></a></dt>
@@ -139,10 +147,14 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 <dt id="arg-event-form">event_form<a class="anchor" aria-label="anchor" href="#arg-event-form"></a></dt>
 <dd><p>Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.</p></dd>
 
+
+<dt id="arg-addto">addTo<a class="anchor" aria-label="anchor" href="#arg-addto"></a></dt>
+<dd><p><a href="https://lifecycle.r-lib.org/articles/stages.html#deprecated" class="external-link"><img src="figures/lifecycle-deprecated.svg" alt="[Deprecated]"></a> Use <code>add_to</code> instead.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing:</p><dl><dt>queries</dt>
+    <p>A list of class <code>REDCapDM_report</code>, which prints a short summary (see <code><a href="print.REDCapDM_report.html">print.REDCapDM_report()</a></code>), containing:</p><dl><dt>queries</dt>
 <dd><p>A data frame or a list of data frames (if <code>by_dag = TRUE</code>) with detailed query information for each record.</p></dd>
 
 <dt>results</dt>
@@ -162,10 +174,17 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 <li><p>Field, Repetition, Description, Query statement</p></li>
 <li><p>Optional link to REDCap entry</p></li>
 </ul></li>
-<li><p>Optionally combines results with previous query outputs using <code>addTo</code>.</p></li>
+<li><p>Optionally combines results with previous query outputs using <code>add_to</code>.</p></li>
 <li><p>Produces a summarized report, optionally including variables with zero queries.</p></li>
 <li><p>Provides warnings for variables with branching logic that could not be automatically evaluated.</p></li>
 </ul></div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Other query functions:
+<code><a href="check_queries.html">check_queries()</a></code>,
+<code><a href="rd_event.html">rd_event()</a></code>,
+<code><a href="rd_export.html">rd_export()</a></code></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

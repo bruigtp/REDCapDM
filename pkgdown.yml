@@ -2,10 +2,13 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  data-processing: data-processing.html
   articles/Data-reading-and-processing: Data-reading-and-processing.html
+  missing-data: missing-data.html
   articles/Queries: Queries.html
+  query-management: query-management.html
   REDCapDM: REDCapDM.html
-last_built: 2026-11-13T10:43Z
+last_built: 2026-11-14T13:27Z
 urls:
   reference: https://bruigtp.github.io/REDCapDM/reference
   article: https://bruigtp.github.io/REDCapDM/articles

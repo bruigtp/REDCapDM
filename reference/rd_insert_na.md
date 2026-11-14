@@ -48,7 +48,8 @@ rd_insert_na(
 - filter:
 
   A single logical expression (as string). Rows where the filter
-  evaluates to `TRUE` will have the corresponding `vars` set to `NA`.
+  evaluates to `TRUE` will have the corresponding `vars` set to `NA`. It
+  can use objects created in your session or in your function.
 
 ## Value
 
@@ -84,6 +85,19 @@ A list with:
 
 - Variables and filter columns must exist in both `data` and
   `dictionary`.
+
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
 
 ## Examples
 

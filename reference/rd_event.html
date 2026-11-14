@@ -9,7 +9,7 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,7 +21,14 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
+    <li><a class="dropdown-item" href="../articles/missing-data.html">Explore missing data</a></li>
+    <li><a class="dropdown-item" href="../articles/data-processing.html">Process REDCap data</a></li>
+    <li><a class="dropdown-item" href="../articles/query-management.html">Identify and track queries</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quick guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/Data-reading-and-processing.html">Data reading and processing</a></li>
     <li><a class="dropdown-item" href="../articles/Queries.html">REDCapDM - Queries</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -55,10 +62,11 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
 <span>  <span class="va">event</span>,</span>
 <span>  filter <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  query_name <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  addTo <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  add_to <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  report_title <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  report_zeros <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  link <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  link <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  addTo <span class="op">=</span> <span class="fu">deprecated</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -87,15 +95,15 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
 
 
 <dt id="arg-filter">filter<a class="anchor" aria-label="anchor" href="#arg-filter"></a></dt>
-<dd><p>Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: <code>"age &gt;= 18"</code>.</p></dd>
+<dd><p>Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: <code>"age &gt;= 18"</code>. It can use objects created in your session or in your function.</p></dd>
 
 
 <dt id="arg-query-name">query_name<a class="anchor" aria-label="anchor" href="#arg-query-name"></a></dt>
 <dd><p>Optional character vector describing each query. Defaults to a standard format: <code>The event (event_name) is missing</code>.</p></dd>
 
 
-<dt id="arg-addto">addTo<a class="anchor" aria-label="anchor" href="#arg-addto"></a></dt>
-<dd><p>Optional data frame from a previous query report to which the new results can be appended.</p></dd>
+<dt id="arg-add-to">add_to<a class="anchor" aria-label="anchor" href="#arg-add-to"></a></dt>
+<dd><p>Optional output of a previous <code><a href="rd_query.html">rd_query()</a></code> or <code>rd_event()</code> to which the new queries are appended.</p></dd>
 
 
 <dt id="arg-report-title">report_title<a class="anchor" aria-label="anchor" href="#arg-report-title"></a></dt>
@@ -109,10 +117,14 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
 <dt id="arg-link">link<a class="anchor" aria-label="anchor" href="#arg-link"></a></dt>
 <dd><p>Optional list containing project information (<code>domain</code>, <code>redcap_version</code>, <code>proj_id</code>, <code>event_id</code>) to generate clickable links for each query.</p></dd>
 
+
+<dt id="arg-addto">addTo<a class="anchor" aria-label="anchor" href="#arg-addto"></a></dt>
+<dd><p><a href="https://lifecycle.r-lib.org/articles/stages.html#deprecated" class="external-link"><img src="figures/lifecycle-deprecated.svg" alt="[Deprecated]"></a> Use <code>add_to</code> instead.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A named list with two elements:</p><dl><dt><code>queries</code></dt>
+    <p>A list of class <code>REDCapDM_report</code>, which prints a short summary (see <code><a href="print.REDCapDM_report.html">print.REDCapDM_report()</a></code>), with two elements:</p><dl><dt><code>queries</code></dt>
 <dd><p>A data frame listing records missing the specified events.
 Columns: <code>Identifier</code>, <code>DAG</code>, <code>Event</code>, <code>Instrument</code>,
 <code>Field</code>, <code>Repetition</code>, <code>Description</code>, <code>Query</code>, <code>Code</code>,
@@ -125,6 +137,13 @@ the number of missing records per event. Returned as <code><a href="https://rdrr
 
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Other query functions:
+<code><a href="check_queries.html">check_queries()</a></code>,
+<code><a href="rd_export.html">rd_export()</a></code>,
+<code><a href="rd_query.html">rd_query()</a></code></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

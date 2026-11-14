@@ -1,6 +1,6 @@
 # Convert Variables to Factors in a REDCap Dataset
 
-**\[experimental\]**
+**\[stable\]**
 
 Converts variables in a REDCap dataset with associated `.factor` columns
 into actual factor variables, while allowing the exclusion of specific
@@ -85,6 +85,19 @@ translates to R compare the variables with their original codes, so they
 stop working once the variables are factors. If the dictionary already
 has logic translated to R that uses any of the converted variables, a
 warning is shown.
+
+## See also
+
+Other process functions:
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md),
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+[`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
 
 ## Examples
 

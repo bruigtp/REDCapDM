@@ -17,7 +17,7 @@ rd_query(
   negate = FALSE,
   event = NA,
   filter = NA,
-  addTo = NA,
+  add_to = NA,
   variables_names = NA,
   query_name = NA,
   instrument = NA,
@@ -27,7 +27,8 @@ rd_query(
   link = list(),
   data = NULL,
   dic = NULL,
-  event_form = NULL
+  event_form = NULL,
+  addTo = deprecated()
 )
 ```
 
@@ -46,7 +47,11 @@ rd_query(
 
 - expression:
 
-  Character vector of R expressions to evaluate for each variable.
+  Character vector of R conditions, written as text, to evaluate for
+  each variable, where `x` stands for the variable (e.g. `"is.na(x)"` or
+  `"x > 100"`). Several conditions separated by commas must all be met.
+  Besides the columns of the data, they can use objects created in your
+  session or in your function.
 
 - negate:
 
@@ -60,13 +65,18 @@ rd_query(
 
 - filter:
 
-  Optional string of filters to apply to the dataset, such as the
-  branching logic of a variable.
+  Optional filter of the rows to check, written as text (e.g.
+  `"age > 18"`), such as the branching logic of a variable translated by
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md).
+  Give one filter, or one per variable. Several conditions separated by
+  commas must all be met, and the filter can use objects created in your
+  session or in your function.
 
-- addTo:
+- add_to:
 
-  Optional data frame from a previous query report to which the new
-  results can be appended.
+  Optional output of a previous `rd_query()` or
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  to which the new queries are appended.
 
 - variables_names:
 
@@ -117,9 +127,15 @@ rd_query(
   Only applicable for longitudinal projects (presence of events).
   Event-to-form mapping for longitudinal projects.
 
+- addTo:
+
+  **\[deprecated\]** Use `add_to` instead.
+
 ## Value
 
-A list containing:
+A list of class `REDCapDM_report`, which prints a short summary (see
+[`print.REDCapDM_report()`](https://bruigtp.github.io/REDCapDM/reference/print.REDCapDM_report.md)),
+containing:
 
 - queries:
 
@@ -158,13 +174,21 @@ The function performs the following steps:
 
   - Optional link to REDCap entry
 
-- Optionally combines results with previous query outputs using `addTo`.
+- Optionally combines results with previous query outputs using
+  `add_to`.
 
 - Produces a summarized report, optionally including variables with zero
   queries.
 
 - Provides warnings for variables with branching logic that could not be
   automatically evaluated.
+
+## See also
+
+Other query functions:
+[`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md),
+[`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
+[`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
 
 ## Examples
 

@@ -102,7 +102,10 @@ With `by = "record"`, longitudinal projects get one panel per event,
 each with the variables collected in that event. By default only the
 first event is plotted (with a warning); use `events` to choose others.
 Records without data in an event are shown in grey in that event's
-panel. Every row is labelled with its record identifier.
+panel. With repeated instruments and repeating events, each repetition
+is a row of its own, and the cells of variables that are not collected
+in that row are shown in light grey. Every row is labelled with its
+record identifier.
 
 ## Examples
 
