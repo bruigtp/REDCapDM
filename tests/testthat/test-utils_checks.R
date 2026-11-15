@@ -126,3 +126,13 @@ test_that("grouped data and dictionaries with factor columns give the same resul
   expect_equal(names(out$data), names(ref_recalc$data))
   expect_equal(dim(suppressWarnings(suppressMessages(rd_transform(factor_dic)))$data), dim(ref_transform$data))
 })
+
+test_that("clean_label removes the HTML tags and keeps the rest of the text", {
+  expect_equal(clean_label("<b>Potassium</b> &amp; <i>K+</i>"), "Potassium & K+")
+  expect_equal(clean_label("Age (<18 or >90 years: check)"), "Age (<18 or >90 years: check)")
+  expect_equal(clean_label("x<5 & y>3"), "x<5 & y>3")
+  expect_equal(clean_label("<span style=\"color:red\">Red</span><br/>text"), "Red text")
+  expect_equal(clean_label("<p class=x>Word<o:p></o:p></p>"), "Word")
+  expect_equal(clean_label("<!-- note -->Value &lt;5"), "Value <5")
+  expect_equal(clean_label(c(NA, "")), c(NA, ""))
+})

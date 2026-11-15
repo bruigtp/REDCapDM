@@ -15,13 +15,13 @@
 #' @details
 #' * Translates REDCap operators and functions into R equivalents:
 #'   - `=` → `==`, `<>` → `!=`, `and` → `&`, `or` → `|`.
-#'   - Converts the functions `if()`, `datediff()`, `round()`, `rounddown()`, `roundup()`, `sum()`, `mean()`, `median()`, `min()`, `max()`, `mod()`, `exponential()`, `isnumber()`, `contains()` and `length()` to R equivalents.
+#'   - Converts the functions `if()`, `datediff()`, `round()`, `rounddown()`, `roundup()`, `sum()`, `mean()`, `median()`, `min()`, `max()`, `mod()`, `exponential()`, `isnumber()`, `isblankormissingcode()`, `contains()`, `not_contain()`, `starts_with()`, `ends_with()`, `left()`, `right()`, `mid()`, `find()`, `replace_text()`, `concat()`, `concat_ws()`, `upper()`, `lower()`, `trim()`, `length()`, `stdev()`, `isinteger()`, `year()`, `month()` and `day()` to R equivalents.
 #'   - As in REDCap, `sum()`, `mean()`, `median()`, `min()` and `max()` are computed for each row and ignore blank values.
 #' * Handles date transformations and empty strings (`''`) → `NA`.
 #' * Adjusts logic for longitudinal data using `event_form` if provided.
 #' * Evaluates the translated R logic against the dataset and returns the results.
 #' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
-#' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"` (years of 365.2425 days), `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, and `"today"` is the current date.
+#' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"` (years of 365.2425 days), `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, `"today"` is the current date and `"now"` the current date and time.
 #' * The same variable can be used in several events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
 #' * Logic with smart variables or other REDCap functions may require manual inspection.
 #'
@@ -196,6 +196,16 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     rlogic <- gsub("'(\\d\\d-\\d\\d\\d\\d-\\d\\d)'", "lubridate::dym('\\1')", rlogic)
   }
 
+  # Dates with time in the logic (e.g. '2024-01-05 10:30'), in the format of datediff() (ymd by default). As in rd_dates(),
+  # they are read in UTC
+  date_format <- regmatches(rlogic, regexpr("'(dmy|mdy|ymd|ydm|myd|dym)'", rlogic))
+  date_format <- if (length(date_format) > 0) gsub("'", "", date_format) else "ymd"
+  rlogic <- gsub(
+    "'(\\d{1,4}-\\d{1,2}-\\d{1,4} \\d{1,2}:\\d{2}(:\\d{2})?)'",
+    paste0("lubridate::parse_date_time('\\1', c('", date_format, " HMS', '", date_format, " HM'))"),
+    rlogic
+  )
+
   # Remove 'true' value from the logic as it's not used in R
   rlogic <- gsub("\\,\\s?true", "", rlogic)
 
@@ -208,8 +218,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     rlogic <- gsub(paste0("\\,\\s?'", u, "'\\)"), paste0("), ", datediff_units[[u]], ")"), rlogic)
   }
 
-  # 'today' in datediff() is the current date
+  # 'today' in datediff() is the current date, and 'now' the current date and time (in UTC, as the dates of rd_dates())
   rlogic <- gsub("'today'", "Sys.Date()", rlogic)
+  rlogic <- gsub("'now'", "lubridate::force_tz(Sys.time(), 'UTC')", rlogic)
 
   # Change variables specification. If [][] we get the event with the first claudator. If not, the event will be the same as the one of the calculated variable.
 
@@ -568,6 +579,25 @@ replace_function <- function(x, fun, translate) {
     }
 
     chars <- strsplit(rest, "")[[1]]
+
+    # A name inside a quoted text (e.g. `[side] = 'left (L)'`) is not a call: keep the text as it is
+    quote <- ""
+    for (k in seq_len(start - 1)) {
+      if (nzchar(quote)) {
+        if (chars[k] == quote) quote <- ""
+      } else if (chars[k] %in% c("'", "\"")) {
+        quote <- chars[k]
+      }
+    }
+    if (nzchar(quote)) {
+      end_quote <- which(chars == quote & seq_along(chars) >= start)[1]
+      if (is.na(end_quote)) {
+        break
+      }
+      out <- paste0(out, substr(rest, 1, end_quote))
+      rest <- substr(rest, end_quote + 1, nchar(rest))
+      next
+    }
     open <- start + attr(start, "match.length") - 1
 
     # Closing parenthesis of the call and its arguments (commas at the first level, outside quotes)
@@ -641,11 +671,47 @@ translate_functions <- function(x) {
   x <- replace_function(x, "median", function(args) paste0("apply(", values(args), ", 1, stats::median, na.rm = TRUE)"))
   x <- replace_function(x, "min", function(args) paste0("pmin(", paste(args, collapse = ", "), ", na.rm = TRUE)"))
   x <- replace_function(x, "max", function(args) paste0("pmax(", paste(args, collapse = ", "), ", na.rm = TRUE)"))
-  x <- replace_function(x, "mod", function(args) paste0("((", args[1], ") %% (", args[2], "))"))
+  # As in REDCap, the remainder of mod() has the sign of the dividend (mod(-7, 3) is -1)
+  x <- replace_function(x, "mod", function(args) paste0("((", args[1], ") - (", args[2], ") * trunc((", args[1], ") / (", args[2], ")))"))
+  x <- replace_function(x, "stdev", function(args) paste0("apply(", values(args), ", 1, stats::sd, na.rm = TRUE)"))
   x <- replace_function(x, "exponential", function(args) paste0("exp(", args[1], ")"))
   x <- replace_function(x, "isnumber", function(args) paste0("!is.na(suppressWarnings(as.numeric(", args[1], ")))"))
+  x <- replace_function(x, "isinteger", function(args) {
+    paste0("(function(v) !is.na(v) & v == trunc(v))(suppressWarnings(as.numeric(as.character(", args[1], "))))")
+  })
   x <- replace_function(x, "contains", function(args) paste0("grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)"))
   x <- replace_function(x, "length", function(args) paste0("ifelse(is.na(", args[1], "), 0, nchar(as.character(", args[1], ")))"))
+
+  # Missing values: redcap_data() turns the Missing Data Codes into NA
+  x <- replace_function(x, "isblankormissingcode", function(args) paste0("is.na(", args[1], ")"))
+
+  # Text functions (as in REDCap, the comparisons of text don't distinguish upper and lower case, and a blank value is an empty text)
+  # (written with double quotes: the '' left in the logic become NA below)
+  text <- function(arg) {
+    if (grepl("^('[^']*'|\"[^\"]*\")$", arg)) arg else paste0("ifelse(is.na(", arg, "), \"\", as.character(", arg, "))")
+  }
+  x <- replace_function(x, "not_contain", function(args) paste0("!grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)"))
+  x <- replace_function(x, "starts_with", function(args) paste0("startsWith(tolower(", text(args[1]), "), tolower(", args[2], "))"))
+  x <- replace_function(x, "ends_with", function(args) paste0("endsWith(tolower(", text(args[1]), "), tolower(", args[2], "))"))
+  x <- replace_function(x, "left", function(args) paste0("substr(", text(args[1]), ", 1, ", args[2], ")"))
+  x <- replace_function(x, "right", function(args) paste0("substring(", text(args[1]), ", pmax(nchar(", text(args[1]), ") - (", args[2], ") + 1, 1))"))
+  x <- replace_function(x, "mid", function(args) paste0("substr(", text(args[1]), ", ", args[2], ", (", args[2], ") + (", args[3], ") - 1)"))
+  x <- replace_function(x, "find", function(args) {
+    paste0("pmax(regexpr(tolower(", args[1], "), tolower(", text(args[2]), "), fixed = TRUE), 0)")
+  })
+  x <- replace_function(x, "replace_text", function(args) paste0("gsub(", args[2], ", ", args[3], ", ", text(args[1]), ", fixed = TRUE)"))
+  x <- replace_function(x, "concat_ws", function(args) {
+    parts <- paste0("as.character(", args[-1], ")", collapse = ", ")
+    paste0("apply(cbind(", parts, "), 1, function(v) paste(v[!is.na(v) & nzchar(v)], collapse = ", args[1], "))")
+  })
+  x <- replace_function(x, "concat", function(args) paste0("paste0(", paste(vapply(args, text, character(1)), collapse = ", "), ")"))
+  x <- replace_function(x, "upper", function(args) paste0("toupper(", text(args[1]), ")"))
+  x <- replace_function(x, "lower", function(args) paste0("tolower(", text(args[1]), ")"))
+  x <- replace_function(x, "trim", function(args) paste0("trimws(", text(args[1]), ")"))
+
+  # Parts of a date
+  x <- replace_function(x, "month", function(args) paste0("lubridate::month(", args[1], ")"))
+  x <- replace_function(x, "day", function(args) paste0("lubridate::day(", args[1], ")"))
 
   x
 }

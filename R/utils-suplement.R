@@ -195,3 +195,27 @@ style_report <- function(x) {
   x <- kableExtra::kable_styling(x, bootstrap_options = c("striped", "condensed"), full_width = FALSE)
   kableExtra::row_spec(x, 0, italic = FALSE, extra_css = "border-bottom: 1px solid grey")
 }
+
+#' Plain text of a field label
+#'
+#' Removes the HTML tags of a REDCap field label and decodes its HTML entities, keeping any other text, such as "<18" or ">90", untouched.
+#'
+#' @param x Character vector of labels.
+#' @return Character vector of labels without HTML and with collapsed white space.
+#' @noRd
+clean_label <- function(x) {
+  x <- as.character(x)
+  tags <- paste0(
+    "a|abbr|b|big|blockquote|br|caption|center|cite|code|col|colgroup|dd|del|div|dl|dt|em|font|h[1-6]|hr|i|img|ins|kbd|",
+    "label|li|mark|ol|p|pre|q|s|small|span|strike|strong|sub|sup|table|tbody|td|tfoot|th|thead|tr|tt|u|ul|o:p"
+  )
+  attribute <- "\\s+[A-Za-z_:][-A-Za-z0-9_:.]*\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s\"'<>]+)"
+  x <- gsub("<!--.*?-->", " ", x, perl = TRUE)
+  x <- gsub(paste0("</?(", tags, ")(", attribute, ")*\\s*/?>"), " ", x, perl = TRUE, ignore.case = TRUE)
+  entities <- c("&nbsp;" = " ", "&lt;" = "<", "&gt;" = ">", "&quot;" = "\"", "&#39;" = "'", "&apos;" = "'", "&amp;" = "&")
+  for (entity in names(entities)) {
+    x <- gsub(entity, entities[[entity]], x, fixed = TRUE)
+  }
+  x <- gsub("[\r\n\t\u200B\u200C\u200D\uFEFF]", " ", x, perl = TRUE)
+  ifelse(is.na(x), NA_character_, trimws(gsub("\\s+", " ", x, perl = TRUE)))
+}

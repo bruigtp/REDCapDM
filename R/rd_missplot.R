@@ -168,7 +168,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
   if (use_field_labels && !is.null(dictionary_df) &&
       all(c("field_name", "field_label") %in% colnames(dictionary_df))) {
-    dic_labels <- as.character(dictionary_df$field_label[match(axis_labels, dictionary_df$field_name)])
+    dic_labels <- clean_label(dictionary_df$field_label[match(axis_labels, dictionary_df$field_name)])
     has_label <- !is.na(dic_labels) & nzchar(dic_labels)
     axis_labels[has_label] <- dic_labels[has_label]
   }

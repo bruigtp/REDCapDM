@@ -352,7 +352,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     dic_row <- match(logic_field, dic$field_name)
     branch <- data.frame(
       var = var_logic,
-      label = gsub("\\s+", "", gsub("<.*?>", "", dic$field_label[dic_row])),
+      label = gsub("\\s+", "", clean_label(dic$field_label[dic_row])),
       branch = dic$branching_logic_show_field_only_if[dic_row]
     )[order(dic_row), ]
 
@@ -548,7 +548,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         Repetition = repetition_label(x),
         Description = if (all(is.na(variables_names))) {
           if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
-            trimws(gsub("<.*?>", "", as.character(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"])))
+            trimws(clean_label(as.character(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"])))
           } else {
             "-"
           }
@@ -627,7 +627,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         Variables = variables[i],
         Description = if (all(is.na(variables_names))) {
           if (gsub("___.*$", "", variables[i]) %in% dic$field_name) {
-            trimws(gsub("<.*?>", "", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"]))
+            trimws(clean_label(dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "field_label"]))
           } else {
             "-"
           }
@@ -741,7 +741,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         levels = c(unique(variables))
       )
       report$descr <- factor(report$descr,
-        levels = c(unique(trimws(gsub("<.*?>", "", dic$field_label[dic$field_name %in% gsub("___.*$", "", variables)]))))
+        levels = c(unique(trimws(clean_label(dic$field_label[dic$field_name %in% gsub("___.*$", "", variables)]))))
       )
 
       # If the project has events, convert them to factors
@@ -808,7 +808,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       report$descr <- purrr::map_chr(gsub("___.*$", "", report$var), function(x) {
         if (x %in% dic$field_name) {
           # Truncate description name if it exceeds 50 characters
-          name <- gsub("<.*?>", "", dic$field_label[dic$field_name %in% x])
+          name <- clean_label(dic$field_label[dic$field_name %in% x])
           stringr::str_trunc(name, 50)
         } else {
           "-"

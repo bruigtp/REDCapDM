@@ -557,8 +557,8 @@ test_that("rd_rlogic names the variables it can't find and shows the translation
   dic <- make_dic("a")
 
   expect_error(rd_rlogic(data = df, dic = dic, logic = "[b] > 1", var = "a"), "\\[b\\]")
-  err <- expect_error(rd_rlogic(data = df, dic = dic, logic = "stdev([a],[a])", var = "a"), class = "REDCapDM_error_logic")
-  expect_match(conditionMessage(err), "R logic: `stdev(data$a,data$a)`", fixed = TRUE)
+  err <- expect_error(rd_rlogic(data = df, dic = dic, logic = "percentile([a],[a])", var = "a"), class = "REDCapDM_error_logic")
+  expect_match(conditionMessage(err), "R logic: `percentile(data$a,data$a)`", fixed = TRUE)
   expect_match(conditionMessage(err), "could not find function", fixed = TRUE)
 })
 
@@ -610,4 +610,57 @@ test_that("rd_rlogic: a blank value is different from any value, as in REDCap", 
   expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[a] <> '1'", var = "res")$eval), c(FALSE, TRUE, TRUE))
   expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[t] <> 'x' and [a] <> 2", var = "res")$eval), c(FALSE, TRUE, FALSE))
   expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "if([a] <> 1, 5, 0)", var = "res")$eval), c(0, 5, 5))
+})
+
+test_that("rd_rlogic translates the text functions of REDCap, with blank values as empty texts", {
+  df <- data.frame(record_id = 1:4, t = c("Hello World", "hello", NA, "  pad  "), n = c(1, NA, 3, 4))
+  dic <- make_dic(c("record_id", "t", "n", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "res")$eval)
+
+  expect_equal(ev("isblankormissingcode([n])"), c(FALSE, TRUE, FALSE, FALSE))
+  expect_equal(ev("not_contain([t], 'WORLD')"), c(FALSE, TRUE, TRUE, TRUE))
+  expect_equal(ev("starts_with([t], 'hel')"), c(TRUE, TRUE, FALSE, FALSE))
+  expect_equal(ev("ends_with([t], 'LO')"), c(FALSE, TRUE, FALSE, FALSE))
+  expect_equal(ev("left([t], 3) = 'Hel'"), c(TRUE, FALSE, FALSE, FALSE))
+  expect_equal(ev("right([t], 2)"), c("ld", "lo", "", "  "))
+  expect_equal(ev("mid([t], 2, 3)"), c("ell", "ell", "", " pa"))
+  expect_equal(ev("find('l', [t])"), c(3, 3, 0, 0))
+  expect_equal(ev("replace_text([t], 'l', 'L')"), c("HeLLo WorLd", "heLLo", "", "  pad  "))
+  expect_equal(ev("upper([t]) = 'HELLO'"), c(FALSE, TRUE, FALSE, FALSE))
+  expect_equal(ev("lower([t])"), c("hello world", "hello", "", "  pad  "))
+  expect_equal(ev("trim([t]) = 'pad'"), c(FALSE, FALSE, FALSE, TRUE))
+  expect_equal(ev("concat([t], '-', [n])"), c("Hello World-1", "hello-", "-3", "  pad  -4"))
+  expect_equal(ev("concat_ws(' ', [t], [n])"), c("Hello World 1", "hello", "3", "  pad   4"))
+})
+
+test_that("rd_rlogic translates stdev(), isinteger(), month(), day() and mod() as REDCap", {
+  df <- data.frame(record_id = 1:4, a = c(-7, 2.5, NA, 6), b = c(3, 1.5, 2, NA), d = as.Date(c("2024-03-15", NA, "2020-12-31", "2023-01-02")))
+  dic <- make_dic(c("record_id", "a", "b", "d", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "res")$eval)
+
+  expect_equal(ev("mod([a], [b])"), c(-1, 1, NA, NA))
+  expect_equal(ev("stdev([a], [b])"), c(stats::sd(c(-7, 3)), stats::sd(c(2.5, 1.5)), NA, NA))
+  expect_equal(ev("isinteger([a])"), c(TRUE, FALSE, FALSE, TRUE))
+  expect_equal(ev("month([d])"), c(3, NA, 12, 1))
+  expect_equal(ev("day([d])"), c(15, NA, 31, 2))
+})
+
+test_that("rd_rlogic doesn't translate the functions written inside a text", {
+  df <- data.frame(record_id = 1:3, t = c("left (L)", "sum(1,2)", "x"), n = c(1, 5, NA), m = 2)
+  dic <- make_dic(c("record_id", "t", "n", "m", "res"))
+
+  out <- rd_rlogic(data = df, dic = dic, logic = "[t] = 'sum(1,2)' or sum([n],[m]) > 5", var = "res")
+  expect_match(out$rlogic, "data$t == 'sum(1,2)'", fixed = TRUE)
+  expect_equal(as.vector(out$eval), c(FALSE, TRUE, FALSE))
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = "[t] = \"left (L)\" and left([t], 4) = 'left'", var = "res")$eval), c(TRUE, FALSE, FALSE))
+})
+
+test_that("rd_rlogic understands 'now' and dates with time", {
+  df <- data.frame(record_id = 1:2, dt = as.POSIXct(c("2024-01-05 10:30:00", "2024-01-06 12:00:00"), tz = "UTC"))
+  dic <- make_dic(c("record_id", "dt", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "res")$eval)
+
+  expect_equal(ev("datediff([dt], '2024-01-05 12:30', 'h', 'ymd', true)"), c(2, -23.5))
+  expect_equal(ev("datediff('05-01-2024 10:30:00', [dt], 'm', 'dmy')"), c(0, 1530))
+  expect_true(all(ev("datediff([dt], 'now', 'd') > 300")))
 })

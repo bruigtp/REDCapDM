@@ -74,7 +74,7 @@ test_that("rd_export saves with password and returns password-protection message
 
   expect_message(
     rd_export(queries = df, path = path, password = pw),
-    regexp = "with password protection"
+    regexp = "protected from edits by a password"
   )
 
   expect_true(file.exists(path))
@@ -107,4 +107,15 @@ test_that("rd_export saves with password and returns password-protection message
 test_that("rd_export stops when there is nothing to export or the folder doesn't exist", {
   expect_error(rd_export(queries = NULL), "There are no queries to export")
   expect_error(rd_export(queries = head(covican$data, 2), path = file.path(tempfile(), "q.xlsx")), "does not exist")
+})
+
+test_that("rd_export stops with invalid sheet names and with a folder as path", {
+  df <- head(covican$data, 2)
+  expect_error(rd_export(queries = df, path = tempfile(fileext = ".xlsx"), sheet_name = "a/b"), class = "REDCapDM_error_argument")
+  expect_error(rd_export(queries = df, path = tempfile(fileext = ".xlsx"), sheet_name = strrep("x", 32)), class = "REDCapDM_error_argument")
+  expect_error(rd_export(queries = df, path = tempdir()), class = "REDCapDM_error_file")
+
+  path <- tempfile(fileext = ".xlsx")
+  expect_message(rd_export(queries = df, path = path, sheet_name = strrep("x", 31)), "successfully created")
+  expect_equal(openxlsx::getSheetNames(path), strrep("x", 31))
 })

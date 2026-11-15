@@ -161,7 +161,11 @@ test_that("rd_checkbox leaves unchanged the checkboxes whose branching logic can
     stringsAsFactors = FALSE
   )
 
-  expect_warning(out <- rd_checkbox(data = data, dic = dic, na_logic = "eval", checkbox_names = FALSE), "could not be evaluated")
+  # (without .factor columns, rd_checkbox() also warns that the checkboxes seem to be factors already)
+  expect_warning(
+    expect_warning(out <- rd_checkbox(data = data, dic = dic, na_logic = "eval", checkbox_names = FALSE), "could not be evaluated"),
+    "already in factor form"
+  )
   # `a` follows its branching logic and `b` is not changed
   expect_equal(as.character(out$data$a___1), c(NA, "No", "Yes"))
   expect_equal(as.character(out$data$b___1), c("Yes", "Yes", "No"))

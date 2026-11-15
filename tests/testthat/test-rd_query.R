@@ -930,3 +930,14 @@ test_that("rd_query shows a real option of the checkbox when the checkbox field 
                         choices_calculations_or_slider_labels = c("", "A, a | B, b"), stringsAsFactors = FALSE)
   expect_error(rd_query(data = toy_data, dic = toy_dic, variables = "cb", expression = "x == 1"), "cb___a")
 })
+
+test_that("rd_query keeps the < and > of the labels and removes their HTML", {
+  cov <- covican
+  i <- match(c("age", "potassium"), cov$dictionary$field_name)
+  cov$dictionary$field_label[i] <- c("Age (<18 or >90 years: check)", "<b>Potassium</b> &amp; <i>K+</i>")
+  out <- rd_query(cov, variables = c("age", "potassium"), expression = c("x > 80", "x > 4"), event = "baseline_visit_arm_1")
+
+  expect_setequal(unique(out$queries$Description), c("Age (<18 or >90 years: check)", "Potassium & K+"))
+  expect_match(out$results, "Age (&lt;18 or &gt;90 years: check)", fixed = TRUE)
+  expect_false(grepl("&amp;amp;", out$results, fixed = TRUE))
+})

@@ -19,6 +19,7 @@
 - `rd_checkbox()` returns a project without checkbox fields unchanged, with a warning, instead of an error.
 - The `addTo` argument of `rd_query()` and `rd_event()` is now called `add_to`. `addTo` still works, with a deprecation warning.
 - `rd_query()`, `rd_event()` and `check_queries()` return a list of class `REDCapDM_report`: printed in the console, it shows the number of queries per variable and event (per state in `check_queries()`) instead of the whole list. `$queries`, `$results`, `add_to` and `rd_export()` work as before.
+- `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()` and `rd_dictionary()`) translates more REDCap functions: `isblankormissingcode()`, `not_contain()`, `starts_with()`, `ends_with()`, `left()`, `right()`, `mid()`, `find()`, `replace_text()`, `concat()`, `concat_ws()`, `upper()`, `lower()`, `trim()`, `stdev()`, `isinteger()`, `month()` and `day()`. As in REDCap, the text functions use a blank value as an empty text. `datediff()` also understands `"now"` and dates with time (e.g. `'2024-01-05 10:30'`).
 
 ## Repeated instruments and repeating events
 
@@ -76,6 +77,9 @@
 - `rd_query()` after `rd_transform()` didn't apply the branching logic that uses variables of other events, and checked every row of a field whose branching logic is never met (without `rd_transform()` there is nothing to check, as in REDCap).
 - Grouped data (`dplyr::group_by()` without `ungroup()`) and dictionaries with factor columns (e.g. read with `stringsAsFactors = TRUE`) made several functions fail, and `rd_recalculate()` skipped calculated fields without warning. All functions now use them as plain data frames.
 - `rd_checkbox(na_logic = "eval")` and `na_logic = "missing"` failed when the branching logic of a checkbox could not be evaluated, or applied to it the logic of the previous checkbox. Its options are now left unchanged, with a warning.
+- `rd_rlogic()` returned `NA` in `datediff()` with `"now"` or with dates with time, translated the names of functions written inside a text (e.g. `[t] = 'sum(1,2)'`) and gave `mod()` of negative numbers with the sign of the divisor (REDCap gives `mod(-7, 3) = -1`).
+- `rd_query()` removed the text between `<` and `>` of the labels (e.g. `Age (<18 or >90 years)` became `Age (90 years)`) and showed `&amp;` in the HTML report. `redcap_data()` and `rd_missplot()` also keep these characters, and only remove the HTML tags of the labels.
+- `rd_export()` reported success when `path` was a folder or `sheet_name` had one of `/ \ ? * : [ ]`, which Excel doesn't accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.
 
 ## Clearer messages
 

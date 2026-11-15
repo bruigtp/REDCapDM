@@ -53,6 +53,22 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
     check_string(get(arg), arg, null_ok = TRUE)
   }
 
+  # Error: Excel sheet names have up to 31 characters and can't have / \ ? * : [ ]
+  if (!is.null(sheet_name) && (nchar(sheet_name) > 31 || grepl("[/\\\\?*:\\[\\]]", sheet_name, perl = TRUE))) {
+    rd_abort(
+      c("{.arg sheet_name} is not a valid name for an Excel sheet: {.val {sheet_name}}.", "i" = "It can have up to 31 characters and none of {.code / \\ ? * : [ ]}."),
+      class = "REDCapDM_error_argument"
+    )
+  }
+
+  # Error: `path` is a folder, not a file
+  if (!is.null(path) && dir.exists(path)) {
+    rd_abort(
+      c("{.arg path} is a folder: {.path {path}}.", "i" = "Give the name of the file, e.g. {.code file.path(path, \"queries.xlsx\")}."),
+      class = "REDCapDM_error_file"
+    )
+  }
+
   # Ensure `queries` is a data frame
   queries <- as.data.frame(queries)
 
@@ -137,7 +153,7 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
   if (!is.null(password)) {
     openxlsx::protectWorksheet(wb, sheet = sheet, password = password)
     openxlsx::saveWorkbook(wb, path, overwrite = TRUE)
-    rd_inform(c("v" = "The file has been successfully created in {.file {path}} with password protection."))
+    rd_inform(c("v" = "The file has been successfully created in {.file {path}}, with its sheet protected from edits by a password."))
   } else {
     openxlsx::saveWorkbook(wb, path, overwrite = TRUE)
     rd_inform(c("v" = "The file has been successfully created in {.file {path}}."))
