@@ -289,6 +289,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("!==", "!=", rlogic)
   rlogic <- gsub("<>", "!=", rlogic)
 
+  # A comparison with a negative number written without spaces (e.g. [a]<-3) is not an assignment in R
+  rlogic <- gsub("<-", "< -", rlogic, fixed = TRUE)
+
   # As in REDCap, a blank value is different from any value: [x] <> '1' is TRUE when x is blank
   rlogic <- gsub("(data\\$\\w+)\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)", "!(\\1 %in% \\2)", rlogic, perl = TRUE)
   rlogic <- gsub(" and ", " & ", rlogic)
@@ -297,11 +300,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # REDCap functions (after the operators, so that the `=` of their translation is not changed)
   rlogic <- translate_functions(rlogic)
 
-  # Remove '' (empty strings) after comparison operators like <, >, <=, >=
-  rlogic <- gsub("\\s?<\\s?'([\\d\\.]+)'", " < \\1", rlogic, perl = TRUE)
-  rlogic <- gsub("\\s?>\\s?'([\\d\\.]+)'", " > \\1", rlogic, perl = TRUE)
-  rlogic <- gsub("\\s?<=\\s?'([\\d\\.]+)'", " <= \\1", rlogic, perl = TRUE)
-  rlogic <- gsub("\\s?>=\\s?'([\\d\\.]+)'", " >= \\1", rlogic, perl = TRUE)
+  # Remove the quotes of the numbers (also negative) after comparison operators like <, >, <=, >=, so that they are compared as numbers
+  rlogic <- gsub("\\s?<\\s?'(-?[\\d\\.]+)'", " < \\1", rlogic, perl = TRUE)
+  rlogic <- gsub("\\s?>\\s?'(-?[\\d\\.]+)'", " > \\1", rlogic, perl = TRUE)
+  rlogic <- gsub("\\s?<=\\s?'(-?[\\d\\.]+)'", " <= \\1", rlogic, perl = TRUE)
+  rlogic <- gsub("\\s?>=\\s?'(-?[\\d\\.]+)'", " >= \\1", rlogic, perl = TRUE)
 
   # Transform '' (empty strings) into missing values (NA)
   rlogic <- gsub("''", "NA", rlogic)

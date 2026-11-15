@@ -614,3 +614,23 @@ test_that("API branch: labels, yes/no and form status factors and forms without 
   expect_false("extra" %in% names(out$data))
   expect_false("extra" %in% out$dictionary$field_name)
 })
+
+test_that("redcap_data removes the HTML of the labels of the dictionary and of the data", {
+  sample_data <- data.frame(id = 1:2, weight = c(70, 80), age = c(17, 95))
+  attr(sample_data$weight, "label") <- "Weight (<i>kg</i>)<br>today"
+  attr(sample_data$age, "label") <- "Age (<18 or >90 years)"
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(sample_data, tmp_r)
+
+  dic_rows <- data.frame(
+    field_name = c("id", "weight", "age"), form_name = "f", field_type = "text",
+    field_label = c("ID", "Weight (<i>kg</i>)<br>today", "Age (<18 or >90 years)"), stringsAsFactors = FALSE
+  )
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(dic_rows, tmp_dic, row.names = FALSE)
+
+  out <- redcap_data(data_path = tmp_r, dic_path = tmp_dic)
+  expect_equal(out$dictionary$field_label[2:3], c("Weight (kg) today", "Age (<18 or >90 years)"))
+  expect_equal(attr(out$data$weight, "label"), "Weight (kg) today")
+  expect_equal(attr(out$data$age, "label"), "Age (<18 or >90 years)")
+})

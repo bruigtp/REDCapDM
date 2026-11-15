@@ -135,4 +135,9 @@ test_that("clean_label removes the HTML tags and keeps the rest of the text", {
   expect_equal(clean_label("<p class=x>Word<o:p></o:p></p>"), "Word")
   expect_equal(clean_label("<!-- note -->Value &lt;5"), "Value <5")
   expect_equal(clean_label(c(NA, "")), c(NA, ""))
+  # Tags inside a line are removed without adding spaces; tags that break the line become a space
+  expect_equal(clean_label("Name (<i>full</i>)"), "Name (full)")
+  expect_equal(clean_label("word<b>s</b>"), "words")
+  expect_equal(clean_label("Age<br>(years)"), "Age (years)")
+  expect_equal(clean_label("<div>A</div><div>B</div>"), "A B")
 })

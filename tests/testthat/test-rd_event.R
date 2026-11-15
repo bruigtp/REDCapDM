@@ -210,3 +210,8 @@ test_that("rd_event accepts event labels and asks for the event when it is missi
   data$redcap_event_name.factor <- factor(c("Visit", "Visit"))
   expect_error(rd_event(data = data, dic = data.frame(), event = "Visit"), "shared by several events")
 })
+
+test_that("rd_event stops when any of the events doesn't exist", {
+  expect_error(rd_event(covican, event = c("baseline_visit_arm_1", "unknown_arm_1")), class = "REDCapDM_error_argument")
+  expect_error(rd_event(covican, event = "unknown_arm_1"), class = "REDCapDM_error_argument")
+})

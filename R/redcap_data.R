@@ -769,9 +769,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       )
   }
 
-  # Reapply labels to the modified dataset
+  # Reapply labels to the modified dataset (without HTML, as the labels of the dictionary)
   data_def$data <- data_def$data |>
-    labelled::set_variable_labels(.labels = labels |> as.list(), .strict = FALSE)
+    labelled::set_variable_labels(.labels = stats::setNames(clean_label(labels), names(labels)) |> as.list(), .strict = FALSE)
 
   
   # Labels of the columns with the Missing Data Codes (rm_mdc = FALSE)

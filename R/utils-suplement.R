@@ -205,13 +205,14 @@ style_report <- function(x) {
 #' @noRd
 clean_label <- function(x) {
   x <- as.character(x)
-  tags <- paste0(
-    "a|abbr|b|big|blockquote|br|caption|center|cite|code|col|colgroup|dd|del|div|dl|dt|em|font|h[1-6]|hr|i|img|ins|kbd|",
-    "label|li|mark|ol|p|pre|q|s|small|span|strike|strong|sub|sup|table|tbody|td|tfoot|th|thead|tr|tt|u|ul|o:p"
-  )
+  # Tags inside a line of text (e.g. "Weight (<i>kg</i>)") are removed, and tags that break the line (e.g. <br>) become a space
+  inline_tags <- "a|abbr|b|big|cite|code|del|em|font|i|ins|kbd|label|mark|q|s|small|span|strike|strong|sub|sup|tt|u|o:p"
+  block_tags <- "blockquote|br|caption|center|col|colgroup|dd|div|dl|dt|h[1-6]|hr|img|li|ol|p|pre|table|tbody|td|tfoot|th|thead|tr|ul"
   attribute <- "\\s+[A-Za-z_:][-A-Za-z0-9_:.]*\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s\"'<>]+)"
+  tag <- function(names) paste0("</?(", names, ")(", attribute, ")*\\s*/?>")
   x <- gsub("<!--.*?-->", " ", x, perl = TRUE)
-  x <- gsub(paste0("</?(", tags, ")(", attribute, ")*\\s*/?>"), " ", x, perl = TRUE, ignore.case = TRUE)
+  x <- gsub(tag(inline_tags), "", x, perl = TRUE, ignore.case = TRUE)
+  x <- gsub(tag(block_tags), " ", x, perl = TRUE, ignore.case = TRUE)
   entities <- c("&nbsp;" = " ", "&lt;" = "<", "&gt;" = ">", "&quot;" = "\"", "&#39;" = "'", "&apos;" = "'", "&amp;" = "&")
   for (entity in names(entities)) {
     x <- gsub(entity, entities[[entity]], x, fixed = TRUE)

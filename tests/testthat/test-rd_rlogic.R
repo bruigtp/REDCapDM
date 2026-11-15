@@ -664,3 +664,17 @@ test_that("rd_rlogic understands 'now' and dates with time", {
   expect_equal(ev("datediff('05-01-2024 10:30:00', [dt], 'm', 'dmy')"), c(0, 1530))
   expect_true(all(ev("datediff([dt], 'now', 'd') > 300")))
 })
+
+test_that("rd_rlogic compares with negative numbers, with or without quotes and spaces", {
+  df <- data.frame(record_id = 1:5, a = c(-5, 2, NA, -3.5, -20))
+  dic <- make_dic(c("record_id", "a", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "res")$eval)
+
+  # [a]<-3 is a comparison, not an assignment
+  expect_equal(ev("[a]<-3"), c(TRUE, FALSE, NA, TRUE, TRUE))
+  expect_equal(ev("if([a]<-3, 1, 0)"), c(1, 0, NA, 1, 1))
+  expect_equal(ev("[a] < '-3'"), c(TRUE, FALSE, NA, TRUE, TRUE))
+  expect_equal(ev("[a]<='-5'"), c(TRUE, FALSE, NA, FALSE, TRUE))
+  expect_equal(ev("[a] >= '-4'"), c(FALSE, TRUE, NA, TRUE, FALSE))
+  expect_equal(ev("[a] > '-10'"), c(TRUE, TRUE, NA, TRUE, FALSE))
+})

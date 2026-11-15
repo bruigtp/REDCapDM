@@ -171,3 +171,9 @@ test_that("rd_checkbox leaves unchanged the checkboxes whose branching logic can
   expect_equal(as.character(out$data$b___1), c("Yes", "Yes", "No"))
   expect_match(paste(out$results, collapse = " "), "can't be transcribed")
 })
+
+test_that("rd_checkbox keeps the variable labels of the renamed checkbox options", {
+  out <- suppressWarnings(rd_checkbox(covican))
+  expect_equal(attr(out$data$type_underlying_disease_haematological_cancer, "label"), "Type of underlying disease (choice=Haematological cancer)")
+  expect_equal(attr(out$data$type_underlying_disease_solid_tumour, "label"), "Type of underlying disease (choice=Solid tumour)")
+})
