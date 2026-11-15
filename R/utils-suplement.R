@@ -127,7 +127,7 @@ round <- function(x, digits = 0) {
 #'
 #' Uses natural ordering, so `"100-2"` comes before `"100-10"` and `"ABC2"`
 #' before `"ABC10"`. `Identifier` is converted to numeric only when every
-#' identifier is a plain number.
+#' identifier is a plain number without leading zeros.
 #'
 #' @param queries Data frame with an `Identifier` column.
 #' @param by_code Logical. If `TRUE`, ties are broken by the `Code` column.
@@ -144,7 +144,8 @@ sort_by_identifier <- function(queries, by_code = FALSE) {
   queries <- queries[do.call(order, keys), , drop = FALSE]
   rownames(queries) <- NULL
 
-  if (all(grepl("^-?[0-9]+(\\.[0-9]+)?$", id[!is.na(id)]))) {
+  # Numbers only when they are written as numbers: identifiers with leading zeros (e.g. "007") are kept as text
+  if (all(grepl("^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", id[!is.na(id)]))) {
     queries$Identifier <- as.numeric(queries$Identifier)
   }
 

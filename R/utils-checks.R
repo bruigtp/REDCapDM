@@ -132,6 +132,13 @@ check_inputs <- function(data, dic, dic_cols = NULL, dic_rows = FALSE, call = rl
     )
   }
 
+  if (ncol(data) == 0) {
+    rd_abort(
+      c("{.arg data} has no columns.", "i" = "Use the {.field data} element of the output of {.fn redcap_data}."),
+      class = "REDCapDM_error_argument", call = call
+    )
+  }
+
   if (!is.data.frame(dic)) {
     rd_abort(
       c("{.arg dic} must be a data frame, not {.obj_type_friendly {dic}}.", "i" = "Use the {.field dictionary} element of the output of {.fn redcap_data}."),
@@ -155,6 +162,35 @@ check_inputs <- function(data, dic, dic_cols = NULL, dic_rows = FALSE, call = rl
   }
 
   invisible(TRUE)
+}
+
+#' Check the event-form mapping
+#'
+#' @param event_form Event-form mapping of a longitudinal project, or `NULL`.
+#' @param call Environment of the function that is checked, for the error messages.
+#' @return `event_form`, invisibly. Errors if it is not a data frame with the columns `unique_event_name` and `form`.
+#' @noRd
+check_event_form <- function(event_form, call = rlang::caller_env()) {
+  if (is.null(event_form)) {
+    return(invisible(event_form))
+  }
+
+  if (!is.data.frame(event_form)) {
+    rd_abort(
+      c("{.arg event_form} must be a data frame, not {.obj_type_friendly {event_form}}.", "i" = "Use the {.field event_form} element of the output of {.fn redcap_data}."),
+      class = "REDCapDM_error_argument", call = call
+    )
+  }
+
+  not_found <- setdiff(c("unique_event_name", "form"), names(event_form))
+  if (length(not_found) > 0) {
+    rd_abort(
+      c("{.arg event_form} doesn't have the column{?s} {.code {not_found}}.", "i" = "Use the {.field event_form} element of the output of {.fn redcap_data}."),
+      class = "REDCapDM_error_argument", call = call
+    )
+  }
+
+  invisible(event_form)
 }
 
 #' Plain data and dictionary

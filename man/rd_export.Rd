@@ -14,7 +14,7 @@ rd_export(
 )
 }
 \arguments{
-\item{project}{A list containing the dataframe of queries and results (expected \code{rd_query} or \code{rd_event} output). Overrides \code{queries}.}
+\item{project}{A list containing the dataframe of queries and results (expected \code{rd_query} or \code{rd_event} output). Overrides \code{queries}. A data frame of queries is also accepted (e.g. \code{rd_export(report$queries)}).}
 
 \item{queries}{A data frame of identified queries.}
 

@@ -76,6 +76,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "field_type", "field_label", "choices_calculations_or_slider_labels", "branching_logic_show_field_only_if"))
+  check_event_form(event_form)
   data <- plain_data(data)
   dic <- plain_dic(dic)
   check_flag(checkbox_names, "checkbox_names")

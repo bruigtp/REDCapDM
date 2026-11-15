@@ -119,3 +119,11 @@ test_that("rd_export stops with invalid sheet names and with a folder as path", 
   expect_message(rd_export(queries = df, path = path, sheet_name = strrep("x", 31)), "successfully created")
   expect_equal(openxlsx::getSheetNames(path), strrep("x", 31))
 })
+
+test_that("rd_export accepts the data frame of queries as its first argument and explains a wrong project", {
+  q <- suppressMessages(rd_query(covican, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))
+  path <- tempfile(fileext = ".xlsx")
+  expect_message(rd_export(q$queries, path = path), "successfully created")
+  expect_equal(nrow(openxlsx::read.xlsx(path)), nrow(q$queries))
+  expect_error(rd_export(project = "queries", path = tempfile(fileext = ".xlsx")), class = "REDCapDM_error_argument")
+})

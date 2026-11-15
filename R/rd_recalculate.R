@@ -66,6 +66,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "field_type", "choices_calculations_or_slider_labels", "text_validation_type_or_show_slider_number"))
+  check_event_form(event_form)
   data <- plain_data(data)
   dic <- plain_dic(dic)
   check_strings(exclude, "exclude")
@@ -87,7 +88,8 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
   # Check if there are datetime variables stored as characters in the dataset
   vars_date <- dic |>
     dplyr::filter(grepl("^date_|^datetime_", .data$text_validation_type_or_show_slider_number)) |>
-    dplyr::pull(.data$field_name)
+    dplyr::pull(.data$field_name) |>
+    intersect(names(data))
 
   # Warn if datetime variables need transformation
   if (any(purrr::map(data |> dplyr::select(dplyr::all_of(vars_date)), class) == "character")) {

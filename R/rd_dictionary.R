@@ -54,6 +54,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   
   # Error: invalid arguments
   check_inputs(data, dic)
+  check_event_form(event_form)
   data <- plain_data(data)
   dic <- plain_dic(dic)
 

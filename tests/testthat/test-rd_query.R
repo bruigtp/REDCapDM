@@ -941,3 +941,25 @@ test_that("rd_query keeps the < and > of the labels and removes their HTML", {
   expect_match(out$results, "Age (&lt;18 or &gt;90 years: check)", fixed = TRUE)
   expect_false(grepl("&amp;amp;", out$results, fixed = TRUE))
 })
+
+test_that("rd_query, rd_event and check_queries keep the leading zeros of the record identifiers", {
+  cov <- covican
+  cov$data$record_id <- sprintf("%03d", match(cov$data$record_id, unique(cov$data$record_id)))
+  q <- suppressMessages(rd_query(cov, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))
+  expect_type(q$queries$Identifier, "character")
+  expect_true(all(grepl("^[0-9]{3}$", q$queries$Identifier)))
+  expect_true(all(startsWith(q$queries$Code, paste0(q$queries$Identifier, "-"))))
+  expect_true(all(grepl("^[0-9]{3}$", suppressMessages(rd_event(cov, event = "follow_up_visit_da_arm_1"))$queries$Identifier)))
+  expect_true(all(grepl("^[0-9]{3}$", suppressMessages(check_queries(q$queries, q$queries))$queries$Identifier)))
+
+  # Plain numbers are still numbers
+  cov$data$record_id <- as.character(match(cov$data$record_id, unique(cov$data$record_id)))
+  expect_type(suppressMessages(rd_query(cov, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))$queries$Identifier, "double")
+})
+
+test_that("rd_query ignores empty text arguments and explains data without columns", {
+  q0 <- suppressMessages(rd_query(covican, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))
+  q1 <- suppressMessages(rd_query(covican, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1", query_name = character(0), instrument = character(0)))
+  expect_equal(q1$queries, q0$queries)
+  expect_error(rd_query(data = data.frame(), dic = covican$dictionary, variables = "copd", expression = "is.na(x)"), class = "REDCapDM_error_argument")
+})

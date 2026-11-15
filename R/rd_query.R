@@ -102,10 +102,13 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   
   # Error: invalid arguments
   check_inputs(data, dic)
+  check_event_form(event_form)
   data <- plain_data(data)
   dic <- plain_dic(dic)
   for (arg in c("event", "filter", "variables_names", "query_name", "instrument", "report_title")) {
     check_text(get(arg), arg)
+    # An empty vector (e.g. character(0)) is not given, as NA
+    if (length(get(arg)) == 0) assign(arg, NA)
   }
   if (is.null(add_to)) {
     add_to <- NA

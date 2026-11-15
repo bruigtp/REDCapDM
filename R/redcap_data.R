@@ -135,8 +135,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     tmp_env <- new.env()
     file.lines <- scan(data_path, what = character(), skip = 2, sep = "\n", quiet = TRUE)
 
-    # The lines of the script that would change the user's session are not run. The `label()` and `units()` of the
-    # script are defined here instead, with the same result.
+    # The lines of the script that would change the user's session are not run. The `label()` and `units()` of the script are defined here instead, with the same result.
     file.lines <- file.lines[!grepl("^\\s*(graphics\\.off\\(\\)|library\\(Hmisc\\)|rm\\(list\\s*=\\s*ls\\(\\)\\))\\s*;?\\s*$", file.lines)]
     tmp_env$`label<-` <- function(x, value) {
       attr(x, "label") <- value
@@ -229,8 +228,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     }
 
 
-    # Text fields that look like numbers (e.g. phones, postal codes or identifiers with leading zeros): read.csv() turns
-    # them into numbers and changes them ("0034" is read as 34). They keep the text exported by REDCap.
+    # Text fields that look like numbers (e.g. phones, postal codes or identifiers with leading zeros): read.csv() turns them into numbers and changes them ("0034" is read as 34). They keep the text exported by REDCap.
     data <- keep_text_fields(data, dic, if (length(csv_file) > 0) file.path(dirname(data_path), csv_file[1]) else NA)
 
     # Indicator of longitudinal projects
@@ -261,7 +259,6 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
           class = "REDCapDM_error_file"
         )
       }
-
 
       # Output
       data_def <- list(data = data, dictionary = dic, event_form = event_form)
@@ -591,7 +588,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     character(0)
   }
 
-  #Identify categorical text field types
+  # Identify categorical text field types
   categorical_fields <- data_def$dictionary |>
     dplyr::filter(.data$field_type %in% c("radio", "yesno", "dropdown", "truefalse")) |>
     dplyr::pull(.data$field_name)

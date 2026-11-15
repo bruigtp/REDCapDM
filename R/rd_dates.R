@@ -63,10 +63,11 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
     }
   })
 
-  # Identify date variables in the dictionary (those with `date_` in validation type)
+  # Identify date variables in the dictionary (those with `date_` in validation type) that are in the data
   var_date <- dic |>
     dplyr::filter(grepl("^date_", .data$text_validation_type_or_show_slider_number)) |>
-    dplyr::pull(.data$field_name)
+    dplyr::pull(.data$field_name) |>
+    intersect(names(data))
 
   var_date_valid <- data |>
     dplyr::select(dplyr::all_of(var_date)) |>
@@ -76,7 +77,8 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
   # Identify datetime variables in the dictionary (those with `datetime_` in validation type)
   var_datetime <- dic |>
     dplyr::filter(grepl("^datetime_", .data$text_validation_type_or_show_slider_number)) |>
-    dplyr::pull(.data$field_name)
+    dplyr::pull(.data$field_name) |>
+    intersect(names(data))
 
   var_datetime_valid <- data |>
     dplyr::select(dplyr::all_of(var_datetime)) |>

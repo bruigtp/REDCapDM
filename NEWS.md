@@ -80,10 +80,14 @@
 - `rd_rlogic()` returned `NA` in `datediff()` with `"now"` or with dates with time, translated the names of functions written inside a text (e.g. `[t] = 'sum(1,2)'`) and gave `mod()` of negative numbers with the sign of the divisor (REDCap gives `mod(-7, 3) = -1`).
 - `rd_query()` removed the text between `<` and `>` of the labels (e.g. `Age (<18 or >90 years)` became `Age (90 years)`) and showed `&amp;` in the HTML report. `redcap_data()` and `rd_missplot()` also keep these characters, and only remove the HTML tags of the labels. `redcap_data()` also removes the HTML of the variable labels of the data (before, only of the dictionary), and no longer adds spaces where a tag was inside a word or a parenthesis (e.g. `Name (<i>full</i>)` is now `Name (full)`).
 - `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()` and `rd_dictionary()`) gave wrong results with negative numbers: `[a]<-3` (without spaces) was run as an assignment in R, and `[a] < '-3'` (with quotes) compared the values as text.
+- `rd_query()`, `rd_event()` and `check_queries()` turned record identifiers with leading zeros into numbers (e.g. `"007"` became `7`, and its code `7-1`), so they didn't match the record in REDCap. They are now kept as text; identifiers that are plain numbers are still returned as numbers.
+- `rd_dates()`, `rd_recalculate()` and `rd_transform()` failed when the data didn't have every date field of the dictionary (e.g. with a selection of columns).
 - `rd_export()` reported success when `path` was a folder or `sheet_name` had one of `/ \ ? * : [ ]`, which Excel doesn't accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.
+- `rd_export()` accepts the data frame of queries as its first argument (e.g. `rd_export(report$queries)`): before, it said that there were no queries to export.
 
 ## Clearer messages
 
+- The functions that use the event-form mapping explain an `event_form` that is not the one of `redcap_data()` (e.g. a number or a data frame without the columns `unique_event_name` and `form`), `rd_rlogic()` a `var` that is not in the dictionary of a longitudinal project and a logic that doesn't give one value per row, and `rd_query()` a `data` without columns. Before, they failed with internal R errors.
 - `redcap_data()` explains when a file is not found, when the csv file read by the R script is not in its folder and when the event file is not the instrument-event mapping of the project. It warns when variables of the data are not in the dictionary and when the project has no records yet.
 - `rd_query()` names the variables that don't exist (and how to check a checkbox), explains why an expression can't be evaluated, warns when a text variable is compared with a number and checks `negate`, `report_zeros`, `by_dag` and `add_to`.
 - `rd_rlogic()` names the variables it can't find and shows the translated logic and the R error when it can't be evaluated.

@@ -60,6 +60,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   
   # Error: invalid arguments
   check_inputs(data, dic, dic_cols = c("field_name", "text_validation_type_or_show_slider_number"))
+  check_event_form(event_form)
   data <- plain_data(data)
   dic <- plain_dic(dic)
   check_strings(logic, "logic", null_ok = FALSE)
@@ -84,6 +85,14 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   if (length(var) > 1) {
     rd_warn("{.arg var} contains more than one variable name; rd_rlogic processes only one variable at a time. Using the first element.")
     var <- var[[1]]
+  }
+
+  # Error: in longitudinal projects, the form of `var` gives the events where the logic is evaluated
+  if (!is.null(event_form) && !var %in% dic$field_name) {
+    rd_abort(
+      c("{.arg var} must be a field of the dictionary: {.val {var}} is not.", "i" = "In longitudinal projects, its form gives the events where the logic is evaluated."),
+      class = "REDCapDM_error_argument"
+    )
   }
 
   rlogic <- logic # Initialize REDCap logic to be converted
@@ -349,11 +358,15 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   }
 
 
-  # If there's an error or the result is empty, stop the process
-  if (inherits(rlogic_eval, "try-error") || (length(rlogic_eval) == 0 && nrow(data) > 0)) {
-    logic_error <- if (inherits(rlogic_eval, "try-error")) trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(rlogic_eval))))
+  # If there's an error, the result is empty or it doesn't have one value per row, stop the process
+  if (inherits(rlogic_eval, "try-error") || (length(rlogic_eval) == 0 && nrow(data) > 0) || !length(rlogic_eval) %in% c(0, 1, nrow(data))) {
+    logic_error <- if (inherits(rlogic_eval, "try-error")) {
+      paste("R error:", trimws(gsub("\\s+", " ", sub("^Error in .*? : ", "", as.character(rlogic_eval)))))
+    } else if (length(rlogic_eval) > 0) {
+      paste0("It gives ", length(rlogic_eval), " values for the ", nrow(data), " rows of the data.")
+    }
     rd_abort(
-      c("The logic could not be evaluated after translation.", "i" = "R logic: {.code {rlogic}}", if (!is.null(logic_error)) c("x" = "R error: {logic_error}")),
+      c("The logic could not be evaluated after translation.", "i" = "R logic: {.code {rlogic}}", if (!is.null(logic_error)) c("x" = "{logic_error}")),
       class = "REDCapDM_error_logic"
     )
   } else {

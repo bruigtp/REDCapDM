@@ -678,3 +678,9 @@ test_that("rd_rlogic compares with negative numbers, with or without quotes and 
   expect_equal(ev("[a] >= '-4'"), c(FALSE, TRUE, NA, TRUE, FALSE))
   expect_equal(ev("[a] > '-10'"), c(TRUE, TRUE, NA, TRUE, FALSE))
 })
+
+test_that("rd_rlogic explains a var that is not in the dictionary and a logic without one value per row", {
+  expect_error(rd_rlogic(covican, logic = "[age] > 70", var = "not_a_field"), class = "REDCapDM_error_argument")
+  err <- expect_error(rd_rlogic(covican, logic = "c(1, 2, 3)", var = "age"), class = "REDCapDM_error_logic")
+  expect_match(conditionMessage(err), "3 values", fixed = TRUE)
+})

@@ -5,7 +5,7 @@
 #'
 #' Export a query dataset (e.g., from `rd_query` or `rd_event`) to an `.xlsx` file. The function can optionally convert a column of URLs into Excel hyperlinks and apply password protection to the worksheet.
 #'
-#' @param project A list containing the dataframe of queries and results (expected `rd_query` or `rd_event` output). Overrides `queries`.
+#' @param project A list containing the dataframe of queries and results (expected `rd_query` or `rd_event` output). Overrides `queries`. A data frame of queries is also accepted (e.g. `rd_export(report$queries)`).
 #' @param queries A data frame of identified queries.
 #' @param column Name of the column containing URLs to convert into hyperlinks. If `NULL`, hyperlinks are added only if a `Link` column exists.
 #' @param sheet_name Name of the Excel sheet in the resulting `.xlsx` file. Default: `"Sheet1"`.
@@ -30,7 +30,20 @@
 rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name = NULL, path = NULL, password = NULL) {
 
   # Handle potential overwriting when both `project` and other arguments are provided
+  # A data frame of queries given as the first argument (e.g. rd_export(report$queries))
+  if (is.data.frame(project) && is.null(queries)) {
+    queries <- project
+    project <- NULL
+  }
+
   if (!is.null(project)) {
+    # Error: `project` must be the list returned by rd_query() or rd_event()
+    if (!is.list(project) || is.data.frame(project)) {
+      rd_abort(
+        c("{.arg project} must be the list returned by {.fn rd_query} or {.fn rd_event}, not {.obj_type_friendly {project}}.", "i" = "To export a data frame, use {.arg queries}."),
+        class = "REDCapDM_error_argument"
+      )
+    }
     if (!is.null(queries)) {
       rd_warn("Queries has been provided twice. The function will ignore the {.arg queries} argument.")
     }

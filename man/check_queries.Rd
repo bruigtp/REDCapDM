@@ -67,9 +67,9 @@ The function merges the two reports, constructs composite keys used for comparis
 \item \strong{Column types:} If \code{Identifier}, \code{Description} or \code{Query} are
 factors, they will be used in the comparison — it is recommended to convert them to
 character prior to calling \code{check_queries()} to avoid factor-level mismatches.
-\item \strong{Sorting:} When \code{Identifier} values contain a dash (e.g. \code{"100-20"}),
-the function attempts to split into numeric \code{center} and \code{id} parts for
-logical ordering. Otherwise \code{Identifier} is coerced to numeric for ordering.
+\item \strong{Sorting:} The rows are sorted by \code{Identifier} in natural order (e.g. \code{"100-2"}
+before \code{"100-10"}). \code{Identifier} is returned as a number only when every identifier is a
+plain number without leading zeros (e.g. \code{"007"} is kept as text).
 \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned when more
 than one row shares the same \code{Identifier + Description} composite and a row is
 otherwise classified as \code{New} — this signals a likely re-issued or modified query

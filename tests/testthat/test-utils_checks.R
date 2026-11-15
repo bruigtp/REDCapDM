@@ -141,3 +141,20 @@ test_that("clean_label removes the HTML tags and keeps the rest of the text", {
   expect_equal(clean_label("Age<br>(years)"), "Age (years)")
   expect_equal(clean_label("<div>A</div><div>B</div>"), "A B")
 })
+
+test_that("the functions explain an event_form that is not the event-form mapping", {
+  for (ef in list(1, "x", TRUE, data.frame(), data.frame(event = "a"))) {
+    expect_error(rd_query(data = covican$data, dic = covican$dictionary, event_form = ef, variables = "copd", expression = "is.na(x)"), class = "REDCapDM_error_argument")
+    expect_error(rd_transform(data = covican$data, dic = covican$dictionary, event_form = ef), class = "REDCapDM_error_argument")
+    expect_error(rd_rlogic(data = covican$data, dic = covican$dictionary, event_form = ef, logic = "[age] > 70", var = "age"), class = "REDCapDM_error_argument")
+    expect_error(rd_insert_na(data = covican$data, dic = covican$dictionary, event_form = ef, vars = "copd", filter = "age > 70"), class = "REDCapDM_error_argument")
+  }
+  expect_silent(check_event_form(NULL))
+  expect_silent(check_event_form(covican$event_form))
+})
+
+test_that("rd_dates and rd_recalculate work with some of the columns of the dictionary", {
+  d <- covican$data[, c("record_id", "redcap_event_name", "redcap_event_name.factor", "age", "copd", "copd.factor")]
+  expect_no_error(suppressMessages(rd_dates(data = d, dic = covican$dictionary, event_form = covican$event_form)))
+  expect_no_error(suppressWarnings(suppressMessages(rd_recalculate(data = d, dic = covican$dictionary, event_form = covican$event_form))))
+})
