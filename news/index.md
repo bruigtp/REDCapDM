@@ -71,6 +71,20 @@
   instead of the whole list. `$queries`, `$results`, `add_to` and
   [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
   work as before.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md))
+  translates more REDCap functions: `isblankormissingcode()`,
+  `not_contain()`, `starts_with()`, `ends_with()`, `left()`, `right()`,
+  `mid()`, [`find()`](https://rdrr.io/r/utils/apropos.html),
+  `replace_text()`, `concat()`, `concat_ws()`, `upper()`, `lower()`,
+  `trim()`, `stdev()`, `isinteger()`, `month()` and `day()`. As in
+  REDCap, the text functions use a blank value as an empty text.
+  `datediff()` also understands `"now"` and dates with time
+  (e.g. `'2024-01-05 10:30'`).
 
 ### Repeated instruments and repeating events
 
@@ -237,9 +251,184 @@
   failed when knitr wasn’t installed, and the translation of
   `datediff()` needed lubridate. kableExtra is optional: without it the
   HTML reports are not styled.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  failed in longitudinal projects with several DAGs when a variable had
+  no queries.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  didn’t apply the branching logic of a checkbox field when one of its
+  options was queried (e.g. `variables = "symptoms___1"`), and after
+  `rd_checkbox(checkbox_names = FALSE)` it reported the logic as applied
+  without applying it.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md))
+  didn’t translate the checkbox options whose code has letters or is
+  negative (e.g. `[symptoms(A)]` or `[symptoms(-1)]`).
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  reversed the logic `[field(code)] <> '1'` when it renamed the checkbox
+  options in the dictionary, and didn’t translate the codes with
+  letters, the negative codes and the values in double quotes.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  counted calendar years and months in `datediff()`: as REDCap, it now
+  counts years of 365.2425 days and months of 30.44 days (e.g. 365 days
+  are 0.9993 years, so `rounddown(datediff(..., 'y'), 0)` gives 0).
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the API: the text fields and the record identifier lost their
+  labels, the yes/no, true/false and form status fields didn’t get their
+  factor version (so
+  [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  didn’t convert them, as they do with the exported files), and the
+  fields of the forms without any event were not removed although the
+  warning said so.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the exported files: the text fields that look like numbers lost
+  their format when the R script of REDCap read them (e.g. a postal code
+  or phone `"0034"` was read as `34`, and `"1.50"` as `1.5`); they now
+  keep the text exported by REDCap. The record identifier also keeps its
+  label when it has another name.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the API: the text fields that look like numbers lost their format
+  too (e.g. a phone `"+34600111222"` became `34600111222`, and `"1.50"`
+  became `1.5`). As with the exported files, they now keep the text from
+  REDCap.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  failed with the operator `!=`, which REDCap accepts as `<>`.
+- [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  failed with `wide = FALSE` when `final_format` was not `"by_form"`.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  and
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md))
+  treated `[x] <> '1'` as unknown when `x` was blank. As in REDCap, a
+  blank value is different from any value, so the field with this
+  branching logic is shown and checked.
+- [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  (and so
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md))
+  didn’t translate the codes of the yes/no and true/false fields
+  converted with
+  [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  (e.g. `[smoker] = '1'` must be `[smoker] = 'Yes'`), turned `[x] > 1`
+  of a factor into `[x] <> 'label'`, and wrote the logic with variables
+  of other events (e.g. `[baseline_arm_1][sex] = '2'`) as R logic of
+  each row, which lost the event. This logic is now kept in REDCap
+  syntax and listed in the results.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  after
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  didn’t apply the branching logic that uses variables of other events,
+  and checked every row of a field whose branching logic is never met
+  (without
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  there is nothing to check, as in REDCap).
+- Grouped data
+  ([`dplyr::group_by()`](https://dplyr.tidyverse.org/reference/group_by.html)
+  without `ungroup()`) and dictionaries with factor columns (e.g. read
+  with `stringsAsFactors = TRUE`) made several functions fail, and
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  skipped calculated fields without warning. All functions now use them
+  as plain data frames.
+- `rd_checkbox(na_logic = "eval")` and `na_logic = "missing"` failed
+  when the branching logic of a checkbox could not be evaluated, or
+  applied to it the logic of the previous checkbox. Its options are now
+  left unchanged, with a warning.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  returned `NA` in `datediff()` with `"now"` or with dates with time,
+  translated the names of functions written inside a text
+  (e.g. `[t] = 'sum(1,2)'`) and gave `mod()` of negative numbers with
+  the sign of the divisor (REDCap gives `mod(-7, 3) = -1`).
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  removed the text between `<` and `>` of the labels
+  (e.g. `Age (<18 or >90 years)` became `Age (90 years)`) and showed
+  `&amp;` in the HTML report.
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  and
+  [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  also keep these characters, and only remove the HTML tags of the
+  labels.
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  also removes the HTML of the variable labels of the data (before, only
+  of the dictionary), and no longer adds spaces where a tag was inside a
+  word or a parenthesis (e.g. `Name (<i>full</i>)` is now
+  `Name (full)`).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md))
+  gave wrong results with negative numbers: `[a]<-3` (without spaces)
+  was run as an assignment in R, and `[a] < '-3'` (with quotes) compared
+  the values as text.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  and
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  turned record identifiers with leading zeros into numbers
+  (e.g. `"007"` became `7`, and its code `7-1`), so they didn’t match
+  the record in REDCap. They are now kept as text; identifiers that are
+  plain numbers are still returned as numbers.
+- [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  failed when the data didn’t have every date field of the dictionary
+  (e.g. with a selection of columns).
+- [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  failed when neither report had queries (e.g. a project without errors
+  in both reviews).
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  failed with an internal error when `link` had `event_id = NULL`
+  (e.g. a template for longitudinal projects used in a classic project).
+  Elements given as `NULL` are now ignored.
+- [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  (and so
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md))
+  stopped when `exclude` had every variable that can be converted to a
+  factor (e.g. a project with a single radio field that should stay
+  numeric). As when there are no such variables, it now warns and goes
+  on.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  failed with projects read from the API when no checkbox had branching
+  logic: the dictionary of the API has `NA` in its empty cells.
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  now gives the same dictionary from the API as from the exported files,
+  with empty texts in its empty cells.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  without `event` failed in longitudinal projects when an event of the
+  variable had no records yet (e.g. a follow-up visit that no one has
+  reached, or an arm without records). It now checks the events with
+  data.
+- [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
+  reported success when `path` was a folder or `sheet_name` had one of
+  `/ \ ? * : [ ]`, which Excel doesn’t accept, and failed with an
+  unclear error with more than 31 characters. It now stops and explains
+  the problem.
+- [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
+  accepts the data frame of queries as its first argument
+  (e.g. `rd_export(report$queries)`): before, it said that there were no
+  queries to export.
 
 ### Clearer messages
 
+- The functions that use the event-form mapping explain an `event_form`
+  that is not the one of
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  (e.g. a number or a data frame without the columns `unique_event_name`
+  and `form`),
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  a `var` that is not in the dictionary of a longitudinal project and a
+  logic that doesn’t give one value per row, and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  a `data` without columns. Before, they failed with internal R errors.
 - [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
   explains when a file is not found, when the csv file read by the R
   script is not in its folder and when the event file is not the
@@ -317,6 +506,27 @@
   the class `REDCapDM_error_file`. A filter of
   [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
   that can’t be evaluated keeps the original R error as its parent.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  explains when the R script can’t be run, ignores the empty rows of the
+  dictionary (e.g. added by Excel) and warns when a field appears more
+  than once in it.
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  name the fields of the dictionary that are not in the data and, when
+  whole instruments are missing (data exported with only some
+  instruments), show how to remove them with
+  `rd_delete_vars(forms = ...)`.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  suggests an option of the checkbox that exists in the data
+  (e.g. `symptoms___a`) when a checkbox field is given in `variables`.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  no longer warns when one expression is given for several variables,
+  the usual way to check them (it still warns when several expressions
+  don’t match the variables), and
+  [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md)
+  informs with a message, instead of a warning, that there are no dates
+  to convert.
 
 ### Documentation
 
@@ -345,6 +555,11 @@
   deprecation period).
   [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
   remains experimental.
+- The examples of
+  [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  and
+  [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
+  can be run as they are.
 
 ### Internal changes
 

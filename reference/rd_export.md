@@ -24,7 +24,8 @@ rd_export(
 - project:
 
   A list containing the dataframe of queries and results (expected
-  `rd_query` or `rd_event` output). Overrides `queries`.
+  `rd_query` or `rd_event` output). Overrides `queries`. A data frame of
+  queries is also accepted (e.g. `rd_export(report$queries)`).
 
 - queries:
 
@@ -63,12 +64,13 @@ Other query functions:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-rd_export(
-  queries = my_queries,
-  column = "Link",
-  sheet_name = "My Queries",
-  path = "queries.xlsx"
-)
-} # }
+if (requireNamespace("openxlsx", quietly = TRUE)) {
+  result <- rd_query(covican, variables = "age", expression = "x > 80")
+  rd_export(
+    result,
+    sheet_name = "My Queries",
+    path = file.path(tempdir(), "queries.xlsx")
+  )
+}
+#> ✔ The file has been successfully created in /tmp/RtmpFGy0EE/queries.xlsx.
 ```

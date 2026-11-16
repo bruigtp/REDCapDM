@@ -73,6 +73,8 @@
 <li>The <code>addTo</code> argument of <code><a href="../reference/rd_query.html">rd_query()</a></code> and <code><a href="../reference/rd_event.html">rd_event()</a></code> is now called <code>add_to</code>. <code>addTo</code> still works, with a deprecation warning.</li>
 <li>
 <code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/check_queries.html">check_queries()</a></code> return a list of class <code>REDCapDM_report</code>: printed in the console, it shows the number of queries per variable and event (per state in <code><a href="../reference/check_queries.html">check_queries()</a></code>) instead of the whole list. <code>$queries</code>, <code>$results</code>, <code>add_to</code> and <code><a href="../reference/rd_export.html">rd_export()</a></code> work as before.</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>, <code><a href="../reference/rd_query.html">rd_query()</a></code> and <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>) translates more REDCap functions: <code>isblankormissingcode()</code>, <code>not_contain()</code>, <code>starts_with()</code>, <code>ends_with()</code>, <code>left()</code>, <code>right()</code>, <code>mid()</code>, <code><a href="https://rdrr.io/r/utils/apropos.html" class="external-link">find()</a></code>, <code>replace_text()</code>, <code>concat()</code>, <code>concat_ws()</code>, <code>upper()</code>, <code>lower()</code>, <code>trim()</code>, <code>stdev()</code>, <code>isinteger()</code>, <code>month()</code> and <code>day()</code>. As in REDCap, the text functions use a blank value as an empty text. <code>datediff()</code> also understands <code>"now"</code> and dates with time (e.g. <code>'2024-01-05 10:30'</code>).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="repeated-instruments-and-repeating-events-1-2-0">Repeated instruments and repeating events<a class="anchor" aria-label="anchor" href="#repeated-instruments-and-repeating-events-1-2-0"></a></h3>
@@ -148,10 +150,64 @@
 <li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> no longer runs the <code><a href="https://hbiostat.org/R/Hmisc/" class="external-link">library(Hmisc)</a></code> and <code><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">graphics.off()</a></code> lines of the R script exported by REDCap: it failed when Hmisc wasn’t installed, attached Hmisc (masking e.g. <code><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">dplyr::summarize()</a></code>) and closed the open plots.</li>
 <li>knitr and lubridate are now declared dependencies: several functions failed when knitr wasn’t installed, and the translation of <code>datediff()</code> needed lubridate. kableExtra is optional: without it the HTML reports are not styled.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> failed in longitudinal projects with several DAGs when a variable had no queries.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> didn’t apply the branching logic of a checkbox field when one of its options was queried (e.g. <code>variables = "symptoms___1"</code>), and after <code>rd_checkbox(checkbox_names = FALSE)</code> it reported the logic as applied without applying it.</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>, <code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> and <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code>) didn’t translate the checkbox options whose code has letters or is negative (e.g. <code>[symptoms(A)]</code> or <code>[symptoms(-1)]</code>).</li>
+<li>
+<code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> reversed the logic <code>[field(code)] &lt;&gt; '1'</code> when it renamed the checkbox options in the dictionary, and didn’t translate the codes with letters, the negative codes and the values in double quotes.</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> counted calendar years and months in <code>datediff()</code>: as REDCap, it now counts years of 365.2425 days and months of 30.44 days (e.g. 365 days are 0.9993 years, so <code>rounddown(datediff(..., 'y'), 0)</code> gives 0).</li>
+<li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> with the API: the text fields and the record identifier lost their labels, the yes/no, true/false and form status fields didn’t get their factor version (so <code><a href="../reference/rd_factor.html">rd_factor()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> didn’t convert them, as they do with the exported files), and the fields of the forms without any event were not removed although the warning said so.</li>
+<li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> with the exported files: the text fields that look like numbers lost their format when the R script of REDCap read them (e.g. a postal code or phone <code>"0034"</code> was read as <code>34</code>, and <code>"1.50"</code> as <code>1.5</code>); they now keep the text exported by REDCap. The record identifier also keeps its label when it has another name.</li>
+<li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> with the API: the text fields that look like numbers lost their format too (e.g. a phone <code>"+34600111222"</code> became <code>34600111222</code>, and <code>"1.50"</code> became <code>1.5</code>). As with the exported files, they now keep the text from REDCap.</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> failed with the operator <code>!=</code>, which REDCap accepts as <code>&lt;&gt;</code>.</li>
+<li>
+<code><a href="../reference/rd_transform.html">rd_transform()</a></code> failed with <code>wide = FALSE</code> when <code>final_format</code> was not <code>"by_form"</code>.</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> and <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>) treated <code>[x] &lt;&gt; '1'</code> as unknown when <code>x</code> was blank. As in REDCap, a blank value is different from any value, so the field with this branching logic is shown and checked.</li>
+<li>
+<code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> (and so <code><a href="../reference/rd_transform.html">rd_transform()</a></code>) didn’t translate the codes of the yes/no and true/false fields converted with <code><a href="../reference/rd_factor.html">rd_factor()</a></code> (e.g. <code>[smoker] = '1'</code> must be <code>[smoker] = 'Yes'</code>), turned <code>[x] &gt; 1</code> of a factor into <code>[x] &lt;&gt; 'label'</code>, and wrote the logic with variables of other events (e.g. <code>[baseline_arm_1][sex] = '2'</code>) as R logic of each row, which lost the event. This logic is now kept in REDCap syntax and listed in the results.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> after <code><a href="../reference/rd_transform.html">rd_transform()</a></code> didn’t apply the branching logic that uses variables of other events, and checked every row of a field whose branching logic is never met (without <code><a href="../reference/rd_transform.html">rd_transform()</a></code> there is nothing to check, as in REDCap).</li>
+<li>Grouped data (<code><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">dplyr::group_by()</a></code> without <code>ungroup()</code>) and dictionaries with factor columns (e.g. read with <code>stringsAsFactors = TRUE</code>) made several functions fail, and <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> skipped calculated fields without warning. All functions now use them as plain data frames.</li>
+<li>
+<code>rd_checkbox(na_logic = "eval")</code> and <code>na_logic = "missing"</code> failed when the branching logic of a checkbox could not be evaluated, or applied to it the logic of the previous checkbox. Its options are now left unchanged, with a warning.</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> returned <code>NA</code> in <code>datediff()</code> with <code>"now"</code> or with dates with time, translated the names of functions written inside a text (e.g. <code>[t] = 'sum(1,2)'</code>) and gave <code>mod()</code> of negative numbers with the sign of the divisor (REDCap gives <code>mod(-7, 3) = -1</code>).</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> removed the text between <code>&lt;</code> and <code>&gt;</code> of the labels (e.g. <code>Age (&lt;18 or &gt;90 years)</code> became <code>Age (90 years)</code>) and showed <code>&amp;amp;</code> in the HTML report. <code><a href="../reference/redcap_data.html">redcap_data()</a></code> and <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> also keep these characters, and only remove the HTML tags of the labels. <code><a href="../reference/redcap_data.html">redcap_data()</a></code> also removes the HTML of the variable labels of the data (before, only of the dictionary), and no longer adds spaces where a tag was inside a word or a parenthesis (e.g. <code>Name (&lt;i&gt;full&lt;/i&gt;)</code> is now <code>Name (full)</code>).</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>, <code><a href="../reference/rd_query.html">rd_query()</a></code> and <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>) gave wrong results with negative numbers: <code>[a]&lt;-3</code> (without spaces) was run as an assignment in R, and <code>[a] &lt; '-3'</code> (with quotes) compared the values as text.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/check_queries.html">check_queries()</a></code> turned record identifiers with leading zeros into numbers (e.g. <code>"007"</code> became <code>7</code>, and its code <code>7-1</code>), so they didn’t match the record in REDCap. They are now kept as text; identifiers that are plain numbers are still returned as numbers.</li>
+<li>
+<code><a href="../reference/rd_dates.html">rd_dates()</a></code>, <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> failed when the data didn’t have every date field of the dictionary (e.g. with a selection of columns).</li>
+<li>
+<code><a href="../reference/check_queries.html">check_queries()</a></code> failed when neither report had queries (e.g. a project without errors in both reviews).</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> failed with an internal error when <code>link</code> had <code>event_id = NULL</code> (e.g. a template for longitudinal projects used in a classic project). Elements given as <code>NULL</code> are now ignored.</li>
+<li>
+<code><a href="../reference/rd_factor.html">rd_factor()</a></code> (and so <code><a href="../reference/rd_transform.html">rd_transform()</a></code>) stopped when <code>exclude</code> had every variable that can be converted to a factor (e.g. a project with a single radio field that should stay numeric). As when there are no such variables, it now warns and goes on.</li>
+<li>
+<code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> failed with projects read from the API when no checkbox had branching logic: the dictionary of the API has <code>NA</code> in its empty cells. <code><a href="../reference/redcap_data.html">redcap_data()</a></code> now gives the same dictionary from the API as from the exported files, with empty texts in its empty cells.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> without <code>event</code> failed in longitudinal projects when an event of the variable had no records yet (e.g. a follow-up visit that no one has reached, or an arm without records). It now checks the events with data.</li>
+<li>
+<code><a href="../reference/rd_export.html">rd_export()</a></code> reported success when <code>path</code> was a folder or <code>sheet_name</code> had one of <code>/ \ ? * : [ ]</code>, which Excel doesn’t accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.</li>
+<li>
+<code><a href="../reference/rd_export.html">rd_export()</a></code> accepts the data frame of queries as its first argument (e.g. <code>rd_export(report$queries)</code>): before, it said that there were no queries to export.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="clearer-messages-1-2-0">Clearer messages<a class="anchor" aria-label="anchor" href="#clearer-messages-1-2-0"></a></h3>
-<ul><li>
+<ul><li>The functions that use the event-form mapping explain an <code>event_form</code> that is not the one of <code><a href="../reference/redcap_data.html">redcap_data()</a></code> (e.g. a number or a data frame without the columns <code>unique_event_name</code> and <code>form</code>), <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> a <code>var</code> that is not in the dictionary of a longitudinal project and a logic that doesn’t give one value per row, and <code><a href="../reference/rd_query.html">rd_query()</a></code> a <code>data</code> without columns. Before, they failed with internal R errors.</li>
+<li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> explains when a file is not found, when the csv file read by the R script is not in its folder and when the event file is not the instrument-event mapping of the project. It warns when variables of the data are not in the dictionary and when the project has no records yet.</li>
 <li>
 <code><a href="../reference/rd_query.html">rd_query()</a></code> names the variables that don’t exist (and how to check a checkbox), explains why an expression can’t be evaluated, warns when a text variable is compared with a number and checks <code>negate</code>, <code>report_zeros</code>, <code>by_dag</code> and <code>add_to</code>.</li>
@@ -172,6 +228,14 @@
 <li>
 <code><a href="../reference/rd_query.html">rd_query()</a></code> informs with a message, instead of a warning, when it applies the branching logic automatically.</li>
 <li>All the other functions also report their errors and warnings with cli, naming the variables, forms and events involved. Logic that can’t be translated or evaluated has the class <code>REDCapDM_error_logic</code> (with the translated logic and the R error), a dataset that doesn’t match its dictionary the class <code>REDCapDM_error_data</code>, and a folder that doesn’t exist in <code><a href="../reference/rd_export.html">rd_export()</a></code> the class <code>REDCapDM_error_file</code>. A filter of <code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> that can’t be evaluated keeps the original R error as its parent.</li>
+<li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> explains when the R script can’t be run, ignores the empty rows of the dictionary (e.g. added by Excel) and warns when a field appears more than once in it.</li>
+<li>
+<code><a href="../reference/rd_split.html">rd_split()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> name the fields of the dictionary that are not in the data and, when whole instruments are missing (data exported with only some instruments), show how to remove them with <code>rd_delete_vars(forms = ...)</code>.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> suggests an option of the checkbox that exists in the data (e.g. <code>symptoms___a</code>) when a checkbox field is given in <code>variables</code>.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> no longer warns when one expression is given for several variables, the usual way to check them (it still warns when several expressions don’t match the variables), and <code><a href="../reference/rd_dates.html">rd_dates()</a></code> informs with a message, instead of a warning, that there are no dates to convert.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-1-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-2-0"></a></h3>
@@ -180,6 +244,7 @@
 <li>New contributing guide, code of conduct and issue templates on GitHub. The README states the R version the package needs (4.1 or later).</li>
 <li>
 <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code>, <code><a href="../reference/rd_dates.html">rd_dates()</a></code>, <code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code>, <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>, <code><a href="../reference/rd_export.html">rd_export()</a></code>, <code><a href="../reference/rd_factor.html">rd_factor()</a></code>, <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> and <code><a href="../reference/rd_split.html">rd_split()</a></code> are now stable (their arguments and results won’t change without a deprecation period). <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> remains experimental.</li>
+<li>The examples of <code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> and <code><a href="../reference/rd_export.html">rd_export()</a></code> can be run as they are.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="internal-changes-1-2-0">Internal changes<a class="anchor" aria-label="anchor" href="#internal-changes-1-2-0"></a></h3>

@@ -83,7 +83,7 @@ Other process functions:
 
 ``` r
 result <- rd_dates(covican)
-#> Warning: All date and datetime variables are already in the correct format. No
+#> All date and datetime variables are already in the correct format. No
 #> transformation applied.
 transformed_data <- result$data
 ```

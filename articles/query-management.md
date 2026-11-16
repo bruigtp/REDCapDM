@@ -293,12 +293,6 @@ example <- rd_query(covican_transformed,
                     variables = c("copd","age","dm"),
                     expression = "is.na(x)",
                     event = "baseline_visit_arm_1")
-```
-
-    Warning:  [1m [22mNumber of variables (3) is greater than the number of expressions (1). The
-    first expression will be applied to all variables.
-
-``` r
 
 # Printing results
 example$results
@@ -821,7 +815,9 @@ modifying the exported file, we can also add a password.
 The `column` argument refers to the column of the report that contains
 the link to each query. The function converts this column into hyperlink
 format in the exported file, so that we can simply click on the link to
-go to the specific query in the REDCap project.
+go to the specific query in the REDCap project. This column only exists
+when the queries were identified with the `link` argument of
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md).
 
 In both cases, a message will be generated in the console informing you
 that the file has been created and where it is located.

@@ -855,11 +855,9 @@ should supply just a single element for <code>expression</code>:</p>
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>,<span class="st">"age"</span>,<span class="st">"dm"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span>,</span>
-<span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span><span class="op">)</span></span></code></pre></div>
-<pre><code>Warning:  [1m [22mNumber of variables (3) is greater than the number of expressions (1). The
-first expression will be applied to all variables.</code></pre>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Printing results</span></span>
+<span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
@@ -951,7 +949,7 @@ not defined.</p>
 <u>With event-form:</u> the function automatically detects in which
 events the variable is collected and generates queries for those events.
 </li>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="st">"copd"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span><span class="op">)</span></span>
@@ -1003,7 +1001,7 @@ argument.</p>
 <u>Without event-form:</u> the function generates queries for all events
 present in the dataset.
 </li>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">covican_transformed</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">covican_transformed</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"event_form"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">my_list</span>,</span>
@@ -1013,7 +1011,7 @@ present in the dataset.
 automatically consider observations from all events in the dataset.
  [36mℹ [39m Ensure that the selected variable(s) is(are) collected in all specified
   events. This will avoid overestimating the number of queries.</code></pre>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1095,7 +1093,7 @@ the function. We can change the variables names using the
 <code>variables_names</code> argument, alter the description of the
 query using the <code>query_name</code> argument or even change the name
 of the instrument using the <code>instrument</code> argument:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span><span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                   variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span><span class="op">)</span>,</span>
 <span>                   variables_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Chronic obstructive pulmonary disease (Yes/No)"</span><span class="op">)</span>,</span>
@@ -1172,7 +1170,7 @@ values of the variable <em>copd</em>, we can apply the expression
 ‘is.na(x)’ which normally would report the missing values and add
 <code>negate = TRUE</code>, so the result will be the number of non
 missing values in <em>copd</em>:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="st">"copd"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span>,</span>
@@ -1226,7 +1224,7 @@ The value should be missing
 <p>In order to keep all queries in the same R object, we can use the
 <code>add_to</code> argument to specify the output of another query
 dataset.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                     variables <span class="op">=</span> <span class="st">"age"</span>,</span>
 <span>                     expression <span class="op">=</span> <span class="st">"is.na(x)"</span>,</span>
@@ -1300,7 +1298,7 @@ missing values of the variable <em>age</em>.</p>
 <p><u>report_title</u></p>
 <p>To customize the title of the summary of queries, we can use the
 <code>report_title</code> argument:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"x&lt;20"</span><span class="op">)</span>,</span>
@@ -1356,7 +1354,7 @@ changed it to “Missing COPD values in the baseline event”.</p>
 variables with at least one query and will omit those with zero queries.
 To include these omitted variables in the summary, we can use the
 <code>report_zeros</code> argument:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"x &lt; 20"</span><span class="op">)</span>,</span>
@@ -1430,7 +1428,7 @@ having any queries identified.</p>
 <p>If the REDCap project has Data Access Groups (DAGs), it might be of
 our interest to report the summary by each one of the DAGs. To do that,
 we can use the <code>by_dag</code> argument:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"x&gt;60"</span><span class="op">)</span>,</span>
@@ -1438,7 +1436,7 @@ we can use the <code>by_dag</code> argument:</p>
 <span>                    by_dag <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Now we can choose to see the report of a specific DAG, for example,
 the summary of the generated queries for the <em>Hospital 2</em>:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">results</span><span class="op">$</span><span class="va">`Hospital 2`</span></span></code></pre></div>
 <table class="table table table-striped table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -1530,7 +1528,7 @@ Setup</em> &lt; <em>Define My Events</em></p>
 <p><img src="files/EventsID.png"><!-- --></p>
 <p>Once we have this information, we pass it as a list to the
 <code>link</code> argument:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="st">"age"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"x&gt;89"</span>,</span>
@@ -1541,7 +1539,7 @@ Setup</em> &lt; <em>Define My Events</em></p>
 <span>                                event_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"baseline_visit_arm_1"</span> <span class="op">=</span> <span class="fl">811</span>, <span class="st">"follow_up_visit_da_arm_1"</span> <span class="op">=</span> <span class="fl">812</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The output of the function now has an additional column with the link
 to the respective query:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Printing results</span></span>
 <span><span class="va">example</span><span class="op">$</span><span class="va">queries</span><span class="op">$</span><span class="va">Link</span></span></code></pre></div>
 <pre><code>[1] "https://redcappre.igtp.cat/redcap_v13.1.9/DataEntry/index.php?pid=800&amp;event_id=811&amp;page=demographics&amp;id=109-22"
@@ -1563,7 +1561,7 @@ event for some records using the <code><a href="../reference/rd_query.html">rd_q
 missing values will not be identified because they do not exist in the
 exported data. The <code><a href="../reference/rd_event.html">rd_event()</a></code> function can be used to point
 out in how many records an event does not exist:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"follow_up_visit_da_arm_1"</span><span class="op">)</span></span>
 <span></span>
@@ -1611,7 +1609,7 @@ visit. Therefore, to check if the follow up event is missing only in the
 records that fulfill the inclusion and exclusion criteria, we can use
 the <code>filter</code> argument of the <code><a href="../reference/rd_event.html">rd_event()</a></code>
 function:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"follow_up_visit_da_arm_1"</span>,</span>
 <span>                    filter <span class="op">=</span> <span class="st">"screening_fail_crit==0"</span><span class="op">)</span></span>
@@ -1649,7 +1647,7 @@ Follow up visit day 14+/-5d
 <p>Like the <code><a href="../reference/rd_query.html">rd_query()</a></code> function, this function also treats
 the argument <code>event</code> as a vector allowing us to check for
 multiple missing events at the same time.</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"baseline_visit_arm_1"</span>,<span class="st">"follow_up_visit_da_arm_1"</span><span class="op">)</span>,</span>
 <span>                    filter <span class="op">=</span> <span class="st">"screening_fail_crit==0"</span>,</span>
@@ -1722,7 +1720,7 @@ have an additional column (“Modification”) indicating which queries are
 new, which have been miscorrected, which have been solved, and which are
 still pending. Besides, the summary will show the number of queries in
 each one of these categories:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/check_queries.html">check_queries</a></span><span class="op">(</span>old <span class="op">=</span> <span class="va">example</span><span class="op">$</span><span class="va">queries</span>, </span>
 <span>                       new <span class="op">=</span> <span class="va">new_example</span><span class="op">$</span><span class="va">queries</span><span class="op">)</span></span>
 <span></span>
@@ -1991,13 +1989,13 @@ Miscorrected
 </h2>
 <p>With the help of the <code><a href="../reference/rd_export.html">rd_export()</a></code> function, we can export
 the identified queries to a <code>.xlsx</code> file of our choice:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rd_export.html">rd_export</a></span><span class="op">(</span><span class="va">example</span><span class="op">)</span></span></code></pre></div>
 <p>This is the easiest way to use the function and it will create a file
 with the name “example.xlsx” in your current working directory.</p>
 <p>In order to have a more personalised output file, we can add
 information to the following arguments:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rd_export.html">rd_export</a></span><span class="op">(</span>queries <span class="op">=</span> <span class="va">example</span><span class="op">$</span><span class="va">queries</span>,</span>
 <span>          column <span class="op">=</span> <span class="st">"Link"</span>,</span>
 <span>          sheet_name <span class="op">=</span> <span class="st">"Queries - Proyecto"</span>,</span>
@@ -2010,7 +2008,9 @@ also add a password.</p>
 <p>The <code>column</code> argument refers to the column of the report
 that contains the link to each query. The function converts this column
 into hyperlink format in the exported file, so that we can simply click
-on the link to go to the specific query in the REDCap project.</p>
+on the link to go to the specific query in the REDCap project. This
+column only exists when the queries were identified with the
+<code>link</code> argument of <code><a href="../reference/rd_query.html">rd_query()</a></code>.</p>
 <p>In both cases, a message will be generated in the console informing
 you that the file has been created and where it is located.</p>
 </div>

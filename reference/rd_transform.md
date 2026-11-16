@@ -143,14 +143,14 @@ Other process functions:
 # Minimal usage (project object or data + dictionary)
 trans <- rd_transform(covican)
 #> ⏳ Transformation in progress...
-#> Warning: All date and datetime variables are already in the correct format. No
+#> All date and datetime variables are already in the correct format. No
 #> transformation applied.
 
 # Custom checkbox labels
 trans <- rd_transform(covican,
                       checkbox_labels = c("Not present", "Present"))
 #> ⏳ Transformation in progress...
-#> Warning: All date and datetime variables are already in the correct format. No
+#> All date and datetime variables are already in the correct format. No
 #> transformation applied.
 
 # Return only a single form (wide)
@@ -159,6 +159,6 @@ trans <- rd_transform(covican,
                       which_form = "laboratory_findings",
                       wide = TRUE)
 #> ⏳ Transformation in progress...
-#> Warning: All date and datetime variables are already in the correct format. No
+#> All date and datetime variables are already in the correct format. No
 #> transformation applied.
 ```

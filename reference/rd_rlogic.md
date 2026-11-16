@@ -86,8 +86,13 @@ A list with:
     [`median()`](https://rdrr.io/r/stats/median.html),
     [`min()`](https://rdrr.io/r/base/Extremes.html),
     [`max()`](https://rdrr.io/r/base/Extremes.html), `mod()`,
-    `exponential()`, `isnumber()`, `contains()` and
-    [`length()`](https://rdrr.io/r/base/length.html) to R equivalents.
+    `exponential()`, `isnumber()`, `isblankormissingcode()`,
+    `contains()`, `not_contain()`, `starts_with()`, `ends_with()`,
+    `left()`, `right()`, `mid()`,
+    [`find()`](https://rdrr.io/r/utils/apropos.html), `replace_text()`,
+    `concat()`, `concat_ws()`, `upper()`, `lower()`, `trim()`,
+    [`length()`](https://rdrr.io/r/base/length.html), `stdev()`,
+    `isinteger()`, `year()`, `month()` and `day()` to R equivalents.
 
   - As in REDCap, [`sum()`](https://rdrr.io/r/base/sum.html),
     [`mean()`](https://rdrr.io/r/base/mean.html),
@@ -110,8 +115,9 @@ A list with:
   repeating instrument can't be translated.
 
 - As in REDCap, `datediff()` returns the absolute difference unless its
-  last argument is `true`, its units are `"y"`, `"M"` (months), `"d"`,
-  `"h"`, `"m"` (minutes) and `"s"`, and `"today"` is the current date.
+  last argument is `true`, its units are `"y"` (years of 365.2425 days),
+  `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`,
+  `"today"` is the current date and `"now"` the current date and time.
 
 - The same variable can be used in several events (e.g.
   `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).

@@ -174,6 +174,11 @@ rd_export(queries = example$queries,
           password = "123") 
 ```
 
+The `column` argument turns the web addresses of a column into links
+that open the query in REDCap: the `Link` column only exists when the
+queries were identified with the `link` argument of
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md).
+
 In both cases, a message will be generated in the console informing you
 that the file has been created and where it is located.
 

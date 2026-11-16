@@ -103,13 +103,15 @@ Other process functions:
 
 ``` r
 # Set 'potassium' to NA where age < 65
-if (FALSE) { # \dontrun{
-data <- rd_insert_na(
-  data = covican$data,
-  dic = covican$dictionary,
+result <- rd_insert_na(
+  covican,
   vars = "potassium",
   filter = "age < 65"
 )
-table(data$potassium)
-} # }
+#> Warning: The variable `potassium` is present in more events than the filter. Only rows
+#> in common events ("baseline_visit_arm_1") will be transformed.
+table(is.na(result$data$potassium))
+#> 
+#> FALSE  TRUE 
+#>   188   154 
 ```

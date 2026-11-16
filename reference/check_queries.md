@@ -102,10 +102,10 @@ HTML summary viewer.
   convert them to character prior to calling `check_queries()` to avoid
   factor-level mismatches.
 
-- **Sorting:** When `Identifier` values contain a dash (e.g.
-  `"100-20"`), the function attempts to split into numeric `center` and
-  `id` parts for logical ordering. Otherwise `Identifier` is coerced to
-  numeric for ordering.
+- **Sorting:** The rows are sorted by `Identifier` in natural order
+  (e.g. `"100-2"` before `"100-10"`). `Identifier` is returned as a
+  number only when every identifier is a plain number without leading
+  zeros (e.g. `"007"` is kept as text).
 
 - **Miscorrected detection:** A `Miscorrected` label is assigned when
   more than one row shares the same `Identifier + Description` composite
