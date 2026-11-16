@@ -128,6 +128,11 @@
 ### Bug fixes
 
 - [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the exported files: the labels of the options with line breaks
+  lost their spaces (e.g. “oralcorticosteroids(e.g.”), because the R
+  script exported by REDCap removes the line breaks. They take the label
+  of the dictionary, as with the API.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
   reads the paths between quotes, as Windows copies them with “Copy as
   path” (e.g. `'"C:\\Users\\...\\project.r"'`). It said that the file
   was not an R file.

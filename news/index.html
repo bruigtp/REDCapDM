@@ -98,6 +98,8 @@
 <div class="section level3">
 <h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
 <ul><li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> with the exported files: the labels of the options with line breaks lost their spaces (e.g. “oralcorticosteroids(e.g.”), because the R script exported by REDCap removes the line breaks. They take the label of the dictionary, as with the API.</li>
+<li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> reads the paths between quotes, as Windows copies them with “Copy as path” (e.g. <code>'"C:\\Users\\...\\project.r"'</code>). It said that the file was not an R file.</li>
 <li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> couldn’t read the R script exported by REDCap of the projects that repeat events but not instruments: REDCap writes the options of the repeated instrument as <code>c("", "")</code> and the script fails in R (<code>invalid 'labels'</code>).</li>

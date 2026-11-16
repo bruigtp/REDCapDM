@@ -72,5 +72,5 @@ if (requireNamespace("openxlsx", quietly = TRUE)) {
     path = file.path(tempdir(), "queries.xlsx")
   )
 }
-#> ✔ The file has been successfully created in /tmp/RtmpI6Mpld/queries.xlsx.
+#> ✔ The file has been successfully created in /tmp/RtmpEUN0oK/queries.xlsx.
 ```
