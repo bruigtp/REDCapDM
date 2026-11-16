@@ -665,6 +665,19 @@ test_that("rd_rlogic understands 'now' and dates with time", {
   expect_true(all(ev("datediff([dt], 'now', 'd') > 300")))
 })
 
+test_that("rd_rlogic gives one value per row with an if() whose condition doesn't use any variable", {
+  age <- suppressWarnings(suppressMessages(rd_rlogic(covican, logic = "[age]", var = "age")))$eval
+  yes <- suppressWarnings(suppressMessages(rd_rlogic(covican, logic = "if(1 < 2, [age], 0)", var = "age")))
+  no <- suppressWarnings(suppressMessages(rd_rlogic(covican, logic = "if(1 > 2, [age], 0)", var = "age")))
+  nested <- suppressWarnings(suppressMessages(rd_rlogic(covican, logic = "if([age] > 60, if(1 = 1, [age], 0), 1)", var = "age")))
+  expect_gt(length(unique(stats::na.omit(age))), 1)
+  expect_equal(yes$eval, age)
+  expect_true(all(no$eval[!is.na(age)] == 0))
+  expect_equal(nested$eval, ifelse(age > 60, age, 1))
+  # The conditions that use variables are translated as before
+  expect_false(grepl("rep_len", suppressWarnings(suppressMessages(rd_rlogic(covican, logic = "if([age] > 60, 1, 0)", var = "age")))$rlogic))
+})
+
 test_that("rd_rlogic compares with negative numbers, with or without quotes and spaces", {
   df <- data.frame(record_id = 1:5, a = c(-5, 2, NA, -3.5, -20))
   dic <- make_dic(c("record_id", "a", "res"))

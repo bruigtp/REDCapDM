@@ -36,6 +36,7 @@
 
 ## Bug fixes
 
+- `rd_rlogic()` (and so `rd_recalculate()`, `rd_dictionary()` and the branching logic of the other functions) gave the value of the first row to every row when the condition of an `if()` didn't use any variable (e.g. `if(1 < 2, [a], 0)`). Each row now gets its own value, as in REDCap.
 - `rd_event()` stopped with "events do not exist in the dataset" for an event of the project that has no records yet (e.g. a new visit, or the events of an arm without records). All the records of its arm are now reported as missing it (none for an arm without records).
 - `rd_query()`, `rd_event()` and `check_queries()` wrote round record identifiers in scientific notation in the query codes and links (e.g. `1e+05-1` for the record `100000`), and `check_queries()` sorted them wrongly.
 - `rd_query()` described the expressions with `<=` and `>=` as "less than =" and "greater than =" in the queries and in the report. They are now "less than or equal to" and "greater than or equal to".

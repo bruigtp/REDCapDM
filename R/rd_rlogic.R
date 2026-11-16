@@ -318,6 +318,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Transform '' (empty strings) into missing values (NA)
   rlogic <- gsub("''", "NA", rlogic)
 
+  # A condition of if() that doesn't use any variable (e.g. `if(1 < 2, [a], 0)`) gives one value per row, as in REDCap
+  rlogic <- recycle_constant_conditions(rlogic)
+
   # After transcribing the logic, we need to evaluate it based on the corresponding event of the variable. This is only necessary if the data contains more than one event:
   if (!is.null(event_form)) {
     # Get the form where the variable is found through the dictionary
@@ -655,6 +658,70 @@ replace_function <- function(x, fun, translate) {
   }
 
   paste0(out, rest)
+}
+
+#' Repeat for each row the conditions of `ifelse()` that don't use any variable
+#'
+#' `ifelse()` gives as many values as its condition: with a condition without variables (e.g. `if(1 < 2, [a], 0)` in
+#' REDCap) it would give a single value, the first one of `[a]`. The condition is repeated for each row of `data` (the
+#' data where the logic is evaluated), so that each row gets its own value. The other conditions are kept as they are.
+#'
+#' @param x A logic translated to R.
+#' @return The logic with the constant conditions repeated for each row.
+#' @noRd
+recycle_constant_conditions <- function(x) {
+  quoted <- function(chars) {
+    inside <- logical(length(chars))
+    quote <- ""
+    for (k in seq_along(chars)) {
+      if (nzchar(quote)) {
+        inside[k] <- TRUE
+        if (chars[k] == quote) quote <- ""
+      } else if (chars[k] %in% c("'", "\"")) {
+        quote <- chars[k]
+        inside[k] <- TRUE
+      }
+    }
+    inside
+  }
+
+  starts <- gregexpr("(?<![\\w.$])ifelse\\s*\\(", x, perl = TRUE)[[1]]
+  if (starts[1] == -1) {
+    return(x)
+  }
+  lengths <- attr(starts, "match.length")
+  chars <- strsplit(x, "")[[1]]
+
+  # From the last call to the first, so that the positions of the previous calls don't change
+  for (i in rev(seq_along(starts))) {
+    inside <- quoted(chars)
+    if (inside[starts[i]]) next
+    open <- starts[i] + lengths[i] - 1
+
+    # End of the condition: the first comma outside parentheses and quotes
+    depth <- 0
+    comma <- NA
+    for (k in open:length(chars)) {
+      if (inside[k]) next
+      if (chars[k] == "(") {
+        depth <- depth + 1
+      } else if (chars[k] == ")") {
+        depth <- depth - 1
+        if (depth == 0) break
+      } else if (chars[k] == "," && depth == 1) {
+        comma <- k
+        break
+      }
+    }
+    if (is.na(comma) || comma == open + 1) next
+
+    condition <- paste(chars[(open + 1):(comma - 1)], collapse = "")
+    if (grepl("data\\$|data\\[\\[", condition)) next
+
+    chars <- c(chars[seq_len(open)], strsplit(paste0("rep_len(", trimws(condition), ", nrow(data))"), "")[[1]], chars[comma:length(chars)])
+  }
+
+  paste(chars, collapse = "")
 }
 
 #' Translate the REDCap functions to R
