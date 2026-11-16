@@ -91,3 +91,13 @@ test_that("rd_factor lists at most 10 affected variables in the warning", {
 test_that("rd_factor warns about excluded variables that are not in the data", {
   expect_warning(rd_factor(covican, exclude = c("copd", "no_such_var")), "no_such_var")
 })
+
+test_that("rd_factor warns, instead of stopping, when every variable that can be a factor is excluded", {
+  data <- data.frame(record_id = 1:3, grp = c(1, 2, 1))
+  data$grp.factor <- factor(data$grp, levels = 1:2, labels = c("A", "B"))
+  dic <- data.frame(field_name = c("record_id", "grp"), form_name = "f", field_type = c("text", "radio"), field_label = c("ID", "Group"),
+    choices_calculations_or_slider_labels = c("", "1, A | 2, B"), branching_logic_show_field_only_if = "", stringsAsFactors = FALSE)
+  expect_warning(out <- rd_factor(data = data, dic = dic, exclude = "grp"), "none was converted")
+  expect_type(out$data$grp, "double")
+  expect_true("grp.factor" %in% names(out$data))
+})

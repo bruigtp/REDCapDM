@@ -127,6 +127,8 @@ rd_event <- function(project = NULL,
   if (!is.list(link)) {
     rd_abort("{.arg link} must be a list with {.code domain}, {.code redcap_version}, {.code proj_id} and {.code event_id}.")
   }
+  # Elements given as NULL are not given
+  link <- link[!vapply(link, is.null, logical(1))]
 
   # Create an empty data frame to store identified queries
   queries <- as.data.frame(matrix(ncol = 10, nrow = 0))

@@ -82,6 +82,9 @@
 - `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()` and `rd_dictionary()`) gave wrong results with negative numbers: `[a]<-3` (without spaces) was run as an assignment in R, and `[a] < '-3'` (with quotes) compared the values as text.
 - `rd_query()`, `rd_event()` and `check_queries()` turned record identifiers with leading zeros into numbers (e.g. `"007"` became `7`, and its code `7-1`), so they didn't match the record in REDCap. They are now kept as text; identifiers that are plain numbers are still returned as numbers.
 - `rd_dates()`, `rd_recalculate()` and `rd_transform()` failed when the data didn't have every date field of the dictionary (e.g. with a selection of columns).
+- `check_queries()` failed when neither report had queries (e.g. a project without errors in both reviews).
+- `rd_query()` failed with an internal error when `link` had `event_id = NULL` (e.g. a template for longitudinal projects used in a classic project). Elements given as `NULL` are now ignored.
+- `rd_factor()` (and so `rd_transform()`) stopped when `exclude` had every variable that can be converted to a factor (e.g. a project with a single radio field that should stay numeric). As when there are no such variables, it now warns and goes on.
 - `rd_export()` reported success when `path` was a folder or `sheet_name` had one of `/ \ ? * : [ ]`, which Excel doesn't accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.
 - `rd_export()` accepts the data frame of queries as its first argument (e.g. `rd_export(report$queries)`): before, it said that there were no queries to export.
 

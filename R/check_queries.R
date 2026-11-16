@@ -127,7 +127,7 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   # Add columns for comparisons and determine statuses
   check[, "comp"] <- query_key(check, c(key_cols, "Query"))
   check[, "comp2"] <- query_key(check, key_cols)
-  check[, "Modification"] <- NA
+  check[["Modification"]] <- rep(NA_character_, nrow(check))
   check[, "Modification"][check$comp %in% old$comp & check$comp %in% new$comp] <- "Pending"
   check[, "Modification"][check$comp %in% old$comp & !check$comp %in% new$comp] <- "Solved"
   check[, "Modification"][!check$comp %in% old$comp & check$comp %in% new$comp] <- "New"
@@ -167,7 +167,7 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   check <- data.frame(check |>
     dplyr::group_by(.data$Identifier) |>
     dplyr::mutate(cod = dplyr::row_number()))
-  check$Code <- paste0(as.character(check$Identifier), "-", check$cod)
+  check$Code <- if (nrow(check) > 0) paste0(as.character(check$Identifier), "-", check$cod) else character(0)
   check <- check |>
     dplyr::select(-dplyr::any_of("cod"))
 

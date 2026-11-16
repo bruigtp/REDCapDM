@@ -963,3 +963,14 @@ test_that("rd_query ignores empty text arguments and explains data without colum
   expect_equal(q1$queries, q0$queries)
   expect_error(rd_query(data = data.frame(), dic = covican$dictionary, variables = "copd", expression = "is.na(x)"), class = "REDCapDM_error_argument")
 })
+
+test_that("rd_query ignores the elements of link given as NULL", {
+  cov <- covican
+  cov$data <- cov$data[cov$data$redcap_event_name == "baseline_visit_arm_1", setdiff(names(cov$data), c("redcap_event_name", "redcap_event_name.factor"))]
+  cov$event_form <- NULL
+  lk <- list(domain = "redcap.x.org", redcap_version = "14.0.0", proj_id = 3)
+  q1 <- suppressMessages(rd_query(cov, variables = "copd", expression = "is.na(x)", link = lk))
+  q2 <- suppressMessages(rd_query(cov, variables = "copd", expression = "is.na(x)", link = c(lk, list(event_id = NULL))))
+  expect_equal(q2$queries$Link, q1$queries$Link)
+  expect_true(all(grepl("^https://redcap.x.org/redcap_v14.0.0/DataEntry/index.php\\?pid=3&page=", q2$queries$Link)))
+})

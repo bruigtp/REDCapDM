@@ -116,6 +116,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   if (!is.list(link)) {
     rd_abort("{.arg link} must be a list with {.field domain}, {.field redcap_version}, {.field proj_id} and, in longitudinal projects, {.field event_id}.", class = "REDCapDM_error_argument")
   }
+  # Elements given as NULL (e.g. `event_id = NULL` in a classic project) are not given
+  link <- link[!vapply(link, is.null, logical(1))]
 
   # Ensure data and dictionary are data frames
   data <- as.data.frame(data)

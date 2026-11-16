@@ -112,34 +112,34 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     # Exclude specified variables that should not be converted to factors
     factors <- setdiff(factors, exclude)
 
-    # If no variables are left to convert, stop and ask to review the exclude argument
+    # Every variable that can be converted is in `exclude`: nothing to convert (as when there are no such variables)
     if (length(factors) == 0) {
-      rd_abort("All variables in the data which can be converted to factors are specified in the {.arg exclude} argument. Please, review the {.arg exclude} argument.")
-    }
+      rd_warn("All the variables that can be converted to factors are in {.arg exclude}: none was converted.")
+    } else {
+      # Perform the transformation of factor columns into actual factor variables
+      data <- data |>
+        # Assign the values from the factor columns to the original columns and remove the '.factor' versions
+        dplyr::mutate(dplyr::across(tidyselect::all_of(factors), ~ get(
+          stringr::str_glue("{dplyr::cur_column()}.factor")
+        ))) |>
+        dplyr::select(-stringr::str_glue("{factors}.factor"))
 
-    # Perform the transformation of factor columns into actual factor variables
-    data <- data |>
-      # Assign the values from the factor columns to the original columns and remove the '.factor' versions
-      dplyr::mutate(dplyr::across(tidyselect::all_of(factors), ~ get(
-        stringr::str_glue("{dplyr::cur_column()}.factor")
-      ))) |>
-      dplyr::select(-stringr::str_glue("{factors}.factor"))
+      # Branching logic or calculations already translated to R (rd_dictionary) compare the variables with their
+      # original codes, so they no longer work once these variables are factors
+      logic_cols <- intersect(c("branching_logic_show_field_only_if", "choices_calculations_or_slider_labels"), names(dic))
+      r_logic <- unlist(lapply(dic[logic_cols], as.character), use.names = FALSE)
+      r_logic <- r_logic[!is.na(r_logic) & grepl("data\\$", r_logic)]
+      logic_vars <- unique(unlist(stringr::str_extract_all(r_logic, "(?<=data\\$)\\w+")))
+      affected <- intersect(factors, logic_vars)
 
-    # Branching logic or calculations already translated to R (rd_dictionary) compare the variables with their
-    # original codes, so they no longer work once these variables are factors
-    logic_cols <- intersect(c("branching_logic_show_field_only_if", "choices_calculations_or_slider_labels"), names(dic))
-    r_logic <- unlist(lapply(dic[logic_cols], as.character), use.names = FALSE)
-    r_logic <- r_logic[!is.na(r_logic) & grepl("data\\$", r_logic)]
-    logic_vars <- unique(unlist(stringr::str_extract_all(r_logic, "(?<=data\\$)\\w+")))
-    affected <- intersect(factors, logic_vars)
+      if (length(affected) > 0) {
+        shown <- paste(utils::head(affected, 10), collapse = ", ")
+        if (length(affected) > 10) {
+          shown <- paste0(shown, ", ...")
+        }
 
-    if (length(affected) > 0) {
-      shown <- paste(utils::head(affected, 10), collapse = ", ")
-      if (length(affected) > 10) {
-        shown <- paste0(shown, ", ...")
+        rd_warn(c("Dictionary logic already translated to R uses the original codes of variables now converted to factors ({shown}).", "i" = "Run {.fn rd_factor} before {.fn rd_dictionary}."))
       }
-
-      rd_warn(c("Dictionary logic already translated to R uses the original codes of variables now converted to factors ({shown}).", "i" = "Run {.fn rd_factor} before {.fn rd_dictionary}."))
     }
   }
 

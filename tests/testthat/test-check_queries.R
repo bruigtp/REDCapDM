@@ -128,3 +128,11 @@ test_that("check_queries needs query reports", {
   err <- expect_error(check_queries(old = q, new = data.frame(a = 1)), class = "REDCapDM_error_argument")
   expect_match(conditionMessage(err), "Missing columns: Identifier, Description, and Query", fixed = TRUE)
 })
+
+test_that("check_queries compares two reports without queries", {
+  q0 <- suppressMessages(rd_query(covican, variables = "age", expression = "x > 500", event = "baseline_visit_arm_1"))
+  out <- check_queries(q0$queries, q0$queries)
+  expect_equal(nrow(out$queries), 0)
+  expect_true(all(c("Identifier", "Code", "Modification") %in% names(out$queries)))
+  expect_equal(levels(out$queries$Modification), c("Pending", "Solved", "Miscorrected", "New"))
+})
