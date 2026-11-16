@@ -8,7 +8,8 @@ Authors@R: c(
     person("Judith", "Peñafiel", role = c("aut")),
     person("Esther", "García", role = c("aut")),
     person("Natàlia", "Pallarès", role = c("aut")),
-    person("Cristian", "Tebé", role = c("aut"))
+    person("Cristian", "Tebé", role = c("aut")),
+    person("Ferran", "Pérez Pérez", role = c("ctb"))
     )
 Maintainer: João Carmezim <jcarmezim@igtp.cat>
 Description: REDCap Data Management - 'REDCap' (Research Electronic Data CAPture; <https://projectredcap.org>) is a web application developed at Vanderbilt University, designed for creating and managing online surveys and databases and the REDCap API is an interface that allows external applications to connect to REDCap remotely, and is used to programmatically retrieve or modify project data or settings within REDCap, such as importing or exporting data. REDCapDM is an R package that allows users to manage data exported directly from REDCap or using an API connection. This package includes several functions designed for pre-processing data, generating reports of queries such as outliers or missing values, and following up on previously identified queries. 
