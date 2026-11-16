@@ -127,6 +127,25 @@
 
 ### Bug fixes
 
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  reads the paths between quotes, as Windows copies them with “Copy as
+  path” (e.g. `'"C:\\Users\\...\\project.r"'`). It said that the file
+  was not an R file.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  couldn’t read the R script exported by REDCap of the projects that
+  repeat events but not instruments: REDCap writes the options of the
+  repeated instrument as `c("", "")` and the script fails in R
+  (`invalid 'labels'`).
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the API: an empty `redcap_data_access_group.factor` or
+  `redcap_repeat_instrument.factor` (e.g. data access groups or
+  repeating instruments without records yet) was logical instead of a
+  factor, as with the exported files.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md):
+  the text of the dictionary has no spaces or line breaks at the
+  beginning or at the end (e.g. in the field annotations, notes or
+  section headers), with the exported files and with the API. They
+  differed: REDCapR only removes them from the text without quotes.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   (and so
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
