@@ -75,6 +75,13 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   }
   check_strings(filter_field, "filter_field")
 
+  # A path copied with "Copy as path" in Windows comes between quotes (e.g. '"C:\\Users\\...\\project.r"'): the quotes are not part
+  # of the path (Windows doesn't allow quotes in file names)
+  unquote <- function(path) if (is.na(path)) path else sub("^\\s*([\"'])(.*)\\1\\s*$", "\\2", path)
+  data_path <- unquote(data_path)
+  dic_path <- unquote(dic_path)
+  event_path <- unquote(event_path)
+
   # Save the current working directory and ensure it is restored on exit
   oldwd <- getwd()
   on.exit(setwd(oldwd))
@@ -145,6 +152,17 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       attr(x, "units") <- value
       x
     }
+    # REDCap writes the options of a variable without options (e.g. the repeated instrument of a project that only repeats
+    # events) as `c("", "")`, without names: `factor(x, levels = names(...), labels = ...)` fails in R because the levels
+    # are NULL. That factor is created without options; the other calls are run by base::factor() as they are.
+    tmp_env$factor <- function(x = character(), levels, labels = levels, ...) {
+      if (!missing(levels) && is.null(levels)) {
+        return(base::factor(x))
+      }
+      call <- sys.call()
+      call[[1]] <- quote(base::factor)
+      eval(call, parent.frame())
+    }
 
     # Error: the csv file that the R script reads must be in the same folder
     csv_file <- stringr::str_match(file.lines, "read\\.csv\\(['\"]([^'\"]+)['\"]")[, 2]
@@ -213,6 +231,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     dic <- dic[-1, ]
     names(dic) <- janitor::make_clean_names(names(dic))
     names(dic)[1] <- "field_name"
+
+    # Text without spaces or line breaks at the beginning or at the end, as with the API
+    dic[] <- lapply(dic, function(x) if (is.character(x)) trimws(x) else x)
 
     # Rows without a field name are not fields (e.g. empty rows of a dictionary saved with Excel)
     dic <- dic[!is.na(dic$field_name) & trimws(dic$field_name) != "", ]
@@ -334,10 +355,16 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     rename_redcap <- default_names$fac
     names(rename_redcap) <- default_names$corres
 
+    # (an empty column, e.g. the data access groups or the repeated instrument of a project without them in its records,
+    # is an empty factor, as with the exported files)
     main_vars <- labels |>
       dplyr::mutate_at(
         redcap_names[!redcap_names %in% "Repeat Instrument"],
-        ~ if (all(is.na(.))) . else forcats::fct_inorder(.)
+        ~ if (all(is.na(.))) factor(as.character(.)) else forcats::fct_inorder(.)
+      ) |>
+      dplyr::mutate_at(
+        intersect("Repeat Instrument", redcap_names),
+        ~ if (all(is.na(.))) factor(as.character(.)) else .
       ) |>
       dplyr::rename(dplyr::all_of(rename_redcap)) |>
       dplyr::select("record_id", default_names$corres)
@@ -426,7 +453,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     # Empty cells of the dictionary are empty texts, as in the dictionary exported from REDCap
     # (a column without any value is read as logical by REDCapR)
-    dic_api[] <- lapply(dic_api, function(x) if (is.character(x) || (is.logical(x) && all(is.na(x)))) replace(as.character(x), is.na(x), "") else x)
+    # (and without spaces or line breaks at the beginning or at the end, as with the exported files: REDCapR only removes
+    # them from the text without quotes)
+    dic_api[] <- lapply(dic_api, function(x) if (is.character(x) || (is.logical(x) && all(is.na(x)))) replace(trimws(as.character(x)), is.na(x), "") else x)
 
     # Filter descriptive fields from dictionary
     if ("descriptive" %in% dic_api$field_type) {

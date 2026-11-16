@@ -126,6 +126,50 @@ test_that("a dictionary that is not encoded in UTF-8 (saved again with Excel as 
   expect_error(redcap_data(data_path = tmp_r, dic_path = tmp_dic), "not encoded in UTF-8", class = "REDCapDM_error_file")
 })
 
+test_that("the text of the dictionary has no spaces or line breaks at the beginning or at the end, as with the API", {
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(data.frame(id = 1:2), tmp_r)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = "id", form_name = "demographics", field_type = "text", field_annotation = " @HIDDEN\n"), tmp_dic, row.names = FALSE)
+  expect_equal(redcap_data(data_path = tmp_r, dic_path = tmp_dic)$dictionary$field_annotation, "@HIDDEN")
+})
+
+test_that("paths between quotes (copied with Copy as path in Windows) are read", {
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(data.frame(id = 1:2), tmp_r)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(data.frame(field_name = "id", form_name = "demographics", field_type = "text"), tmp_dic, row.names = FALSE, quote = FALSE)
+  plain <- redcap_data(data_path = tmp_r, dic_path = tmp_dic)
+  expect_identical(redcap_data(data_path = paste0('"', tmp_r, '"'), dic_path = paste0('"', tmp_dic, '"')), plain)
+  expect_identical(redcap_data(data_path = paste0(" '", tmp_r, "' "), dic_path = tmp_dic), plain)
+})
+
+test_that("redcap_data reads the R script of a project that repeats events but not instruments", {
+  tmp_dir <- tempfile()
+  dir.create(tmp_dir)
+  write.csv(data.frame(record_id = c(1, 1), redcap_event_name = "visit_arm_1", redcap_repeat_instrument = NA, redcap_repeat_instance = c(NA, 2), sex = c(1, 2)),
+    file.path(tmp_dir, "P_DATA.csv"), row.names = FALSE, na = "")
+  # As REDCap writes it: the options of the repeated instrument are c("", "") without names, which fails in R
+  writeLines(c(
+    "#Clear existing data and graphics", "rm(list=ls())", "data=read.csv('P_DATA.csv')",
+    "mapping_redcap_repeat_instrument = c(", "\t\"\",\"\"", ")",
+    "data$redcap_repeat_instrument.factor = factor(data$redcap_repeat_instrument, levels = names(mapping_redcap_repeat_instrument), labels = mapping_redcap_repeat_instrument)",
+    "mapping_sex = c(", "\t\"1\" = \"Male\",", "\t\"2\" = \"Female\"", ")",
+    "data$sex.factor = factor(data$sex, levels = names(mapping_sex), labels = mapping_sex)"
+  ), file.path(tmp_dir, "P_R.r"))
+  tmp_dic <- file.path(tmp_dir, "P_DataDictionary.csv")
+  write.csv(data.frame(field_name = c("record_id", "sex"), form_name = "f1", field_type = c("text", "radio")), tmp_dic, row.names = FALSE)
+
+  out <- suppressWarnings(redcap_data(data_path = file.path(tmp_dir, "P_R.r"), dic_path = tmp_dic))
+  expect_equal(nrow(out$data), 2)
+  # The repeated instrument is an empty factor, as with the API
+  expect_s3_class(out$data$redcap_repeat_instrument.factor, "factor")
+  expect_true(all(is.na(out$data$redcap_repeat_instrument.factor)))
+  # The other factors of the script are created as before
+  expect_equal(as.character(out$data$sex.factor), c("Male", "Female"))
+  expect_equal(levels(out$data$sex.factor), c("Male", "Female"))
+})
+
 test_that("Descriptive fields are removed from dictionary", {
   sample_data <- data.frame(id = 1:2)
   tmp_r <- tempfile(fileext = ".R")
@@ -431,6 +475,31 @@ test_that("API branch: longitudinal without event_path fetches event_form via AP
 
   out <- redcap_data(uri = "https://api.example", token = "tok")
   expect_true("event_form" %in% names(out))
+})
+
+test_that("API branch: the empty data access groups and repeated instrument are empty factors, as with the exported files", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  read_api <- function(instrument_label, instrument) {
+    labels_df <- data.frame(record_id = c(1, 1), `Event Name` = c("Visit", "Visit"), `Repeat Instrument` = c(NA, instrument_label), `Repeat Instance` = c(NA, 2), `Data Access Group` = NA, check.names = FALSE)
+    data_api <- data.frame(record_id = c(1, 1), redcap_event_name = c("visit_arm_1", "visit_arm_1"), redcap_repeat_instrument = c(NA, instrument), redcap_repeat_instance = c(NA, 2), redcap_data_access_group = NA)
+    fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) list(data = if (raw_or_label == "label") labels_df else data_api)
+    mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
+    mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = data.frame(field_name = "record_id", field_type = "text", form_name = "f1", field_note = " Note\n")))
+    mockery::stub(redcap_data, "REDCapR::redcap_event_instruments", function(...) list(data = data.frame(arm_num = 1, unique_event_name = "visit_arm_1", form = "f1")))
+    out <- suppressWarnings(suppressMessages(redcap_data(uri = "https://api.example", token = "tok")))
+    # The text of the dictionary has no spaces or line breaks at the beginning or at the end, as with the exported files
+    expect_equal(out$dictionary$field_note, "Note")
+    out$data
+  }
+  # Only the event is repeated and no record is in a data access group: empty factors
+  empty <- read_api(NA, NA)
+  expect_s3_class(empty$redcap_repeat_instrument.factor, "factor")
+  expect_true(all(is.na(empty$redcap_repeat_instrument.factor)))
+  expect_s3_class(empty$redcap_data_access_group.factor, "factor")
+  expect_true(all(is.na(empty$redcap_data_access_group.factor)))
+  # A repeating instrument with records: its labels are kept
+  expect_equal(as.character(read_api("Form 1", "f1")$redcap_repeat_instrument.factor), c(NA, "Form 1"))
 })
 
 test_that("Supplying both file and API arguments errors", {

@@ -36,6 +36,10 @@
 
 ## Bug fixes
 
+- `redcap_data()` reads the paths between quotes, as Windows copies them with "Copy as path" (e.g. `'"C:\\Users\\...\\project.r"'`). It said that the file was not an R file.
+- `redcap_data()` couldn't read the R script exported by REDCap of the projects that repeat events but not instruments: REDCap writes the options of the repeated instrument as `c("", "")` and the script fails in R (`invalid 'labels'`).
+- `redcap_data()` with the API: an empty `redcap_data_access_group.factor` or `redcap_repeat_instrument.factor` (e.g. data access groups or repeating instruments without records yet) was logical instead of a factor, as with the exported files.
+- `redcap_data()`: the text of the dictionary has no spaces or line breaks at the beginning or at the end (e.g. in the field annotations, notes or section headers), with the exported files and with the API. They differed: REDCapR only removes them from the text without quotes.
 - `rd_rlogic()` (and so `rd_recalculate()`, `rd_dictionary()` and the branching logic of the other functions) gave the value of the first row to every row when the condition of an `if()` didn't use any variable (e.g. `if(1 < 2, [a], 0)`). Each row now gets its own value, as in REDCap.
 - `rd_event()` stopped with "events do not exist in the dataset" for an event of the project that has no records yet (e.g. a new visit, or the events of an arm without records). All the records of its arm are now reported as missing it (none for an arm without records).
 - `rd_query()`, `rd_event()` and `check_queries()` wrote round record identifiers in scientific notation in the query codes and links (e.g. `1e+05-1` for the record `100000`), and `check_queries()` sorted them wrongly.
