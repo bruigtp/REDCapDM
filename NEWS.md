@@ -1,4 +1,4 @@
-# REDCapDM 1.2.0
+# REDCapDM 1.1.0
 
 ## Breaking changes
 

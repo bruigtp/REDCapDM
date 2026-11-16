@@ -4,13 +4,13 @@
 
 ## Test environments
 
-* Local: Windows 11, R 4.6.2.
+* Local: Windows 11, R 4.6.2, with `devtools::check(remote = TRUE, manual = TRUE)`: 0 errors, 0 warnings. Its only note, a `lastMiKTeXException` file in the temporary directory, comes from the local MiKTeX installation that builds the PDF manual.
 * GitHub Actions: macOS (R release), Windows (R release) and Ubuntu (R devel, release and oldrel-1).
-* win-builder: R devel (2026-11-13 r90888 ucrt): Status OK.
+* win-builder: R devel and R release: Status OK.
 
 ## Changes in this version
 
-This is a minor release (1.2.0) with new features and bug fixes, described in NEWS.md.
+This is a minor release (1.1.0) with new features and bug fixes, described in NEWS.md.
 
 Two changes can affect existing code. Both are announced at the top of NEWS.md:
 

@@ -82,9 +82,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Environment where the user called the function: the filters and expressions look for their objects there
   user_env <- rlang::caller_env()
 
-  # `addTo` was renamed `add_to` in version 1.2.0
+  # `addTo` was renamed `add_to` in version 1.1.0
   if (lifecycle::is_present(addTo)) {
-    lifecycle::deprecate_warn("1.2.0", "rd_query(addTo)", "rd_query(add_to)")
+    lifecycle::deprecate_warn("1.1.0", "rd_query(addTo)", "rd_query(add_to)")
     add_to <- addTo
   }
 
