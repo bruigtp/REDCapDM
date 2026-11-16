@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">REDCapDM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,15 +45,15 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.2.0" id="redcapdm-120">REDCapDM 1.2.0<a class="anchor" aria-label="anchor" href="#redcapdm-120"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.1.0" id="redcapdm-110">REDCapDM 1.1.0<a class="anchor" aria-label="anchor" href="#redcapdm-110"></a></h2>
 <div class="section level3">
-<h3 id="breaking-changes-1-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-1-2-0"></a></h3>
+<h3 id="breaking-changes-1-1-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-1-1-0"></a></h3>
 <ul><li>
 <code><a href="https://bruigtp.github.io/REDCapDM/">library(REDCapDM)</a></code> no longer attaches other packages (dplyr, purrr, stringr, labelled, …). Load the packages you use in your own code, e.g. <code><a href="https://dplyr.tidyverse.org" class="external-link">library(dplyr)</a></code> to use <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code> or <code>%&gt;%</code>.</li>
 <li>REDCapR and openxlsx are now suggested packages: they are only needed to read data from the REDCap API or <code>.xlsx</code> files and to export queries with <code><a href="../reference/rd_export.html">rd_export()</a></code>. These functions ask to install them when they are missing.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="new-features-1-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-2-0"></a></h3>
+<h3 id="new-features-1-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-1-0"></a></h3>
 <ul><li>New <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With <code>by = "record"</code> it shows the missing values record by record. The <code>events</code> and <code>forms</code> arguments choose what is plotted, long labels are shortened (<code>max_label_length</code>) and the events where a variable is not collected are left blank.</li>
 <li>New <code>rm_mdc</code> argument in <code><a href="../reference/redcap_data.html">redcap_data()</a></code> to remove REDCap Missing Data Codes (default <code>TRUE</code>).</li>
 <li>With <code>redcap_data(rm_mdc = FALSE)</code>, the Missing Data Codes of validated text fields (numbers, dates, …) are kept in a new <code>&lt;field&gt;_mdc</code> column, so that the field keeps its type. <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code>, <code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code> and <code><a href="../reference/rd_split.html">rd_split()</a></code> handle these columns like the <code>.factor</code> ones.</li>
@@ -77,7 +77,7 @@
 <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>, <code><a href="../reference/rd_query.html">rd_query()</a></code> and <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>) translates more REDCap functions: <code>isblankormissingcode()</code>, <code>not_contain()</code>, <code>starts_with()</code>, <code>ends_with()</code>, <code>left()</code>, <code>right()</code>, <code>mid()</code>, <code><a href="https://rdrr.io/r/utils/apropos.html" class="external-link">find()</a></code>, <code>replace_text()</code>, <code>concat()</code>, <code>concat_ws()</code>, <code>upper()</code>, <code>lower()</code>, <code>trim()</code>, <code>stdev()</code>, <code>isinteger()</code>, <code>month()</code> and <code>day()</code>. As in REDCap, the text functions use a blank value as an empty text. <code>datediff()</code> also understands <code>"now"</code> and dates with time (e.g. <code>'2024-01-05 10:30'</code>).</li>
 </ul></div>
 <div class="section level3">
-<h3 id="repeated-instruments-and-repeating-events-1-2-0">Repeated instruments and repeating events<a class="anchor" aria-label="anchor" href="#repeated-instruments-and-repeating-events-1-2-0"></a></h3>
+<h3 id="repeated-instruments-and-repeating-events-1-1-0">Repeated instruments and repeating events<a class="anchor" aria-label="anchor" href="#repeated-instruments-and-repeating-events-1-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/rd_query.html">rd_query()</a></code> now only checks each variable in the rows where it is collected. In projects with repeated instruments, empty fields of other instruments are no longer reported as queries.</li>
 <li>The <code>Repetition</code> column of <code><a href="../reference/rd_query.html">rd_query()</a></code> is now correct for every row, and query links open the right instance.</li>
@@ -94,7 +94,7 @@
 <code>rd_missplot(by = "record")</code> shows each repetition as a row and tells apart the cells of variables not collected in that row.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-1-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-2-0"></a></h3>
+<h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/rd_event.html">rd_event()</a></code> failed when <code>addTo</code> received the output of <code><a href="../reference/rd_query.html">rd_query()</a></code> or <code><a href="../reference/rd_event.html">rd_event()</a></code>.</li>
 <li>
@@ -205,7 +205,7 @@
 <code><a href="../reference/rd_export.html">rd_export()</a></code> accepts the data frame of queries as its first argument (e.g. <code>rd_export(report$queries)</code>): before, it said that there were no queries to export.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="clearer-messages-1-2-0">Clearer messages<a class="anchor" aria-label="anchor" href="#clearer-messages-1-2-0"></a></h3>
+<h3 id="clearer-messages-1-1-0">Clearer messages<a class="anchor" aria-label="anchor" href="#clearer-messages-1-1-0"></a></h3>
 <ul><li>The functions that use the event-form mapping explain an <code>event_form</code> that is not the one of <code><a href="../reference/redcap_data.html">redcap_data()</a></code> (e.g. a number or a data frame without the columns <code>unique_event_name</code> and <code>form</code>), <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> a <code>var</code> that is not in the dictionary of a longitudinal project and a logic that doesn’t give one value per row, and <code><a href="../reference/rd_query.html">rd_query()</a></code> a <code>data</code> without columns. Before, they failed with internal R errors.</li>
 <li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> explains when a file is not found, when the csv file read by the R script is not in its folder and when the event file is not the instrument-event mapping of the project. It warns when variables of the data are not in the dictionary and when the project has no records yet.</li>
@@ -238,7 +238,7 @@
 <code><a href="../reference/rd_query.html">rd_query()</a></code> no longer warns when one expression is given for several variables, the usual way to check them (it still warns when several expressions don’t match the variables), and <code><a href="../reference/rd_dates.html">rd_dates()</a></code> informs with a message, instead of a warning, that there are no dates to convert.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="documentation-1-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-2-0"></a></h3>
+<h3 id="documentation-1-1-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-1-0"></a></h3>
 <ul><li>The vignette is split into four: getting started (<code><a href="../articles/REDCapDM.html">vignette("REDCapDM")</a></code>), missing data (<code><a href="../articles/missing-data.html">vignette("missing-data")</a></code>), data processing (<code><a href="../articles/data-processing.html">vignette("data-processing")</a></code>) and queries (<code><a href="../articles/query-management.html">vignette("query-management")</a></code>).</li>
 <li>The reference of the website groups the functions by task, and the help of each function links to the related functions.</li>
 <li>New contributing guide, code of conduct and issue templates on GitHub. The README states the R version the package needs (4.1 or later).</li>
@@ -247,7 +247,7 @@
 <li>The examples of <code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> and <code><a href="../reference/rd_export.html">rd_export()</a></code> can be run as they are.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="internal-changes-1-2-0">Internal changes<a class="anchor" aria-label="anchor" href="#internal-changes-1-2-0"></a></h3>
+<h3 id="internal-changes-1-1-0">Internal changes<a class="anchor" aria-label="anchor" href="#internal-changes-1-1-0"></a></h3>
 <ul><li>Snapshot tests keep the text of the printed reports and of the main messages, and new tests cover chained functions and less common arguments.</li>
 <li>Code cleanup following lintr: the conditions of <code>if()</code> use <code>&amp;&amp;</code> and <code>||</code>, and the query codes are numbered with <code><a href="https://dplyr.tidyverse.org/reference/row_number.html" class="external-link">dplyr::row_number()</a></code>, which also works with zero rows.</li>
 </ul></div>
