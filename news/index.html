@@ -51,6 +51,8 @@
 <ul><li>
 <code><a href="https://bruigtp.github.io/REDCapDM/">library(REDCapDM)</a></code> no longer attaches other packages (dplyr, purrr, stringr, labelled, …). Load the packages you use in your own code, e.g. <code><a href="https://dplyr.tidyverse.org" class="external-link">library(dplyr)</a></code> to use <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code> or <code>%&gt;%</code>.</li>
 <li>REDCapR and openxlsx are now suggested packages: they are only needed to read data from the REDCap API or <code>.xlsx</code> files and to export queries with <code><a href="../reference/rd_export.html">rd_export()</a></code>. These functions ask to install them when they are missing.</li>
+<li>REDCapDM now requires dplyr 1.1.0 or later (released in January 2023).</li>
+<li>Reading data from the REDCap API needs REDCapR 1.2.0 or later: older versions only return the events of the first arm of the project.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="new-features-1-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-1-0"></a></h3>
@@ -96,6 +98,12 @@
 <div class="section level3">
 <h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
 <ul><li>
+<code><a href="../reference/rd_event.html">rd_event()</a></code> stopped with “events do not exist in the dataset” for an event of the project that has no records yet (e.g. a new visit, or the events of an arm without records). All the records of its arm are now reported as missing it (none for an arm without records).</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/check_queries.html">check_queries()</a></code> wrote round record identifiers in scientific notation in the query codes and links (e.g. <code>1e+05-1</code> for the record <code>100000</code>), and <code><a href="../reference/check_queries.html">check_queries()</a></code> sorted them wrongly.</li>
+<li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code> described the expressions with <code>&lt;=</code> and <code>&gt;=</code> as “less than =” and “greater than =” in the queries and in the report. They are now “less than or equal to” and “greater than or equal to”.</li>
+<li>
 <code><a href="../reference/rd_event.html">rd_event()</a></code> failed when <code>addTo</code> received the output of <code><a href="../reference/rd_query.html">rd_query()</a></code> or <code><a href="../reference/rd_event.html">rd_event()</a></code>.</li>
 <li>
 <code>rd_split(wide = TRUE)</code> failed when it was called as <code><a href="../reference/rd_split.html">REDCapDM::rd_split()</a></code> without loading the package.</li>
@@ -186,7 +194,7 @@
 <li>
 <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>, <code><a href="../reference/rd_query.html">rd_query()</a></code> and <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>) gave wrong results with negative numbers: <code>[a]&lt;-3</code> (without spaces) was run as an assignment in R, and <code>[a] &lt; '-3'</code> (with quotes) compared the values as text.</li>
 <li>
-<code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/check_queries.html">check_queries()</a></code> turned record identifiers with leading zeros into numbers (e.g. <code>"007"</code> became <code>7</code>, and its code <code>7-1</code>), so they didn’t match the record in REDCap. They are now kept as text; identifiers that are plain numbers are still returned as numbers.</li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/check_queries.html">check_queries()</a></code> turned record identifiers with leading zeros into numbers (e.g. <code>"007"</code> became <code>7</code>, and its code <code>7-1</code>), so they didn’t match the record in REDCap. They are now kept as text; identifiers that are plain numbers are still returned as numbers. The type is decided with all the records of the project, so all the reports of a project have the same type of <code>Identifier</code> (and can be combined with e.g. <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows()</a></code>), whichever records have queries.</li>
 <li>
 <code><a href="../reference/rd_dates.html">rd_dates()</a></code>, <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> failed when the data didn’t have every date field of the dictionary (e.g. with a selection of columns).</li>
 <li>
@@ -206,7 +214,9 @@
 </ul></div>
 <div class="section level3">
 <h3 id="clearer-messages-1-1-0">Clearer messages<a class="anchor" aria-label="anchor" href="#clearer-messages-1-1-0"></a></h3>
-<ul><li>The functions that use the event-form mapping explain an <code>event_form</code> that is not the one of <code><a href="../reference/redcap_data.html">redcap_data()</a></code> (e.g. a number or a data frame without the columns <code>unique_event_name</code> and <code>form</code>), <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> a <code>var</code> that is not in the dictionary of a longitudinal project and a logic that doesn’t give one value per row, and <code><a href="../reference/rd_query.html">rd_query()</a></code> a <code>data</code> without columns. Before, they failed with internal R errors.</li>
+<ul><li>
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> explains when the dictionary is not encoded in UTF-8 (e.g. a dictionary saved again with Excel as “CSV”), instead of failing with an internal error.</li>
+<li>The functions that use the event-form mapping explain an <code>event_form</code> that is not the one of <code><a href="../reference/redcap_data.html">redcap_data()</a></code> (e.g. a number or a data frame without the columns <code>unique_event_name</code> and <code>form</code>), <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> a <code>var</code> that is not in the dictionary of a longitudinal project and a logic that doesn’t give one value per row, and <code><a href="../reference/rd_query.html">rd_query()</a></code> a <code>data</code> without columns. Before, they failed with internal R errors.</li>
 <li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> explains when a file is not found, when the csv file read by the R script is not in its folder and when the event file is not the instrument-event mapping of the project. It warns when variables of the data are not in the dictionary and when the project has no records yet.</li>
 <li>

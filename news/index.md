@@ -14,6 +14,9 @@
   queries with
   [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md).
   These functions ask to install them when they are missing.
+- REDCapDM now requires dplyr 1.1.0 or later (released in January 2023).
+- Reading data from the REDCap API needs REDCapR 1.2.0 or later: older
+  versions only return the events of the first arm of the project.
 
 ### New features
 
@@ -124,6 +127,23 @@
 
 ### Bug fixes
 
+- [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  stopped with “events do not exist in the dataset” for an event of the
+  project that has no records yet (e.g. a new visit, or the events of an
+  arm without records). All the records of its arm are now reported as
+  missing it (none for an arm without records).
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  and
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  wrote round record identifiers in scientific notation in the query
+  codes and links (e.g. `1e+05-1` for the record `100000`), and
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  sorted them wrongly.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  described the expressions with `<=` and `>=` as “less than =” and
+  “greater than =” in the queries and in the report. They are now “less
+  than or equal to” and “greater than or equal to”.
 - [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
   failed when `addTo` received the output of
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
@@ -375,7 +395,11 @@
   turned record identifiers with leading zeros into numbers
   (e.g. `"007"` became `7`, and its code `7-1`), so they didn’t match
   the record in REDCap. They are now kept as text; identifiers that are
-  plain numbers are still returned as numbers.
+  plain numbers are still returned as numbers. The type is decided with
+  all the records of the project, so all the reports of a project have
+  the same type of `Identifier` (and can be combined with
+  e.g. [`dplyr::bind_rows()`](https://dplyr.tidyverse.org/reference/bind_rows.html)),
+  whichever records have queries.
 - [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   and
@@ -419,6 +443,10 @@
 
 ### Clearer messages
 
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  explains when the dictionary is not encoded in UTF-8 (e.g. a
+  dictionary saved again with Excel as “CSV”), instead of failing with
+  an internal error.
 - The functions that use the event-form mapping explain an `event_form`
   that is not the one of
   [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
