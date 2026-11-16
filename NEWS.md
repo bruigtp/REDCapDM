@@ -36,6 +36,7 @@
 
 ## Bug fixes
 
+- `redcap_data()` with the exported files: the labels of the options with line breaks lost their spaces (e.g. "oralcorticosteroids(e.g."), because the R script exported by REDCap removes the line breaks. They take the label of the dictionary, as with the API.
 - `redcap_data()` reads the paths between quotes, as Windows copies them with "Copy as path" (e.g. `'"C:\\Users\\...\\project.r"'`). It said that the file was not an R file.
 - `redcap_data()` couldn't read the R script exported by REDCap of the projects that repeat events but not instruments: REDCap writes the options of the repeated instrument as `c("", "")` and the script fails in R (`invalid 'labels'`).
 - `redcap_data()` with the API: an empty `redcap_data_access_group.factor` or `redcap_repeat_instrument.factor` (e.g. data access groups or repeating instruments without records yet) was logical instead of a factor, as with the exported files.

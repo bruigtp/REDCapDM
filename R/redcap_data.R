@@ -259,6 +259,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # Text fields that look like numbers (e.g. phones, postal codes or identifiers with leading zeros): read.csv() turns them into numbers and changes them ("0034" is read as 34). They keep the text exported by REDCap.
     data <- keep_text_fields(data, dic, if (length(csv_file) > 0) file.path(dirname(data_path), csv_file[1]) else NA)
 
+    # The labels of the options that the R script wrote without their spaces take the label of the dictionary, as with the API
+    data <- dictionary_option_labels(data, dic)
+
     # Indicator of longitudinal projects
     longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
@@ -875,6 +878,52 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Return the result
   return(data_def)
+}
+
+#' Labels of the options of the radio and dropdown fields as in the dictionary
+#'
+#' The R script exported by REDCap removes the line breaks of the labels of the
+#' options without leaving a space (e.g. "oral<line break>corticosteroids" is
+#' written "oralcorticosteroids"), while the dictionary and the API keep a space.
+#' The labels of the `.factor` versions that only differ from the label of the
+#' dictionary in their spaces take the label of the dictionary, which is the one
+#' that the API gives. Any other label is kept as it is.
+#'
+#' @param data Data read by the R script.
+#' @param dic Dictionary of the project.
+#' @return `data`, with the labels of the dictionary.
+#' @noRd
+dictionary_option_labels <- function(data, dic) {
+  if (!all(c("field_name", "field_type", "choices_calculations_or_slider_labels") %in% names(dic))) {
+    return(data)
+  }
+  fields <- dic[dic$field_type %in% c("radio", "dropdown") & paste0(dic$field_name, ".factor") %in% names(data), , drop = FALSE]
+  # (the non-breaking space, U+00A0, that the labels of REDCap can have, is also a space)
+  squash <- function(x) gsub("\\s+", "", gsub("\u00a0", " ", x, fixed = TRUE))
+
+  for (k in seq_len(nrow(fields))) {
+    column <- paste0(fields$field_name[k], ".factor")
+    x <- data[[column]]
+    if (!is.factor(x) || is.na(fields$choices_calculations_or_slider_labels[k])) next
+
+    # Labels of the options as the API reads them from the dictionary
+    options <- trimws(unlist(strsplit(fields$choices_calculations_or_slider_labels[k], "|", fixed = TRUE)))
+    labels <- gsub("^[^,]*,\\s*", "", options)
+
+    new_levels <- levels(x)
+    for (j in seq_along(new_levels)) {
+      same <- unique(labels[squash(labels) == squash(new_levels[j]) & labels != new_levels[j]])
+      if (length(same) == 1 && !same %in% new_levels) {
+        new_levels[j] <- same
+      }
+    }
+    if (!identical(new_levels, levels(x))) {
+      levels(x) <- new_levels
+      data[[column]] <- x
+    }
+  }
+
+  data
 }
 
 #' Keep the text of the text fields that read.csv() turned into numbers

@@ -170,6 +170,36 @@ test_that("redcap_data reads the R script of a project that repeats events but n
   expect_equal(levels(out$data$sex.factor), c("Male", "Female"))
 })
 
+test_that("the labels of the options that the R script of REDCap wrote without spaces take the label of the dictionary", {
+  tmp_dir <- tempfile()
+  dir.create(tmp_dir)
+  write.csv(data.frame(record_id = 1:4, dose = c("LOC", "HIC", "N", NA)), file.path(tmp_dir, "P_DATA.csv"), row.names = FALSE, na = "")
+  # As REDCap writes it when the labels have line breaks: the words are joined ("oralcorticosteroids(e.g.")
+  writeLines(c(
+    "#Clear existing data and graphics", "rm(list=ls())", "data=read.csv('P_DATA.csv')",
+    "mapping_dose = c(",
+    "\t\"HIC\" = \"high dose intravenouscorticosteroids(e.g. over 250mg)\",",
+    "\t\"LOC\" = \"low dose oralcorticosteroids(e.g. 5mg or less)\",",
+    "\t\"N\" = \"none\"",
+    ")",
+    "data$dose.factor = factor(data$dose, levels = names(mapping_dose), labels = mapping_dose)"
+  ), file.path(tmp_dir, "P_R.r"))
+  tmp_dic <- file.path(tmp_dir, "P_DataDictionary.csv")
+  write.csv(data.frame(
+    `Variable / Field Name` = c("record_id", "dose"), `Form Name` = "f1", `Field Type` = c("text", "dropdown"), `Field Label` = c("ID", "Dose"),
+    `Choices, Calculations, OR Slider Labels` = c("", "HIC, high dose intravenous corticosteroids (e.g. over 250mg) | LOC, low dose oral\u00a0corticosteroids (e.g. 5mg or less) | N, no corticosteroids"),
+    check.names = FALSE
+  ), tmp_dic, row.names = FALSE)
+
+  out <- redcap_data(data_path = file.path(tmp_dir, "P_R.r"), dic_path = tmp_dic)
+  # The labels that only lost their spaces take the label of the dictionary (as with the API), also with a non-breaking
+  # space (U+00A0) in the dictionary; "none" is a different label and is kept
+  low <- "low dose oral\u00a0corticosteroids (e.g. 5mg or less)"
+  expect_equal(levels(out$data$dose.factor), c("high dose intravenous corticosteroids (e.g. over 250mg)", low, "none"))
+  expect_equal(as.character(out$data$dose.factor), c(low, "high dose intravenous corticosteroids (e.g. over 250mg)", "none", NA))
+  expect_equal(as.vector(out$data$dose), c("LOC", "HIC", "N", NA))
+})
+
 test_that("Descriptive fields are removed from dictionary", {
   sample_data <- data.frame(id = 1:2)
   tmp_r <- tempfile(fileext = ".R")
