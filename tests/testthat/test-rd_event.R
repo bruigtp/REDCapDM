@@ -240,3 +240,10 @@ test_that("rd_event stops when any of the events doesn't exist", {
   expect_error(rd_event(covican, event = c("baseline_visit_arm_1", "unknown_arm_1")), class = "REDCapDM_error_argument")
   expect_error(rd_event(covican, event = "unknown_arm_1"), class = "REDCapDM_error_argument")
 })
+
+test_that("rd_event works with fields called like its objects (e.g. `data` or `event`)", {
+  ev <- function(p) suppressMessages(rd_event(p, event = "follow_up_visit_da_arm_1"))$queries
+  ref <- ev(covican)
+  expect_gt(nrow(ref), 0)
+  for (name in c("data", "event", "ids", "k")) expect_equal(ev(add_covican_field(name)), ref)
+})

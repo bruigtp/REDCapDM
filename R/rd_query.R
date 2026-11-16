@@ -75,7 +75,7 @@
 #'
 #' @family query functions
 #' @export
-#' @importFrom rlang .data
+#' @importFrom rlang .data .env
 
 rd_query <- function(project = NULL, variables = NA, expression = NA, negate = FALSE, event = NA, filter = NA, add_to = NA, variables_names = NA, query_name = NA, instrument = NA, report_title = NA, report_zeros = FALSE, by_dag = FALSE, link = list(), data = NULL, dic = NULL, event_form = NULL, addTo = deprecated()) {
 
@@ -233,12 +233,12 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Filter data by events - factor version
     if ("redcap_event_name.factor" %in% names(data) && all(event %in% data$redcap_event_name.factor)) {
-      data <- dplyr::filter(data, data$redcap_event_name.factor %in% event)
+      data <- dplyr::filter(data, .data$redcap_event_name.factor %in% .env$event)
     }
 
     # Filter data by events - raw version
     if (all(event %in% data$redcap_event_name)) {
-      data <- dplyr::filter(data, data$redcap_event_name %in% event)
+      data <- dplyr::filter(data, .data$redcap_event_name %in% .env$event)
     }
 
     # Warning: identifiers are missing observations in any event (it only appears when checking for missings - %in%NA)

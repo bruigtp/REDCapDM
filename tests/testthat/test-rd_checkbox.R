@@ -186,3 +186,17 @@ test_that("rd_checkbox works with a dictionary with NA in its empty cells and ch
   ref$dictionary$branching_logic_show_field_only_if[ref$dictionary$field_type == "checkbox"] <- ""
   expect_equal(suppressWarnings(rd_checkbox(cov))$data, suppressWarnings(rd_checkbox(ref))$data)
 })
+
+test_that("rd_checkbox works with fields called like its objects (e.g. `data`)", {
+  cb <- function(p, ...) suppressWarnings(suppressMessages(rd_checkbox(p, ...)))$data
+  for (name in c("data", "checkbox_labels")) {
+    p <- add_covican_field(name)
+    for (args in list(list(), list(na_logic = "eval", checkbox_labels = c("No", "Yes")))) {
+      ref <- do.call(cb, c(list(covican), args))
+      out <- do.call(cb, c(list(p), args))
+      expect_equal(out[names(ref)], ref)
+      expect_equal(out[[name]], p$data[[name]], ignore_attr = TRUE)
+    }
+  }
+  expect_no_error(suppressWarnings(suppressMessages(rd_transform(add_covican_field("data")))))
+})

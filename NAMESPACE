@@ -27,6 +27,7 @@ importFrom(magrittr,"%>%")
 importFrom(rlang,
   ":=",
   .data,
+  .env,
   eval_tidy,
   parse_expr
 )

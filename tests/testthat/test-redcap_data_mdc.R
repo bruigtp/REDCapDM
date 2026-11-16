@@ -244,3 +244,12 @@ test_that("redcap_data keeps as text the validated fields that aren't numbers", 
   out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = TRUE, fx = fx))
   expect_equal(out$data$phone, c("0612345678", NA, "0698765432"), ignore_attr = TRUE)
 })
+
+test_that("rm_mdc = TRUE works with a field called `missing_codes`", {
+  fx <- make_mdc_fixture()
+  names(fx$data)[names(fx$data) == "lab_value"] <- "missing_codes"
+  fx$dic$field_name[fx$dic$field_name == "lab_value"] <- "missing_codes"
+  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = TRUE, fx = fx))
+  expect_equal(out$data$missing_codes, c(5.2, NA, 7.1), ignore_attr = TRUE)
+  expect_true(is.na(out$data$sex[3]))
+})

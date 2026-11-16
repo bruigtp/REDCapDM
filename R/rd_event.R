@@ -203,9 +203,10 @@ rd_event <- function(project = NULL,
 
 
       # Identify records missing the current event
+      # (.data and .env: a field of the project can have the name of an object of the function, e.g. `data` or `event`)
       raw <- data |>
-        dplyr::filter(!data$record_id %in% ids) |>
-        dplyr::slice(rep(seq_len(dplyr::n()), each = length(event[k])))
+        dplyr::filter(!.data$record_id %in% .env$ids) |>
+        dplyr::slice(rep(seq_len(dplyr::n()), each = length(.env$event[.env$k])))
 
       
       # Multi-arm projects: only the records of the arm of the event can have it
@@ -216,7 +217,7 @@ rd_event <- function(project = NULL,
         if (length(arm_k) > 0 && !anyNA(arm_k)) {
           arm_records <- data0$record_id[event_arm(data0$redcap_event_name, event_form) %in% arm_k]
           raw <- raw |>
-            dplyr::filter(.data$record_id %in% arm_records)
+            dplyr::filter(.data$record_id %in% .env$arm_records)
         }
       }
 

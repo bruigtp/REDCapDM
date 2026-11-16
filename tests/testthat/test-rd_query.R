@@ -1036,3 +1036,15 @@ test_that("rd_query checks the events with data when an event of the variable ha
   # An event given in `event` that is not in the data is still an error
   expect_error(rd_query(cov, variables = "potassium", expression = "is.na(x)", event = "follow_up_visit_da_arm_1"), class = "REDCapDM_error_argument")
 })
+
+test_that("rd_query works with fields called like its objects (e.g. `data` or `event`)", {
+  q <- function(p, ...) suppressWarnings(suppressMessages(rd_query(p, variables = "age", expression = "x > 70", ...)))$queries
+  ref <- q(covican, event = "baseline_visit_arm_1")
+  ref_all <- q(covican)
+  expect_gt(nrow(ref), 0)
+  for (name in c("data", "event", "variables", "x")) {
+    p <- add_covican_field(name)
+    expect_equal(q(p, event = "baseline_visit_arm_1"), ref)
+    expect_equal(q(p), ref_all)
+  }
+})

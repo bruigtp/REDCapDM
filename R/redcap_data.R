@@ -715,8 +715,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
             }
             was_factor <- is.factor(.x)
             val_char <- stringr::str_trim(as.character(.x))
+            # (.env: a field of the project can be called `missing_codes`)
             val_clean <- ifelse(
-              val_char %in% missing_codes,
+              val_char %in% .env$missing_codes,
               NA_character_,
               val_char
             )

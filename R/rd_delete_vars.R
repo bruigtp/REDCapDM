@@ -206,7 +206,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     # Rows of the removed repeating instruments are left without data
     if ("redcap_repeat_instrument" %in% names(data)) {
       data <- data |>
-        dplyr::filter(!(.data$redcap_repeat_instrument %in% forms))
+        dplyr::filter(!(.data$redcap_repeat_instrument %in% .env$forms))
     }
 
     dic <- dic |>

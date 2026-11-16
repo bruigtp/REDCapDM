@@ -697,3 +697,16 @@ test_that("rd_rlogic explains a var that is not in the dictionary and a logic wi
   err <- expect_error(rd_rlogic(covican, logic = "c(1, 2, 3)", var = "age"), class = "REDCapDM_error_logic")
   expect_match(conditionMessage(err), "3 values", fixed = TRUE)
 })
+
+test_that("rd_rlogic only translates the REDCap functions, not the fields with the same name", {
+  df <- data.frame(record_id = 1:3, motif___1 = c(1, 0, 0), motif___2 = c(0, 1, 0), datediff = c(5, 10, 15), d = as.Date(c("2020-01-01", "2021-06-01", NA)))
+  dic <- make_dic(c("record_id", "motif", "datediff", "d", "res"))
+  dic$field_type[dic$field_name == "motif"] <- "checkbox"
+  dic$choices_calculations_or_slider_labels[dic$field_name == "motif"] <- "1, A | 2, B"
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "res")$eval)
+
+  expect_equal(ev("[datediff] > 7"), c(FALSE, TRUE, TRUE))
+  expect_equal(ev("if([datediff] > 7, year([d]), 0)"), c(0, 2021, NA))
+  expect_equal(ev("if([motif(2)] = '1', 1, 0)"), c(0, 1, 0))
+  expect_equal(ev("datediff([d], '2022-01-01', 'd', 'ymd') > 300"), c(TRUE, FALSE, NA))
+})

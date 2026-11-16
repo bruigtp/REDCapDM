@@ -263,13 +263,13 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     data <- data |>
       dplyr::mutate(dplyr::across(
         tidyselect::all_of(var_check_factors),
-        ~ factor(.x, levels = c("Unchecked", "Checked"), labels = checkbox_labels)
+        ~ factor(.x, levels = c("Unchecked", "Checked"), labels = .env$checkbox_labels)
       ))
   } else {
     data <- data |>
       dplyr::mutate(dplyr::across(
         tidyselect::all_of(var_check),
-        ~ factor(as.character(.x), levels = c(0, 1), labels = checkbox_labels)
+        ~ factor(as.character(.x), levels = c(0, 1), labels = .env$checkbox_labels)
       ))
   }
 
@@ -433,8 +433,9 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
         dplyr::across(dplyr::any_of(correspondence$out), as.numeric),
         dplyr::across(dplyr::any_of(correspondence$out_factor), ~{
 
-          var_fac <- data[[dplyr::cur_column()]]
-          var_num <- data[[sub("\\.factor$", "", dplyr::cur_column())]]
+          # (.env: a field of the project can be called `data`)
+          var_fac <- .env$data[[dplyr::cur_column()]]
+          var_num <- .env$data[[sub("\\.factor$", "", dplyr::cur_column())]]
 
           dplyr::case_when(!is.na(var_num) ~ var_fac)
           })

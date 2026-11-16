@@ -186,9 +186,10 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   }
 
   # Convert REDCap functions to equivalent R functions
-  rlogic <- gsub("if\\s?\\(", "ifelse(", rlogic)
-  rlogic <- gsub("datediff\\s?", "(lubridate::time_length(lubridate::interval", rlogic)
-  rlogic <- gsub("year\\((.*?)\\)", "lubridate::year(\\1)", rlogic)
+  # (only the functions: not a field whose name contains them, e.g. `[motif(1)]` or `[datediff]`)
+  rlogic <- gsub("(?<![\\w.$\\[])if\\s?\\(", "ifelse(", rlogic, perl = TRUE)
+  rlogic <- gsub("(?<![\\w.$\\[])datediff\\s?(?=\\()", "(lubridate::time_length(lubridate::interval", rlogic, perl = TRUE)
+  rlogic <- gsub("(?<![\\w.$\\[])year\\((.*?)\\)", "lubridate::year(\\1)", rlogic, perl = TRUE)
 
   # Handle date formats in logic
   if (grepl("'dmy'", rlogic)) {
@@ -377,8 +378,8 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     if (!is.null(event_form)) {
       rlogic_eval <- data |>
         dplyr::mutate(
-          calc = rlogic_eval,
-          calc = ifelse(!.data$redcap_event_name %in% event_var, NA, .data$calc)
+          calc = .env$rlogic_eval,
+          calc = ifelse(!.data$redcap_event_name %in% .env$event_var, NA, .data$calc)
         ) |>
         dplyr::pull(.data$calc)
     }

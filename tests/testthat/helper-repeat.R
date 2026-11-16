@@ -97,3 +97,21 @@ make_cross_event <- function() {
 
   list(data = data, dictionary = dic, event_form = event_form)
 }
+
+# covican with a new numeric field `name` in the demographics form, after `age`.
+# Used to check fields whose name is also the name of an object of the functions (e.g. `data` or `event`).
+add_covican_field <- function(name, project = covican) {
+  d <- project$data
+  pos <- which(names(d) == "age")
+  d[[name]] <- round(seq(50, 100, length.out = nrow(d)))
+  project$data <- d[, c(names(d)[seq_len(pos)], name, setdiff(names(d)[-seq_len(pos)], name))]
+  dic <- project$dictionary
+  pos <- which(dic$field_name == "age")
+  row <- dic[pos, ]
+  row$field_name <- name
+  row$field_label <- name
+  row$branching_logic_show_field_only_if <- ""
+  project$dictionary <- rbind(dic[seq_len(pos), ], row, dic[-seq_len(pos), ])
+  rownames(project$dictionary) <- NULL
+  project
+}
