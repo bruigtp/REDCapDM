@@ -27,7 +27,8 @@
   it shows the missing values record by record. The `events` and `forms`
   arguments choose what is plotted, long labels are shortened
   (`max_label_length`) and the events where a variable is not collected
-  are left blank.
+  are left blank. First version by Ferran Pérez Pérez
+  ([\#19](https://github.com/bruigtp/REDCapDM/issues/19)).
 - New `rm_mdc` argument in
   [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
   to remove REDCap Missing Data Codes (default `TRUE`).

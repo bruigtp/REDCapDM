@@ -107,6 +107,8 @@ Package: REDCapDM
 Authors: João Carmezim, Pau Satorra, Judith Peñafiel, Esther García,
 Natàlia Pallarès, Cristian Tebé.
 
+Contributors: Ferran Pérez Pérez.
+
 Maintainer: João Carmezim
 
 License: MIT + file LICENSE
