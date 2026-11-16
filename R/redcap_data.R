@@ -389,6 +389,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     }) |>
       as.data.frame()
 
+    # Empty cells of the dictionary are empty texts, as in the dictionary exported from REDCap
+    # (a column without any value is read as logical by REDCapR)
+    dic_api[] <- lapply(dic_api, function(x) if (is.character(x) || (is.logical(x) && all(is.na(x)))) replace(as.character(x), is.na(x), "") else x)
+
     # Filter descriptive fields from dictionary
     if ("descriptive" %in% dic_api$field_type) {
       dic_api <- dic_api |>

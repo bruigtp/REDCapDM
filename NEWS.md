@@ -85,6 +85,7 @@
 - `check_queries()` failed when neither report had queries (e.g. a project without errors in both reviews).
 - `rd_query()` failed with an internal error when `link` had `event_id = NULL` (e.g. a template for longitudinal projects used in a classic project). Elements given as `NULL` are now ignored.
 - `rd_factor()` (and so `rd_transform()`) stopped when `exclude` had every variable that can be converted to a factor (e.g. a project with a single radio field that should stay numeric). As when there are no such variables, it now warns and goes on.
+- `rd_checkbox()` failed with projects read from the API when no checkbox had branching logic: the dictionary of the API has `NA` in its empty cells. `redcap_data()` now gives the same dictionary from the API as from the exported files, with empty texts in its empty cells.
 - `rd_export()` reported success when `path` was a folder or `sheet_name` had one of `/ \ ? * : [ ]`, which Excel doesn't accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.
 - `rd_export()` accepts the data frame of queries as its first argument (e.g. `rd_export(report$queries)`): before, it said that there were no queries to export.
 

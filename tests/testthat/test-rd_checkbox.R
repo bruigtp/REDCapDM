@@ -177,3 +177,12 @@ test_that("rd_checkbox keeps the variable labels of the renamed checkbox options
   expect_equal(attr(out$data$type_underlying_disease_haematological_cancer, "label"), "Type of underlying disease (choice=Haematological cancer)")
   expect_equal(attr(out$data$type_underlying_disease_solid_tumour, "label"), "Type of underlying disease (choice=Solid tumour)")
 })
+
+test_that("rd_checkbox works with a dictionary with NA in its empty cells and checkboxes without branching logic", {
+  cov <- covican
+  cov$dictionary$branching_logic_show_field_only_if[cov$dictionary$field_type == "checkbox"] <- NA
+  cov$dictionary$branching_logic_show_field_only_if[cov$dictionary$branching_logic_show_field_only_if %in% ""] <- NA
+  ref <- covican
+  ref$dictionary$branching_logic_show_field_only_if[ref$dictionary$field_type == "checkbox"] <- ""
+  expect_equal(suppressWarnings(rd_checkbox(cov))$data, suppressWarnings(rd_checkbox(ref))$data)
+})

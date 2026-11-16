@@ -613,6 +613,9 @@ test_that("API branch: labels, yes/no and form status factors and forms without 
   expect_equal(as.character(out$data$f1_complete.factor), c("Complete", "Incomplete"))
   expect_false("extra" %in% names(out$data))
   expect_false("extra" %in% out$dictionary$field_name)
+  # As in the exported dictionary, its empty cells are empty texts
+  expect_equal(out$dictionary$branching_logic_show_field_only_if, rep("", 3))
+  expect_equal(out$dictionary$choices_calculations_or_slider_labels, rep("", 3))
 })
 
 test_that("redcap_data removes the HTML of the labels of the dictionary and of the data", {

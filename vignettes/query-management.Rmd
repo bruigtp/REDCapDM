@@ -504,6 +504,6 @@ rd_export(queries = example$queries,
 
 We specify the sheet name with the `sheet_name` argument and the path to the file to be exported with the `path` argument. To prevent anyone from modifying the exported file, we can also add a password.
 
-The `column` argument refers to the column of the report that contains the link to each query. The function converts this column into hyperlink format in the exported file, so that we can simply click on the link to go to the specific query in the REDCap project.
+The `column` argument refers to the column of the report that contains the link to each query. The function converts this column into hyperlink format in the exported file, so that we can simply click on the link to go to the specific query in the REDCap project. This column only exists when the queries were identified with the `link` argument of `rd_query()`.
 
 In both cases, a message will be generated in the console informing you that the file has been created and where it is located.
