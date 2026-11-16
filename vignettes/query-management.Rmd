@@ -355,13 +355,13 @@ There is an easier way to have access to each query in REDCap through the output
 
 We can find the information about the domain, the REDCap version and the project ID in the link of the _Project Home_ of the project in REDCap:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.alt="Link of the Project Home page of a project in REDCap, which contains the domain, the REDCap version and the project ID"}
 knitr::include_graphics("files/ProjectHome.png")
 ```
 
 The identifiers of the events can be exported from: _Project Setup_ < _Define My Events_
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.alt="Define My Events page of a project in REDCap, with the event ID of each event"}
 knitr::include_graphics("files/EventsID.png", dpi = 150)
 ```
 

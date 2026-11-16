@@ -132,6 +132,7 @@
 - New contributing guide, code of conduct and issue templates on GitHub. The README states the R version the package needs (4.1 or later).
 - `rd_checkbox()`, `rd_dates()`, `rd_delete_vars()`, `rd_dictionary()`, `rd_export()`, `rd_factor()`, `rd_recalculate()` and `rd_split()` are now stable (their arguments and results won't change without a deprecation period). `rd_missplot()` remains experimental.
 - The examples of `rd_insert_na()` and `rd_export()` can be run as they are.
+- The screenshots of the queries vignette have alternative text, for screen readers.
 
 ## Internal changes
 
@@ -292,7 +293,7 @@
 
 -   New error added to the *rd_query()* function when trying to use a variable that is not in the dataset.
 
--   New error added to the *rd_query()* function when the logic of the filter was using incorrected logic.
+-   New error added to the *rd_query()* function when the logic of the filter was using incorrect logic.
 
 -   The *rd_export()* function will now create a themed excel file.
 
@@ -393,7 +394,7 @@
 -   For all functions except *redcap_data()* we can now pass a list with the data, dictionary and event in the first argument of the function.
 -   *rd_transform()* will now take into account the different events that might be present in the variables of the logic for the recalculation of calculated fields and the evaluation of branching logics. This also applies for *rd_rlogic()*.
 -   As a consequence of this last improvement that applies in longitudinal REDCap projects (with more than one event) now we have to specify not only the data and dictionary but also the event-form mapping.
--   New *checkbox_na* argument in *rd_transform()* to specify if the values of the checkbox will be converted to missing not only when the branching logic is missing but also when it's not fullfilled (if *TRUE*).
+-   New *checkbox_na* argument in *rd_transform()* to specify if the values of the checkbox will be converted to missing not only when the branching logic is missing but also when it's not fulfilled (if *TRUE*).
 -   New *by_dag* argument in *rd_query()* to filter the output by each Data Access Group (DAG).
 -   Summary of the generated queries ( *\$results* ) will now include the event and the type of query and will be displayed in the RStudio viewer tab.
 

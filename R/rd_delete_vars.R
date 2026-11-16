@@ -74,7 +74,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     check_strings(get(arg), arg)
   }
 
-  # Ensure one of the arguments is fullfilled
+  # Ensure one of the arguments is fulfilled
   if (is.null(vars) && is.null(pattern) && is.null(forms)) {
     rd_abort("At least one of the {.arg vars}, {.arg pattern} or {.arg forms} arguments must be provided.", class = "REDCapDM_error_argument")
   }
