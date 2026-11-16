@@ -127,6 +127,14 @@
 
 ### Bug fixes
 
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and the branching logic of the other functions) gave the value of the
+  first row to every row when the condition of an `if()` didn’t use any
+  variable (e.g. `if(1 < 2, [a], 0)`). Each row now gets its own value,
+  as in REDCap.
 - [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
   stopped with “events do not exist in the dataset” for an event of the
   project that has no records yet (e.g. a new visit, or the events of an

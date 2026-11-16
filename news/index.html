@@ -98,6 +98,8 @@
 <div class="section level3">
 <h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
 <ul><li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>, <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> and the branching logic of the other functions) gave the value of the first row to every row when the condition of an <code>if()</code> didn’t use any variable (e.g. <code>if(1 &lt; 2, [a], 0)</code>). Each row now gets its own value, as in REDCap.</li>
+<li>
 <code><a href="../reference/rd_event.html">rd_event()</a></code> stopped with “events do not exist in the dataset” for an event of the project that has no records yet (e.g. a new visit, or the events of an arm without records). All the records of its arm are now reported as missing it (none for an arm without records).</li>
 <li>
 <code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/check_queries.html">check_queries()</a></code> wrote round record identifiers in scientific notation in the query codes and links (e.g. <code>1e+05-1</code> for the record <code>100000</code>), and <code><a href="../reference/check_queries.html">check_queries()</a></code> sorted them wrongly.</li>
