@@ -197,6 +197,13 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     } else if (extension_dic == "csv") {
       # Read CSV file
       dic <- utils::read.csv(dic_path, encoding = "UTF-8", header = FALSE, sep = sep)
+      # Error: the dictionary is not UTF-8 (e.g. it was saved again with Excel as "CSV", which uses the encoding of Windows)
+      if (!all(validUTF8(as.character(unlist(dic))))) {
+        rd_abort(
+          c("The dictionary {.file {dic_path}} is not encoded in UTF-8.", "i" = "Use the dictionary exported by REDCap or, if you edited it with Excel, save it as {.val CSV UTF-8}."),
+          class = "REDCapDM_error_file"
+        )
+      }
     } else {
       rd_abort(c("Unsupported dictionary format: {.file {dic_path}}.", "i" = "Only CSV and XLSX are supported."), class = "REDCapDM_error_file")
     }
@@ -274,7 +281,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
   # Process data from API connection
   if (all(!c(token, uri) %in% NA) && all(c(data_path, dic_path) %in% NA)) {
-    rlang::check_installed("REDCapR", reason = "to read data from the REDCap API.")
+    # REDCapR 1.2.0 or later: older versions only return the events of the first arm (redcap_event_instruments())
+    rlang::check_installed("REDCapR", version = "1.2.0", reason = "to read data from the REDCap API.")
 
     # Message: Begin data import process
     rd_inform("Importing data from REDCap API...")

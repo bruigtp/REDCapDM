@@ -211,6 +211,31 @@ test_that("rd_event accepts event labels and asks for the event when it is missi
   expect_error(rd_event(data = data, dic = data.frame(), event = "Visit"), "shared by several events")
 })
 
+test_that("rd_event checks the events of the project that have no records yet", {
+  cov <- covican
+  ef <- cov$event_form
+  new_event <- ef[ef$unique_event_name == "follow_up_visit_da_arm_1", ]
+  new_event$unique_event_name <- "month_12_arm_1"
+  cov$event_form <- rbind(ef, new_event)
+
+  # A new event without records: all the records of its arm are missing it
+  res <- suppressMessages(rd_event(cov, event = "month_12_arm_1"))
+  expect_equal(nrow(res$queries), length(unique(cov$data$record_id)))
+  expect_true(all(res$queries$Query == "The event 'month_12_arm_1' is missing."))
+  both <- suppressMessages(rd_event(cov, event = c("follow_up_visit_da_arm_1", "month_12_arm_1")))
+  expect_equal(nrow(both$queries), nrow(res$queries) + nrow(suppressMessages(rd_event(covican, event = "follow_up_visit_da_arm_1"))$queries))
+
+  # An arm without records: no record is missing its events
+  arm_2 <- new_event
+  arm_2$unique_event_name <- "baseline_arm_2"
+  if ("arm_num" %in% names(arm_2)) arm_2$arm_num <- 2
+  cov$event_form <- rbind(ef, arm_2)
+  expect_equal(nrow(suppressMessages(rd_event(cov, event = "baseline_arm_2"))$queries), 0)
+
+  # An event that is not in the project is still an error
+  expect_error(rd_event(cov, event = "unknown_arm_1"), class = "REDCapDM_error_argument")
+})
+
 test_that("rd_event stops when any of the events doesn't exist", {
   expect_error(rd_event(covican, event = c("baseline_visit_arm_1", "unknown_arm_1")), class = "REDCapDM_error_argument")
   expect_error(rd_event(covican, event = "unknown_arm_1"), class = "REDCapDM_error_argument")

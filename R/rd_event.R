@@ -142,6 +142,9 @@ rd_event <- function(project = NULL,
   # Save the original dataset for reference
   data0 <- data
 
+  # The identifiers of the report are numbers only when all the record identifiers of the project are plain numbers
+  numeric_ids <- ids_are_numbers(data$record_id)
+
   # Apply the filter expression to the dataset if provided
   if (!is.na(filter) && length(filter) == 1) {
     # The filter is evaluated with the columns of the data and the objects of the user's environment
@@ -159,10 +162,18 @@ rd_event <- function(project = NULL,
     }
   }
 
+  # Events of the project that have no records yet (e.g. a new visit, or an arm without records): they are in the
+  # event-form mapping but not in the data. No record has them, so all the records of their arm are missing them.
+  events_without_records <- character(0)
+  if (!is.null(event_form) && "unique_event_name" %in% names(event_form) && "redcap_event_name" %in% names(data0) &&
+    any(as.character(data0$redcap_event_name) %in% event_form$unique_event_name)) {
+    events_without_records <- setdiff(unique(as.character(event_form$unique_event_name)), as.character(data0$redcap_event_name))
+  }
+
   # Validate that the specified events are present in the dataset
   if (all(!is.na(event))) {
     if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data0))) {
-      if (any(!event %in% data0$redcap_event_name) && any(!event %in% data0$redcap_event_name.factor)) {
+      if (any(!event %in% c(as.character(data0$redcap_event_name), as.character(data0$redcap_event_name.factor), events_without_records))) {
         rd_abort("One or more specified events do not exist in the dataset. Please review the {.arg event} argument.", class = "REDCapDM_error_argument")
       }
     }
@@ -170,7 +181,7 @@ rd_event <- function(project = NULL,
     
     # Events given by their label: use their unique event name
     if ("redcap_event_name.factor" %in% names(data0)) {
-      for (k in which(!event %in% data0$redcap_event_name)) {
+      for (k in which(!event %in% c(as.character(data0$redcap_event_name), events_without_records))) {
         names_k <- unique(data0$redcap_event_name[data0$redcap_event_name.factor %in% event[k]])
 
         if (length(names_k) > 1) {
@@ -183,14 +194,11 @@ rd_event <- function(project = NULL,
 
     # Iterate over each specified event to identify missing records
     for (k in seq_along(event)) {
-      # Find record IDs associated with the current event (factor form)
-      if (any(names(data0) == "redcap_event_name.factor") && all(event %in% data0$redcap_event_name.factor)) {
-        ids <- data0$record_id[data0$redcap_event_name.factor %in% event[k]]
-      }
-
-      # Find record IDs associated with the current event (raw form)
-      if (all(event %in% data0$redcap_event_name)) {
+      # Find record IDs associated with the current event (raw form, or factor form if the event was given by its label)
+      if (event[k] %in% data0$redcap_event_name || event[k] %in% events_without_records) {
         ids <- data0$record_id[data0$redcap_event_name %in% event[k]]
+      } else {
+        ids <- data0$record_id[data0$redcap_event_name.factor %in% event[k]]
       }
 
 
@@ -202,7 +210,7 @@ rd_event <- function(project = NULL,
       
       # Multi-arm projects: only the records of the arm of the event can have it
       if ("redcap_event_name" %in% names(data0)) {
-        event_raw <- if (event[k] %in% data0$redcap_event_name) event[k] else unique(data0$redcap_event_name[data0$redcap_event_name.factor %in% event[k]])
+        event_raw <- if (event[k] %in% c(as.character(data0$redcap_event_name), events_without_records)) event[k] else unique(data0$redcap_event_name[data0$redcap_event_name.factor %in% event[k]])
         arm_k <- event_arm(event_raw, event_form)
 
         if (length(arm_k) > 0 && !anyNA(arm_k)) {
@@ -221,8 +229,11 @@ rd_event <- function(project = NULL,
 
         # Assign the current event name to the missing records - factor version
         if ("redcap_event_name.factor" %in% names(raw)) {
+          raw$redcap_event_name.factor <- as.character(raw$redcap_event_name.factor)
           for (i in seq_len(nrow(raw))) {
-            raw$redcap_event_name.factor[i] <- unique(data0$redcap_event_name.factor[data0$redcap_event_name %in% raw$redcap_event_name[i]])
+            label <- unique(as.character(data0$redcap_event_name.factor[data0$redcap_event_name %in% raw$redcap_event_name[i]]))
+            # (an event without records has no label in the data: its unique name is used)
+            raw$redcap_event_name.factor[i] <- if (length(label) > 0) label[1] else raw$redcap_event_name[i]
           }
         }
 
@@ -268,7 +279,7 @@ rd_event <- function(project = NULL,
 
         # Add a hyperlink for the query if link information is provided
         if (all(c("domain", "redcap_version", "proj_id") %in% names(link))) {
-          excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/record_home.php?pid=", link[["proj_id"]], "&id=", x[, "record_id"])
+          excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/record_home.php?pid=", link[["proj_id"]], "&id=", id_text(x[, "record_id"]))
         }
 
         # Append the query to the list of identified queries
@@ -297,7 +308,7 @@ rd_event <- function(project = NULL,
   # Classify each query with a unique code if there are queries present
   if (nrow(queries) != 0) {
     # Sort queries by record identifier
-    queries <- sort_by_identifier(queries)
+    queries <- sort_by_identifier(queries, numeric = numeric_ids)
 
     # Remove duplicate queries and ensure only unique rows are retained
     queries <- queries |>
@@ -308,7 +319,7 @@ rd_event <- function(project = NULL,
     queries <- data.frame(queries |>
       dplyr::group_by(.data$Identifier) |>
       dplyr::mutate(cod = dplyr::row_number()))
-    queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
+    queries$Code <- paste0(id_text(queries$Identifier), "-", queries$cod)
     queries <- queries |> dplyr::select(-"cod")
 
     # Reorder columns if the 'Link' argument is specified

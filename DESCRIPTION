@@ -17,7 +17,7 @@ URL: https://bruigtp.github.io/REDCapDM/, https://doi.org/10.1186/s12874-024-021
 BugReports: https://github.com/bruigtp/REDCapDM/issues
 Encoding: UTF-8
 Imports:
-    dplyr,
+    dplyr (>= 1.1.0),
     janitor,
     purrr,
     rlang (>= 1.0.0),
@@ -42,7 +42,7 @@ Suggests:
     ggplot2,
     openxlsx,
     readr,
-    REDCapR
+    REDCapR (>= 1.2.0)
 VignetteBuilder: knitr
 Depends: 
     R (>= 4.1)

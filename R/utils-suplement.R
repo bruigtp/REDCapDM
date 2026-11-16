@@ -131,10 +131,14 @@ round <- function(x, digits = 0) {
 #'
 #' @param queries Data frame with an `Identifier` column.
 #' @param by_code Logical. If `TRUE`, ties are broken by the `Code` column.
+#' @param numeric Logical. `FALSE` keeps `Identifier` as text. The functions pass
+#'   whether all the record identifiers of the project are plain numbers, so that
+#'   every report of a project has the same type of `Identifier`, whichever records
+#'   have queries.
 #' @return The sorted data frame.
 #' @noRd
-sort_by_identifier <- function(queries, by_code = FALSE) {
-  id <- as.character(queries$Identifier)
+sort_by_identifier <- function(queries, by_code = FALSE, numeric = TRUE) {
+  id <- id_text(queries$Identifier)
   keys <- list(natural_rank(id))
 
   if (by_code && "Code" %in% names(queries)) {
@@ -145,11 +149,38 @@ sort_by_identifier <- function(queries, by_code = FALSE) {
   rownames(queries) <- NULL
 
   # Numbers only when they are written as numbers: identifiers with leading zeros (e.g. "007") are kept as text
-  if (all(grepl("^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", id[!is.na(id)]))) {
+  if (isTRUE(numeric) && ids_are_numbers(id)) {
     queries$Identifier <- as.numeric(queries$Identifier)
   }
 
   queries
+}
+
+#' Record identifiers as text
+#'
+#' Numbers are written without scientific notation: `as.character(100000)` is
+#' `"1e+05"`, which is not the record `100000` of REDCap.
+#'
+#' @param x Vector of record identifiers.
+#' @return A character vector.
+#' @noRd
+id_text <- function(x) {
+  if (!is.numeric(x)) {
+    return(as.character(x))
+  }
+  out <- sprintf("%.15g", x)
+  out[is.na(x)] <- NA_character_
+  out
+}
+
+#' Whether all the record identifiers are plain numbers (without leading zeros)
+#'
+#' @param id Vector of record identifiers.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+ids_are_numbers <- function(id) {
+  id <- id_text(id)
+  all(grepl("^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", id[!is.na(id)]))
 }
 
 natural_rank <- function(x) {

@@ -117,6 +117,15 @@ test_that("Longitudinal project without event_path issues a warning", {
   expect_true("dictionary" %in% names(res))
 })
 
+test_that("a dictionary that is not encoded in UTF-8 (saved again with Excel as CSV) gives a clear error", {
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export(data.frame(id = 1:2), tmp_r)
+  # Label with an accented letter in the Windows encoding (byte F3), as Excel saves a "CSV" file
+  tmp_dic <- tempfile(fileext = ".csv")
+  writeBin(c(charToRaw("field_name,form_name,field_type,field_label\nid,demographics,text,C"), as.raw(0xf3), charToRaw("digo\n")), tmp_dic)
+  expect_error(redcap_data(data_path = tmp_r, dic_path = tmp_dic), "not encoded in UTF-8", class = "REDCapDM_error_file")
+})
+
 test_that("Descriptive fields are removed from dictionary", {
   sample_data <- data.frame(id = 1:2)
   tmp_r <- tempfile(fileext = ".R")
@@ -138,8 +147,19 @@ test_that("Descriptive fields are removed from dictionary", {
 })
 
 
+test_that("API branch: REDCapR 1.2.0 or later is required (older versions only read the events of the first arm)", {
+  skip_if_not_installed("mockery")
+  required <- NULL
+  mockery::stub(redcap_data, "rlang::check_installed", function(pkg, reason = NULL, ..., version = NULL) {
+    required <<- c(pkg, version)
+    stop("REDCapR checked", call. = FALSE)
+  })
+  expect_error(redcap_data(uri = "https://api.example", token = "tok"), "REDCapR checked")
+  expect_equal(required, c("REDCapR", "1.2.0"))
+})
+
 test_that("API branch: SSL error in labels fetch is converted to helpful stop message", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   # Make a stub that raises an error with SSL phrase
   fake_ssl_error <- function(...) stop("SSL peer certificate: something went wrong", call. = FALSE)
@@ -153,7 +173,7 @@ test_that("API branch: SSL error in labels fetch is converted to helpful stop me
 })
 
 test_that("API branch: if labels retrieval returns zero rows a friendly error is thrown", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   empty_labels <- data.frame()  # zero-row data.frame
   fake_read_empty_labels <- function(redcap_uri = NULL, token = NULL, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = NULL, export_data_access_groups = NULL, export_survey_fields = NULL, fields = NULL) {
@@ -168,7 +188,7 @@ test_that("API branch: if labels retrieval returns zero rows a friendly error is
 })
 
 test_that("API branch: when event_path is provided it warns and attempts to read it", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   # Reuse fake functions that return minimal data (labels + raw) and metadata
   labels_df <- data.frame(record_id = 1L, stringsAsFactors = FALSE, check.names = FALSE)
@@ -285,7 +305,7 @@ test_that("Variables not linked to event_form are removed with warning", {
 })
 
 test_that("API branch: filter_field missing record_id triggers helpful error", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   fake_error <- function(...) {
     stop("REDCap's PHP code is likely trying to process too much text in one bite", call. = FALSE)
@@ -299,7 +319,7 @@ test_that("API branch: filter_field missing record_id triggers helpful error", {
 })
 
 test_that("API branch: observational data retrieval with zero rows errors", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) {
@@ -319,7 +339,7 @@ test_that("API branch: observational data retrieval with zero rows errors", {
 })
 
 test_that("API branch: descriptive fields are filtered from dictionary", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   data_api <- data.frame(record_id = 1)
@@ -340,7 +360,7 @@ test_that("API branch: descriptive fields are filtered from dictionary", {
 })
 
 test_that("API branch: checkbox fields get factor versions", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   data_api <- data.frame(record_id = 1, var___1 = "1")
@@ -361,7 +381,7 @@ test_that("API branch: checkbox fields get factor versions", {
 })
 
 test_that("API branch: radio/dropdown fields produce factor versions", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1)
   data_api <- data.frame(record_id = 1, radio1 = "1")
@@ -390,7 +410,7 @@ test_that("API branch: radio/dropdown fields produce factor versions", {
 
 
 test_that("API branch: longitudinal without event_path fetches event_form via API", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   labels_df <- data.frame(record_id = 1, redcap_event_name = "ev1")
   data_api <- labels_df
@@ -584,7 +604,7 @@ test_that("redcap_data keeps the text of the text fields that look like numbers"
 })
 
 test_that("API branch: labels, yes/no and form status factors and forms without event are as in the exported files", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   data_api <- data.frame(subj = 1:2, redcap_event_name = "visit_arm_1", name = c("Ann", "Bob"), smoker = c(1, 0), f1_complete = c(2, 0), extra = c("a", "b"), f2_complete = 0)
   labels_df <- data.frame(
@@ -639,7 +659,7 @@ test_that("redcap_data removes the HTML of the labels of the dictionary and of t
 })
 
 test_that("API branch: text fields that look like numbers keep their text, as with the exported files", {
-  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("readr")
   skip_if_not_installed("mockery")
   raw_text <- "subj,phone,dose,n_txt,note,weight,f1_complete\n1,+34600111222,1.50,12,,70.5,2\n2,+34931234567,2,7,,80,0\n"

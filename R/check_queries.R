@@ -116,7 +116,7 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
 
   # Columns that identify a query. Event and Repetition are used when both reports have them, so the same variable in different events or instances of a repeated instrument are different queries.
   key_cols <- c("Identifier", intersect(c("Event", "Repetition"), intersect(names(old), names(new))), "Description")
-  query_key <- function(df, cols) do.call(paste, c(unname(as.list(df[cols])), sep = "\r"))
+  query_key <- function(df, cols) do.call(paste, c(lapply(unname(as.list(df[cols])), id_text), sep = "\r"))
 
   # Merge old and new datasets
   new <- new |> dplyr::select(-dplyr::any_of("Code"))
@@ -161,13 +161,14 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
     dplyr::select(-dplyr::any_of(c("comp", "comp2", "n")))
 
   # Arrange the dataset by identifier and previous code
-  check <- sort_by_identifier(check, by_code = TRUE)
+  # (identifiers kept as text in a report, e.g. with leading zeros in some of them, are kept as text)
+  check <- sort_by_identifier(check, by_code = TRUE, numeric = !is.character(old$Identifier) && !is.character(new$Identifier))
 
   # Assign new codes to each query to match the old dataset
   check <- data.frame(check |>
     dplyr::group_by(.data$Identifier) |>
     dplyr::mutate(cod = dplyr::row_number()))
-  check$Code <- if (nrow(check) > 0) paste0(as.character(check$Identifier), "-", check$cod) else character(0)
+  check$Code <- if (nrow(check) > 0) paste0(id_text(check$Identifier), "-", check$cod) else character(0)
   check <- check |>
     dplyr::select(-dplyr::any_of("cod"))
 

@@ -957,6 +957,58 @@ test_that("rd_query, rd_event and check_queries keep the leading zeros of the re
   expect_type(suppressMessages(rd_query(cov, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))$queries$Identifier, "double")
 })
 
+test_that("round record identifiers (e.g. 100000) keep their digits in the codes, the order and the links", {
+  cov <- covican
+  ids <- unique(cov$data$record_id)
+  cov$data$record_id <- c("100000", "200000", "1000000", "123456", "300000")[(match(cov$data$record_id, ids) - 1) %% 5 + 1]
+  cov$data <- cov$data[!duplicated(cov$data[c("record_id", "redcap_event_name")]), ]
+  link <- list(domain = "redcap.example", redcap_version = "14", proj_id = 1, event_id = c(baseline_visit_arm_1 = 1))
+  q <- suppressWarnings(suppressMessages(rd_query(cov, variables = "age", expression = "x > 0", event = "baseline_visit_arm_1", link = link)))
+  codes <- c("100000-1", "123456-1", "200000-1", "300000-1", "1000000-1")
+  expect_equal(q$queries$Identifier, c(100000, 123456, 200000, 300000, 1000000))
+  expect_equal(q$queries$Code, codes)
+  expect_false(any(grepl("e+", q$queries$Link, fixed = TRUE)))
+  cq <- suppressMessages(check_queries(q$queries, q$queries))
+  expect_equal(cq$queries$Code, codes)
+  expect_true(all(cq$queries$Modification == "Pending"))
+  # Record identifiers read as numbers (e.g. from the API) give the same codes and links
+  cov$data$record_id <- as.numeric(cov$data$record_id)
+  qn <- suppressWarnings(suppressMessages(rd_query(cov, variables = "age", expression = "x > 0", event = "baseline_visit_arm_1", link = link)))
+  expect_equal(qn$queries$Code, codes)
+  expect_equal(qn$queries$Link, q$queries$Link)
+  expect_true(all(grepl("^[0-9]+-1$", suppressMessages(rd_event(cov, event = "follow_up_visit_da_arm_1"))$queries$Code)))
+})
+
+test_that("the queries and the report describe <= and >= correctly", {
+  ge <- suppressMessages(rd_query(covican, variables = "age", expression = "x >= 80", event = "baseline_visit_arm_1"))
+  le <- suppressMessages(rd_query(covican, variables = "age", expression = "x <= 40", event = "baseline_visit_arm_1", negate = TRUE))
+  expect_gt(nrow(ge$queries), 0)
+  expect_gt(nrow(le$queries), 0)
+  expect_true(all(grepl("should not be greater than or equal to 80$", ge$queries$Query)))
+  expect_true(all(grepl("should be less than or equal to 40$", le$queries$Query)))
+  expect_match(ge$results, "should not be greater than or equal to 80", fixed = TRUE)
+  expect_false(any(grepl("than =", c(ge$queries$Query, le$queries$Query, ge$results, le$results), fixed = TRUE)))
+})
+
+test_that("all the reports of a project have the same type of Identifier, whichever records have queries", {
+  cov <- covican
+  # Identifiers with and without leading zeros: "007", "014", ..., "1330"
+  cov$data$record_id <- sprintf("%03d", match(cov$data$record_id, unique(cov$data$record_id)) * 7)
+  a <- suppressMessages(rd_query(cov, variables = "age", expression = "x > 80", event = "baseline_visit_arm_1"))
+  b <- suppressMessages(rd_query(cov, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))
+  # (the queries of `age` are only in records without leading zeros)
+  expect_false(any(startsWith(as.character(a$queries$Identifier), "0")))
+  expect_type(a$queries$Identifier, "character")
+  expect_type(b$queries$Identifier, "character")
+  expect_equal(nrow(dplyr::bind_rows(a$queries, b$queries)), nrow(a$queries) + nrow(b$queries))
+  expect_type(suppressMessages(rd_event(cov, event = "follow_up_visit_da_arm_1"))$queries$Identifier, "character")
+  expect_type(suppressMessages(check_queries(a$queries, a$queries))$queries$Identifier, "character")
+  # Plain numbers are still numbers in check_queries()
+  cov$data$record_id <- as.character(match(cov$data$record_id, unique(cov$data$record_id)))
+  n <- suppressMessages(rd_query(cov, variables = "age", expression = "x > 80", event = "baseline_visit_arm_1"))
+  expect_type(suppressMessages(check_queries(n$queries, n$queries))$queries$Identifier, "double")
+})
+
 test_that("rd_query ignores empty text arguments and explains data without columns", {
   q0 <- suppressMessages(rd_query(covican, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1"))
   q1 <- suppressMessages(rd_query(covican, variables = "copd", expression = "is.na(x)", event = "baseline_visit_arm_1", query_name = character(0), instrument = character(0)))

@@ -4,6 +4,8 @@
 
 - `library(REDCapDM)` no longer attaches other packages (dplyr, purrr, stringr, labelled, ...). Load the packages you use in your own code, e.g. `library(dplyr)` to use `filter()` or `%>%`.
 - REDCapR and openxlsx are now suggested packages: they are only needed to read data from the REDCap API or `.xlsx` files and to export queries with `rd_export()`. These functions ask to install them when they are missing.
+- REDCapDM now requires dplyr 1.1.0 or later (released in January 2023).
+- Reading data from the REDCap API needs REDCapR 1.2.0 or later: older versions only return the events of the first arm of the project.
 
 ## New features
 
@@ -34,6 +36,9 @@
 
 ## Bug fixes
 
+- `rd_event()` stopped with "events do not exist in the dataset" for an event of the project that has no records yet (e.g. a new visit, or the events of an arm without records). All the records of its arm are now reported as missing it (none for an arm without records).
+- `rd_query()`, `rd_event()` and `check_queries()` wrote round record identifiers in scientific notation in the query codes and links (e.g. `1e+05-1` for the record `100000`), and `check_queries()` sorted them wrongly.
+- `rd_query()` described the expressions with `<=` and `>=` as "less than =" and "greater than =" in the queries and in the report. They are now "less than or equal to" and "greater than or equal to".
 - `rd_event()` failed when `addTo` received the output of `rd_query()` or `rd_event()`.
 - `rd_split(wide = TRUE)` failed when it was called as `REDCapDM::rd_split()` without loading the package.
 - The `filter` and `expression` of `rd_query()`, and the `filter` of `rd_event()` and `rd_insert_na()`, can use objects created inside a function or a loop: before, only the objects of the global environment were found. They are no longer run with `eval(parse())`, so an "x" inside a text value of `expression` (e.g. `x == 'x'`) is no longer replaced by the variable, and filters can't use the internal objects of the functions. As before, several conditions can be separated by commas and `data$var` refers to the data.
@@ -81,7 +86,7 @@
 - `rd_rlogic()` returned `NA` in `datediff()` with `"now"` or with dates with time, translated the names of functions written inside a text (e.g. `[t] = 'sum(1,2)'`) and gave `mod()` of negative numbers with the sign of the divisor (REDCap gives `mod(-7, 3) = -1`).
 - `rd_query()` removed the text between `<` and `>` of the labels (e.g. `Age (<18 or >90 years)` became `Age (90 years)`) and showed `&amp;` in the HTML report. `redcap_data()` and `rd_missplot()` also keep these characters, and only remove the HTML tags of the labels. `redcap_data()` also removes the HTML of the variable labels of the data (before, only of the dictionary), and no longer adds spaces where a tag was inside a word or a parenthesis (e.g. `Name (<i>full</i>)` is now `Name (full)`).
 - `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()` and `rd_dictionary()`) gave wrong results with negative numbers: `[a]<-3` (without spaces) was run as an assignment in R, and `[a] < '-3'` (with quotes) compared the values as text.
-- `rd_query()`, `rd_event()` and `check_queries()` turned record identifiers with leading zeros into numbers (e.g. `"007"` became `7`, and its code `7-1`), so they didn't match the record in REDCap. They are now kept as text; identifiers that are plain numbers are still returned as numbers.
+- `rd_query()`, `rd_event()` and `check_queries()` turned record identifiers with leading zeros into numbers (e.g. `"007"` became `7`, and its code `7-1`), so they didn't match the record in REDCap. They are now kept as text; identifiers that are plain numbers are still returned as numbers. The type is decided with all the records of the project, so all the reports of a project have the same type of `Identifier` (and can be combined with e.g. `dplyr::bind_rows()`), whichever records have queries.
 - `rd_dates()`, `rd_recalculate()` and `rd_transform()` failed when the data didn't have every date field of the dictionary (e.g. with a selection of columns).
 - `check_queries()` failed when neither report had queries (e.g. a project without errors in both reviews).
 - `rd_query()` failed with an internal error when `link` had `event_id = NULL` (e.g. a template for longitudinal projects used in a classic project). Elements given as `NULL` are now ignored.
@@ -93,6 +98,7 @@
 
 ## Clearer messages
 
+- `redcap_data()` explains when the dictionary is not encoded in UTF-8 (e.g. a dictionary saved again with Excel as "CSV"), instead of failing with an internal error.
 - The functions that use the event-form mapping explain an `event_form` that is not the one of `redcap_data()` (e.g. a number or a data frame without the columns `unique_event_name` and `form`), `rd_rlogic()` a `var` that is not in the dictionary of a longitudinal project and a logic that doesn't give one value per row, and `rd_query()` a `data` without columns. Before, they failed with internal R errors.
 - `redcap_data()` explains when a file is not found, when the csv file read by the R script is not in its folder and when the event file is not the instrument-event mapping of the project. It warns when variables of the data are not in the dictionary and when the project has no records yet.
 - `rd_query()` names the variables that don't exist (and how to check a checkbox), explains why an expression can't be evaluated, warns when a text variable is compared with a number and checks `negate`, `report_zeros`, `by_dag` and `add_to`.

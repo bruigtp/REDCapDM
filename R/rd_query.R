@@ -181,6 +181,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   
   # Repeating instruments of the complete dataset (before any event or filter subsetting)
   rep_pairs <- repeat_info(data)$pairs
+
+  # The identifiers of the report are numbers only when all the record identifiers of the project are plain numbers
+  numeric_ids <- ids_are_numbers(data$record_id)
   
   # The branching logic is evaluated in the complete dataset, because it can use variables of rows that are left out below (e.g. `[baseline_arm_1][sex]` when only the follow-up events are checked). `.rd_row` matches each row with its evaluation.
   data_all <- data
@@ -588,9 +591,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           }
         } else {
           if (negate) {
-            trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", "<=", ">=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", " greater than ", " less than or equal to ", " greater than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE))))
+            trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<=", ">=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than or equal to ", " greater than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE))))
           } else {
-            trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", "<=", ">=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", "greater than ", " less than or equal to ", " greater than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE))))
+            trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<=", ">=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than or equal to ", " greater than or equal to ", " less than ", "greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE))))
           }
         },
         Code = "",
@@ -606,11 +609,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
       # Add link to each query
       if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) && any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"], link_instance)
+        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", id_text(x[, "record_id"]), link_instance)
       }
 
       if (all(c("domain", "redcap_version", "proj_id") %in% names(link)) && !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", x[, "record_id"], link_instance)
+        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", id_text(x[, "record_id"]), link_instance)
       }
 
       # Adding each identified query to the queries data frame
@@ -668,9 +671,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           }
         } else {
           if (negate) {
-            gsub("  ", " ", paste("The value should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE)))
+            gsub("  ", " ", paste("The value should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c(">=", "<=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" greater than or equal to ", " less than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE)))
           } else {
-            gsub("  ", " ", paste("The value should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE)))
+            gsub("  ", " ", paste("The value should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c(">=", "<=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" greater than or equal to ", " less than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE)))
           }
         },
         stringsAsFactors = FALSE
@@ -718,7 +721,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Classify each query with its own code
   if (nrow(queries) > 0) {
     # Sort data by record ID
-    queries <- sort_by_identifier(queries)
+    queries <- sort_by_identifier(queries, numeric = numeric_ids)
 
     # Remove duplicates and add code for each query
     queries <- unique(queries |>
@@ -726,7 +729,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     queries <- data.frame(queries |>
       dplyr::group_by(.data$Identifier) |>
       dplyr::mutate(cod = dplyr::row_number()))
-    queries$Code <- paste0(as.character(queries$Identifier), "-", queries$cod)
+    queries$Code <- paste0(id_text(queries$Identifier), "-", queries$cod)
     queries <- queries |> dplyr::select(-"cod")
 
     # Reorder columns if 'Link' was included
@@ -806,7 +809,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         for (i in zero_vars) {
           report$query_descr[report$var_event %in% i] <- paste0(
             "The value should not be ",
-            stringi::stri_replace_all_regex(gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])]), pattern = c("<", ">", ">=", "<=", "&", "\\|", "==", "!=", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than ", " greater than ", " greater than or equal to ", " less than or equal to ", " and ", " or ", " equal to ", " not equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize = FALSE)
+            stringi::stri_replace_all_regex(gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])]), pattern = c(">=", "<=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" greater than or equal to ", " less than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE)
           )
         }
 
