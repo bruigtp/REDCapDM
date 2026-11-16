@@ -268,6 +268,7 @@
 <li>
 <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code>, <code><a href="../reference/rd_dates.html">rd_dates()</a></code>, <code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code>, <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>, <code><a href="../reference/rd_export.html">rd_export()</a></code>, <code><a href="../reference/rd_factor.html">rd_factor()</a></code>, <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> and <code><a href="../reference/rd_split.html">rd_split()</a></code> are now stable (their arguments and results won’t change without a deprecation period). <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> remains experimental.</li>
 <li>The examples of <code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> and <code><a href="../reference/rd_export.html">rd_export()</a></code> can be run as they are.</li>
+<li>The screenshots of the queries vignette have alternative text, for screen readers.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="internal-changes-1-1-0">Internal changes<a class="anchor" aria-label="anchor" href="#internal-changes-1-1-0"></a></h3>
@@ -405,7 +406,7 @@
 <ul><li><p>Remove descriptive variables from the dictionary in the <em>redcap_data()</em> function.</p></li>
 <li><p>Improve the resulting summary of the <em>rd_query()</em> function.</p></li>
 <li><p>New error added to the <em>rd_query()</em> function when trying to use a variable that is not in the dataset.</p></li>
-<li><p>New error added to the <em>rd_query()</em> function when the logic of the filter was using incorrected logic.</p></li>
+<li><p>New error added to the <em>rd_query()</em> function when the logic of the filter was using incorrect logic.</p></li>
 <li><p>The <em>rd_export()</em> function will now create a themed excel file.</p></li>
 </ul></div>
 <div class="section level3">
@@ -491,7 +492,7 @@
 <li>
 <em>rd_transform()</em> will now take into account the different events that might be present in the variables of the logic for the recalculation of calculated fields and the evaluation of branching logics. This also applies for <em>rd_rlogic()</em>.</li>
 <li>As a consequence of this last improvement that applies in longitudinal REDCap projects (with more than one event) now we have to specify not only the data and dictionary but also the event-form mapping.</li>
-<li>New <em>checkbox_na</em> argument in <em>rd_transform()</em> to specify if the values of the checkbox will be converted to missing not only when the branching logic is missing but also when it’s not fullfilled (if <em>TRUE</em>).</li>
+<li>New <em>checkbox_na</em> argument in <em>rd_transform()</em> to specify if the values of the checkbox will be converted to missing not only when the branching logic is missing but also when it’s not fulfilled (if <em>TRUE</em>).</li>
 <li>New <em>by_dag</em> argument in <em>rd_query()</em> to filter the output by each Data Access Group (DAG).</li>
 <li>Summary of the generated queries ( <em>$results</em> ) will now include the event and the type of query and will be displayed in the RStudio viewer tab.</li>
 </ul></div>

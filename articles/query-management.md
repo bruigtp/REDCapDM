@@ -591,12 +591,15 @@ the direct link to REDCap where the query can be found.
 We can find the information about the domain, the REDCap version and the
 project ID in the link of the *Project Home* of the project in REDCap:
 
-![](files/ProjectHome.png)
+![Link of the Project Home page of a project in REDCap, which contains
+the domain, the REDCap version and the project
+ID](files/ProjectHome.png)
 
 The identifiers of the events can be exported from: *Project Setup* \<
 *Define My Events*
 
-![](files/EventsID.png)
+![Define My Events page of a project in REDCap, with the event ID of
+each event](files/EventsID.png)
 
 Once we have this information, we pass it as a list to the `link`
 argument:

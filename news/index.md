@@ -635,6 +635,8 @@
   and
   [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
   can be run as they are.
+- The screenshots of the queries vignette have alternative text, for
+  screen readers.
 
 ### Internal changes
 
@@ -844,7 +846,7 @@
   variable that is not in the dataset.
 
 - New error added to the *rd_query()* function when the logic of the
-  filter was using incorrected logic.
+  filter was using incorrect logic.
 
 - The *rd_export()* function will now create a themed excel file.
 
@@ -979,7 +981,7 @@
   only the data and dictionary but also the event-form mapping.
 - New *checkbox_na* argument in *rd_transform()* to specify if the
   values of the checkbox will be converted to missing not only when the
-  branching logic is missing but also when it’s not fullfilled (if
+  branching logic is missing but also when it’s not fulfilled (if
   *TRUE*).
 - New *by_dag* argument in *rd_query()* to filter the output by each
   Data Access Group (DAG).
