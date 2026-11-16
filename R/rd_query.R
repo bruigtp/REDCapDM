@@ -200,6 +200,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     event <- event_form |>
       dplyr::filter(.data$form %in% var_form) |>
       dplyr::pull(.data$unique_event_name)
+
+    # Only the events with data: an event that no record has reached yet (e.g. a follow-up visit, or an arm without
+    # records) has nothing to check
+    event <- event[event %in% c(as.character(data$redcap_event_name), as.character(data$redcap_event_name.factor))]
   }
 
   # Apply event filtering if events are specified

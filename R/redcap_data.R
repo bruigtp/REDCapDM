@@ -340,8 +340,21 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # Message: Intermediate status update
     rd_inform("Almost done...")
 
-    # Fetch main data using the REDCap API
-    data_api <- REDCapR::redcap_read(
+    # Fetch metadata dictionary using the REDCap API (before the data: it gives the text fields)
+    dic_api <- REDCapR::redcap_metadata_read(
+      redcap_uri = uri,
+      token = token,
+      verbose = FALSE
+    )$data
+
+    # Text fields without a numeric or date validation are read as text: as with the exported files, they are numbers
+    # only when that doesn't change them (e.g. a phone "+34600111222" or a code "1.50" keep their text)
+    api_validation <- if ("text_validation_type_or_show_slider_number" %in% names(dic_api)) dic_api$text_validation_type_or_show_slider_number else rep(NA_character_, nrow(dic_api))
+    api_text_fields <- dic_api[[1]][-1][dic_api$field_type[-1] %in% c("text", "notes") & !grepl("^(number|integer|date|time)", api_validation[-1])]
+    if (!all(filter_field %in% NA)) {
+      api_text_fields <- intersect(api_text_fields, filter_field)
+    }
+    read_args <- list(
       redcap_uri = uri,
       token = token,
       verbose = FALSE,
@@ -349,7 +362,28 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       export_data_access_groups = TRUE,
       export_survey_fields = survey_fields,
       fields = filter_field
-    )$data
+    )
+    # (the data are read as text and their types are guessed afterwards over all the records, as REDCapR does, except
+    # for the text fields)
+    if (length(api_text_fields) > 0) {
+      read_args$guess_type <- FALSE
+    }
+
+    # Fetch main data using the REDCap API
+    data_api <- do.call(REDCapR::redcap_read, read_args)$data
+    if (length(api_text_fields) > 0) {
+      text_cols <- intersect(api_text_fields, names(data_api))
+      data_api <- readr::type_convert(
+        data_api,
+        col_types = do.call(readr::cols, c(stats::setNames(rep(list(readr::col_character()), length(text_cols)), text_cols), list(.default = readr::col_guess())))
+      )
+      for (field in text_cols) {
+        as_number <- utils::type.convert(data_api[[field]], as.is = TRUE)
+        if (!is.character(as_number) && all(is.na(data_api[[field]]) | as.character(as_number) == data_api[[field]])) {
+          data_api[[field]] <- as_number
+        }
+      }
+    }
 
     # Ensure data retrieval was successful
     if (nrow(data_api) > 0) {
@@ -360,13 +394,6 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         class = "REDCapDM_error_api"
       )
     }
-
-    # Fetch metadata dictionary using the REDCap API
-    dic_api <- REDCapR::redcap_metadata_read(
-      redcap_uri = uri,
-      token = token,
-      verbose = FALSE
-    )$data
 
     # Ensure dictionary has appropriate names
     names(dic_api)[1] <- "field_name"

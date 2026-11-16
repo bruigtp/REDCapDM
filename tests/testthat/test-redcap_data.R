@@ -637,3 +637,32 @@ test_that("redcap_data removes the HTML of the labels of the dictionary and of t
   expect_equal(attr(out$data$weight, "label"), "Weight (kg) today")
   expect_equal(attr(out$data$age, "label"), "Age (<18 or >90 years)")
 })
+
+test_that("API branch: text fields that look like numbers keep their text, as with the exported files", {
+  skip_if_not_installed("REDCapR")
+  skip_if_not_installed("readr")
+  skip_if_not_installed("mockery")
+  raw_text <- "subj,phone,dose,n_txt,note,weight,f1_complete\n1,+34600111222,1.50,12,,70.5,2\n2,+34931234567,2,7,,80,0\n"
+  labels_df <- data.frame("Subject" = 1:2, "Phone" = c("+34600111222", "+34931234567"), "Dose" = c("1.50", "2"), "N" = c(12, 7), "Note" = NA, "Weight" = c(70.5, 80),
+    "Complete?" = c("Complete", "Incomplete"), check.names = FALSE)
+  dic_api <- data.frame(
+    field_name = c("subj", "phone", "dose", "n_txt", "note", "weight"), form_name = "f1", field_type = c("text", "text", "text", "text", "notes", "text"),
+    field_label = c("Subject", "Phone", "Dose", "N", "Note", "Weight"), text_validation_type_or_show_slider_number = c(NA, NA, NA, NA, NA, "number")
+  )
+  # As REDCapR: with guess_type = FALSE every column is text, otherwise the types are guessed
+  fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", guess_type = TRUE, ...) {
+    if (raw_or_label == "label") return(list(data = labels_df))
+    list(data = readr::read_csv(I(raw_text), show_col_types = FALSE, col_types = if (guess_type) NULL else readr::cols(.default = "c")))
+  }
+  mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
+  mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = dic_api))
+
+  out <- suppressMessages(redcap_data(uri = "https://api.example", token = "tok"))
+  expect_equal(out$data$phone, c("+34600111222", "+34931234567"), ignore_attr = TRUE)
+  expect_equal(out$data$dose, c("1.50", "2"), ignore_attr = TRUE)
+  # Text fields whose numbers don't change and validated fields are still numbers
+  expect_true(is.numeric(out$data$n_txt))
+  expect_true(is.numeric(out$data$weight))
+  # An empty text field is logical, as read.csv() reads it from the exported files
+  expect_true(is.logical(out$data$note))
+})

@@ -974,3 +974,13 @@ test_that("rd_query ignores the elements of link given as NULL", {
   expect_equal(q2$queries$Link, q1$queries$Link)
   expect_true(all(grepl("^https://redcap.x.org/redcap_v14.0.0/DataEntry/index.php\\?pid=3&page=", q2$queries$Link)))
 })
+
+test_that("rd_query checks the events with data when an event of the variable has no records yet", {
+  cov <- covican
+  cov$data <- cov$data[cov$data$redcap_event_name == "baseline_visit_arm_1", ]
+  full <- suppressWarnings(suppressMessages(rd_query(covican, variables = "potassium", expression = "is.na(x)")))$queries
+  part <- suppressWarnings(suppressMessages(rd_query(cov, variables = "potassium", expression = "is.na(x)")))$queries
+  expect_equal(nrow(part), sum(full$Event == "Baseline visit"))
+  # An event given in `event` that is not in the data is still an error
+  expect_error(rd_query(cov, variables = "potassium", expression = "is.na(x)", event = "follow_up_visit_da_arm_1"), class = "REDCapDM_error_argument")
+})

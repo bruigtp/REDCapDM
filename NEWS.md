@@ -70,6 +70,7 @@
 - `rd_rlogic()` counted calendar years and months in `datediff()`: as REDCap, it now counts years of 365.2425 days and months of 30.44 days (e.g. 365 days are 0.9993 years, so `rounddown(datediff(..., 'y'), 0)` gives 0).
 - `redcap_data()` with the API: the text fields and the record identifier lost their labels, the yes/no, true/false and form status fields didn't get their factor version (so `rd_factor()` and `rd_transform()` didn't convert them, as they do with the exported files), and the fields of the forms without any event were not removed although the warning said so.
 - `redcap_data()` with the exported files: the text fields that look like numbers lost their format when the R script of REDCap read them (e.g. a postal code or phone `"0034"` was read as `34`, and `"1.50"` as `1.5`); they now keep the text exported by REDCap. The record identifier also keeps its label when it has another name.
+- `redcap_data()` with the API: the text fields that look like numbers lost their format too (e.g. a phone `"+34600111222"` became `34600111222`, and `"1.50"` became `1.5`). As with the exported files, they now keep the text from REDCap.
 - `rd_rlogic()` failed with the operator `!=`, which REDCap accepts as `<>`.
 - `rd_transform()` failed with `wide = FALSE` when `final_format` was not `"by_form"`.
 - `rd_rlogic()` (and so `rd_query()`, `rd_checkbox()` and `rd_recalculate()`) treated `[x] <> '1'` as unknown when `x` was blank. As in REDCap, a blank value is different from any value, so the field with this branching logic is shown and checked.
@@ -86,6 +87,7 @@
 - `rd_query()` failed with an internal error when `link` had `event_id = NULL` (e.g. a template for longitudinal projects used in a classic project). Elements given as `NULL` are now ignored.
 - `rd_factor()` (and so `rd_transform()`) stopped when `exclude` had every variable that can be converted to a factor (e.g. a project with a single radio field that should stay numeric). As when there are no such variables, it now warns and goes on.
 - `rd_checkbox()` failed with projects read from the API when no checkbox had branching logic: the dictionary of the API has `NA` in its empty cells. `redcap_data()` now gives the same dictionary from the API as from the exported files, with empty texts in its empty cells.
+- `rd_query()` without `event` failed in longitudinal projects when an event of the variable had no records yet (e.g. a follow-up visit that no one has reached, or an arm without records). It now checks the events with data.
 - `rd_export()` reported success when `path` was a folder or `sheet_name` had one of `/ \ ? * : [ ]`, which Excel doesn't accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.
 - `rd_export()` accepts the data frame of queries as its first argument (e.g. `rd_export(report$queries)`): before, it said that there were no queries to export.
 
