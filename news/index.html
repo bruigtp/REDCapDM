@@ -97,7 +97,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
-<ul><li>
+<ul><li>Fields with the name of an object used inside the functions work: with a field called <code>event</code>, <code><a href="../reference/rd_query.html">rd_query()</a></code> with the <code>event</code> argument found no queries; with a field called <code>data</code>, <code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code>, <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> stopped with an error; <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> couldn’t evaluate a logic that used a field called <code>datediff</code>; and <code><a href="../reference/redcap_data.html">redcap_data()</a></code> left empty a field called <code>missing_codes</code>.</li>
+<li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> with the exported files: the labels of the options with line breaks lost their spaces (e.g. “oralcorticosteroids(e.g.”), because the R script exported by REDCap removes the line breaks. They take the label of the dictionary, as with the API.</li>
 <li>
 <code><a href="../reference/redcap_data.html">redcap_data()</a></code> reads the paths between quotes, as Windows copies them with “Copy as path” (e.g. <code>'"C:\\Users\\...\\project.r"'</code>). It said that the file was not an R file.</li>

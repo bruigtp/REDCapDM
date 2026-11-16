@@ -127,6 +127,21 @@
 
 ### Bug fixes
 
+- Fields with the name of an object used inside the functions work: with
+  a field called `event`,
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  with the `event` argument found no queries; with a field called
+  `data`,
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  stopped with an error;
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  couldn’t evaluate a logic that used a field called `datediff`; and
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  left empty a field called `missing_codes`.
 - [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
   with the exported files: the labels of the options with line breaks
   lost their spaces (e.g. “oralcorticosteroids(e.g.”), because the R
