@@ -253,3 +253,96 @@ test_that("rm_mdc = TRUE works with a field called `missing_codes`", {
   expect_equal(out$data$missing_codes, c(5.2, NA, 7.1), ignore_attr = TRUE)
   expect_true(is.na(out$data$sex[3]))
 })
+
+# Fixture with codes of the project: -999 in a numeric field, -888 and UNK in a radio field and a checkbox column for -999
+make_custom_mdc_fixture <- function() {
+  fx <- make_mdc_fixture()
+  fx$data$score <- c(10, -999, 12)
+  fx$data$sex <- c("1", "-888", "UNK")
+  fx$data$sex.factor <- factor(c("Male", NA, NA), levels = c("Male", "Female"))
+  fx$data$chk____999 <- c(0, 0, 0)
+  fx$data$chk____999.factor <- factor(rep("Unchecked", 3), levels = c("Unchecked", "Checked"))
+  fx$dic <- rbind(fx$dic, data.frame(field_name = "score", form_name = "form1", field_type = "text", text_validation_type_or_show_slider_number = "integer", field_label = "Score"))
+  fx
+}
+run_custom_mdc <- function(...) {
+  fx <- make_custom_mdc_fixture()
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export_mdc(fx$data, tmp_r)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(fx$dic, tmp_dic, row.names = FALSE, quote = FALSE)
+  suppressWarnings(redcap_data(data_path = tmp_r, dic_path = tmp_dic, ...))
+}
+
+test_that("redcap_data removes the Missing Data Codes given in `mdc` besides the default ones, also numeric codes in numeric fields", {
+  # Without `mdc`, only the default codes
+  out <- run_custom_mdc(rm_mdc = TRUE)
+  expect_equal(out$data$score, c(10, -999, 12), ignore_attr = TRUE)
+  expect_equal(out$data$sex, c(1, -888, NA), ignore_attr = TRUE)
+  expect_true("chk____999" %in% names(out$data))
+
+  out <- run_custom_mdc(rm_mdc = TRUE, mdc = c("-999", "-888"))
+  expect_equal(out$data$score, c(10, NA, 12), ignore_attr = TRUE)
+  expect_equal(out$data$sex, c(1, NA, NA), ignore_attr = TRUE)
+  expect_equal(as.character(out$data$sex.factor), c("Male", NA, NA))
+  expect_false(any(c("chk____999", "chk____999.factor") %in% names(out$data)))
+
+  # Numeric codes
+  expect_equal(run_custom_mdc(rm_mdc = TRUE, mdc = c(-999, -888))$data$score, c(10, NA, 12), ignore_attr = TRUE)
+})
+
+test_that("redcap_data keeps the Missing Data Codes given in `mdc` with rm_mdc = FALSE, with their labels in the .factor version", {
+  out <- run_custom_mdc(rm_mdc = FALSE, mdc = c(-999, "-888" = "Not applicable"))
+  expect_equal(out$data$score, c(10, NA, 12), ignore_attr = TRUE)
+  expect_equal(out$data$score_mdc, c(NA, "-999", NA), ignore_attr = TRUE)
+  # The label given in `mdc`, or else the code
+  expect_equal(as.character(out$data$sex.factor), c("Male", "Not applicable", "UNK"))
+})
+
+test_that("redcap_data explains a wrong `mdc`", {
+  for (wrong in list(NA, "", c("-999", NA), character(0), TRUE, list("-999"))) {
+    expect_error(redcap_data(data_path = "project.r", dic_path = "dictionary.csv", mdc = wrong), class = "REDCapDM_error_argument")
+  }
+})
+
+test_that("the Missing Data Codes of a project are read as the API returns them", {
+  expect_equal(parse_mdc_codes("-999, Not applicable | -888, Unknown"), c("-999", "-888"))
+  expect_equal(parse_mdc_codes("NI, No information\r\nUNK, Unknown, not known\n"), c("NI", "UNK"))
+  expect_equal(parse_mdc_codes(NA), character(0))
+  expect_equal(parse_mdc_codes(NULL), character(0))
+  expect_equal(parse_mdc_codes(""), character(0))
+  expect_equal(mdc_table(c(1e5, -999))$code, c("100000", "-999"))
+  expect_equal(mdc_table(c("-999" = "Not applicable", "-888"))$label, c("Not applicable", NA))
+})
+
+test_that("rm_mdc = FALSE never gives the Missing Data Codes the code of an option that nobody chose", {
+  fx <- make_mdc_fixture()
+  fx$data$sex <- c("1", "1", "UNK")
+  fx$data$sex.factor <- factor(c("Male", "Male", NA), levels = c("Male", "Female"))
+  fx$data$smoker <- c("0", "NI", "0")
+  fx$data$smoker.factor <- factor(c("No", NA, "No"), levels = c("Yes", "No"))
+  fx$dic$choices_calculations_or_slider_labels <- c(NA, "1, Male | 2, Female", NA, "1, One | NI, NI")
+  fx$dic <- rbind(fx$dic, data.frame(field_name = "smoker", form_name = "form1", field_type = "yesno", text_validation_type_or_show_slider_number = NA,
+                                     field_label = "Smoker", choices_calculations_or_slider_labels = NA))
+  tmp_r <- tempfile(fileext = ".R")
+  write_redcap_r_export_mdc(fx$data, tmp_r)
+  tmp_dic <- tempfile(fileext = ".csv")
+  write.csv(fx$dic, tmp_dic, row.names = FALSE)
+  out <- suppressWarnings(redcap_data(data_path = tmp_r, dic_path = tmp_dic, rm_mdc = FALSE))
+
+  # 2 is "Female" and 1 is "Yes", although nobody chose them
+  expect_equal(out$data$sex, c(1, 1, 3), ignore_attr = TRUE)
+  expect_equal(out$data$smoker, c(0, 2, 0), ignore_attr = TRUE)
+  expect_equal(as.character(out$data$sex.factor), c("Male", "Male", "UNK"))
+  expect_equal(as.character(out$data$smoker.factor), c("No", "NI", "No"))
+})
+
+test_that("rm_mdc = FALSE and `mdc` work in a project without records with multiple-choice fields", {
+  fx <- make_mdc_fixture()
+  fx$data <- fx$data[0, ]
+  for (rm in c(TRUE, FALSE)) {
+    out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = rm, fx = fx))
+    expect_equal(nrow(out$data), 0)
+    expect_true("sex.factor" %in% names(out$data))
+  }
+})

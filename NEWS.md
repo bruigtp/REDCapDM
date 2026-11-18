@@ -12,6 +12,7 @@
 - New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank. First version by Ferran Perez Sanchez (#19).
 - New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
 - With `redcap_data(rm_mdc = FALSE)`, the Missing Data Codes of validated text fields (numbers, dates, ...) are kept in a new `<field>_mdc` column, so that the field keeps its type. `rd_missplot()`, `rd_delete_vars()` and `rd_split()` handle these columns like the `.factor` ones.
+- New `mdc` argument in `redcap_data()` for the Missing Data Codes of the project, besides the default ones of REDCap (e.g. `mdc = c("-999", "-888" = "Not applicable")`): they are removed, or kept with `rm_mdc = FALSE`, like the default ones, and with a label the `.factor` version shows it instead of the code. Numeric codes are also found in numeric fields. With the API, the codes defined in the project are added automatically.
 - New `forms` argument in `rd_delete_vars()` to remove every variable of a form.
 - `rd_recalculate()` reports the number of different values of each calculated field.
 - `rd_rlogic()` returns `eval_data`, the evaluation next to the record identifier, event and repetition of each row.

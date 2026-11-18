@@ -32,6 +32,13 @@
 #' @param filter_field Optional character vector of field names to request from the API.
 #' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
 #' @param rm_mdc Logical; Removes the Missing Data Codes from de data. Default `TRUE`. With `FALSE`, the codes are kept: in multiple-choice fields as an additional category (in the `.factor` version), and in validated text fields (numbers, dates, ...) in a new `<field>_mdc` column, while the field itself keeps its type and has `NA` in those rows.
+#' @param mdc Optional Missing Data Codes of the project, besides the default ones of REDCap (`NI`, `UNK`, `NASK`, ...), which are always
+#'   used: a vector of codes, e.g. `c("-999", "-888")`. A code can have a label, written as `code = label`
+#'   (e.g. `c("-999" = "Not applicable", "-888")`): with `rm_mdc = FALSE`, the `.factor` version of the multiple-choice fields shows the
+#'   label instead of the code. Numeric codes are also found in numeric fields. With the API, the codes defined in the project
+#'   (Project Setup > Additional customizations > Missing Data Codes) are added automatically. As with the default codes, they are
+#'   searched in the validated text fields (numbers, dates, ...), the multiple-choice fields and the checkboxes, so they must not be values
+#'   that the fields can take (e.g. the code of an option).
 #'
 #' @return A list with:
 #'   - `data`: Imported dataset.
@@ -62,9 +69,10 @@
 #' @importFrom stats setNames
 #' @importFrom utils head
 
-redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, sep = ",", filter_field = NULL, survey_fields = FALSE, rm_mdc = TRUE) {
+redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA, token = NA, sep = ",", filter_field = NULL, survey_fields = FALSE, rm_mdc = TRUE, mdc = NULL) {
 
   event_form <- NULL
+  api_mdc <- character(0)
   
   # Error: invalid arguments
   for (arg in c("data_path", "dic_path", "event_path", "uri", "token")) {
@@ -115,6 +123,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   for (arg in c("survey_fields", "rm_mdc")) {
     check_flag(get(arg), arg)
   }
+
+  # Error: Missing Data Codes given by the user (codes and their labels)
+  mdc <- mdc_table(mdc)
 
   # Process data from exported files
   if (all(!c(data_path, dic_path) %in% NA) && all(c(token, uri) %in% NA)) {
@@ -385,6 +396,12 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       verbose = FALSE
     )$data
 
+    # Missing Data Codes defined in the project (if they can't be read, the default codes are used)
+    api_mdc <- tryCatch(
+      parse_mdc_codes(REDCapR::redcap_project_info_read(redcap_uri = uri, token = token, verbose = FALSE)$data$missing_data_codes),
+      error = function(e) character(0)
+    )
+
     # Text fields without a numeric or date validation are read as text: as with the exported files, they are numbers
     # only when that doesn't change them (e.g. a phone "+34600111222" or a code "1.50" keep their text)
     api_validation <- if ("text_validation_type_or_show_slider_number" %in% names(dic_api)) dic_api$text_validation_type_or_show_slider_number else rep(NA_character_, nrow(dic_api))
@@ -640,9 +657,43 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     "DER", "PINF", "NINF", "OTH"
   )
 
+  # Codes of the project: read from the API and given in `mdc`
+  missing_codes <- unique(c(missing_codes, api_mdc, mdc$code))
+  mdc_labels <- stats::setNames(mdc$label[!is.na(mdc$label)], mdc$code[!is.na(mdc$label)])
+
+  # Numeric codes (e.g. -999): a numeric column can contain them
+  mdc_numbers <- suppressWarnings(as.numeric(missing_codes))
+  numeric_mdc <- mdc_numbers[is.finite(mdc_numbers)]
+  numeric_mdc_codes <- missing_codes[is.finite(mdc_numbers)]
+
+  # Values that are a Missing Data Code (numbers are compared as numbers)
+  is_mdc_value <- function(x, ignore_case = FALSE) {
+    if (is.numeric(x)) {
+      return(!is.na(x) & x %in% numeric_mdc)
+    }
+    value <- stringr::str_trim(as.character(x))
+    if (ignore_case) toupper(value) %in% toupper(missing_codes) else value %in% missing_codes
+  }
+
+  # Text of the code of each value (NA when it isn't a code), and the label given in `mdc` instead of the code
+  mdc_text <- function(x) {
+    if (is.numeric(x)) {
+      return(numeric_mdc_codes[match(x, numeric_mdc)])
+    }
+    as.character(ifelse(is_mdc_value(x, ignore_case = TRUE), as.character(x), NA_character_))
+  }
+  mdc_shown <- function(x) {
+    code <- mdc_text(x)
+    label <- unname(mdc_labels[match(toupper(stringr::str_trim(code)), toupper(names(mdc_labels)))])
+    # (as.character: a project without records gives an empty vector)
+    as.character(ifelse(is.na(label), code, label))
+  }
+
   # Create the column pattern for checkboxes with Missing Data Codes (MDCs)
+  # (in the name of a checkbox column, REDCap writes the code in lower case and with `_` instead of `-` or `.`)
+  checkbox_mdc_codes <- unique(c(missing_codes, gsub("[^A-Za-z0-9_]", "_", missing_codes)))
   checkbox_mdc_pattern <- stringr::regex(
-    paste0("___(", paste(missing_codes, collapse = "|"), ")(\\.factor)?$"),
+    paste0("___(", paste(escape_regex(checkbox_mdc_codes), collapse = "|"), ")(\\.factor)?$"),
     ignore_case = TRUE
   )
 
@@ -696,7 +747,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     removed_checkbox_cols <- colnames(data_def$data)[stringr::str_detect(colnames(data_def$data), checkbox_mdc_pattern)]
     n_mdc_values <- sum(vapply(
       data_def$data[intersect(target_columns, colnames(data_def$data))],
-      function(x) sum(stringr::str_trim(as.character(x)) %in% missing_codes, na.rm = TRUE),
+      function(x) sum(is_mdc_value(x), na.rm = TRUE),
       numeric(1)
     ))
 
@@ -709,7 +760,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         dplyr::across(
           dplyr::all_of(target_columns),
           ~ {
-            # Numeric columns can't contain Missing Data Codes
+            # Numeric columns can only contain numeric codes
+            if (is.numeric(.x)) {
+              return(replace(.x, is_mdc_value(.x), NA))
+            }
             if (!is.character(.x) && !is.factor(.x)) {
               return(.x)
             }
@@ -735,13 +789,18 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     for (var in text_targets) {
       x <- data_def$data[[var]]
 
-      # Numeric columns can't contain Missing Data Codes
-      if (!is.character(x) && !is.factor(x)) {
+      # Numeric columns can only contain numeric codes
+      if (!is.character(x) && !is.factor(x) && !is.numeric(x)) {
         next
       }
 
-      val_char <- stringr::str_trim(as.character(x))
-      is_mdc <- toupper(val_char) %in% missing_codes
+      if (is.numeric(x)) {
+        is_mdc <- is_mdc_value(x)
+        val_char <- mdc_text(x)
+      } else {
+        val_char <- stringr::str_trim(as.character(x))
+        is_mdc <- is_mdc_value(val_char, ignore_case = TRUE)
+      }
 
       if (any(is_mdc)) {
         mdc_col <- paste0(var, "_mdc")
@@ -756,7 +815,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         }
       }
 
-      data_def$data[[var]] <- restore_type(ifelse(is_mdc, NA_character_, val_char), var)
+      data_def$data[[var]] <- if (is.numeric(x)) replace(x, is_mdc, NA) else restore_type(ifelse(is_mdc, NA_character_, val_char), var)
     }
 
     if (length(mdc_fields) > 0) {
@@ -771,23 +830,25 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
       if (factor_var %in% colnames(data_def$data)) {
 
-        # Make sure that MDC labels are in the .factor version
+        # Make sure that MDC labels are in the .factor version (the label given in `mdc`, or else the code)
         data_def$data[[factor_var]] <- dplyr::coalesce(
           as.character(data_def$data[[factor_var]]),
-          as.character(ifelse(toupper(as.character(data_def$data[[var]])) %in% missing_codes,
-                 as.character(data_def$data[[var]]), NA_character_))
+          mdc_shown(data_def$data[[var]])
         )
 
         # Assign a numerical sequential code to MDC in the original variable
+        is_mdc_mask <- is_mdc_value(data_def$data[[var]], ignore_case = TRUE)
         orig_vals <- as.character(data_def$data[[var]])
-        is_mdc_mask <- toupper(orig_vals) %in% missing_codes
 
         if (any(is_mdc_mask, na.rm = TRUE)) {
 
           suppressWarnings({
             numeric_codes <- as.numeric(orig_vals[!is_mdc_mask & !is.na(orig_vals)])
           })
-          next_code <- if (length(numeric_codes) > 0) max(numeric_codes, na.rm = TRUE) + 1 else 1
+          # (also the codes of the options that nobody chose: the code given to the Missing Data Codes can't be one of them)
+          numeric_codes <- c(numeric_codes, option_codes(data_def$dictionary, var))
+          numeric_codes <- numeric_codes[!is.na(numeric_codes)]
+          next_code <- if (length(numeric_codes) > 0) max(numeric_codes) + 1 else 1
 
           orig_vals[is_mdc_mask] <- as.character(next_code)
           data_def$data[[var]] <- restore_type(orig_vals, var)
@@ -970,4 +1031,76 @@ keep_text_fields <- function(data, dic, csv_path) {
   }
 
   data
+}
+
+
+#' Missing Data Codes given in the `mdc` argument of `redcap_data()`
+#'
+#' @param mdc Vector of codes, optionally with their labels written as `code = label`.
+#' @param call The function shown in the error.
+#' @return A data frame with the codes (`code`) and their labels (`label`, `NA` when there isn't one).
+#' @noRd
+mdc_table <- function(mdc, call = rlang::caller_env()) {
+  if (is.null(mdc)) {
+    return(data.frame(code = character(0), label = character(0), stringsAsFactors = FALSE))
+  }
+
+  values <- if (is.numeric(mdc)) vapply(mdc, format, character(1), scientific = FALSE, trim = TRUE, digits = 15) else mdc
+  if (!(is.character(mdc) || is.numeric(mdc)) || is.list(mdc) || length(mdc) == 0 || anyNA(values) || any(!nzchar(trimws(values)))) {
+    rd_abort(
+      c("{.arg mdc} must be a vector of Missing Data Codes, e.g. {.code c(\"-999\", \"-888\" = \"Not applicable\")}.", "x" = "It is {.obj_type_friendly {mdc}}, or it has missing or empty values."),
+      class = "REDCapDM_error_argument", call = call
+    )
+  }
+
+  values <- trimws(unname(values))
+  codes <- names(mdc)
+  codes <- if (is.null(codes)) rep("", length(values)) else trimws(ifelse(is.na(codes), "", codes))
+  out <- data.frame(
+    code = ifelse(nzchar(codes), codes, values),
+    label = ifelse(nzchar(codes), values, NA_character_),
+    stringsAsFactors = FALSE
+  )
+  out[!duplicated(out$code), , drop = FALSE]
+}
+
+#' Codes of the Missing Data Codes of a project, as the API returns them
+#'
+#' REDCap returns each code with its label (`code, label`), separated by `|` or line breaks.
+#'
+#' @param x Text with the Missing Data Codes of the project (`NULL`, `NA` or empty when it has none).
+#' @return The codes.
+#' @noRd
+parse_mdc_codes <- function(x) {
+  x <- as.character(x)
+  x <- x[!is.na(x) & nzchar(trimws(x))]
+  if (length(x) == 0) {
+    return(character(0))
+  }
+
+  items <- trimws(unlist(strsplit(x, "[|\r\n]+")))
+  codes <- trimws(sub(",.*$", "", items))
+  unique(codes[nzchar(codes)])
+}
+
+#' Numeric codes of the options of a multiple-choice field
+#'
+#' @param dic Dictionary of the project.
+#' @param field Name of the field.
+#' @return The numeric codes of its options (`0` and `1` in yes/no and true/false fields).
+#' @noRd
+option_codes <- function(dic, field) {
+  row <- dic[dic$field_name %in% field, , drop = FALSE]
+  if (nrow(row) == 0) {
+    return(numeric(0))
+  }
+  if (row$field_type[1] %in% c("yesno", "truefalse")) {
+    return(c(0, 1))
+  }
+  if (!"choices_calculations_or_slider_labels" %in% names(row) || is.na(row$choices_calculations_or_slider_labels[1])) {
+    return(numeric(0))
+  }
+  options <- strsplit(as.character(row$choices_calculations_or_slider_labels[1]), "|", fixed = TRUE)[[1]]
+  codes <- suppressWarnings(as.numeric(trimws(sub(",.*$", "", options))))
+  codes[!is.na(codes)]
 }

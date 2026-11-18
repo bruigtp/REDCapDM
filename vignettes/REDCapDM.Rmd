@@ -205,6 +205,14 @@ dataset <- redcap_data(data_path = "C:/Users/username/example.r",
                        rm_mdc = FALSE)
 ```
 
+If the project has its own Missing Data Codes, give them in the `mdc` argument, optionally with their labels (with the API, the codes defined in the project are read automatically). They are handled like the default codes of REDCap, which are always used:
+
+```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
+dataset <- redcap_data(data_path = "C:/Users/username/example.r",
+                       dic_path = "C:/Users/username/example_dictionary.csv",
+                       mdc = c("-999" = "Not applicable", "-888" = "Unknown"))
+```
+
 
 <br>
 <br>

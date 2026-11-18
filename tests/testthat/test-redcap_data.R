@@ -285,6 +285,7 @@ test_that("API branch: when event_path is provided it warns and attempts to read
 
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_redcap_read2)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_redcap_metadata_read2)
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
 
   # create a valid event CSV (not the events export)
   event_form <- data.frame(form = "form1", stringsAsFactors = FALSE)
@@ -405,6 +406,7 @@ test_that("API branch: observational data retrieval with zero rows errors", {
 
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_meta)
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
 
   expect_error(
     redcap_data(uri = "https://api.example", token = "tok"),
@@ -428,6 +430,7 @@ test_that("API branch: descriptive fields are filtered from dictionary", {
 
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_meta)
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
 
   out <- redcap_data(uri = "https://api.example", token = "tok")
   expect_false("junk" %in% out$dictionary$field_name)
@@ -449,6 +452,7 @@ test_that("API branch: checkbox fields get factor versions", {
 
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_meta)
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
 
   expect_warning(out <- redcap_data(uri = "https://api.example", token = "tok"), "not in the dictionary")
   expect_true("var___1.factor" %in% names(out$data))
@@ -476,6 +480,7 @@ test_that("API branch: radio/dropdown fields produce factor versions", {
 
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_meta)
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
 
   expect_warning(out <- redcap_data(uri = "https://api.example", token = "tok"), "not in the dictionary")
   expect_true("record_id.factor" %in% names(out$data))
@@ -501,6 +506,7 @@ test_that("API branch: longitudinal without event_path fetches event_form via AP
 
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", fake_meta)
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
   mockery::stub(redcap_data, "REDCapR::redcap_event_instruments", fake_event)
 
   out <- redcap_data(uri = "https://api.example", token = "tok")
@@ -516,6 +522,7 @@ test_that("API branch: the empty data access groups and repeated instrument are 
     fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) list(data = if (raw_or_label == "label") labels_df else data_api)
     mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
     mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = data.frame(field_name = "record_id", field_type = "text", form_name = "f1", field_note = " Note\n")))
+    mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
     mockery::stub(redcap_data, "REDCapR::redcap_event_instruments", function(...) list(data = data.frame(arm_num = 1, unique_event_name = "visit_arm_1", form = "f1")))
     out <- suppressWarnings(suppressMessages(redcap_data(uri = "https://api.example", token = "tok")))
     # The text of the dictionary has no spaces or line breaks at the beginning or at the end, as with the exported files
@@ -722,6 +729,7 @@ test_that("API branch: labels, yes/no and form status factors and forms without 
   }
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = dic_api))
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
   mockery::stub(redcap_data, "REDCapR::redcap_event_instruments", function(...) list(data = event_api))
 
   expect_warning(out <- suppressMessages(redcap_data(uri = "https://api.example", token = "tok")), "not linked to any event")
@@ -775,6 +783,7 @@ test_that("API branch: text fields that look like numbers keep their text, as wi
   }
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = dic_api))
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
 
   out <- suppressMessages(redcap_data(uri = "https://api.example", token = "tok"))
   expect_equal(out$data$phone, c("+34600111222", "+34931234567"), ignore_attr = TRUE)
@@ -784,4 +793,28 @@ test_that("API branch: text fields that look like numbers keep their text, as wi
   expect_true(is.numeric(out$data$weight))
   # An empty text field is logical, as read.csv() reads it from the exported files
   expect_true(is.logical(out$data$note))
+})
+
+test_that("API branch: the Missing Data Codes of the project are added to the default ones and to `mdc`", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  data_api <- data.frame(record_id = 1:4, score = c(10, -999, -777, -555))
+  dic_api <- data.frame(
+    field_name = c("record_id", "score"), form_name = "f1", field_type = "text", field_label = c("ID", "Score"),
+    text_validation_type_or_show_slider_number = c(NA, "integer"), stringsAsFactors = FALSE
+  )
+  fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) {
+    if (raw_or_label == "label") return(list(data = stats::setNames(data_api, c("ID", "Score"))))
+    list(data = data_api)
+  }
+  mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read)
+  mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = dic_api))
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = "-999, Not applicable | -777, Unknown")))
+
+  expect_equal(suppressWarnings(redcap_data(uri = "https://api.example", token = "tok"))$data$score, c(10, NA, NA, -555), ignore_attr = TRUE)
+  expect_equal(suppressWarnings(redcap_data(uri = "https://api.example", token = "tok", mdc = "-555"))$data$score, c(10, NA, NA, NA), ignore_attr = TRUE)
+
+  # If the codes of the project can't be read, the default ones are used
+  mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) stop("no permission"))
+  expect_equal(suppressWarnings(redcap_data(uri = "https://api.example", token = "tok"))$data$score, c(10, -999, -777, -555), ignore_attr = TRUE)
 })

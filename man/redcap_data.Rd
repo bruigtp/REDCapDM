@@ -13,7 +13,8 @@ redcap_data(
   sep = ",",
   filter_field = NULL,
   survey_fields = FALSE,
-  rm_mdc = TRUE
+  rm_mdc = TRUE,
+  mdc = NULL
 )
 }
 \arguments{
@@ -34,6 +35,14 @@ redcap_data(
 \item{survey_fields}{Logical; include survey-related fields when pulling via API. Default \code{FALSE}.}
 
 \item{rm_mdc}{Logical; Removes the Missing Data Codes from de data. Default \code{TRUE}. With \code{FALSE}, the codes are kept: in multiple-choice fields as an additional category (in the \code{.factor} version), and in validated text fields (numbers, dates, ...) in a new \verb{<field>_mdc} column, while the field itself keeps its type and has \code{NA} in those rows.}
+
+\item{mdc}{Optional Missing Data Codes of the project, besides the default ones of REDCap (\code{NI}, \code{UNK}, \code{NASK}, ...), which are always
+used: a vector of codes, e.g. \code{c("-999", "-888")}. A code can have a label, written as \code{code = label}
+(e.g. \code{c("-999" = "Not applicable", "-888")}): with \code{rm_mdc = FALSE}, the \code{.factor} version of the multiple-choice fields shows the
+label instead of the code. Numeric codes are also found in numeric fields. With the API, the codes defined in the project
+(Project Setup > Additional customizations > Missing Data Codes) are added automatically. As with the default codes, they are
+searched in the validated text fields (numbers, dates, ...), the multiple-choice fields and the checkboxes, so they must not be values
+that the fields can take (e.g. the code of an option).}
 }
 \value{
 A list with:
