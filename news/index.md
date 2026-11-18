@@ -40,6 +40,14 @@
   and
   [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
   handle these columns like the `.factor` ones.
+- New `mdc` argument in
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  for the Missing Data Codes of the project, besides the default ones of
+  REDCap (e.g. `mdc = c("-999", "-888" = "Not applicable")`): they are
+  removed, or kept with `rm_mdc = FALSE`, like the default ones, and
+  with a label the `.factor` version shows it instead of the code.
+  Numeric codes are also found in numeric fields. With the API, the
+  codes defined in the project are added automatically.
 - New `forms` argument in
   [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)
   to remove every variable of a form.

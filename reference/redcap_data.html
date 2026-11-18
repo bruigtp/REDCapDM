@@ -63,7 +63,8 @@ Import REDCap data into R either from REDCap's exported R file or directly via t
 <span>  sep <span class="op">=</span> <span class="st">","</span>,</span>
 <span>  filter_field <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  survey_fields <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  rm_mdc <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  rm_mdc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  mdc <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -105,6 +106,16 @@ Import REDCap data into R either from REDCap's exported R file or directly via t
 
 <dt id="arg-rm-mdc">rm_mdc<a class="anchor" aria-label="anchor" href="#arg-rm-mdc"></a></dt>
 <dd><p>Logical; Removes the Missing Data Codes from de data. Default <code>TRUE</code>. With <code>FALSE</code>, the codes are kept: in multiple-choice fields as an additional category (in the <code>.factor</code> version), and in validated text fields (numbers, dates, ...) in a new <code>&lt;field&gt;_mdc</code> column, while the field itself keeps its type and has <code>NA</code> in those rows.</p></dd>
+
+
+<dt id="arg-mdc">mdc<a class="anchor" aria-label="anchor" href="#arg-mdc"></a></dt>
+<dd><p>Optional Missing Data Codes of the project, besides the default ones of REDCap (<code>NI</code>, <code>UNK</code>, <code>NASK</code>, ...), which are always
+used: a vector of codes, e.g. <code>c("-999", "-888")</code>. A code can have a label, written as <code>code = label</code>
+(e.g. <code>c("-999" = "Not applicable", "-888")</code>): with <code>rm_mdc = FALSE</code>, the <code>.factor</code> version of the multiple-choice fields shows the
+label instead of the code. Numeric codes are also found in numeric fields. With the API, the codes defined in the project
+(Project Setup &gt; Additional customizations &gt; Missing Data Codes) are added automatically. As with the default codes, they are
+searched in the validated text fields (numbers, dates, ...), the multiple-choice fields and the checkboxes, so they must not be values
+that the fields can take (e.g. the code of an option).</p></dd>
 
 </dl></div>
     <div class="section level2">

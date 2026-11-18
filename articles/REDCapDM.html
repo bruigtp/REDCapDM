@@ -516,6 +516,14 @@ rows. A warning lists the fields with codes:</p>
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
 <span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span>,</span>
 <span>                       rm_mdc <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>If the project has its own Missing Data Codes, give them in the
+<code>mdc</code> argument, optionally with their labels (with the API,
+the codes defined in the project are read automatically). They are
+handled like the default codes of REDCap, which are always used:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
+<span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span>,</span>
+<span>                       mdc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"-999"</span> <span class="op">=</span> <span class="st">"Not applicable"</span>, <span class="st">"-888"</span> <span class="op">=</span> <span class="st">"Unknown"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><br><br></p>
 </div>
 </div>
@@ -534,7 +542,7 @@ the dataset, per variable and event or record by record. See
 </h3>
 <p>Given any data imported from REDCap with <code><a href="../reference/redcap_data.html">redcap_data()</a></code>,
 this would be the pipeline of an entire processing workflow:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">|&gt;</span> </span>
 <span>    <span class="fu"><a href="../reference/rd_delete_vars.html">rd_delete_vars</a></span><span class="op">(</span>pattern <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"_complete"</span>, <span class="st">"_timestamp"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="../reference/rd_dates.html">rd_dates</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -548,7 +556,7 @@ discretion when necessary. The order of some functions can also be
 exchanged. For example, for <code>covican</code> there are no variables
 to delete and dates are already processed, so the pipeline would be
 simplified:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
 <span>    <span class="fu"><a href="../reference/rd_recalculate.html">rd_recalculate</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>    <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>

@@ -19,7 +19,8 @@ redcap_data(
   sep = ",",
   filter_field = NULL,
   survey_fields = FALSE,
-  rm_mdc = TRUE
+  rm_mdc = TRUE,
+  mdc = NULL
 )
 ```
 
@@ -68,6 +69,21 @@ redcap_data(
   additional category (in the `.factor` version), and in validated text
   fields (numbers, dates, ...) in a new `<field>_mdc` column, while the
   field itself keeps its type and has `NA` in those rows.
+
+- mdc:
+
+  Optional Missing Data Codes of the project, besides the default ones
+  of REDCap (`NI`, `UNK`, `NASK`, ...), which are always used: a vector
+  of codes, e.g. `c("-999", "-888")`. A code can have a label, written
+  as `code = label` (e.g. `c("-999" = "Not applicable", "-888")`): with
+  `rm_mdc = FALSE`, the `.factor` version of the multiple-choice fields
+  shows the label instead of the code. Numeric codes are also found in
+  numeric fields. With the API, the codes defined in the project
+  (Project Setup \> Additional customizations \> Missing Data Codes) are
+  added automatically. As with the default codes, they are searched in
+  the validated text fields (numbers, dates, ...), the multiple-choice
+  fields and the checkboxes, so they must not be values that the fields
+  can take (e.g. the code of an option).
 
 ## Value
 
