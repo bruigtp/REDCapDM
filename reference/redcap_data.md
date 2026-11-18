@@ -78,10 +78,11 @@ redcap_data(
   as `code = label` (e.g. `c("-999" = "Not applicable", "-888")`): with
   `rm_mdc = FALSE`, the `.factor` version of the multiple-choice fields
   shows the label instead of the code. Numeric codes are also found in
-  numeric fields. With the API, the codes defined in the project
-  (Project Setup \> Additional customizations \> Missing Data Codes) are
-  added automatically. As with the default codes, they are searched in
-  the validated text fields (numbers, dates, ...), the multiple-choice
+  numeric fields, also when written in another way (e.g. `-999.0` for
+  `-999`). With the API, the codes defined in the project (Project Setup
+  \> Additional customizations \> Missing Data Codes) are added
+  automatically. As with the default codes, they are searched in the
+  validated text fields (numbers, dates, ...), the multiple-choice
   fields and the checkboxes, so they must not be values that the fields
   can take (e.g. the code of an option).
 

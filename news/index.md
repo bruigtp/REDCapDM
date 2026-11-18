@@ -46,8 +46,9 @@
   REDCap (e.g. `mdc = c("-999", "-888" = "Not applicable")`): they are
   removed, or kept with `rm_mdc = FALSE`, like the default ones, and
   with a label the `.factor` version shows it instead of the code.
-  Numeric codes are also found in numeric fields. With the API, the
-  codes defined in the project are added automatically.
+  Numeric codes are also found in numeric fields, also when written in
+  another way (e.g. `-999.0` for `-999`). With the API, the codes
+  defined in the project are added automatically.
 - New `forms` argument in
   [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)
   to remove every variable of a form.
@@ -147,25 +148,35 @@
   leaves as they are the texts between quotes that look like operators,
   functions or fields (e.g. `[x] = 'a=b'`, `'if(x)'` or `'[age]'`): they
   were translated, and the comparison was wrong or stopped with an
-  error.
+  error. Quotes and backslashes inside a text can be escaped as in R
+  (e.g. `'O\'Brien'`).
 - [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
   and
   [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
   write the labels with an apostrophe between double quotes
-  (e.g. `[name]="O'Brien"`): the logic was broken, and
+  (e.g. `[name]="O'Brien"`), and escape the labels with both quotes or
+  with backslashes (e.g. `[name]='O\'Brien "A"'`): the logic was broken,
+  and
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   could report queries of other options.
 - [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
   keeps one pending query when only its link (or another column that
-  doesn’t identify it) changed; it reported it twice. The field is now
-  part of the identity of a query (when both reports have it), so two
-  fields with the same description are not mixed up, and queries without
+  doesn’t identify it) changed, also when it is a factor (e.g. a DAG
+  with a new level); it reported it twice. The field is now part of the
+  identity of a query (when both reports have it), so two fields with
+  the same description are not mixed up, and queries without
   `Identifier` stop with an error.
 - [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
   accepts filters with R functions (e.g. `abs(score) > 1`), parentheses
-  (e.g. `(age > 30)` in longitudinal projects) and objects of the
-  session; it took the functions as variables or didn’t find the
-  variable.
+  (e.g. `(age > 30)` in longitudinal projects), objects of the session
+  (also their components, e.g. `settings$threshold`), columns chosen
+  with `.data[[field]]` and logical vectors of the session
+  (e.g. `filter = "eligible"`); it took the functions as variables or
+  didn’t find the variable.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  doesn’t translate again a branching logic already written in R with
+  brackets inside a text (e.g. `data$status == '[age]'`): it was taken
+  for REDCap logic and the queries were wrong.
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   creates the `.factor` version of a checkbox option that doesn’t have
   it when the other options have it, so that every option gets the same
@@ -186,8 +197,10 @@
   Missing Data Code that wasn’t removed) stopped it with an error, or
   turned the next dates into NA without a warning when it wasn’t the
   first value; now it is set to NA and a warning lists the fields and
-  the values. Datetimes with and without seconds in the same field keep
-  their seconds.
+  the values. A value is a date only when it follows the whole format: a
+  wrong time or extra text (e.g. `2024-02-29 99:00:00` or
+  `2024-02-29 extra`) are not dates. Datetimes with and without seconds
+  in the same field keep their seconds.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   (and so
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),

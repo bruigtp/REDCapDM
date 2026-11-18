@@ -49,7 +49,10 @@ rd_insert_na(
 
   A single logical expression (as string). Rows where the filter
   evaluates to `TRUE` will have the corresponding `vars` set to `NA`. It
-  can use objects created in your session or in your function.
+  can use objects created in your session or in your function, columns
+  chosen with `.data[[field]]` (with `field` one of these objects) or be
+  a logical vector of your session with one value per row (e.g.
+  `filter = "eligible"`).
 
 ## Value
 
