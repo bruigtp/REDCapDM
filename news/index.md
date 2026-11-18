@@ -128,6 +128,17 @@
 
 ### Bug fixes
 
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md))
+  translates `and` and `or` written at the end or the start of a line,
+  with Windows line breaks or tabs, in capitals (`AND`, `OR`) or next to
+  a parenthesis: the logic couldn’t be evaluated. It also leaves as they
+  are the words `and` and `or` inside a text (e.g. `[x] = 'yes or no'`),
+  which were translated.
 - Fields with the name of an object used inside the functions work: with
   a field called `event`,
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
