@@ -358,8 +358,30 @@ test_that("by = 'record' leaves out the rows without any of the plotted variable
 
 test_that("rd_missplot explains why it can't plot", {
   fx <- make_repeat_classic()
-  expect_error(rd_missplot(fx, max_vars = 0), "`max_vars` must be a positive number")
+  expect_error(rd_missplot(fx, max_vars = 0), "`max_vars` must be a whole number")
 
   fx$data <- fx$data[0, ]
   expect_error(rd_missplot(fx), "the data has 0 rows")
+})
+
+test_that("rd_missplot doesn't plot the record identifier, whatever its name", {
+  project <- covican
+  names(project$data)[names(project$data) == "record_id"] <- "subject"
+  project$dictionary$field_name[project$dictionary$field_name == "record_id"] <- "subject"
+  plot <- suppressWarnings(suppressMessages(rd_missplot(project, drop_complete = FALSE)))
+  expect_false("subject" %in% plot$data$variable)
+  ref <- suppressWarnings(suppressMessages(rd_missplot(covican, drop_complete = FALSE)))
+  expect_setequal(unique(as.character(plot$data$variable)), unique(as.character(ref$data$variable)))
+})
+
+test_that("rd_missplot explains a wrong max_vars and takes Inf as all the variables", {
+  for (wrong in list(NA, NaN, 2.5, -1, 0, "a", c(1, 2))) {
+    expect_error(rd_missplot(covican, max_vars = wrong), class = "REDCapDM_error_argument")
+  }
+  all_vars <- suppressWarnings(suppressMessages(rd_missplot(covican)))
+  expect_equal(suppressWarnings(suppressMessages(rd_missplot(covican, max_vars = Inf)))$data, all_vars$data)
+})
+
+test_that("rd_missplot works with data without columns, as before", {
+  expect_no_error(suppressWarnings(suppressMessages(rd_missplot(covican$data[, 0]))))
 })

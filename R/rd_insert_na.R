@@ -79,13 +79,17 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   if (length(filter) != 1) {
     rd_abort("Please provide exactly one filter.", class = "REDCapDM_error_argument")
   } else {
-    # Parse variables within the single filter expression once
-    vars_filter <- trimws(unlist(stringr::str_split(filter[1], "[&|]")))
-    vars_filter <- gsub("!?is.na\\(", "", vars_filter)
-    vars_filter <- gsub("\\[|\\]", "", vars_filter)
-    vars_filter <- gsub("data\\$", "", vars_filter)
-    vars_filter <- unlist(stringr::str_extract_all(vars_filter, "^\\w+"))
-    vars_filter <- unique(vars_filter)
+    # Variables of the filter: the names of the expression that aren't functions (e.g. `abs` or `dplyr::between`) nor
+    # objects of the session of the user (e.g. a limit saved in a variable)
+    # (the errors inside tryCatch() name rd_insert_na() through fn_env)
+    fn_env <- environment()
+    parsed <- tryCatch({
+      rlang::parse_expr(filter[1])
+    }, error = function(e) {
+      rd_abort("Unable to parse filter expression {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
+    })
+    vars_filter <- filter_names(parsed)
+    vars_filter <- vars_filter[vars_filter %in% names(data) | !vapply(vars_filter, exists, logical(1), envir = user_env)]
 
     # check filter vars exist in the dataset
     missing_in_data <- vars_filter[!vars_filter %in% names(data)]
@@ -93,7 +97,9 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       rd_abort("Filter variable(s) not found in data: {.val {missing_in_data}}", class = "REDCapDM_error_argument")
     }
 
-    # check filter vars exist in the dictionary
+    # check filter vars exist in the dictionary (the `.factor` and `_mdc` versions and the options of a checkbox are
+    # its field)
+    vars_filter <- unique(vapply(vars_filter, data_field, character(1), fields = dic$field_name))
     missing_in_dic <- vars_filter[!vars_filter %in% dic$field_name]
     if (length(missing_in_dic) > 0) {
       rd_abort("Filter variable(s) not found in dictionary: {.val {missing_in_dic}}", class = "REDCapDM_error_argument")
@@ -122,17 +128,17 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     }
     
     # Evaluate the filter expression once to get logical mask for rows
-    # (the errors inside tryCatch() name rd_insert_na() through fn_env)
-    fn_env <- environment()
-    filter_expr <- tryCatch({
-      rlang::parse_expr(filter[1])
-    }, error = function(e) {
-      rd_abort("Unable to parse filter expression {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
-    })
+    filter_expr <- parsed
 
     rows_mask <- tryCatch({
       # Evaluate in the context of `data`; result should be logical vector of length nrow(data)
-      rlang::eval_tidy(filter_expr, data = data, env = rlang::env(user_env, data = data))
+      # (without the class `labelled` of the variable labels, which some functions don't accept, e.g. dplyr::between())
+      data_eval <- data
+      data_eval[] <- lapply(data_eval, function(x) {
+        if (inherits(x, "labelled")) class(x) <- setdiff(class(x), "labelled")
+        x
+      })
+      rlang::eval_tidy(filter_expr, data = data_eval, env = rlang::env(user_env, data = data_eval))
     }, error = function(e) {
       rd_abort("Error evaluating filter {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
     })
@@ -241,4 +247,60 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     ) |>
       purrr::compact() # Remove NULL elements from the list
   }
+}
+
+
+#' Names of the variables of a filter
+#'
+#' The names of an expression, except the functions (`abs(x)`, `dplyr::between(x, 1, 2)`) and the objects after `.env$`.
+#' `data$x` and `.data$x` are the variable `x`.
+#'
+#' @param expr A parsed expression.
+#' @return The names.
+#' @noRd
+filter_names <- function(expr) {
+  out <- character(0)
+  walk <- function(e) {
+    if (is.symbol(e)) {
+      name <- as.character(e)
+      if (nzchar(name)) out <<- c(out, name)
+      return(invisible())
+    }
+    if (!is.call(e)) {
+      return(invisible())
+    }
+    head <- e[[1]]
+    if (identical(head, as.name("::")) || identical(head, as.name(":::"))) {
+      return(invisible())
+    }
+    if ((identical(head, as.name("$")) || identical(head, as.name("[["))) && is.symbol(e[[2]])) {
+      object <- as.character(e[[2]])
+      if (object %in% c("data", ".data")) {
+        if (is.symbol(e[[3]]) || is.character(e[[3]])) out <<- c(out, as.character(e[[3]]))
+        return(invisible())
+      }
+      if (object == ".env") {
+        return(invisible())
+      }
+    }
+    # (the function of a call isn't a variable)
+    if (!is.symbol(head)) walk(head)
+    for (arg in as.list(e)[-1]) walk(arg)
+  }
+  walk(expr)
+  unique(out)
+}
+
+#' Field of the dictionary of a column of the data
+#'
+#' @param column Name of the column.
+#' @param fields Fields of the dictionary.
+#' @return The field: the column itself, or the field of its `.factor` or `_mdc` version or of a checkbox option.
+#' @noRd
+data_field <- function(column, fields) {
+  base <- sub("(\\.factor|_mdc)$", "", column)
+  if (column %in% fields || !base %in% fields && !sub("___.*$", "", base) %in% fields) {
+    return(column)
+  }
+  if (base %in% fields) base else sub("___.*$", "", base)
 }

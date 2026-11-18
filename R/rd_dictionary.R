@@ -101,8 +101,8 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
       dplyr::mutate(
         redcap_v1 = paste0("\\[", .data$field_name, "\\] ?= ?['\"]?", .data$num, "['\"]?(?![0-9.])"),
         redcap_v2 = paste0("\\[", .data$field_name, "\\] ?(<>|!=) ?['\"]?", .data$num, "['\"]?(?![0-9.])"),
-        factor_v1 = paste0("[", .data$field_name, "]='", .data$cat, "'"),
-        factor_v2 = paste0("[", .data$field_name, "]<>'", .data$cat, "'")
+        factor_v1 = paste0("[", .data$field_name, "]=", logic_label(.data$cat)),
+        factor_v2 = paste0("[", .data$field_name, "]<>", logic_label(.data$cat))
       ) |>
       dplyr::arrange(.data$field_name, dplyr::desc(.data$num))
 

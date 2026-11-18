@@ -89,6 +89,14 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     }
   })
 
+  # The record identifier: the first field of the dictionary (REDCap's record ID), or else the first column of the data
+  id_var <- if (length(dic$field_name) > 0 && dic$field_name[1] %in% names(data)) dic$field_name[1] else names(data)[1]
+  protected <- unique(c(id_var, "record_id"))
+
+  # Checkbox fields with options in the data, to remove from the dictionary those that are left without any
+  checkbox_fields <- if ("field_type" %in% names(dic)) dic$field_name[dic$field_type %in% "checkbox"] else character(0)
+  checkbox_before <- checkbox_fields[vapply(checkbox_fields, function(f) any(startsWith(names(data), paste0(f, "___"))), logical(1))]
+
   # If `vars` is specified, iterate through each variable and remove it from the data and dictionary
   if (!is.null(vars)) {
     vars_missing <- setdiff(vars, names(data))
@@ -98,8 +106,9 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     }
     
     # Error: the record identifier is needed by every other function
-    if ("record_id" %in% vars) {
-      rd_abort("{.code record_id} can't be removed: the other functions need the record identifier.")
+    if (any(protected %in% vars)) {
+      id_removed <- intersect(vars, protected)[1]
+      rd_abort("{.code {id_removed}} can't be removed: the other functions need the record identifier.")
     }
 
     # Columns with the Missing Data Codes of the variables (redcap_data(rm_mdc = FALSE))
@@ -157,7 +166,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     # Variables matching the pattern (never the record identifier nor the REDCap columns of events and repetitions)
     matched <- grep(comb_pattern, names(data), value = TRUE, ignore.case = TRUE)
-    matched <- matched[!matched %in% "record_id" & !grepl("^redcap_(event_name|repeat_instrument|repeat_instance)(\\.factor)?$", matched)]
+    matched <- matched[!matched %in% protected & !grepl("^redcap_(event_name|repeat_instrument|repeat_instance)(\\.factor)?$", matched)]
 
     if (length(matched) == 0) {
       rd_warn("No variable matches the pattern(s) {.val {pattern}}: nothing was removed.")
@@ -169,7 +178,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     # Remove variables matching the pattern from the dictionary
     dic <- dic |>
-      dplyr::filter(!grepl(comb_pattern, .data$field_name) | .data$field_name == "record_id")
+      dplyr::filter(!grepl(comb_pattern, .data$field_name) | .data$field_name %in% protected)
   }
 
   
@@ -185,8 +194,7 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
       rd_abort(c("The following forms are not present in the dictionary: {.val {forms_missing}}.", "i" = "Please remove them from the {.arg forms} argument."), class = "REDCapDM_error_argument")
     }
 
-    # The record identifier (first field of the dictionary) is never removed
-    id_var <- dic$field_name[1]
+    # The record identifier is never removed
     form_fields <- setdiff(dic$field_name[dic$form_name %in% forms], id_var)
 
     # Data columns of these fields: factor versions, checkbox options and the _complete/_timestamp fields of the forms
@@ -216,6 +224,13 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
       event_form <- event_form |>
         dplyr::filter(!.data$form %in% forms)
     }
+  }
+
+  # Checkboxes whose options were all removed are removed from the dictionary too
+  orphans <- checkbox_before[!vapply(checkbox_before, function(f) any(startsWith(names(data), paste0(f, "___"))), logical(1))]
+  if (length(orphans) > 0) {
+    dic <- dic |>
+      dplyr::filter(!.data$field_name %in% orphans)
   }
 
   # Reapply variable labels to the dataset after modifications

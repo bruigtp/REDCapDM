@@ -23,6 +23,8 @@
 #' * Detects date and datetime fields from the REDCap dictionary (`date_*` and `datetime_*` validation types).
 #' * Converts date fields to `Date` class.
 #' * Converts datetime fields to `POSIXct` class, treating empty strings as `NA`.
+#' * Each value is converted on its own (`YYYY-MM-DD` or `YYYY/MM/DD`, with or without time): a value that isn't a date or a
+#'   datetime (e.g. a Missing Data Code that wasn't removed) is set to `NA`, and a warning lists the fields and the values.
 #'
 #'
 #' @examples
@@ -93,14 +95,39 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
 
     var_datetime <- setdiff(var_datetime, var_datetime_valid)
 
-    # Convert date variables in the data to `Date` class
-    data <- data |>
-      dplyr::mutate_at(var_date, as.Date) |>
-      # Convert datetime variables to `POSIXct` class, handling empty strings as NA
-      dplyr::mutate_at(var_datetime, function(x) {
-        x[x %in% ""] <- NA
-        as.POSIXct(x, origin = "1970-01-01", tz = "UTC")
-      })
+    # Convert date variables to `Date` class and datetime variables to `POSIXct` class (empty strings are NA)
+    # (value by value: as.Date() and as.POSIXct() choose one format for the whole column, so a value that isn't a date stops
+    # them or turns other dates into NA)
+    not_dates <- list()
+    for (var in var_date) {
+      converted <- convert_dates(data[[var]], c("%Y-%m-%d", "%Y/%m/%d"), datetime = FALSE)
+      data[[var]] <- converted$value
+      not_dates[[var]] <- converted$not_dates
+    }
+    for (var in var_datetime) {
+      converted <- convert_dates(
+        data[[var]],
+        c("%Y-%m-%d %H:%M:%OS", "%Y/%m/%d %H:%M:%OS", "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%Y-%m-%d", "%Y/%m/%d"),
+        datetime = TRUE
+      )
+      data[[var]] <- converted$value
+      not_dates[[var]] <- converted$not_dates
+    }
+
+    # Warning: values that aren't dates
+    not_dates <- not_dates[lengths(not_dates) > 0]
+    if (length(not_dates) > 0) {
+      details <- vapply(names(not_dates), function(var) {
+        values <- unique(not_dates[[var]])
+        shown <- paste0("\"", gsub("([{}])", "\\1\\1", utils::head(values, 3)), "\"", collapse = ", ")
+        sprintf("{.var %s}: %d value%s (%s%s)", var, length(not_dates[[var]]), if (length(not_dates[[var]]) > 1) "s" else "", shown, if (length(values) > 3) ", ..." else "")
+      }, character(1))
+      rd_warn(c(
+        "Some values of the date and datetime fields aren't dates. They are set to NA:",
+        stats::setNames(details, rep("*", length(details))),
+        "i" = "If they are Missing Data Codes of the project, give them in the {.arg mdc} argument of {.fn redcap_data}."
+      ))
+    }
   }
 
   # Reapply variable labels to the data after transformation
@@ -134,4 +161,33 @@ rd_dates <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL)
     results = stringr::str_glue("{results}")
   ) |>
     purrr::compact() # Remove NULL elements from the list
+}
+
+
+#' Convert the values of a date or datetime field, one by one
+#'
+#' @param x Values of the field.
+#' @param formats Formats tried in order for each value.
+#' @param datetime Whether the field is a datetime (`POSIXct` in UTC) or a date (`Date`).
+#' @return A list with the converted values (`value`) and the values that aren't dates (`not_dates`).
+#' @noRd
+convert_dates <- function(x, formats, datetime) {
+  # Numbers are days (dates) or seconds (datetimes) since 1970-01-01, as before
+  if (is.numeric(x)) {
+    value <- if (datetime) as.POSIXct(x, origin = "1970-01-01", tz = "UTC") else as.Date(x, origin = "1970-01-01")
+    return(list(value = value, not_dates = character(0)))
+  }
+
+  text <- trimws(as.character(x))
+  text[text %in% ""] <- NA
+  value <- if (datetime) as.POSIXct(rep(NA_real_, length(text)), origin = "1970-01-01", tz = "UTC") else as.Date(rep(NA_real_, length(text)), origin = "1970-01-01")
+  for (format in formats) {
+    pending <- is.na(value) & !is.na(text)
+    if (!any(pending)) {
+      break
+    }
+    value[pending] <- if (datetime) as.POSIXct(text[pending], format = format, tz = "UTC") else as.Date(text[pending], format = format)
+  }
+
+  list(value = value, not_dates = text[is.na(value) & !is.na(text)])
 }

@@ -746,3 +746,35 @@ test_that("rd_rlogic evaluates a total of several items written in several lines
   )
   expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "fss_total")$eval), c(9, 16, 0, NA, NA))
 })
+
+test_that("rd_rlogic compares with texts that look like operators, functions or fields", {
+  df <- data.frame(record_id = 1:6, text = c("a=b", "a<>b", "if(x)", "year(x)", "[age]", "[nofield]"), age = c(10, 20, 30, 40, 50, 60))
+  dic <- make_dic(c("record_id", "text", "age", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "res")$eval)
+
+  for (text in df$text) {
+    expect_equal(ev(paste0("[text] = '", text, "'")), df$text == text)
+  }
+  expect_equal(ev("[text] = \"a=b\" or [age] = 30"), c(TRUE, FALSE, TRUE, FALSE, FALSE, FALSE))
+  # The other texts are still translated (numbers, empty texts)
+  expect_equal(ev("[age] > '25' and [text] <> ''"), df$age > 25)
+})
+
+test_that("rd_dictionary and rd_transform write the labels with apostrophes so that the logic still works", {
+  data <- data.frame(record_id = c("1", "2"), name = c(1, 2), q = c(NA, NA))
+  data$name.factor <- factor(c("O'Brien", "Other"), levels = c("O'Brien", "Other"))
+  dic <- make_dic(c("record_id", "name", "q"))
+  dic$field_type <- c("text", "radio", "text")
+  dic$choices_calculations_or_slider_labels <- c("", "1, O'Brien | 2, Other", "")
+  dic$branching_logic_show_field_only_if <- c("", "", "[name] = '1'")
+  project <- list(data = data, dictionary = dic)
+
+  transformed <- suppressWarnings(suppressMessages(rd_transform(project)))
+  # (translated to R by rd_dictionary(): before, the label broke the logic and it was left untranslated, with a warning)
+  expect_equal(transformed$dictionary$branching_logic_show_field_only_if[transformed$dictionary$field_name == "q"], "data$name==\"O'Brien\"")
+  # The query only for the record with O'Brien, as with the project before rd_transform()
+  queries <- suppressWarnings(suppressMessages(rd_query(transformed, variables = "q", expression = "is.na(x)")))$queries
+  expect_equal(queries$Identifier, 1, ignore_attr = TRUE)
+  before <- suppressWarnings(suppressMessages(rd_query(project, variables = "q", expression = "is.na(x)")))$queries
+  expect_equal(nrow(queries), nrow(before))
+})

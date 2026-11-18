@@ -100,6 +100,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # A logic written in several lines (also with Windows line breaks) or with tabs is read as one line
   rlogic <- outside_quotes(rlogic, function(s) gsub("[ \\t]*[\\r\\n][\\s]*|\\t", " ", s, perl = TRUE))
 
+  # The texts between quotes with characters of operators, functions or fields (e.g. 'a=b', 'if(x)' or '[age]') are texts:
+  # they are set aside during the translation and put back at the end
+  masked <- mask_texts(rlogic)
+  rlogic <- masked$logic
+
   # As in REDCap, datediff() returns the absolute difference unless its last argument is `true`
   rlogic <- datediff_absolute(rlogic)
 
@@ -161,7 +166,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   }
 
   # Proceed to transcribe REDCap logic to R logic
-  rlogic <- gsub('"', "'", rlogic) # Replace double quotes with single quotes for R compatibility
+  # Texts between double quotes are written between single quotes, as the rest of the translation expects (except the
+  # texts with an apostrophe, e.g. "O'Brien")
+  rlogic <- single_quotes(rlogic)
 
   # Variables of the logic that are factors in the dataset (e.g. after rd_factor()) are evaluated with their original
   # codes, as in REDCap: [dm] = '1' or [copd] + [hemato_neo] give the same result before and after rd_factor().
@@ -177,11 +184,12 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       next
     }
 
-    label_pattern <- paste0("\\[", field, "\\]\\s*(=|<>|!=)\\s*'(", paste(escape_regex(names(mapping)), collapse = "|"), ")'")
+    # (labels between single or double quotes, e.g. [name] = "O'Brien")
+    label_pattern <- paste0("\\[", field, "\\]\\s*(=|<>|!=)\\s*(['\"])(", paste(escape_regex(names(mapping)), collapse = "|"), ")\\2")
     codes <- unname(mapping[as.character(data[[field]])])
 
     # Leave the variable as it is if the logic uses its labels or if any of its values isn't one of them
-    if (grepl(label_pattern, rlogic, perl = TRUE) || any(!is.na(data[[field]]) & is.na(codes))) {
+    if (grepl(label_pattern, unmask_texts(rlogic, masked$texts), perl = TRUE) || any(!is.na(data[[field]]) & is.na(codes))) {
       next
     }
 
@@ -320,6 +328,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Transform '' (empty strings) into missing values (NA)
   rlogic <- gsub("''", "NA", rlogic)
+
+  # The texts set aside at the beginning
+  rlogic <- unmask_texts(rlogic, masked$texts)
 
   # A condition of if() that doesn't use any variable (e.g. `if(1 < 2, [a], 0)`) gives one value per row, as in REDCap
   rlogic <- recycle_constant_conditions(rlogic)
@@ -725,6 +736,78 @@ recycle_constant_conditions <- function(x) {
   }
 
   paste(chars, collapse = "")
+}
+
+#' Label of an option written as a text of a REDCap logic
+#'
+#' Between single quotes, or between double quotes when it has an apostrophe (e.g. `"O'Brien"`). It is the replacement of
+#' stringr::str_replace_all(), so `\\` is escaped.
+#'
+#' @param x Labels.
+#' @return The labels between quotes.
+#' @noRd
+logic_label <- function(x) {
+  quote <- ifelse(grepl("'", x, fixed = TRUE) & !grepl("\"", x, fixed = TRUE), "\"", "'")
+  gsub("\\", "\\\\", paste0(quote, x, quote), fixed = TRUE)
+}
+
+#' Write between single quotes the texts between double quotes
+#'
+#' Except the texts with an apostrophe (e.g. `"O'Brien"`), which keep their double quotes.
+#'
+#' @param x A logic.
+#' @return The logic.
+#' @noRd
+single_quotes <- function(x) {
+  if (length(x) != 1 || is.na(x)) {
+    return(x)
+  }
+  quotes <- gregexpr("'[^']*'|\"[^\"]*\"", x)
+  found <- regmatches(x, quotes)[[1]]
+  double <- startsWith(found, "\"") & !grepl("'", found, fixed = TRUE)
+  found[double] <- paste0("'", substr(found[double], 2, nchar(found[double]) - 1), "'")
+  regmatches(x, quotes) <- list(found)
+  x
+}
+
+#' Set aside the texts between quotes that the translation could change
+#'
+#' The texts with characters of operators, functions or fields (`=`, `<`, `>`, `(`, `)`, `[`, `]`) are replaced by
+#' placeholders, so that e.g. `[x] = 'a=b'` compares with the text `a=b`. The other texts (codes, numbers, dates, units of
+#' datediff()...) are left, because the translation uses them.
+#'
+#' @param x A logic.
+#' @return A list with the logic with the placeholders (`logic`) and the texts (`texts`, named by their placeholder).
+#' @noRd
+mask_texts <- function(x) {
+  texts <- character(0)
+  if (length(x) != 1 || is.na(x)) {
+    return(list(logic = x, texts = texts))
+  }
+  quotes <- gregexpr("'[^']*'|\"[^\"]*\"", x)
+  found <- regmatches(x, quotes)[[1]]
+  special <- grepl("[=<>()]|\\[|\\]", found)
+  if (!any(special)) {
+    return(list(logic = x, texts = texts))
+  }
+  holders <- paste0("'REDCapDMtext", seq_along(found), "x'")
+  texts <- stats::setNames(found[special], holders[special])
+  found[special] <- holders[special]
+  regmatches(x, quotes) <- list(found)
+  list(logic = x, texts = texts)
+}
+
+#' Put back the texts set aside by mask_texts()
+#'
+#' @param x A logic with placeholders.
+#' @param texts The texts, named by their placeholder.
+#' @return The logic with the texts.
+#' @noRd
+unmask_texts <- function(x, texts) {
+  for (holder in names(texts)) {
+    x <- gsub(holder, texts[[holder]], x, fixed = TRUE)
+  }
+  x
 }
 
 #' Apply a function to the parts of a logic that are not texts between quotes

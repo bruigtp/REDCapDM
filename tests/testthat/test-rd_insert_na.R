@@ -221,3 +221,15 @@ test_that("rd_insert_na works in non-longitudinal projects", {
   expect_null(attr(res$data$age, "label"))
   expect_false("event_form" %in% names(res))
 })
+
+test_that("rd_insert_na accepts filters with R functions, parentheses and objects of the session", {
+  na_dm <- function(filter) suppressWarnings(rd_insert_na(covican, vars = "dm", filter = filter))$data$dm
+  expected <- na_dm("age > 70")
+  for (filter in c("abs(age) > 70", "(age > 70)", "((age > 70))", "round(age) > 70", "dplyr::between(age, 70.000001, Inf)")) {
+    expect_equal(na_dm(filter), expected, info = filter)
+  }
+  limit <- 70
+  expect_equal(na_dm("age > limit"), expected)
+  # A variable that doesn't exist is still an error
+  expect_error(rd_insert_na(covican, vars = "dm", filter = "abs(no_variable) > 1"), "not found in data")
+})

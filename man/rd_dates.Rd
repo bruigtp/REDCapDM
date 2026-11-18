@@ -35,6 +35,8 @@ The function performs the following tasks:
 \item Detects date and datetime fields from the REDCap dictionary (\verb{date_*} and \verb{datetime_*} validation types).
 \item Converts date fields to \code{Date} class.
 \item Converts datetime fields to \code{POSIXct} class, treating empty strings as \code{NA}.
+\item Each value is converted on its own (\code{YYYY-MM-DD} or \code{YYYY/MM/DD}, with or without time): a value that isn't a date or a
+datetime (e.g. a Missing Data Code that wasn't removed) is set to \code{NA}, and a warning lists the fields and the values.
 }
 }
 \examples{

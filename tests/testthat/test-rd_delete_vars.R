@@ -179,3 +179,21 @@ test_that("rd_delete_vars never removes the record identifier", {
   expect_true("record_id" %in% names(out$data))
   expect_true("record_id" %in% out$dictionary$field_name)
 })
+
+test_that("rd_delete_vars removes from the dictionary the checkboxes left without options", {
+  out <- suppressWarnings(rd_delete_vars(covican, pattern = "^type_underlying_disease___"))
+  expect_false("type_underlying_disease" %in% out$dictionary$field_name)
+  # With options left, the checkbox stays
+  out <- suppressWarnings(rd_delete_vars(covican, vars = "type_underlying_disease___0"))
+  expect_true("type_underlying_disease" %in% out$dictionary$field_name)
+})
+
+test_that("rd_delete_vars never removes the record identifier, whatever its name", {
+  project <- covican
+  names(project$data)[names(project$data) == "record_id"] <- "subject"
+  project$dictionary$field_name[project$dictionary$field_name == "record_id"] <- "subject"
+  expect_error(rd_delete_vars(project, vars = "subject"), "can't be removed")
+  out <- suppressWarnings(rd_delete_vars(project, pattern = "^subject$"))
+  expect_true("subject" %in% names(out$data))
+  expect_true("subject" %in% out$dictionary$field_name)
+})

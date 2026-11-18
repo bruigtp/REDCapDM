@@ -54,6 +54,7 @@ Requirements:
 \item Both \code{old} and \code{new} must be data frames.
 \item Both data frames must contain at least the following character columns:
 \code{Identifier}, \code{Description}, and \code{Query}.
+\item Every query must have an \code{Identifier} (the record identifier of the data).
 \item A \code{Code} column is optional; if present it will be preserved and considered
 for sorting and output. If \code{Code} exists in \code{new}, it is removed at the
 beginning of the routine to avoid conflicts with re-assigned codes.
@@ -70,6 +71,10 @@ character prior to calling \code{check_queries()} to avoid factor-level mismatch
 \item \strong{Sorting:} The rows are sorted by \code{Identifier} in natural order (e.g. \code{"100-2"}
 before \code{"100-10"}). \code{Identifier} is returned as a number only when every identifier is a
 plain number without leading zeros (e.g. \code{"007"} is kept as text).
+\item \strong{Identity of a query:} a query is the same in both reports when it has the same \code{Identifier},
+\code{Event} and \code{Repetition} (when both reports have them), \code{Field} (when both reports have it),
+\code{Description} and \code{Query}. The other columns (e.g. \code{Link} or \code{DAG}) are taken from the new report,
+so a query whose link changed is still one pending query.
 \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned when more
 than one row shares the same \code{Identifier + Description} composite and a row is
 otherwise classified as \code{New} — this signals a likely re-issued or modified query

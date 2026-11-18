@@ -44,6 +44,7 @@
 #'   \item Both \code{old} and \code{new} must be data frames.
 #'   \item Both data frames must contain at least the following character columns:
 #'     \code{Identifier}, \code{Description}, and \code{Query}.
+#'   \item Every query must have an \code{Identifier} (the record identifier of the data).
 #'   \item A \code{Code} column is optional; if present it will be preserved and considered
 #'     for sorting and output. If \code{Code} exists in \code{new}, it is removed at the
 #'     beginning of the routine to avoid conflicts with re-assigned codes.
@@ -59,6 +60,10 @@
 #'   \item \strong{Sorting:} The rows are sorted by \code{Identifier} in natural order (e.g. \code{"100-2"}
 #'     before \code{"100-10"}). \code{Identifier} is returned as a number only when every identifier is a
 #'     plain number without leading zeros (e.g. \code{"007"} is kept as text).
+#'   \item \strong{Identity of a query:} a query is the same in both reports when it has the same \code{Identifier},
+#'     \code{Event} and \code{Repetition} (when both reports have them), \code{Field} (when both reports have it),
+#'     \code{Description} and \code{Query}. The other columns (e.g. \code{Link} or \code{DAG}) are taken from the new report,
+#'     so a query whose link changed is still one pending query.
 #'   \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned when more
 #'     than one row shares the same \code{Identifier + Description} composite and a row is
 #'     otherwise classified as \code{New} — this signals a likely re-issued or modified query
@@ -114,14 +119,35 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
     )
   }
 
+  # Error: queries without identifier (records without identifier in the data, or incomplete or edited reports)
+  no_id <- c(old = sum(is.na(old$Identifier) | trimws(as.character(old$Identifier)) == ""), new = sum(is.na(new$Identifier) | trimws(as.character(new$Identifier)) == ""))
+  if (any(no_id > 0)) {
+    rd_abort(
+      c("Every query must have an {.field Identifier}.", "x" = "{no_id[['old']]} quer{?y/ies} of {.arg old} and {no_id[['new']]} of {.arg new} don't have it.", "i" = "They come from records without identifier in the data, or from reports that are incomplete or were edited."),
+      class = "REDCapDM_error_argument"
+    )
+  }
+
   # Columns that identify a query. Event and Repetition are used when both reports have them, so the same variable in different events or instances of a repeated instrument are different queries.
-  key_cols <- c("Identifier", intersect(c("Event", "Repetition"), intersect(names(old), names(new))), "Description")
+  # Field too, so two fields with the same description are different queries.
+  key_cols <- c("Identifier", intersect(c("Event", "Repetition", "Field"), intersect(names(old), names(new))), "Description")
   query_key <- function(df, cols) do.call(paste, c(lapply(unname(as.list(df[cols])), id_text), sep = "\r"))
 
   # Merge old and new datasets
   new <- new |> dplyr::select(-dplyr::any_of("Code"))
   old[, "comp"] <- query_key(old, c(key_cols, "Query"))
   new[, "comp"] <- query_key(new, c(key_cols, "Query"))
+
+  # The queries of both reports take the other columns of the new report (e.g. Link or DAG): otherwise a query whose
+  # link changed would be two rows
+  other_cols <- setdiff(intersect(names(old), names(new)), c(key_cols, "Query", "comp"))
+  in_new <- match(old$comp, new$comp)
+  for (col in other_cols) {
+    if (any(!is.na(in_new)) && identical(class(old[[col]]), class(new[[col]]))) {
+      old[[col]][!is.na(in_new)] <- new[[col]][in_new[!is.na(in_new)]]
+    }
+  }
+
   check <- merge(old, new, by = intersect(names(old), names(new)), all = TRUE)
 
   # Add columns for comparisons and determine statuses

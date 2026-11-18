@@ -7,7 +7,7 @@
 #'
 #' @param data A `data frame` or a list containing a `data` element retrieved from REDCap.
 #' @param sort_by_missingness Logical. Variables are ordered from highest to lowest missingness. Default `TRUE`.
-#' @param max_vars Integer. If specified, only the top `max_vars` variables are plotted (by missingness, or by original column order if `sort_by_missingness = FALSE`). Default `NULL` (show all variables).
+#' @param max_vars Integer. If specified, only the top `max_vars` variables are plotted (by missingness, or by original column order if `sort_by_missingness = FALSE`). Default `NULL` (show all variables, as `Inf`).
 #' @param show_percentages Logical. Displays missingness as percentages. Only used with `by = "vars"`. Default `TRUE`.
 #' @param use_field_labels Logical. Uses field labels from the dictionary for axis labels instead of variable names. Default `TRUE`.
 #' @param drop_complete Logical. Variables with 0 missing values are excluded from the plot. Default `TRUE`.
@@ -83,8 +83,12 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   }
 
   # Error: invalid number of variables
-  if (!is.null(max_vars) && (!is.numeric(max_vars) || length(max_vars) != 1 || max_vars < 1)) {
-    rd_abort("{.arg max_vars} must be a positive number.")
+  if (!is.null(max_vars) && (!is.numeric(max_vars) || length(max_vars) != 1 || is.na(max_vars) || max_vars < 1 ||
+                               (is.finite(max_vars) && max_vars != round(max_vars)))) {
+    rd_abort("{.arg max_vars} must be a whole number of variables (1 or more), or {.code Inf} for all of them.", class = "REDCapDM_error_argument")
+  }
+  if (!is.null(max_vars) && is.infinite(max_vars)) {
+    max_vars <- NULL
   }
 
   # Detect if the study is longitudinal
@@ -161,7 +165,8 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   # Columns with the Missing Data Codes kept by redcap_data(rm_mdc = FALSE)
   mdc_cols <- mdc_columns(colnames(df), dictionary_df$field_name)
 
-  cols_to_exclude <- unique(c(redcap_system_cols, factor_cols, complete_status_cols, mdc_cols))
+  # (and the record identifier, whatever its name)
+  cols_to_exclude <- unique(c(redcap_system_cols, id_col[!is.na(id_col)], factor_cols, complete_status_cols, mdc_cols))
 
   # Axis label of every column: its dictionary label (when requested and available) or its name, shortened to `max_label_length` characters
   axis_labels <- colnames(df)

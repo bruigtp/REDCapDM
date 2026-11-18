@@ -126,6 +126,27 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     rd_abort("No checkbox fields found in the data. If they have already been transformed (e.g. with rd_checkbox() or rd_transform()), there is nothing left to do.")
   }
 
+  # Checkboxes already converted to factors by rd_factor() (their options have the labels Unchecked/Checked)
+  already_factor <- length(var_check_factors) == 0 &&
+    any(purrr::map_lgl(var_check, ~ is.factor(data[[.x]]) && "Unchecked" %in% levels(data[[.x]])))
+
+  # Options without their `.factor` version when other options have it: it is created from the option (0/1), so that
+  # every option ends with the same labels
+  if (length(var_check_factors) > 0) {
+    options_num <- var_check[!grepl("\\.factor$", var_check)]
+    lacking <- options_num[!paste0(options_num, ".factor") %in% names(data)]
+    for (option in lacking) {
+      value <- as.character(data[[option]])
+      data[[paste0(option, ".factor")]] <- factor(
+        ifelse(value %in% c("1", "Checked"), "Checked", ifelse(value %in% c("0", "Unchecked"), "Unchecked", NA)),
+        levels = c("Unchecked", "Checked")
+      )
+      if (option %in% names(labels)) labels[paste0(option, ".factor")] <- labels[[option]]
+    }
+    var_check <- names(data)[grep("___", names(data))]
+    var_check_factors <- var_check[grep(".factor$", var_check)]
+  }
+
   # Remove factor-type checkbox variables from the data
   if (length(var_check_factors) > 0) {
     var_check <- var_check[!grepl(".factor$", var_check)]
@@ -182,7 +203,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     } else {
 
       # Handle the fact that a rd_factor was performed before this function
-      if (length(var_check_factors) == 0 && all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {
+      if (already_factor && all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {
         rd_warn("The checkboxes are already in factor form. To properly evaluate checkbox branching logic, please run {.fn rd_dictionary} first.")
       }
 
@@ -400,8 +421,8 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   # Prepare the branching logic expressions for the transformed checkbox variables
   cats <- cats |>
     dplyr::mutate(
-      factor = paste0("[", .data$field_name, "]='", .data$cat, "'"),
-      factor2 = paste0("[", .data$field_name, "]<>'", .data$cat, "'"),
+      factor = paste0("[", .data$field_name, "]=", logic_label(.data$cat)),
+      factor2 = paste0("[", .data$field_name, "]<>", logic_label(.data$cat)),
       V1 = stringi::stri_replace_all_fixed(cats$V1, c("(", ")"), c("\\(", "\\)"), vectorize_all = FALSE),
       redcap = paste0("\\[", .data$V1, "\\] ?=? ?['\"]?", .data$num, "['\"]?"),
       redcap2 = paste0("\\[", .data$V1, "\\] ?<> ?['\"]?", .data$num, "['\"]?")

@@ -87,3 +87,19 @@ test_that("rd_dates preserves labels correctly", {
   expect_equal(labelled::var_label(res$data$appointment), "Appointment DateTime")
   expect_equal(labelled::var_label(res$data$dob), "")  # unlabeled stays empty
 })
+
+test_that("rd_dates sets to NA the values that aren't dates, wherever they are, and says which ones", {
+  dic <- data.frame(field_name = c("record_id", "d", "dt"), text_validation_type_or_show_slider_number = c("", "date_ymd", "datetime_seconds_ymd"))
+  data <- data.frame(
+    record_id = 1:4,
+    d = c("8888", "2020-01-05", "2020/01/06", NA),
+    dt = c("2020-01-05 10:30:15", "ND", "2020-01-05 10:30", "")
+  )
+  expect_warning(out <- suppressMessages(rd_dates(data = data, dic = dic))$data, "aren't dates", class = "REDCapDM_warning")
+  expect_equal(out$d, as.Date(c(NA, "2020-01-05", "2020-01-06", NA)), ignore_attr = "label")
+  # The seconds are kept although other values don't have them
+  expect_equal(out$dt, as.POSIXct(c("2020-01-05 10:30:15", NA, "2020-01-05 10:30:00", NA), tz = "UTC"), ignore_attr = "label")
+
+  # Without values that aren't dates, no warning
+  expect_no_warning(suppressMessages(rd_dates(data = data[3:4, ], dic = dic)))
+})

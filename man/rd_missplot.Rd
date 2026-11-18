@@ -22,7 +22,7 @@ rd_missplot(
 
 \item{sort_by_missingness}{Logical. Variables are ordered from highest to lowest missingness. Default \code{TRUE}.}
 
-\item{max_vars}{Integer. If specified, only the top \code{max_vars} variables are plotted (by missingness, or by original column order if \code{sort_by_missingness = FALSE}). Default \code{NULL} (show all variables).}
+\item{max_vars}{Integer. If specified, only the top \code{max_vars} variables are plotted (by missingness, or by original column order if \code{sort_by_missingness = FALSE}). Default \code{NULL} (show all variables, as \code{Inf}).}
 
 \item{show_percentages}{Logical. Displays missingness as percentages. Only used with \code{by = "vars"}. Default \code{TRUE}.}
 

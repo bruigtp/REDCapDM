@@ -136,3 +136,34 @@ test_that("check_queries compares two reports without queries", {
   expect_true(all(c("Identifier", "Code", "Modification") %in% names(out$queries)))
   expect_equal(levels(out$queries$Modification), c("Pending", "Solved", "Miscorrected", "New"))
 })
+
+test_that("check_queries keeps one pending query when only its link changed", {
+  link <- function(domain) list(domain = domain, redcap_version = "13.0.0", proj_id = "1", event_id = c(baseline_visit_arm_1 = "10", follow_up_visit_da_arm_1 = "11"))
+  old <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80", link = link("redcap.a.org"))))$queries
+  new <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80", link = link("redcap.b.org"))))$queries
+  out <- suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries
+  expect_equal(nrow(out), nrow(new))
+  expect_true(all(out$Modification == "Pending"))
+  # The link of the new report
+  expect_true(all(grepl("redcap.b.org", out$Link, fixed = TRUE)))
+})
+
+test_that("check_queries tells apart two fields with the same description", {
+  base <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80")))$queries[1, ]
+  old <- base
+  old$Field <- "weight_v1"
+  old$Description <- "Weight"
+  new <- old
+  new$Field <- "weight_v2"
+  out <- suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification[order(out$Field)]), c("Solved", "New"))
+})
+
+test_that("check_queries stops with queries without identifier", {
+  base <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80")))$queries[1:2, ]
+  old <- base
+  old$Identifier <- c(NA, old$Identifier[2])
+  new <- base
+  new$Identifier <- c("NA", new$Identifier[2])
+  expect_error(check_queries(old = old, new = new, return_viewer = FALSE), class = "REDCapDM_error_argument")
+})

@@ -161,11 +161,14 @@ test_that("rd_checkbox leaves unchanged the checkboxes whose branching logic can
     stringsAsFactors = FALSE
   )
 
-  # (without .factor columns, rd_checkbox() also warns that the checkboxes seem to be factors already)
-  expect_warning(
-    expect_warning(out <- rd_checkbox(data = data, dic = dic, na_logic = "eval", checkbox_names = FALSE), "could not be evaluated"),
-    "already in factor form"
+  # (the checkboxes are numbers without .factor columns: they are not factors already)
+  warnings <- character(0)
+  out <- withCallingHandlers(
+    rd_checkbox(data = data, dic = dic, na_logic = "eval", checkbox_names = FALSE),
+    warning = function(w) { warnings <<- c(warnings, conditionMessage(w)); invokeRestart("muffleWarning") }
   )
+  expect_true(any(grepl("could not be evaluated", warnings)))
+  expect_false(any(grepl("already in factor form", warnings)))
   # `a` follows its branching logic and `b` is not changed
   expect_equal(as.character(out$data$a___1), c(NA, "No", "Yes"))
   expect_equal(as.character(out$data$b___1), c("Yes", "Yes", "No"))
@@ -199,4 +202,13 @@ test_that("rd_checkbox works with fields called like its objects (e.g. `data`)",
     }
   }
   expect_no_error(suppressWarnings(suppressMessages(rd_transform(add_covican_field("data")))))
+})
+
+test_that("rd_checkbox gives the same labels to an option without its .factor column", {
+  project <- covican
+  project$data$type_underlying_disease___0.factor <- NULL
+  out <- suppressWarnings(rd_factor(rd_checkbox(project)))$data
+  ref <- suppressWarnings(rd_factor(rd_checkbox(covican)))$data
+  expect_setequal(names(out), names(ref))
+  expect_equal(out[names(ref)], ref)
 })
