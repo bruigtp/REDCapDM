@@ -1048,3 +1048,15 @@ test_that("rd_query works with fields called like its objects (e.g. `data` or `e
     expect_equal(q(p), ref_all)
   }
 })
+
+test_that("rd_query accepts functions that don't take the variable labels, e.g. dplyr::between(), in filter and expression", {
+  q <- function(...) suppressWarnings(suppressMessages(rd_query(covican, ...)))$queries
+  expect_equal(
+    q(variables = "dm", expression = "is.na(x)", filter = "dplyr::between(age, 70.000001, Inf)"),
+    q(variables = "dm", expression = "is.na(x)", filter = "age > 70")
+  )
+  expect_equal(
+    q(variables = "age", expression = "dplyr::between(x, 70, 80)")[, c("Identifier", "Event", "Field")],
+    q(variables = "age", expression = "x >= 70 & x <= 80")[, c("Identifier", "Event", "Field")]
+  )
+})

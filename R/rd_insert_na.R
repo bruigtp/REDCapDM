@@ -133,11 +133,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     rows_mask <- tryCatch({
       # Evaluate in the context of `data`; result should be logical vector of length nrow(data)
       # (without the class `labelled` of the variable labels, which some functions don't accept, e.g. dplyr::between())
-      data_eval <- data
-      data_eval[] <- lapply(data_eval, function(x) {
-        if (inherits(x, "labelled")) class(x) <- setdiff(class(x), "labelled")
-        x
-      })
+      data_eval <- without_labelled(data)
       rlang::eval_tidy(filter_expr, data = data_eval, env = rlang::env(user_env, data = data_eval))
     }, error = function(e) {
       rd_abort("Error evaluating filter {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)

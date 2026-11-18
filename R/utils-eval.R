@@ -47,6 +47,28 @@ filter_text <- function(data, text, env, x = NULL) {
   if (!is.null(x)) {
     conditions <- lapply(conditions, replace_x, variable = x)
   }
-  eval_env <- rlang::env(env, data = data)
-  dplyr::filter(data, !!!lapply(conditions, rlang::new_quosure, env = eval_env))
+
+  # The conditions are evaluated without the class `labelled` of the variable labels, which some functions don't accept
+  # (e.g. dplyr::between()). The rows returned are those of `data`, with their labels.
+  plain <- without_labelled(data)
+  eval_env <- rlang::env(env, data = plain)
+  row_col <- utils::tail(make.unique(c(names(plain), ".row")), 1)
+  plain[[row_col]] <- seq_len(nrow(plain))
+  kept <- dplyr::filter(plain, !!!lapply(conditions, rlang::new_quosure, env = eval_env))[[row_col]]
+  dplyr::slice(data, !!kept)
+}
+
+#' Remove the class `labelled` of the variable labels
+#'
+#' Some functions (e.g. `dplyr::between()`) don't accept it. The values and the other classes (e.g. `Date` or `factor`) are kept.
+#'
+#' @param data A data frame.
+#' @return The data frame without the class `labelled` in its columns.
+#' @noRd
+without_labelled <- function(data) {
+  data[] <- lapply(data, function(x) {
+    if (inherits(x, "labelled")) class(x) <- setdiff(class(x), "labelled")
+    x
+  })
+  data
 }

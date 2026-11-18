@@ -37,10 +37,11 @@
 
 ## Bug fixes
 
+- `rd_query()`, `rd_event()` and `rd_insert_na()` evaluate `filter` and `expression` without the class of the variable labels, which some functions don't accept: e.g. `dplyr::between(age, 17, 18)` stopped with an error.
 - `rd_rlogic()` leaves as they are the texts between quotes that look like operators, functions or fields (e.g. `[x] = 'a=b'`, `'if(x)'` or `'[age]'`): they were translated, and the comparison was wrong or stopped with an error.
 - `rd_dictionary()` and `rd_transform()` write the labels with an apostrophe between double quotes (e.g. `[name]="O'Brien"`): the logic was broken, and `rd_query()` could report queries of other options.
 - `check_queries()` keeps one pending query when only its link (or another column that doesn't identify it) changed; it reported it twice. The field is now part of the identity of a query (when both reports have it), so two fields with the same description are not mixed up, and queries without `Identifier` stop with an error.
-- `rd_insert_na()` accepts filters with R functions (e.g. `abs(score) > 1` or `dplyr::between(age, 17, 18)`), parentheses (e.g. `(age > 30)` in longitudinal projects) and objects of the session; it took the functions as variables or didn't find the variable.
+- `rd_insert_na()` accepts filters with R functions (e.g. `abs(score) > 1`), parentheses (e.g. `(age > 30)` in longitudinal projects) and objects of the session; it took the functions as variables or didn't find the variable.
 - `rd_checkbox()` creates the `.factor` version of a checkbox option that doesn't have it when the other options have it, so that every option gets the same labels, and it only warns that the checkboxes are already factors when they are.
 - `rd_delete_vars()` removes from the dictionary a checkbox whose options were all removed, and never removes the record identifier, whatever its name (it only protected `record_id`).
 - `rd_missplot()` doesn't plot the record identifier when it isn't called `record_id`, and `max_vars` must be a whole number or `Inf` (all the variables): `NaN` gave an R error and decimals were accepted.
