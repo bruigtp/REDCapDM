@@ -710,3 +710,39 @@ test_that("rd_rlogic only translates the REDCap functions, not the fields with t
   expect_equal(ev("if([motif(2)] = '1', 1, 0)"), c(0, 1, 0))
   expect_equal(ev("datediff([d], '2022-01-01', 'd', 'ymd') > 300"), c(TRUE, FALSE, NA))
 })
+
+test_that("rd_rlogic translates `and` and `or` written in several lines, in capitals or next to a parenthesis, but not inside a text", {
+  df <- data.frame(record_id = 1:4, a = c(1, 2, NA, 1), b = c(2, 1, 1, NA), t = c("x or y", "z", "and", NA))
+  dic <- make_dic(c("record_id", "a", "b", "t", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "res")$eval)
+
+  either <- ev("[a] = '1' or [b] = '1'")
+  both <- ev("[a] = '1' and [b] = '2'")
+  expect_equal(either, c(TRUE, TRUE, TRUE, TRUE))
+  expect_equal(ev("[a] = '1' or\n[b] = '1'"), either)
+  expect_equal(ev("[a] = '1'\n  or [b] = '1'"), either)
+  expect_equal(ev("[a] = '1' or\r\n[b] = '1'"), either)
+  expect_equal(ev("[a] = '1'\tor\t[b] = '1'"), either)
+  expect_equal(ev("[a] = '1' OR [b] = '1'"), either)
+  expect_equal(ev("([a] = '1')or([b] = '1')"), either)
+  expect_equal(ev("[a] = '1' and\n[b] = '2'"), both)
+  expect_equal(ev("[a] = '1' AND [b] = '2'"), both)
+  expect_equal(ev("if(\n  [a] = '' or\n  [b] = '',\n  0,\n  1\n)"), c(1, 1, 0, 0))
+  # The words inside a text are not operators
+  expect_equal(ev("[t] = 'x or y'"), c(TRUE, FALSE, FALSE, NA))
+  expect_equal(ev("[t] = 'and' or [a] = '2'"), c(FALSE, TRUE, TRUE, NA))
+})
+
+test_that("rd_rlogic evaluates a total of several items written in several lines, as exported from REDCap", {
+  items <- sprintf("fss_%02d", 1:9)
+  df <- data.frame(record_id = 1:5)
+  for (x in items) df[[x]] <- c(1, 2, 5555, 3, NA)
+  df$fss_02[2] <- 7777
+  df$fss_09[4] <- NA
+  dic <- make_dic(c("record_id", items, "fss_total"))
+  logic <- paste0(
+    "if(\n    ", paste0("[", items, "]=''", collapse = " or\n    "), ",\n    '',\n    sum(\n",
+    paste0("        if([", items, "] < 5555, [", items, "], 0)", collapse = ",\n"), "\n    )\n)"
+  )
+  expect_equal(as.vector(rd_rlogic(data = df, dic = dic, logic = logic, var = "fss_total")$eval), c(9, 16, 0, NA, NA))
+})

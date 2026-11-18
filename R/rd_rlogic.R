@@ -97,6 +97,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   rlogic <- logic # Initialize REDCap logic to be converted
 
+  # A logic written in several lines (also with Windows line breaks) or with tabs is read as one line
+  rlogic <- outside_quotes(rlogic, function(s) gsub("[ \\t]*[\\r\\n][\\s]*|\\t", " ", s, perl = TRUE))
+
   # As in REDCap, datediff() returns the absolute difference unless its last argument is `true`
   rlogic <- datediff_absolute(rlogic)
 
@@ -304,8 +307,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # As in REDCap, a blank value is different from any value: [x] <> '1' is TRUE when x is blank
   rlogic <- gsub("(data\\$\\w+)\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)", "!(\\1 %in% \\2)", rlogic, perl = TRUE)
-  rlogic <- gsub(" and ", " & ", rlogic)
-  rlogic <- gsub(" or ", " | ", rlogic)
+  rlogic <- logical_operators(rlogic)
   
   # REDCap functions (after the operators, so that the `=` of their translation is not changed)
   rlogic <- translate_functions(rlogic)
@@ -723,6 +725,39 @@ recycle_constant_conditions <- function(x) {
   }
 
   paste(chars, collapse = "")
+}
+
+#' Apply a function to the parts of a logic that are not texts between quotes
+#'
+#' @param x Character vector with the logic.
+#' @param f A function that receives and returns the parts of the logic outside the quotes (character vector).
+#' @return The logic with those parts changed and the texts between quotes as they were.
+#' @noRd
+outside_quotes <- function(x, f) {
+  vapply(x, function(s) {
+    if (is.na(s)) {
+      return(s)
+    }
+    quotes <- gregexpr("'[^']*'|\"[^\"]*\"", s)
+    texts <- regmatches(s, quotes)[[1]]
+    rest <- f(regmatches(s, quotes, invert = TRUE)[[1]])
+    paste0(rest, c(texts, ""), collapse = "")
+  }, character(1), USE.NAMES = FALSE)
+}
+
+#' Translate the logical operators `and` and `or` of REDCap logic into `&` and `|`
+#'
+#' As whole words in upper or lower case, and not inside the texts between quotes (e.g. `[x] = 'yes or no'`).
+#' Only the word is replaced, so the spaces stay as they are.
+#'
+#' @param x Character vector with the logic.
+#' @return The logic with the operators translated.
+#' @noRd
+logical_operators <- function(x) {
+  outside_quotes(x, function(s) {
+    s <- gsub("(?i)(?<![\\w.$])and(?![\\w.$])", "&", s, perl = TRUE)
+    gsub("(?i)(?<![\\w.$])or(?![\\w.$])", "|", s, perl = TRUE)
+  })
 }
 
 #' Translate the REDCap functions to R

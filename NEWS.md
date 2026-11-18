@@ -36,6 +36,7 @@
 
 ## Bug fixes
 
+- `rd_rlogic()` (and so `rd_recalculate()`, `rd_query()` and `rd_dictionary()`) translates `and` and `or` written at the end or the start of a line, with Windows line breaks or tabs, in capitals (`AND`, `OR`) or next to a parenthesis: the logic couldn't be evaluated. It also leaves as they are the words `and` and `or` inside a text (e.g. `[x] = 'yes or no'`), which were translated.
 - Fields with the name of an object used inside the functions work: with a field called `event`, `rd_query()` with the `event` argument found no queries; with a field called `data`, `rd_query()`, `rd_event()`, `rd_checkbox()` and `rd_transform()` stopped with an error; `rd_rlogic()` couldn't evaluate a logic that used a field called `datediff`; and `redcap_data()` left empty a field called `missing_codes`.
 - `redcap_data()` with the exported files: the labels of the options with line breaks lost their spaces (e.g. "oralcorticosteroids(e.g."), because the R script exported by REDCap removes the line breaks. They take the label of the dictionary, as with the API.
 - `redcap_data()` reads the paths between quotes, as Windows copies them with "Copy as path" (e.g. `'"C:\\Users\\...\\project.r"'`). It said that the file was not an R file.
