@@ -9,7 +9,7 @@
 
 ## New features
 
-- New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank. First version by Ferran Pérez Pérez (#19).
+- New `rd_missplot()` function to visualise missing data per variable (barplot) or per event and variable (heatmap in longitudinal projects). With `by = "record"` it shows the missing values record by record. The `events` and `forms` arguments choose what is plotted, long labels are shortened (`max_label_length`) and the events where a variable is not collected are left blank. First version by Ferran Perez Sanchez (#19).
 - New `rm_mdc` argument in `redcap_data()` to remove REDCap Missing Data Codes (default `TRUE`).
 - With `redcap_data(rm_mdc = FALSE)`, the Missing Data Codes of validated text fields (numbers, dates, ...) are kept in a new `<field>_mdc` column, so that the field keeps its type. `rd_missplot()`, `rd_delete_vars()` and `rd_split()` handle these columns like the `.factor` ones.
 - New `forms` argument in `rd_delete_vars()` to remove every variable of a form.

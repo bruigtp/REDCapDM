@@ -77,7 +77,7 @@ Package: REDCapDM
 
 Authors: João Carmezim, Pau Satorra, Judith Peñafiel, Esther García, Natàlia Pallarès, Cristian Tebé.
 
-Contributors: Ferran Perez Sanchez
+Contributors: Ferran Perez Sanchez.
 
 Maintainer: João Carmezim
 
