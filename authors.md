@@ -14,7 +14,7 @@
 
 - **Cristian Tebé**. Author.
 
-- **Ferran Pérez Pérez**. Contributor.
+- **Ferran Perez Sanchez**. Contributor.
 
 ## Citation
 
