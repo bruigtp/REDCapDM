@@ -35,7 +35,8 @@
 #' @param mdc Optional Missing Data Codes of the project, besides the default ones of REDCap (`NI`, `UNK`, `NASK`, ...), which are always
 #'   used: a vector of codes, e.g. `c("-999", "-888")`. A code can have a label, written as `code = label`
 #'   (e.g. `c("-999" = "Not applicable", "-888")`): with `rm_mdc = FALSE`, the `.factor` version of the multiple-choice fields shows the
-#'   label instead of the code. Numeric codes are also found in numeric fields. With the API, the codes defined in the project
+#'   label instead of the code. Numeric codes are also found in numeric fields, also when written in another way (e.g. `-999.0`
+#'   for `-999`). With the API, the codes defined in the project
 #'   (Project Setup > Additional customizations > Missing Data Codes) are added automatically. As with the default codes, they are
 #'   searched in the validated text fields (numbers, dates, ...), the multiple-choice fields and the checkboxes, so they must not be values
 #'   that the fields can take (e.g. the code of an option).
@@ -728,6 +729,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   } else {
     character(0)
   }
+  # (a number written as text in these fields is a numeric code when its value is, e.g. `-999.0` or `-9.99e2` with -999)
+  number_fields <- numeric_fields
+  is_mdc_number <- function(value, field) {
+    field %in% number_fields & !is.na(value) & suppressWarnings(as.numeric(value)) %in% numeric_mdc
+  }
   numeric_fields <- c(numeric_fields, categorical_fields)
 
   restore_type <- function(x, field) {
@@ -746,8 +752,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     removed_checkbox_cols <- colnames(data_def$data)[stringr::str_detect(colnames(data_def$data), checkbox_mdc_pattern)]
     n_mdc_values <- sum(vapply(
-      data_def$data[intersect(target_columns, colnames(data_def$data))],
-      function(x) sum(is_mdc_value(x), na.rm = TRUE),
+      intersect(target_columns, colnames(data_def$data)),
+      function(col) {
+        x <- data_def$data[[col]]
+        sum(is_mdc_value(x) | (!is.numeric(x) & is_mdc_number(stringr::str_trim(as.character(x)), col)), na.rm = TRUE)
+      },
       numeric(1)
     ))
 
@@ -771,7 +780,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
             val_char <- stringr::str_trim(as.character(.x))
             # (.env: a field of the project can be called `missing_codes`)
             val_clean <- ifelse(
-              val_char %in% .env$missing_codes,
+              val_char %in% .env$missing_codes | .env$is_mdc_number(val_char, dplyr::cur_column()),
               NA_character_,
               val_char
             )
@@ -800,6 +809,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       } else {
         val_char <- stringr::str_trim(as.character(x))
         is_mdc <- is_mdc_value(val_char, ignore_case = TRUE)
+        # (a number written as text, e.g. `-999.0`, is kept with the text of its code)
+        by_number <- !is_mdc & is_mdc_number(val_char, var)
+        is_mdc <- is_mdc | by_number
       }
 
       if (any(is_mdc)) {
@@ -808,7 +820,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         if (mdc_col %in% colnames(data_def$data)) {
           rd_warn("The Missing Data Codes of {.var {var}} can't be kept because the dataset already has a {.var {mdc_col}} column. They are set to NA.")
         } else {
-          data_def$data[[mdc_col]] <- ifelse(is_mdc, val_char, NA_character_)
+          mdc_values <- ifelse(is_mdc, val_char, NA_character_)
+          if (!is.numeric(x)) {
+            mdc_values[by_number] <- numeric_mdc_codes[match(suppressWarnings(as.numeric(val_char[by_number])), numeric_mdc)]
+          }
+          data_def$data[[mdc_col]] <- mdc_values
           data_def$data <- data_def$data |>
             dplyr::relocate(dplyr::all_of(mdc_col), .after = dplyr::all_of(var))
           mdc_fields <- c(mdc_fields, var)

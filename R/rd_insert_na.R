@@ -10,7 +10,7 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param vars Character vector of variable names to set to `NA`.
-#' @param filter A single logical expression (as string). Rows where the filter evaluates to `TRUE` will have the corresponding `vars` set to `NA`. It can use objects created in your session or in your function.
+#' @param filter A single logical expression (as string). Rows where the filter evaluates to `TRUE` will have the corresponding `vars` set to `NA`. It can use objects created in your session or in your function, columns chosen with `.data[[field]]` (with `field` one of these objects) or be a logical vector of your session with one value per row (e.g. `filter = "eligible"`).
 #'
 #' @details
 #' * Each variable is only updated in rows/events where both the variable and filter are present.
@@ -88,8 +88,12 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     }, error = function(e) {
       rd_abort("Unable to parse filter expression {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
     })
-    vars_filter <- filter_names(parsed)
-    vars_filter <- vars_filter[vars_filter %in% names(data) | !vapply(vars_filter, exists, logical(1), envir = user_env)]
+    # (`data$x`, `.data$x` and `.data[[field]]` are always columns of the data)
+    vars_filter <- filter_names(parsed, env = user_env, columns = names(data))
+    vars_filter <- unique(c(
+      vars_filter$columns,
+      vars_filter$names[vars_filter$names %in% names(data) | !vapply(vars_filter$names, exists, logical(1), envir = user_env)]
+    ))
 
     # check filter vars exist in the dataset
     missing_in_data <- vars_filter[!vars_filter %in% names(data)]
@@ -105,8 +109,10 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       rd_abort("Filter variable(s) not found in dictionary: {.val {missing_in_dic}}", class = "REDCapDM_error_argument")
     }
 
-    # Events are only relevant in longitudinal projects
-    if (longitudinal) {
+    # Events are only relevant in longitudinal projects (a filter without variables of the data, e.g. a logical vector
+    # created in the session, doesn't restrict the events: `events` is NULL)
+    events <- NULL
+    if (longitudinal && length(vars_filter) > 0) {
       # Extract corresponding events for filter variables
       event_filter <- tibble::tibble(vars_filter = vars_filter) |>
         dplyr::mutate(
@@ -176,7 +182,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
           dplyr::pull(.data$unique_event_name)
 
         # Ensure the variable's events overlap with filter events
-        match_events <- intersect(events, event_var)
+        match_events <- if (is.null(events)) event_var else intersect(events, event_var)
 
         # Error: no overlapping events between the variable and the filter
         if (length(match_events) == 0) {
@@ -248,14 +254,19 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
 #' Names of the variables of a filter
 #'
-#' The names of an expression, except the functions (`abs(x)`, `dplyr::between(x, 1, 2)`) and the objects after `.env$`.
-#' `data$x` and `.data$x` are the variable `x`.
+#' The names of an expression, except the functions (`abs(x)`, `dplyr::between(x, 1, 2)`), the objects after `.env$` and
+#' the components of other objects (`settings$threshold`). `data$x`, `.data$x`, `.data[["x"]]` and `.data[[field]]` (with
+#' `field` an object of the session) are the column `x`.
 #'
 #' @param expr A parsed expression.
-#' @return The names.
+#' @param env Environment where the filter is evaluated (to know the column of `.data[[field]]`).
+#' @param columns Names of the columns of the data (to know the column of `data[[2]]`).
+#' @return A list with the names of the expression (`names`) and the names that are columns of the data for sure
+#'   (`columns`).
 #' @noRd
-filter_names <- function(expr) {
+filter_names <- function(expr, env = emptyenv(), columns = character(0)) {
   out <- character(0)
+  out_columns <- character(0)
   walk <- function(e) {
     if (is.symbol(e)) {
       name <- as.character(e)
@@ -269,22 +280,66 @@ filter_names <- function(expr) {
     if (identical(head, as.name("::")) || identical(head, as.name(":::"))) {
       return(invisible())
     }
-    if ((identical(head, as.name("$")) || identical(head, as.name("[["))) && is.symbol(e[[2]])) {
-      object <- as.character(e[[2]])
-      if (object %in% c("data", ".data")) {
-        if (is.symbol(e[[3]]) || is.character(e[[3]])) out <<- c(out, as.character(e[[3]]))
+    # The arguments of a function written in the filter (e.g. `function(v) v > 1`) aren't variables
+    if (identical(head, as.name("function"))) {
+      inner <- filter_names(e[[3]], env, columns)
+      out <<- c(out, setdiff(inner$names, names(e[[2]])))
+      out_columns <<- c(out_columns, inner$columns)
+      return(invisible())
+    }
+    is_access <- length(e) >= 3 && (identical(head, as.name("$")) || identical(head, as.name("@")) || identical(head, as.name("[[")) || identical(head, as.name("[")))
+    if (is_access) {
+      object <- if (is.symbol(e[[2]])) as.character(e[[2]]) else ""
+      # Objects of the session (`.env$x`, `.env$settings$threshold`)
+      if (object == ".env") {
         return(invisible())
       }
-      if (object == ".env") {
+      # Columns of the data (`data$x`, `.data[["x"]]`, `.data[[field]]`)
+      if (object %in% c("data", ".data") && !identical(head, as.name("[")) && !identical(head, as.name("@"))) {
+        index <- e[[3]]
+        if (identical(head, as.name("$")) || is.character(index)) {
+          out_columns <<- c(out_columns, as.character(index))
+          return(invisible())
+        }
+        # (an index that is an object or an expression: its value says the column)
+        value <- tryCatch(eval(index, env), error = function(e) NULL)
+        if (is.numeric(value) && length(value) == 1 && object == "data" && value %in% seq_along(columns)) {
+          value <- columns[value]
+        }
+        if (is.character(value) && length(value) == 1 && !is.na(value)) {
+          out_columns <<- c(out_columns, value)
+        } else {
+          walk(index)
+        }
+        return(invisible())
+      }
+      # Components of other objects (`settings$threshold`, `x@slot`) aren't variables: only the object is
+      if (identical(head, as.name("$")) || identical(head, as.name("@"))) {
+        walk(e[[2]])
+        return(invisible())
+      }
+      # (a chain that starts with .env, e.g. `.env$settings[["threshold"]]`)
+      root <- e[[2]]
+      while (is.call(root) && length(root) >= 2 && (identical(root[[1]], as.name("$")) || identical(root[[1]], as.name("@")) || identical(root[[1]], as.name("[[")) || identical(root[[1]], as.name("[")))) {
+        root <- root[[2]]
+      }
+      if (identical(root, as.name(".env"))) {
+        walk_args(as.list(e)[-(1:2)])
         return(invisible())
       }
     }
     # (the function of a call isn't a variable)
     if (!is.symbol(head)) walk(head)
-    for (arg in as.list(e)[-1]) walk(arg)
+    walk_args(as.list(e)[-1])
+  }
+  # (without the empty arguments, e.g. in `data[, "age"]`)
+  walk_args <- function(args) {
+    for (k in seq_along(args)) {
+      if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
+    }
   }
   walk(expr)
-  unique(out)
+  list(names = unique(out), columns = unique(out_columns))
 }
 
 #' Field of the dictionary of a column of the data

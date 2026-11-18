@@ -136,7 +136,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   # Logic with variables of other events ([event][field]) can't be written as R logic of each row: it is kept in REDCap
   # syntax, which rd_rlogic() and rd_query() evaluate
   other_event <- function(logic) {
-    events <- gsub("^\\[|\\]\\[$", "", unlist(stringr::str_extract_all(logic, "\\[[\\w-]+\\]\\[")))
+    events <- gsub("^\\[|\\]\\[$", "", unlist(stringr::str_extract_all(without_texts(logic), "\\[[\\w-]+\\]\\[")))
     !is.null(event_form) && any(events %in% event_form$unique_event_name)
   }
   kept <- NULL

@@ -778,3 +778,44 @@ test_that("rd_dictionary and rd_transform write the labels with apostrophes so t
   before <- suppressWarnings(suppressMessages(rd_query(project, variables = "q", expression = "is.na(x)")))$queries
   expect_equal(nrow(queries), nrow(before))
 })
+
+test_that("rd_dictionary and rd_transform escape the labels with both quotes or backslashes", {
+  for (label in c("O'Brien \"A\"", "C:\\Ward", "say \"hi\"", "a\\'b")) {
+    data <- data.frame(record_id = c("1", "2"), name = c(1, 2), q = c(NA, NA))
+    data$name.factor <- factor(c(label, "Other"), levels = c(label, "Other"))
+    dic <- make_dic(c("record_id", "name", "q"))
+    dic$field_type <- c("text", "radio", "text")
+    dic$choices_calculations_or_slider_labels <- c("", paste0("1, ", label, " | 2, Other"), "")
+    dic$branching_logic_show_field_only_if <- c("", "", "[name] = '1'")
+    project <- list(data = data, dictionary = dic)
+
+    transformed <- suppressWarnings(suppressMessages(rd_transform(project)))
+    logic <- transformed$dictionary$branching_logic_show_field_only_if[transformed$dictionary$field_name == "q"]
+    # The R logic compares with the label
+    expect_equal(eval(parse(text = logic), list(data = data.frame(name = c(label, "Other")))), c(TRUE, FALSE), info = label)
+    queries <- suppressWarnings(suppressMessages(rd_query(transformed, variables = "q", expression = "is.na(x)")))$queries
+    expect_equal(queries$Identifier, 1, ignore_attr = TRUE, info = label)
+  }
+})
+
+test_that("rd_rlogic reads the escaped quotes of the texts", {
+  data <- data.frame(record_id = 1:3, t = c("O'Brien \"A\"", "C:\\Ward", "x"), res = NA)
+  dic <- make_dic(c("record_id", "t", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("[t] = 'O\\'Brien \"A\"'"), c(TRUE, FALSE, FALSE))
+  expect_equal(ev("[t] = \"O'Brien \\\"A\\\"\""), c(TRUE, FALSE, FALSE))
+  expect_equal(ev("[t] = 'C:\\\\Ward'"), c(FALSE, TRUE, FALSE))
+  # (a backslash before another character is a backslash)
+  expect_equal(ev("[t] = 'C:\\Ward'"), c(FALSE, TRUE, FALSE))
+  expect_equal(ev("[t] <> 'O\\'Brien \"A\"' and [t] <> 'x'"), c(FALSE, TRUE, FALSE))
+  expect_equal(ev("if([t] = 'O\\'Brien \"A\"', 1, 0)"), c(1, 0, 0))
+})
+
+test_that("the texts of a logic are never taken for the internal placeholders of rd_rlogic", {
+  data <- data.frame(record_id = 1:3, t = c("REDCapDMtext1x", "a=b", "z"))
+  dic <- make_dic(c("record_id", "t", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("[t] = 'a=b' or [t] = 'REDCapDMtext1x'"), c(TRUE, TRUE, FALSE))
+  expect_equal(ev("[t] = 'REDCapDMtext2x' or [t] = 'a=b'"), c(FALSE, TRUE, FALSE))
+  expect_equal(ev("[t] = 'REDCapDMtextx1x' or [t] = '(z)'"), c(FALSE, FALSE, FALSE))
+})

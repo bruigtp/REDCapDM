@@ -39,7 +39,8 @@ redcap_data(
 \item{mdc}{Optional Missing Data Codes of the project, besides the default ones of REDCap (\code{NI}, \code{UNK}, \code{NASK}, ...), which are always
 used: a vector of codes, e.g. \code{c("-999", "-888")}. A code can have a label, written as \code{code = label}
 (e.g. \code{c("-999" = "Not applicable", "-888")}): with \code{rm_mdc = FALSE}, the \code{.factor} version of the multiple-choice fields shows the
-label instead of the code. Numeric codes are also found in numeric fields. With the API, the codes defined in the project
+label instead of the code. Numeric codes are also found in numeric fields, also when written in another way (e.g. \code{-999.0}
+for \code{-999}). With the API, the codes defined in the project
 (Project Setup > Additional customizations > Missing Data Codes) are added automatically. As with the default codes, they are
 searched in the validated text fields (numbers, dates, ...), the multiple-choice fields and the checkboxes, so they must not be values
 that the fields can take (e.g. the code of an option).}

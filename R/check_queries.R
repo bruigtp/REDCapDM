@@ -140,10 +140,17 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
 
   # The queries of both reports take the other columns of the new report (e.g. Link or DAG): otherwise a query whose
   # link changed would be two rows
+  # (a column with a different class in each report, e.g. a factor in one of them, or factors with different levels, is
+  # kept as text: the values of the new report can't be copied into a factor that doesn't have them)
   other_cols <- setdiff(intersect(names(old), names(new)), c(key_cols, "Query", "comp"))
   in_new <- match(old$comp, new$comp)
   for (col in other_cols) {
-    if (any(!is.na(in_new)) && identical(class(old[[col]]), class(new[[col]]))) {
+    same_class <- identical(class(old[[col]]), class(new[[col]])) && identical(levels(old[[col]]), levels(new[[col]]))
+    if (!same_class) {
+      old[[col]] <- as.character(old[[col]])
+      new[[col]] <- as.character(new[[col]])
+    }
+    if (any(!is.na(in_new))) {
       old[[col]][!is.na(in_new)] <- new[[col]][in_new[!is.na(in_new)]]
     }
   }

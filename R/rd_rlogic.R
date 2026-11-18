@@ -185,7 +185,12 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     }
 
     # (labels between single or double quotes, e.g. [name] = "O'Brien")
-    label_pattern <- paste0("\\[", field, "\\]\\s*(=|<>|!=)\\s*(['\"])(", paste(escape_regex(names(mapping)), collapse = "|"), ")\\2")
+    # (and labels with both quotes or backslashes, written with escaped characters, e.g. [name] = 'O\'Brien "A"')
+    labels <- names(mapping)
+    label_pattern <- paste0(
+      "\\[", field, "\\]\\s*(=|<>|!=)\\s*((['\"])(", paste(escape_regex(labels), collapse = "|"), ")\\3|",
+      paste(escape_regex(r_text(labels)), collapse = "|"), ")"
+    )
     codes <- unname(mapping[as.character(data[[field]])])
 
     # Leave the variable as it is if the logic uses its labels or if any of its values isn't one of them
@@ -687,10 +692,18 @@ recycle_constant_conditions <- function(x) {
   quoted <- function(chars) {
     inside <- logical(length(chars))
     quote <- ""
+    escaped <- FALSE
     for (k in seq_along(chars)) {
       if (nzchar(quote)) {
         inside[k] <- TRUE
-        if (chars[k] == quote) quote <- ""
+        # (a quote after a backslash is part of the text, e.g. 'O\'Brien')
+        if (escaped) {
+          escaped <- FALSE
+        } else if (chars[k] == "\\") {
+          escaped <- TRUE
+        } else if (chars[k] == quote) {
+          quote <- ""
+        }
       } else if (chars[k] %in% c("'", "\"")) {
         quote <- chars[k]
         inside[k] <- TRUE
@@ -730,7 +743,7 @@ recycle_constant_conditions <- function(x) {
     if (is.na(comma) || comma == open + 1) next
 
     condition <- paste(chars[(open + 1):(comma - 1)], collapse = "")
-    if (grepl("data\\$|data\\[\\[", condition)) next
+    if (grepl("data\\$|data\\[\\[", without_texts(condition))) next
 
     chars <- c(chars[seq_len(open)], strsplit(paste0("rep_len(", trimws(condition), ", nrow(data))"), "")[[1]], chars[comma:length(chars)])
   }
@@ -740,15 +753,60 @@ recycle_constant_conditions <- function(x) {
 
 #' Label of an option written as a text of a REDCap logic
 #'
-#' Between single quotes, or between double quotes when it has an apostrophe (e.g. `"O'Brien"`). It is the replacement of
-#' stringr::str_replace_all(), so `\\` is escaped.
+#' Between single quotes, or between double quotes when it has an apostrophe (e.g. `"O'Brien"`). A label with both quotes
+#' or with backslashes is written between single quotes with these characters escaped, as in R (e.g. `'O\'Brien "A"'`
+#' or `'C:\\Ward'`). It is the replacement of stringr::str_replace_all(), so `\` is escaped again.
 #'
 #' @param x Labels.
 #' @return The labels between quotes.
 #' @noRd
 logic_label <- function(x) {
-  quote <- ifelse(grepl("'", x, fixed = TRUE) & !grepl("\"", x, fixed = TRUE), "\"", "'")
-  gsub("\\", "\\\\", paste0(quote, x, quote), fixed = TRUE)
+  plain <- !grepl("\\", x, fixed = TRUE)
+  double <- plain & grepl("'", x, fixed = TRUE) & !grepl("\"", x, fixed = TRUE)
+  text <- ifelse(double, paste0("\"", x, "\""), r_text(x))
+  gsub("\\", "\\\\", text, fixed = TRUE)
+}
+
+#' A value written as an R text between single quotes
+#'
+#' @param x Values.
+#' @return The values between single quotes, with their backslashes and single quotes escaped.
+#' @noRd
+r_text <- function(x) {
+  paste0("'", gsub("'", "\\'", gsub("\\", "\\\\", x, fixed = TRUE), fixed = TRUE), "'")
+}
+
+#' Value of a text between quotes of a logic
+#'
+#' A backslash before a backslash or a quote escapes it (e.g. `'O\'Brien'`); before any other character it is a
+#' backslash (e.g. `'C:\Ward'`).
+#'
+#' @param x Texts with their quotes.
+#' @return The values of the texts.
+#' @noRd
+text_value <- function(x) {
+  gsub("\\\\([\\\\'\"])", "\\1", substr(x, 2, nchar(x) - 1), perl = TRUE)
+}
+
+#' Regular expression of the texts between quotes of a logic
+#'
+#' Between single or double quotes. A quote after a backslash is part of the text (e.g. `'O\'Brien "A"'`).
+#'
+#' @return The regular expression (Perl).
+#' @noRd
+quoted_pattern <- function() {
+  "(?s)'(?:[^'\\\\]|\\\\.)*'|\"(?:[^\"\\\\]|\\\\.)*\""
+}
+
+#' A logic without the texts between quotes
+#'
+#' To look for fields or R code in a logic (e.g. `[age]` in `data$status == '[age]'` is a text).
+#'
+#' @param x Character vector with the logic.
+#' @return The logic with each text between quotes replaced by `''`.
+#' @noRd
+without_texts <- function(x) {
+  gsub(quoted_pattern(), "''", x, perl = TRUE)
 }
 
 #' Write between single quotes the texts between double quotes
@@ -762,7 +820,7 @@ single_quotes <- function(x) {
   if (length(x) != 1 || is.na(x)) {
     return(x)
   }
-  quotes <- gregexpr("'[^']*'|\"[^\"]*\"", x)
+  quotes <- gregexpr(quoted_pattern(), x, perl = TRUE)
   found <- regmatches(x, quotes)[[1]]
   double <- startsWith(found, "\"") & !grepl("'", found, fixed = TRUE)
   found[double] <- paste0("'", substr(found[double], 2, nchar(found[double]) - 1), "'")
@@ -784,14 +842,23 @@ mask_texts <- function(x) {
   if (length(x) != 1 || is.na(x)) {
     return(list(logic = x, texts = texts))
   }
-  quotes <- gregexpr("'[^']*'|\"[^\"]*\"", x)
+  quotes <- gregexpr(quoted_pattern(), x, perl = TRUE)
   found <- regmatches(x, quotes)[[1]]
-  special <- grepl("[=<>()]|\\[|\\]", found)
+  # (also the texts with backslashes, i.e. with escaped characters, e.g. 'O\'Brien "A"': they are put back as R texts)
+  escaped <- grepl("\\", found, fixed = TRUE)
+  special <- grepl("[=<>()]|\\[|\\]", found) | escaped
   if (!any(special)) {
     return(list(logic = x, texts = texts))
   }
-  holders <- paste0("'REDCapDMtext", seq_along(found), "x'")
-  texts <- stats::setNames(found[special], holders[special])
+  # Placeholders that can't be texts of the logic: their name isn't in it
+  base <- "REDCapDMtext"
+  while (grepl(base, x, fixed = TRUE)) {
+    base <- paste0(base, "x")
+  }
+  holders <- paste0("'", base, seq_along(found), "x'")
+  found_texts <- found
+  found_texts[escaped] <- r_text(text_value(found[escaped]))
+  texts <- stats::setNames(found_texts[special], holders[special])
   found[special] <- holders[special]
   regmatches(x, quotes) <- list(found)
   list(logic = x, texts = texts)
@@ -821,7 +888,7 @@ outside_quotes <- function(x, f) {
     if (is.na(s)) {
       return(s)
     }
-    quotes <- gregexpr("'[^']*'|\"[^\"]*\"", s)
+    quotes <- gregexpr(quoted_pattern(), s, perl = TRUE)
     texts <- regmatches(s, quotes)[[1]]
     rest <- f(regmatches(s, quotes, invert = TRUE)[[1]])
     paste0(rest, c(texts, ""), collapse = "")

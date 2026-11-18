@@ -103,3 +103,16 @@ test_that("rd_dates sets to NA the values that aren't dates, wherever they are, 
   # Without values that aren't dates, no warning
   expect_no_warning(suppressMessages(rd_dates(data = data[3:4, ], dic = dic)))
 })
+
+test_that("rd_dates only converts the values that follow a whole format: invalid times or extra text are NA", {
+  dic <- data.frame(field_name = c("record_id", "d", "dt"), text_validation_type_or_show_slider_number = c("", "date_ymd", "datetime_seconds_ymd"))
+  data <- data.frame(
+    record_id = 1:6,
+    d = c("2024-02-29", "2024-02-29trailing", "2024-02-30", "2024-02-29 extra", "2024/2/5", " 2024-03-01 "),
+    dt = c("2024-02-29 12:30:00", "2024-02-29 99:00:00", "2024-02-29 12:30:00trailing", "2024-02-29 12:61", "2024-02-29", "2024/02/29 08:05")
+  )
+  expect_warning(out <- suppressMessages(rd_dates(data = data, dic = dic))$data, "aren't dates", class = "REDCapDM_warning")
+  expect_equal(out$d, as.Date(c("2024-02-29", NA, NA, NA, "2024-02-05", "2024-03-01")), ignore_attr = "label")
+  # (a datetime field with only the date is at midnight, as before)
+  expect_equal(out$dt, as.POSIXct(c("2024-02-29 12:30:00", NA, NA, NA, "2024-02-29 00:00:00", "2024-02-29 08:05:00"), tz = "UTC"), ignore_attr = "label")
+})

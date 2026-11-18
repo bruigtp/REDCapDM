@@ -167,3 +167,26 @@ test_that("check_queries stops with queries without identifier", {
   new$Identifier <- c("NA", new$Identifier[2])
   expect_error(check_queries(old = old, new = new, return_viewer = FALSE), class = "REDCapDM_error_argument")
 })
+
+test_that("check_queries keeps one pending query when the link or the DAG are factors with different levels", {
+  link <- function(domain) list(domain = domain, redcap_version = "13.0.0", proj_id = "1", event_id = c(baseline_visit_arm_1 = "10", follow_up_visit_da_arm_1 = "11"))
+  old <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80", link = link("redcap.a.org"))))$queries
+  new <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80", link = link("redcap.b.org"))))$queries
+  new$DAG[1] <- "hospital_99"
+  old$Link <- factor(old$Link)
+  new$Link <- factor(new$Link)
+  old$DAG <- factor(old$DAG)
+  new$DAG <- factor(new$DAG)
+  out <- suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries
+  expect_equal(nrow(out), nrow(new))
+  expect_true(all(out$Modification == "Pending"))
+  # The link and the DAG of the new report
+  expect_false(anyNA(out$Link))
+  expect_true(all(grepl("redcap.b.org", out$Link, fixed = TRUE)))
+  expect_true("hospital_99" %in% out$DAG)
+
+  # Factors with the same levels in both reports are kept as factors
+  same <- suppressMessages(check_queries(old = old, new = old, return_viewer = FALSE))$queries
+  expect_s3_class(same$Link, "factor")
+  expect_true(all(same$Modification == "Pending"))
+})

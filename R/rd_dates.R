@@ -182,12 +182,28 @@ convert_dates <- function(x, formats, datetime) {
   text[text %in% ""] <- NA
   value <- if (datetime) as.POSIXct(rep(NA_real_, length(text)), origin = "1970-01-01", tz = "UTC") else as.Date(rep(NA_real_, length(text)), origin = "1970-01-01")
   for (format in formats) {
-    pending <- is.na(value) & !is.na(text)
+    # Each value is converted with the format that it follows completely: as.Date() and as.POSIXct() ignore the text after
+    # the format (e.g. `2024-02-29 99:00:00` would be a date at midnight, and `2024-02-29trailing` a date)
+    pending <- is.na(value) & !is.na(text) & grepl(date_pattern(format), text)
     if (!any(pending)) {
-      break
+      next
     }
     value[pending] <- if (datetime) as.POSIXct(text[pending], format = format, tz = "UTC") else as.Date(text[pending], format = format)
   }
 
   list(value = value, not_dates = text[is.na(value) & !is.na(text)])
+}
+
+#' Regular expression of the whole text of a date or datetime format
+#'
+#' @param format A format of `convert_dates()` (with `%Y`, `%m`, `%d`, `%H`, `%M` and `%OS`).
+#' @return The regular expression.
+#' @noRd
+date_pattern <- function(format) {
+  parts <- c("%Y" = "[0-9]{4}", "%m" = "[0-9]{1,2}", "%d" = "[0-9]{1,2}", "%H" = "[0-9]{1,2}", "%M" = "[0-9]{1,2}", "%OS" = "[0-9]{1,2}([.][0-9]+)?")
+  pattern <- gsub(" ", "[[:space:]]+", format, fixed = TRUE)
+  for (part in names(parts)) {
+    pattern <- gsub(part, parts[[part]], pattern, fixed = TRUE)
+  }
+  paste0("^", pattern, "$")
 }

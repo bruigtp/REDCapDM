@@ -233,3 +233,34 @@ test_that("rd_insert_na accepts filters with R functions, parentheses and object
   # A variable that doesn't exist is still an error
   expect_error(rd_insert_na(covican, vars = "dm", filter = "abs(no_variable) > 1"), "not found in data")
 })
+
+test_that("rd_insert_na accepts columns chosen with objects of the session and logical vectors of the session", {
+  na_dm <- function(filter) suppressWarnings(suppressMessages(rd_insert_na(covican, vars = "dm", filter = filter)))$data$dm
+  expected <- na_dm("age > 30")
+  field <- "age"
+  cutoff <- 30
+  for (filter in c(".data[[field]] > cutoff", "data[[field]] > cutoff", ".data[['age']] > cutoff", ".data$age > cutoff")) {
+    expect_equal(na_dm(filter), expected, info = filter)
+  }
+  # A logical vector of the session (the events of the variable are kept)
+  eligible <- !is.na(covican$data$age) & covican$data$age > 30
+  expect_equal(na_dm("eligible"), expected)
+  short <- c(TRUE, FALSE)
+  expect_error(rd_insert_na(covican, vars = "dm", filter = "short"), "did not return a logical vector", class = "REDCapDM_error_argument")
+  # A column chosen with an object that isn't one is still an error
+  field <- "no_variable"
+  expect_error(rd_insert_na(covican, vars = "dm", filter = ".data[[field]] > 1"), "not found in data")
+})
+
+test_that("rd_insert_na doesn't take the components of objects of the session for variables", {
+  na_dm <- function(filter) suppressWarnings(suppressMessages(rd_insert_na(covican, vars = "dm", filter = filter)))$data$dm
+  expected <- na_dm("age > 30")
+  settings <- list(threshold = 30)
+  for (filter in c("age > settings$threshold", "age > .env$settings$threshold", "age > settings[['threshold']]", "age > .env$settings[['threshold']]")) {
+    expect_equal(na_dm(filter), expected, info = filter)
+  }
+  expect_error(rd_insert_na(covican, vars = "dm", filter = "no_variable > settings$threshold"), "not found in data")
+  # Neither the arguments of a function written in the filter, nor the empty arguments of `[`
+  expect_equal(na_dm("sapply(age, function(v) isTRUE(v > 30))"), expected)
+  expect_equal(na_dm("data[, 'age'] > 30"), expected)
+})

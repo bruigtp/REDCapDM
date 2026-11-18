@@ -373,7 +373,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Convert REDCap logic into R-compatible logic
     if (!is.null(event_form) || all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      for (j in which(stringr::str_detect(branch$branch, "\\[|\\]"))) {
+      # (REDCap logic has fields between brackets outside its texts: `data$status == '[age]'` is already R logic)
+      for (j in which(grepl("\\[|\\]", without_texts(branch$branch)))) {
         evaluation <- try(rd_rlogic(data = data_all, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j]), silent = TRUE)
 
         if (!inherits(evaluation, "try-error")) {
@@ -428,7 +429,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
         # When the logic was evaluated (also when it was already R logic, e.g. after rd_transform()), no row meeting it
         # means that the field is never shown: there is nothing to check
-        if (nrow(branching) > 0 || length(branch_eval[[variables[i]]]) == nrow(data_all) || !grepl("\\[|\\]", logic)) {
+        if (nrow(branching) > 0 || length(branch_eval[[variables[i]]]) == nrow(data_all) || !grepl("\\[|\\]", without_texts(logic))) {
           compatible <- rbind(compatible, variables[i])
           raw0 <- branching
         } else {

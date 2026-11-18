@@ -1060,3 +1060,17 @@ test_that("rd_query accepts functions that don't take the variable labels, e.g. 
     q(variables = "age", expression = "x >= 70 & x <= 80")[, c("Identifier", "Event", "Field")]
   )
 })
+
+test_that("rd_query doesn't translate again R logic with brackets inside a text", {
+  data <- data.frame(record_id = c("1", "2"), status = c("[age]", "x"), age = c(10, 20))
+  dic <- data.frame(
+    field_name = c("record_id", "status", "age"), form_name = "form1", field_type = "text",
+    field_label = c("Record", "Status", "Age"), choices_calculations_or_slider_labels = "",
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = c("", "", "data$status == '[age]'")
+  )
+  out <- suppressWarnings(suppressMessages(rd_query(data = data, dic = dic, variables = "age", expression = "x > 0")))
+  expect_equal(nrow(out$queries), 1)
+  expect_equal(out$queries$Identifier, 1, ignore_attr = TRUE)
+  out <- suppressWarnings(suppressMessages(rd_query(data = data, dic = transform(dic, branching_logic_show_field_only_if = ""), variables = "age", expression = "x > 0", filter = "data$status == '[age]'")))
+  expect_equal(nrow(out$queries), 1)
+})

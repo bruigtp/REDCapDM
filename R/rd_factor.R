@@ -128,7 +128,8 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       # original codes, so they no longer work once these variables are factors
       logic_cols <- intersect(c("branching_logic_show_field_only_if", "choices_calculations_or_slider_labels"), names(dic))
       r_logic <- unlist(lapply(dic[logic_cols], as.character), use.names = FALSE)
-      r_logic <- r_logic[!is.na(r_logic) & grepl("data\\$", r_logic)]
+      r_logic <- without_texts(r_logic[!is.na(r_logic)])
+      r_logic <- r_logic[grepl("data\\$", r_logic)]
       logic_vars <- unique(unlist(stringr::str_extract_all(r_logic, "(?<=data\\$)\\w+")))
       affected <- intersect(factors, logic_vars)
 

@@ -203,7 +203,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     } else {
 
       # Handle the fact that a rd_factor was performed before this function
-      if (already_factor && all(!grepl("data\\$", dic$branching_logic_show_field_only_if))) {
+      if (already_factor && all(!grepl("data\\$", without_texts(dic$branching_logic_show_field_only_if)))) {
         rd_warn("The checkboxes are already in factor form. To properly evaluate checkbox branching logic, please run {.fn rd_dictionary} first.")
       }
 

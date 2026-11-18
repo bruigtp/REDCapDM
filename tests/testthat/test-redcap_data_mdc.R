@@ -346,3 +346,23 @@ test_that("rm_mdc = FALSE and `mdc` work in a project without records with multi
     expect_true("sex.factor" %in% names(out$data))
   }
 })
+
+test_that("redcap_data recognizes the numeric Missing Data Codes written as text in number fields", {
+  fx <- make_mdc_fixture()
+  fx$data <- rbind(fx$data, fx$data[1:2, ])
+  fx$data$record_id <- 1:5
+  fx$data$lab_value <- c("5.2", "ASKU", "-999.0", "-9.99e2", "7.1")
+  run <- function(rm_mdc) {
+    tmp_r <- tempfile(fileext = ".R")
+    write_redcap_r_export_mdc(fx$data, tmp_r)
+    tmp_dic <- tempfile(fileext = ".csv")
+    write.csv(fx$dic, tmp_dic, row.names = FALSE, quote = FALSE)
+    suppressMessages(redcap_data(data_path = tmp_r, dic_path = tmp_dic, rm_mdc = rm_mdc, mdc = -999))
+  }
+  expect_warning(out <- run(TRUE), "have been removed", class = "REDCapDM_warning")
+  expect_equal(out$data$lab_value, c(5.2, NA, NA, NA, 7.1), ignore_attr = TRUE)
+
+  expect_warning(out <- run(FALSE), "lab_value_mdc", class = "REDCapDM_warning")
+  expect_equal(out$data$lab_value, c(5.2, NA, NA, NA, 7.1), ignore_attr = TRUE)
+  expect_equal(out$data$lab_value_mdc, c(NA, "ASKU", "-999", "-999", NA), ignore_attr = TRUE)
+})
