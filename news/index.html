@@ -99,6 +99,22 @@
 <div class="section level3">
 <h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
 <ul><li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> leaves as they are the texts between quotes that look like operators, functions or fields (e.g. <code>[x] = 'a=b'</code>, <code>'if(x)'</code> or <code>'[age]'</code>): they were translated, and the comparison was wrong or stopped with an error.</li>
+<li>
+<code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> write the labels with an apostrophe between double quotes (e.g. <code>[name]="O'Brien"</code>): the logic was broken, and <code><a href="../reference/rd_query.html">rd_query()</a></code> could report queries of other options.</li>
+<li>
+<code><a href="../reference/check_queries.html">check_queries()</a></code> keeps one pending query when only its link (or another column that doesn’t identify it) changed; it reported it twice. The field is now part of the identity of a query (when both reports have it), so two fields with the same description are not mixed up, and queries without <code>Identifier</code> stop with an error.</li>
+<li>
+<code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> accepts filters with R functions (e.g. <code>abs(score) &gt; 1</code> or <code>dplyr::between(age, 17, 18)</code>), parentheses (e.g. <code>(age &gt; 30)</code> in longitudinal projects) and objects of the session; it took the functions as variables or didn’t find the variable.</li>
+<li>
+<code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> creates the <code>.factor</code> version of a checkbox option that doesn’t have it when the other options have it, so that every option gets the same labels, and it only warns that the checkboxes are already factors when they are.</li>
+<li>
+<code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code> removes from the dictionary a checkbox whose options were all removed, and never removes the record identifier, whatever its name (it only protected <code>record_id</code>).</li>
+<li>
+<code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> doesn’t plot the record identifier when it isn’t called <code>record_id</code>, and <code>max_vars</code> must be a whole number or <code>Inf</code> (all the variables): <code>NaN</code> gave an R error and decimals were accepted.</li>
+<li>
+<code><a href="../reference/rd_dates.html">rd_dates()</a></code> (and so <code><a href="../reference/rd_transform.html">rd_transform()</a></code>) converts the dates one by one. A value that isn’t a date (e.g. a Missing Data Code that wasn’t removed) stopped it with an error, or turned the next dates into NA without a warning when it wasn’t the first value; now it is set to NA and a warning lists the fields and the values. Datetimes with and without seconds in the same field keep their seconds.</li>
+<li>
 <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> (and so <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code>, <code><a href="../reference/rd_query.html">rd_query()</a></code> and <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>) translates <code>and</code> and <code>or</code> written at the end or the start of a line, with Windows line breaks or tabs, in capitals (<code>AND</code>, <code>OR</code>) or next to a parenthesis: the logic couldn’t be evaluated. It also leaves as they are the words <code>and</code> and <code>or</code> inside a text (e.g. <code>[x] = 'yes or no'</code>), which were translated.</li>
 <li>Fields with the name of an object used inside the functions work: with a field called <code>event</code>, <code><a href="../reference/rd_query.html">rd_query()</a></code> with the <code>event</code> argument found no queries; with a field called <code>data</code>, <code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code>, <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> stopped with an error; <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> couldn’t evaluate a logic that used a field called <code>datediff</code>; and <code><a href="../reference/redcap_data.html">redcap_data()</a></code> left empty a field called <code>missing_codes</code>.</li>
 <li>

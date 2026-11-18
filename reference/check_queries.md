@@ -84,6 +84,9 @@ Requirements:
 - Both data frames must contain at least the following character
   columns: `Identifier`, `Description`, and `Query`.
 
+- Every query must have an `Identifier` (the record identifier of the
+  data).
+
 - A `Code` column is optional; if present it will be preserved and
   considered for sorting and output. If `Code` exists in `new`, it is
   removed at the beginning of the routine to avoid conflicts with
@@ -106,6 +109,12 @@ HTML summary viewer.
   (e.g. `"100-2"` before `"100-10"`). `Identifier` is returned as a
   number only when every identifier is a plain number without leading
   zeros (e.g. `"007"` is kept as text).
+
+- **Identity of a query:** a query is the same in both reports when it
+  has the same `Identifier`, `Event` and `Repetition` (when both reports
+  have them), `Field` (when both reports have it), `Description` and
+  `Query`. The other columns (e.g. `Link` or `DAG`) are taken from the
+  new report, so a query whose link changed is still one pending query.
 
 - **Miscorrected detection:** A `Miscorrected` label is assigned when
   more than one row shares the same `Identifier + Description` composite

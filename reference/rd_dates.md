@@ -66,6 +66,11 @@ The function performs the following tasks:
 - Converts datetime fields to `POSIXct` class, treating empty strings as
   `NA`.
 
+- Each value is converted on its own (`YYYY-MM-DD` or `YYYY/MM/DD`, with
+  or without time): a value that isn't a date or a datetime (e.g. a
+  Missing Data Code that wasn't removed) is set to `NA`, and a warning
+  lists the fields and the values.
+
 ## See also
 
 Other process functions:

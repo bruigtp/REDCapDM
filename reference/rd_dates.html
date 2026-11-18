@@ -98,6 +98,8 @@ Converts date and datetime fields in a REDCap dataset to appropriate R classes."
     <p>The function performs the following tasks:</p><ul><li><p>Detects date and datetime fields from the REDCap dictionary (<code>date_*</code> and <code>datetime_*</code> validation types).</p></li>
 <li><p>Converts date fields to <code>Date</code> class.</p></li>
 <li><p>Converts datetime fields to <code>POSIXct</code> class, treating empty strings as <code>NA</code>.</p></li>
+<li><p>Each value is converted on its own (<code>YYYY-MM-DD</code> or <code>YYYY/MM/DD</code>, with or without time): a value that isn't a date or a
+datetime (e.g. a Missing Data Code that wasn't removed) is set to <code>NA</code>, and a warning lists the fields and the values.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -137,6 +137,51 @@
 ### Bug fixes
 
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  leaves as they are the texts between quotes that look like operators,
+  functions or fields (e.g. `[x] = 'a=b'`, `'if(x)'` or `'[age]'`): they
+  were translated, and the comparison was wrong or stopped with an
+  error.
+- [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  write the labels with an apostrophe between double quotes
+  (e.g. `[name]="O'Brien"`): the logic was broken, and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  could report queries of other options.
+- [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  keeps one pending query when only its link (or another column that
+  doesn’t identify it) changed; it reported it twice. The field is now
+  part of the identity of a query (when both reports have it), so two
+  fields with the same description are not mixed up, and queries without
+  `Identifier` stop with an error.
+- [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  accepts filters with R functions (e.g. `abs(score) > 1` or
+  `dplyr::between(age, 17, 18)`), parentheses (e.g. `(age > 30)` in
+  longitudinal projects) and objects of the session; it took the
+  functions as variables or didn’t find the variable.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  creates the `.factor` version of a checkbox option that doesn’t have
+  it when the other options have it, so that every option gets the same
+  labels, and it only warns that the checkboxes are already factors when
+  they are.
+- [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)
+  removes from the dictionary a checkbox whose options were all removed,
+  and never removes the record identifier, whatever its name (it only
+  protected `record_id`).
+- [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  doesn’t plot the record identifier when it isn’t called `record_id`,
+  and `max_vars` must be a whole number or `Inf` (all the variables):
+  `NaN` gave an R error and decimals were accepted.
+- [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md)
+  (and so
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md))
+  converts the dates one by one. A value that isn’t a date (e.g. a
+  Missing Data Code that wasn’t removed) stopped it with an error, or
+  turned the next dates into NA without a warning when it wasn’t the
+  first value; now it is set to NA and a warning lists the fields and
+  the values. Datetimes with and without seconds in the same field keep
+  their seconds.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   (and so
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)

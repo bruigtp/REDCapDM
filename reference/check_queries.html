@@ -129,6 +129,7 @@ values so codes are consistent per <code>Identifier</code>.</p></dd>
     <p>Requirements:</p><ul><li><p>Both <code>old</code> and <code>new</code> must be data frames.</p></li>
 <li><p>Both data frames must contain at least the following character columns:
 <code>Identifier</code>, <code>Description</code>, and <code>Query</code>.</p></li>
+<li><p>Every query must have an <code>Identifier</code> (the record identifier of the data).</p></li>
 <li><p>A <code>Code</code> column is optional; if present it will be preserved and considered
 for sorting and output. If <code>Code</code> exists in <code>new</code>, it is removed at the
 beginning of the routine to avoid conflicts with re-assigned codes.</p></li>
@@ -144,6 +145,10 @@ character prior to calling <code>check_queries()</code> to avoid factor-level mi
 <li><p><strong>Sorting:</strong> The rows are sorted by <code>Identifier</code> in natural order (e.g. <code>"100-2"</code>
 before <code>"100-10"</code>). <code>Identifier</code> is returned as a number only when every identifier is a
 plain number without leading zeros (e.g. <code>"007"</code> is kept as text).</p></li>
+<li><p><strong>Identity of a query:</strong> a query is the same in both reports when it has the same <code>Identifier</code>,
+<code>Event</code> and <code>Repetition</code> (when both reports have them), <code>Field</code> (when both reports have it),
+<code>Description</code> and <code>Query</code>. The other columns (e.g. <code>Link</code> or <code>DAG</code>) are taken from the new report,
+so a query whose link changed is still one pending query.</p></li>
 <li><p><strong>Miscorrected detection:</strong> A <code>Miscorrected</code> label is assigned when more
 than one row shares the same <code>Identifier + Description</code> composite and a row is
 otherwise classified as <code>New</code> — this signals a likely re-issued or modified query

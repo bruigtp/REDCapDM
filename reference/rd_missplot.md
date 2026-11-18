@@ -43,7 +43,8 @@ rd_missplot(
 
   Integer. If specified, only the top `max_vars` variables are plotted
   (by missingness, or by original column order if
-  `sort_by_missingness = FALSE`). Default `NULL` (show all variables).
+  `sort_by_missingness = FALSE`). Default `NULL` (show all variables, as
+  `Inf`).
 
 - show_percentages:
 
