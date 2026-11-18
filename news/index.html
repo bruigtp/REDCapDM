@@ -99,13 +99,15 @@
 <div class="section level3">
 <h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
 <ul><li>
+<code><a href="../reference/rd_query.html">rd_query()</a></code>, <code><a href="../reference/rd_event.html">rd_event()</a></code> and <code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> evaluate <code>filter</code> and <code>expression</code> without the class of the variable labels, which some functions don’t accept: e.g. <code>dplyr::between(age, 17, 18)</code> stopped with an error.</li>
+<li>
 <code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> leaves as they are the texts between quotes that look like operators, functions or fields (e.g. <code>[x] = 'a=b'</code>, <code>'if(x)'</code> or <code>'[age]'</code>): they were translated, and the comparison was wrong or stopped with an error.</li>
 <li>
 <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> write the labels with an apostrophe between double quotes (e.g. <code>[name]="O'Brien"</code>): the logic was broken, and <code><a href="../reference/rd_query.html">rd_query()</a></code> could report queries of other options.</li>
 <li>
 <code><a href="../reference/check_queries.html">check_queries()</a></code> keeps one pending query when only its link (or another column that doesn’t identify it) changed; it reported it twice. The field is now part of the identity of a query (when both reports have it), so two fields with the same description are not mixed up, and queries without <code>Identifier</code> stop with an error.</li>
 <li>
-<code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> accepts filters with R functions (e.g. <code>abs(score) &gt; 1</code> or <code>dplyr::between(age, 17, 18)</code>), parentheses (e.g. <code>(age &gt; 30)</code> in longitudinal projects) and objects of the session; it took the functions as variables or didn’t find the variable.</li>
+<code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> accepts filters with R functions (e.g. <code>abs(score) &gt; 1</code>), parentheses (e.g. <code>(age &gt; 30)</code> in longitudinal projects) and objects of the session; it took the functions as variables or didn’t find the variable.</li>
 <li>
 <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> creates the <code>.factor</code> version of a checkbox option that doesn’t have it when the other options have it, so that every option gets the same labels, and it only warns that the checkboxes are already factors when they are.</li>
 <li>

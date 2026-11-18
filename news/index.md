@@ -136,6 +136,13 @@
 
 ### Bug fixes
 
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  and
+  [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  evaluate `filter` and `expression` without the class of the variable
+  labels, which some functions don’t accept:
+  e.g. `dplyr::between(age, 17, 18)` stopped with an error.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   leaves as they are the texts between quotes that look like operators,
   functions or fields (e.g. `[x] = 'a=b'`, `'if(x)'` or `'[age]'`): they
@@ -155,10 +162,10 @@
   fields with the same description are not mixed up, and queries without
   `Identifier` stop with an error.
 - [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
-  accepts filters with R functions (e.g. `abs(score) > 1` or
-  `dplyr::between(age, 17, 18)`), parentheses (e.g. `(age > 30)` in
-  longitudinal projects) and objects of the session; it took the
-  functions as variables or didn’t find the variable.
+  accepts filters with R functions (e.g. `abs(score) > 1`), parentheses
+  (e.g. `(age > 30)` in longitudinal projects) and objects of the
+  session; it took the functions as variables or didn’t find the
+  variable.
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   creates the `.factor` version of a checkbox option that doesn’t have
   it when the other options have it, so that every option gets the same
