@@ -411,7 +411,9 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
 
   # Separate numeric and category parts from the options
   cats <- cats |>
-    tidyr::separate(.data$choices_calculations_or_slider_labels, c("num", "cat"), ", ", extra = "merge") |>
+    # (the code is the text before the first comma, also without a space after it, e.g. `5,Always`; an option without
+    # label is left out)
+    tidyr::separate(.data$choices_calculations_or_slider_labels, c("num", "cat"), "\\s*,\\s*", extra = "merge", fill = "right") |>
     dplyr::filter(.data$cat != "") |>
     dplyr::mutate(num = trimws(.data$num), cat = trimws(.data$cat))
 

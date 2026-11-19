@@ -22,6 +22,7 @@
 #' The function performs the following tasks:
 #' * Evaluates and transforms branching logic expressions into valid R expressions using `rd_rlogic`.
 #' * Evaluates and converts calculation expressions for fields of type `calc`.
+#' * Keeps in REDCap syntax, with the codes of the options, the logic that uses as a number a variable already converted into a factor (e.g. `[score] >= 3` or `[a] + [b]` after `rd_factor()`): it can't be written as R logic of the factors. `rd_rlogic()` and `rd_query()` evaluate it with the codes, as REDCap does. The same happens with the logic that uses variables of other events.
 #' * Generates a results summary table listing any variables that could not be converted.
 #'
 #' @examples
@@ -71,6 +72,10 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   }
   factors <- intersect(factors, dic$field_name[!factor_choices %in% c(NA, "")])
 
+  # Dictionary with the codes of the options (before writing the labels in the logic), and labels of each factor
+  dic_codes <- dic
+  factor_labels <- list()
+
   if (length(factors) > 0) {
     # Select the branching logic for any variables that are being transformed into factors
     cat_factors <- data.frame(field_name = dic$field_name, choices_calculations_or_slider_labels = factor_choices, stringsAsFactors = FALSE) |>
@@ -84,17 +89,22 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
       tidyr::unnest("choices_calculations_or_slider_labels")
 
     # Separate numeric and category labels from the choices string
+    # (the code is the text before the first comma, also without a space after it, e.g. `5,Always`; an option without
+    # label is left out)
     cat_factors <- cat_factors |>
       tidyr::separate(.data$choices_calculations_or_slider_labels,
         into = c("num", "cat"),
-        sep = ", ",
-        extra = "merge"
+        sep = "\\s*,\\s*",
+        extra = "merge",
+        fill = "right"
       ) |>
       dplyr::filter(.data$cat != "") |>
       dplyr::mutate(
         num = stringr::str_trim(.data$num),
         cat = stringr::str_trim(.data$cat)
       )
+
+    factor_labels <- split(cat_factors$cat, cat_factors$field_name)
 
     # Transform each branching logic into R logic
     cat_factors <- cat_factors |>
@@ -141,11 +151,40 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   }
   kept <- NULL
 
+  # Logic that uses a factor as a number (e.g. `[score] >= 3` or `[a] + [b]`) or compares it with a code that isn't one
+  # of its labels can't be written as R logic of the data with factors: it is kept in REDCap syntax, with the codes of
+  # the options, which rd_rlogic() and rd_query() evaluate with the codes. Comparisons with a label or with an empty
+  # text (`[a] = 'Yes'`, `[a] <> ''`) and isblankormissingcode([a]) work with the factor.
+  factor_as_number <- function(logic) {
+    if (length(factor_labels) == 0 || is.na(logic)) {
+      return(FALSE)
+    }
+    for (field in names(factor_labels)) {
+      field_pattern <- paste0("\\[", field, "\\]")
+      if (!grepl(field_pattern, without_texts(logic))) next
+      comparisons <- gregexpr(paste0(field_pattern, "\\s*(=|<>|!=)\\s*(", quoted_pattern(), ")"), logic, perl = TRUE)
+      found <- regmatches(logic, comparisons)[[1]]
+      texts <- sub(paste0("^", field_pattern, "\\s*(=|<>|!=)\\s*"), "", found, perl = TRUE)
+      rest <- logic
+      regmatches(rest, comparisons) <- list(ifelse(text_value(texts) %in% c(factor_labels[[field]], ""), "''", found))
+      rest <- gsub(paste0("isblankormissingcode\\(\\s*", field_pattern, "\\s*\\)"), "''", rest, perl = TRUE)
+      if (grepl(field_pattern, without_texts(rest))) {
+        return(TRUE)
+      }
+    }
+    FALSE
+  }
+  kept_codes <- NULL
+
   # Loop through each row with branching logic
   for (i in pos_branch) {
     if (other_event(dic$branching_logic_show_field_only_if[i])) {
       kept <- c(kept, dic$field_name[i])
       next
+    }
+    as_number <- factor_as_number(dic$branching_logic_show_field_only_if[i])
+    if (as_number) {
+      dic$branching_logic_show_field_only_if[i] <- dic_codes$branching_logic_show_field_only_if[i]
     }
 
     # Attempt to evaluate and convert the branching logic using `rd_rlogic`
@@ -169,9 +208,13 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
       }
     )
 
-    # If evaluation succeeds, update the dictionary with the converted logic
+    # If evaluation succeeds, update the dictionary with the converted logic (or keep the logic with the codes)
     if (!inherits(evaluation, "try-error")) {
-      dic$branching_logic_show_field_only_if[i] <- evaluation
+      if (as_number) {
+        kept_codes <- c(kept_codes, dic$field_name[i])
+      } else {
+        dic$branching_logic_show_field_only_if[i] <- evaluation
+      }
     } else {
       # If evaluation fails, add the variable name to the `logics` object
       logics <- rbind(logics, dic$field_name[i])
@@ -193,6 +236,10 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     if (other_event(dic$choices_calculations_or_slider_labels[i])) {
       kept <- c(kept, dic$field_name[i])
       next
+    }
+    as_number <- factor_as_number(dic$choices_calculations_or_slider_labels[i])
+    if (as_number) {
+      dic$choices_calculations_or_slider_labels[i] <- dic_codes$choices_calculations_or_slider_labels[i]
     }
 
     # Attempt to evaluate and convert the calculations using `rd_rlogic`
@@ -217,9 +264,13 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
       }
     )
 
-    # If evaluation succeeds, update the dictionary with the converted logic
+    # If evaluation succeeds, update the dictionary with the converted logic (or keep the logic with the codes)
     if (!inherits(evaluation, "try-error")) {
-      dic$choices_calculations_or_slider_labels[i] <- evaluation
+      if (as_number) {
+        kept_codes <- c(kept_codes, dic$field_name[i])
+      } else {
+        dic$choices_calculations_or_slider_labels[i] <- evaluation
+      }
     } else {
       # If evaluation fails, add the variable name to the `logics` object
       logics <- rbind(logics, dic$field_name[i])
@@ -261,6 +312,12 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   if (!is.null(kept)) {
     tabla <- tibble::tibble("Variables" = unique(kept))
     results <- c(results, "\n", knitr::kable(tabla, "pipe", align = c("ccc"), caption = "Variables whose logic uses other events (kept in REDCap syntax)"))
+  }
+
+  # Report the variables whose logic uses factors as numbers
+  if (!is.null(kept_codes)) {
+    tabla <- tibble::tibble("Variables" = unique(kept_codes))
+    results <- c(results, "\n", knitr::kable(tabla, "pipe", align = c("ccc"), caption = "Variables whose logic uses multiple-choice fields as numbers (kept in REDCap syntax, with the codes)"))
   }
 
   # Generating a global warning if one of the iteractions of the loop generates a warning inside rd_rlogic

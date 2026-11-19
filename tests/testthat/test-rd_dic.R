@@ -155,3 +155,45 @@ test_that("rd_dictionary translates the codes of yes/no fields converted with rd
   expect_equal(logic[["preg"]], "[baseline_arm_1][sex]='Woman'")
   expect_match(paste(out$results, collapse = " "), "other events")
 })
+
+# A project with a radio field `a` (already a factor after rd_factor()) and a text field `b` whose branching logic uses `a`
+factor_project <- function(choices, logic, calc = "") {
+  data <- data.frame(record_id = as.character(1:4), a = c(1, 2, 3, 5), b = NA, s = NA)
+  dic <- data.frame(
+    field_name = c("record_id", "a", "b", "s"), form_name = "form1", field_type = c("text", "radio", "text", "calc"),
+    field_label = c("Record", "A", "B", "S"), choices_calculations_or_slider_labels = c("", choices, "", calc),
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = c("", "", logic, "")
+  )
+  options <- trimws(strsplit(choices, "\\|")[[1]])
+  data$a.factor <- factor(trimws(sub("^[^,]*,", "", options))[match(data$a, trimws(sub(",.*$", "", options)))], levels = trimws(sub("^[^,]*,", "", options)))
+  list(data = data, dictionary = dic)
+}
+
+test_that("rd_dictionary reads the options without a space after the comma", {
+  project <- suppressMessages(rd_factor(factor_project("1, Never | 2, Sometimes | 3, Often | 5,Always", "[a] = '5'")))
+  expect_no_warning(out <- suppressMessages(rd_dictionary(project)))
+  expect_equal(out$dictionary$branching_logic_show_field_only_if[3], "data$a=='Always'")
+})
+
+test_that("rd_dictionary keeps in REDCap syntax, with the codes, the logic that uses a factor as a number", {
+  choices <- "1, Never | 2, Sometimes | 3, Often | 5, Always"
+  for (case in list(c("[a] >= 3", "3,4"), c("[a] = '1' or [a] >= 3", "1,3,4"), c("[a] = '1' or [a] = '5'", "1,4"))) {
+    project <- factor_project(choices, case[1], calc = "if([a] = '1', 0, [a] * 2)")
+    before <- suppressWarnings(suppressMessages(rd_query(project, variables = "b", expression = "is.na(x)")))$queries$Identifier
+    expect_equal(paste(before, collapse = ","), case[2])
+
+    expect_no_warning(transformed <- suppressMessages(rd_transform(project)))
+    logic <- transformed$dictionary$branching_logic_show_field_only_if[transformed$dictionary$field_name == "b"]
+    if (grepl(">=", case[1])) {
+      expect_equal(logic, case[1])
+    } else {
+      # (only comparisons with labels: R logic of the factor)
+      expect_equal(logic, "data$a=='Never' | data$a=='Always'")
+    }
+    expect_equal(transformed$dictionary$choices_calculations_or_slider_labels[transformed$dictionary$field_name == "s"], "if([a] = '1', 0, [a] * 2)")
+    after <- suppressWarnings(suppressMessages(rd_query(transformed, variables = "b", expression = "is.na(x)")))$queries$Identifier
+    expect_equal(after, before, info = case[1])
+  }
+  out <- suppressMessages(rd_dictionary(suppressMessages(rd_factor(factor_project(choices, "[a] >= 3")))))
+  expect_true(any(grepl("as numbers", out$results)))
+})

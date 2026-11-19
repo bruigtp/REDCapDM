@@ -841,3 +841,22 @@ test_that("rd_rlogic keeps two apostrophes inside a text", {
   queries <- suppressWarnings(suppressMessages(rd_query(transformed, variables = "q", expression = "is.na(x)")))$queries
   expect_equal(queries$Identifier, 1, ignore_attr = TRUE)
 })
+
+test_that("rd_rlogic translates datediff() of two time fields", {
+  data <- data.frame(record_id = 1:5, start = c("23:30", "01:15", "22:00", NA, "00:00"), end = c("07:00", "08:45", "22:00", "07:00", "23:59"), res = NA)
+  dic <- make_dic(c("record_id", "start", "end", "res"))
+  dic$text_validation_type_or_show_slider_number <- c("", "time", "time", "")
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  logic <- "if(datediff([start],[end],'h','hhmm',true) < 0, 24+datediff([start],[end],'h','hhmm',true), datediff([start],[end],'h','hhmm',true))"
+  expect_equal(ev(logic), c(7.5, 7.5, 0, NA, 23 + 59 / 60))
+  expect_equal(ev("datediff([start],[end],'h',true)"), c(-16.5, 7.5, 0, NA, 23 + 59 / 60))
+  # Without `true`, the absolute difference
+  expect_equal(ev("datediff([start],[end],'m')"), c(990, 450, 0, NA, 1439))
+  expect_equal(ev("datediff([end],[start],'m','hhmm')"), c(990, 450, 0, NA, 1439))
+
+  # With seconds
+  data$start <- c("23:30:30", "01:15:00", "22:00:00", NA, "00:00:00")
+  data$end <- c("07:00:00", "08:45:15", "22:00:00", "07:00:00", "23:59:59")
+  dic$text_validation_type_or_show_slider_number <- c("", "time_hh_mm_ss", "time_hh_mm_ss", "")
+  expect_equal(ev("datediff([start],[end],'s',true)"), c(-59430, 27015, 0, NA, 86399))
+})

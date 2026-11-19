@@ -34,6 +34,7 @@ The function performs the following tasks:
 \itemize{
 \item Evaluates and transforms branching logic expressions into valid R expressions using \code{rd_rlogic}.
 \item Evaluates and converts calculation expressions for fields of type \code{calc}.
+\item Keeps in REDCap syntax, with the codes of the options, the logic that uses as a number a variable already converted into a factor (e.g. \verb{[score] >= 3} or \verb{[a] + [b]} after \code{rd_factor()}): it can't be written as R logic of the factors. \code{rd_rlogic()} and \code{rd_query()} evaluate it with the codes, as REDCap does. The same happens with the logic that uses variables of other events.
 \item Generates a results summary table listing any variables that could not be converted.
 }
 }

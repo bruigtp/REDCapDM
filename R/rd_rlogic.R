@@ -21,7 +21,7 @@
 #' * Adjusts logic for longitudinal data using `event_form` if provided.
 #' * Evaluates the translated R logic against the dataset and returns the results.
 #' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
-#' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"` (years of 365.2425 days), `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, `"today"` is the current date and `"now"` the current date and time.
+#' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"` (years of 365.2425 days), `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, `"today"` is the current date and `"now"` the current date and time. With two time fields (e.g. `HH:MM`), it is the difference between the two times of the same day, and its date format (e.g. `'hhmm'`) is not used.
 #' * The same variable can be used in several events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
 #' * Logic with smart variables or other REDCap functions may require manual inspection.
 #'
@@ -107,6 +107,10 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # As in REDCap, datediff() returns the absolute difference unless its last argument is `true`
   rlogic <- datediff_absolute(rlogic)
+
+  # datediff() of two time fields (HH:MM): the difference between the times of the same day (its date format, e.g.
+  # 'hhmm', is irrelevant)
+  rlogic <- datediff_times(rlogic, dic)
 
   # Checkboxes: [field(code)] is the column field___code of the data
   rlogic <- checkbox_columns(rlogic)
@@ -593,6 +597,85 @@ datediff_absolute <- function(logic) {
   paste0(out, rest)
 }
 
+
+#' Translate the datediff() of two time fields
+#'
+#' As in REDCap, `datediff([start], [end], 'h', ...)` of two time fields (validation `time`, `time_hh_mm_ss` or
+#' `time_mm_ss`) is the difference between the two times of the same day, in the units given (`end` minus `start`). The
+#' date format and the other arguments are not used. The other calls to datediff() are left as they are.
+#'
+#' @param logic REDCap logic (after datediff_absolute()).
+#' @param dic The dictionary.
+#' @return The logic with these calls translated into R.
+#' @noRd
+datediff_times <- function(logic, dic) {
+  formats <- c(time = "%H:%M", time_hh_mm_ss = "%H:%M:%S", time_mm_ss = "%M:%S")
+  units <- c(y = "31556952", M = "2630016", d = "86400", h = "3600", m = "60", s = "1")
+  validation <- if ("text_validation_type_or_show_slider_number" %in% names(dic)) dic$text_validation_type_or_show_slider_number else character(0)
+  time_fields <- dic$field_name[validation %in% names(formats)]
+  if (length(time_fields) == 0 || is.na(logic) || !grepl("datediff", logic, fixed = TRUE)) {
+    return(logic)
+  }
+
+  # Time of a field in seconds (the field can be written with its event, e.g. `[visit_1][start]`)
+  seconds <- function(arg) {
+    field <- sub("^(\\[[A-Za-z0-9_-]+\\])?\\[([A-Za-z0-9_]+)\\]$", "\\2", arg)
+    if (!grepl("^(\\[[A-Za-z0-9_-]+\\])?\\[[A-Za-z0-9_]+\\]$", arg) || !field %in% time_fields) {
+      return(NA_character_)
+    }
+    format <- formats[[validation[match(field, dic$field_name)]]]
+    paste0("as.numeric(as.difftime(as.character(", arg, "), '", format, "', 'secs'))")
+  }
+
+  out <- ""
+  rest <- logic
+  repeat {
+    start <- regexpr("(?<![\\w.$\\[])datediff\\s*\\(", rest, perl = TRUE)
+    if (start == -1) {
+      break
+    }
+
+    chars <- strsplit(rest, "")[[1]]
+    open <- start + attr(start, "match.length") - 1
+
+    # Closing parenthesis of the call and its arguments (commas at the first level)
+    depth <- 0
+    close <- NA
+    commas <- integer(0)
+    for (k in open:length(chars)) {
+      if (chars[k] == "(") {
+        depth <- depth + 1
+      } else if (chars[k] == ")") {
+        depth <- depth - 1
+        if (depth == 0) {
+          close <- k
+          break
+        }
+      } else if (chars[k] == "," && depth == 1) {
+        commas <- c(commas, k)
+      }
+    }
+    if (is.na(close)) {
+      break
+    }
+
+    bounds <- c(open, commas, close)
+    args <- trimws(substring(rest, bounds[-length(bounds)] + 1, bounds[-1] - 1))
+    unit <- if (length(args) >= 3) gsub("^['\"]|['\"]$", "", args[3]) else NA_character_
+    call <- substr(rest, start, close)
+    if (length(args) >= 3 && unit %in% names(units)) {
+      from <- seconds(args[1])
+      to <- seconds(args[2])
+      if (!is.na(from) && !is.na(to)) {
+        call <- paste0("((", to, " - ", from, ") / ", units[[unit]], ")")
+      }
+    }
+    out <- paste0(out, substr(rest, 1, start - 1), call)
+    rest <- substr(rest, close + 1, nchar(rest))
+  }
+
+  paste0(out, rest)
+}
 
 #' Replace the calls to a REDCap function with their R translation
 #'

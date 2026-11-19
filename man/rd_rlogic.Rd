@@ -51,7 +51,7 @@ Converts a REDCap logic expression into R-compatible logic. Processes one logic 
 \item Adjusts logic for longitudinal data using \code{event_form} if provided.
 \item Evaluates the translated R logic against the dataset and returns the results.
 \item With repeated instruments and repeating events, the logic is evaluated in the rows where \code{var} is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
-\item As in REDCap, \code{datediff()} returns the absolute difference unless its last argument is \code{true}, its units are \code{"y"} (years of 365.2425 days), \code{"M"} (months of 30.44 days), \code{"d"}, \code{"h"}, \code{"m"} (minutes) and \code{"s"}, \code{"today"} is the current date and \code{"now"} the current date and time.
+\item As in REDCap, \code{datediff()} returns the absolute difference unless its last argument is \code{true}, its units are \code{"y"} (years of 365.2425 days), \code{"M"} (months of 30.44 days), \code{"d"}, \code{"h"}, \code{"m"} (minutes) and \code{"s"}, \code{"today"} is the current date and \code{"now"} the current date and time. With two time fields (e.g. \code{HH:MM}), it is the difference between the two times of the same day, and its date format (e.g. \code{'hhmm'}) is not used.
 \item The same variable can be used in several events (e.g. \verb{[visit_2_arm_1][weight] - [visit_1_arm_1][weight]}).
 \item Logic with smart variables or other REDCap functions may require manual inspection.
 }
