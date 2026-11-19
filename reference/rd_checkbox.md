@@ -95,6 +95,11 @@ A list with:
 
 - Fields that cannot be evaluated are listed in `results`.
 
+- The branching logic and calculations that compare an option with `0`
+  or `1` (e.g. `[cb(1)] = '1'`) compare it with its new labels. The ones
+  that use the options as numbers (e.g. `[cb(1)] + [cb(2)] >= 2`) keep
+  the codes and only the names of the options change.
+
 ## See also
 
 Other process functions:

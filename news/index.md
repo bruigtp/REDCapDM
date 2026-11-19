@@ -194,6 +194,36 @@
   lost the queries of those fields. They also read the options written
   without a space after the comma (e.g. `5,Always`): they warned
   “Expected 2 pieces” and the logic with that option was wrong.
+- [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)
+  removes from the dictionary the variables of `pattern` without
+  distinguishing upper and lower case, as in the data (they were left in
+  the dictionary), and accepts a variable together with its factor
+  version or its column of Missing Data Codes in `vars`
+  (e.g. `vars = c("status", "status.factor")` stopped with an error).
+- [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
+  writes the links of a factor column (it wrote the internal codes of
+  the factor, also as the destination of the links), and the dates and
+  datetimes keep their format when the cells are centered (they were
+  shown as numbers, e.g. `45351`).
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  keeps in every dataset a record identifier with another name than
+  `record_id` (e.g. `subject` or `study_id`): some datasets didn’t have
+  it, and `wide = TRUE` stopped with an error. With `wide = TRUE`, the
+  columns of a form with only one variable keep its name
+  (e.g. `weight_1` instead of `1`).
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  keep working the logic that uses the options of a checkbox as numbers
+  (e.g. `[cb(1)] + [cb(2)] >= 2` or `sum([cb(1)], [cb(2)])`):
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  only renames the options in it, with the codes 0 and 1, and
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  keeps it in REDCap syntax. The logic was left half translated, or
+  written as R logic of the factors, and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  checked every record or none.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   translates `datediff()` of two time fields
   (e.g. `datediff([start], [end], 'h', 'hhmm', true)`), as REDCap does:
