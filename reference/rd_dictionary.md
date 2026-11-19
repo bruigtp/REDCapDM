@@ -68,6 +68,17 @@ The function performs the following tasks:
 - Evaluates and converts calculation expressions for fields of type
   `calc`.
 
+- Keeps in REDCap syntax, with the codes of the options, the logic that
+  uses as a number a variable already converted into a factor (e.g.
+  `[score] >= 3` or `[a] + [b]` after
+  [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)):
+  it can't be written as R logic of the factors.
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  evaluate it with the codes, as REDCap does. The same happens with the
+  logic that uses variables of other events.
+
 - Generates a results summary table listing any variables that could not
   be converted.
 

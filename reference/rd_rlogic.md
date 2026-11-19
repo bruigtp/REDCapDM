@@ -118,6 +118,9 @@ A list with:
   last argument is `true`, its units are `"y"` (years of 365.2425 days),
   `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`,
   `"today"` is the current date and `"now"` the current date and time.
+  With two time fields (e.g. `HH:MM`), it is the difference between the
+  two times of the same day, and its date format (e.g. `'hhmm'`) is not
+  used.
 
 - The same variable can be used in several events (e.g.
   `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).

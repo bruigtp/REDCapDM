@@ -182,6 +182,22 @@
   `.data[[field]]` and logical vectors of the session
   (e.g. `filter = "eligible"`); it took the functions as variables or
   didn’t find the variable.
+- [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  keep in REDCap syntax, with the codes of the options, the logic that
+  uses as a number a variable already converted into a factor
+  (e.g. `[score] >= 3`, `[a] + [b]`, or `[a] = '1' or [a] >= 3`): the R
+  logic compared the factor as a number, with warnings such as “‘\>=’
+  not meaningful for factors”, and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  lost the queries of those fields. They also read the options written
+  without a space after the comma (e.g. `5,Always`): they warned
+  “Expected 2 pieces” and the logic with that option was wrong.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  translates `datediff()` of two time fields
+  (e.g. `datediff([start], [end], 'h', 'hhmm', true)`), as REDCap does:
+  it stopped with an error, or gave NA.
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   doesn’t translate again a branching logic already written in R with
   brackets inside a text (e.g. `data$status == '[age]'`): it was taken

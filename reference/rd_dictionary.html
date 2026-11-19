@@ -97,6 +97,7 @@ Updates a REDCap data dictionary by converting branching logic and calculation e
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function performs the following tasks:</p><ul><li><p>Evaluates and transforms branching logic expressions into valid R expressions using <code>rd_rlogic</code>.</p></li>
 <li><p>Evaluates and converts calculation expressions for fields of type <code>calc</code>.</p></li>
+<li><p>Keeps in REDCap syntax, with the codes of the options, the logic that uses as a number a variable already converted into a factor (e.g. <code>[score] &gt;= 3</code> or <code>[a] + [b]</code> after <code><a href="rd_factor.html">rd_factor()</a></code>): it can't be written as R logic of the factors. <code><a href="rd_rlogic.html">rd_rlogic()</a></code> and <code><a href="rd_query.html">rd_query()</a></code> evaluate it with the codes, as REDCap does. The same happens with the logic that uses variables of other events.</p></li>
 <li><p>Generates a results summary table listing any variables that could not be converted.</p></li>
 </ul></div>
     <div class="section level2">
