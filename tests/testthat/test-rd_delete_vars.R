@@ -197,3 +197,25 @@ test_that("rd_delete_vars never removes the record identifier, whatever its name
   expect_true("subject" %in% names(out$data))
   expect_true("subject" %in% out$dictionary$field_name)
 })
+
+test_that("rd_delete_vars removes the same variables from the data and the dictionary, and each column once", {
+  dic <- data.frame(
+    field_name = c("record_id", "status", "age"), form_name = "f1", field_type = c("text", "radio", "text"),
+    field_label = c("ID", "Status", "Age"), choices_calculations_or_slider_labels = c("", "1, A | 2, B", ""),
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(record_id = 1:3, status = c(1, 2, 1), age = c(30, 40, 50), status_mdc = c(NA, "UNK", NA))
+  data$status.factor <- factor(c("A", "B", "A"))
+
+  # A pattern doesn't distinguish upper and lower case, in the data and in the dictionary
+  out <- suppressMessages(rd_delete_vars(data = data, dic = dic, pattern = "STATUS"))
+  expect_equal(names(out$data), c("record_id", "age"))
+  expect_equal(out$dictionary$field_name, c("record_id", "age"))
+
+  # A variable with its factor version or its column of Missing Data Codes
+  for (vars in list(c("status", "status.factor"), c("status", "status_mdc"), c("status.factor", "status"), "status")) {
+    out <- suppressMessages(rd_delete_vars(data = data, dic = dic, vars = vars))
+    expect_equal(names(out$data), c("record_id", "age"), info = paste(vars, collapse = ", "))
+    expect_equal(out$dictionary$field_name, c("record_id", "age"), info = paste(vars, collapse = ", "))
+  }
+})

@@ -114,27 +114,19 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     # Columns with the Missing Data Codes of the variables (redcap_data(rm_mdc = FALSE))
     mdc_cols <- mdc_columns(names(data), dic$field_name)
 
-    for (i in seq_along(vars)) {
-      # Remove the variable from the dataset
-      data <- data |>
-        dplyr::select(!vars[i])
+    # Columns to remove: the variables, their factor versions and their columns with the Missing Data Codes
+    # (redcap_data(rm_mdc = FALSE)), each one once (e.g. `vars = c("status", "status.factor")`)
+    vars_cols <- unique(c(
+      vars,
+      intersect(paste0(vars, ".factor"), names(data)),
+      intersect(paste0(vars, "_mdc"), mdc_cols)
+    ))
+    data <- data |>
+      dplyr::select(!dplyr::all_of(vars_cols))
 
-      # Check if the factor version of the variable exists and remove it if present
-      if (paste0(vars[i], ".factor") %in% names(data)) {
-        data <- data |>
-          dplyr::select(!paste0(vars[i], ".factor"))
-      }
-      
-      # Same for the column with its Missing Data Codes (redcap_data(rm_mdc = FALSE))
-      if (paste0(vars[i], "_mdc") %in% mdc_cols) {
-        data <- data |>
-          dplyr::select(!paste0(vars[i], "_mdc"))
-      }
-
-      # Remove the variable from the dictionary
-      dic <- dic |>
-        dplyr::filter(.data$field_name != vars[i])
-    }
+    # Remove the variables from the dictionary
+    dic <- dic |>
+      dplyr::filter(!.data$field_name %in% vars)
   }
 
 
@@ -176,9 +168,10 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     data <- data |>
       dplyr::select(!dplyr::all_of(matched))
 
-    # Remove variables matching the pattern from the dictionary
+    # Remove variables matching the pattern from the dictionary (also without distinguishing upper and lower case, as in
+    # the data)
     dic <- dic |>
-      dplyr::filter(!grepl(comb_pattern, .data$field_name) | .data$field_name %in% protected)
+      dplyr::filter(!grepl(comb_pattern, .data$field_name, ignore.case = TRUE) | .data$field_name %in% protected)
   }
 
   

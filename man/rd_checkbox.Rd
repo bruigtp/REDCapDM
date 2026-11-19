@@ -49,6 +49,7 @@ This function is used to process checkbox variables in a REDCap dataset. By defa
 \item Branching logic evaluation requires \code{event_form} for longitudinal projects.
 \item Names are cleaned and truncated to 60 characters; uniqueness is enforced.
 \item Fields that cannot be evaluated are listed in \code{results}.
+\item The branching logic and calculations that compare an option with \code{0} or \code{1} (e.g. \verb{[cb(1)] = '1'}) compare it with its new labels. The ones that use the options as numbers (e.g. \verb{[cb(1)] + [cb(2)] >= 2}) keep the codes and only the names of the options change.
 }
 }
 \examples{

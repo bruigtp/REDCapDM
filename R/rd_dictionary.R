@@ -155,10 +155,15 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   # of its labels can't be written as R logic of the data with factors: it is kept in REDCap syntax, with the codes of
   # the options, which rd_rlogic() and rd_query() evaluate with the codes. Comparisons with a label or with an empty
   # text (`[a] = 'Yes'`, `[a] <> ''`) and isblankormissingcode([a]) work with the factor.
+  # (also the options of the checkboxes that are factors, e.g. after rd_factor(), written as `[cb(1)]` or `[cb___1]`)
+  checkbox_factors <- names(data)[grepl("___", names(data)) & !grepl("\\.factor$", names(data)) & vapply(data, is.factor, logical(1))]
+  checkbox_factors <- setdiff(checkbox_factors, names(factor_labels))
+  factor_labels <- c(factor_labels, lapply(stats::setNames(checkbox_factors, checkbox_factors), function(col) levels(data[[col]])))
   factor_as_number <- function(logic) {
     if (length(factor_labels) == 0 || is.na(logic)) {
       return(FALSE)
     }
+    logic <- checkbox_columns(logic)
     for (field in names(factor_labels)) {
       field_pattern <- paste0("\\[", field, "\\]")
       if (!grepl(field_pattern, without_texts(logic))) next

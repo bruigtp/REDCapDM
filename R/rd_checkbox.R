@@ -26,6 +26,7 @@
 #' * Branching logic evaluation requires `event_form` for longitudinal projects.
 #' * Names are cleaned and truncated to 60 characters; uniqueness is enforced.
 #' * Fields that cannot be evaluated are listed in `results`.
+#' * The branching logic and calculations that compare an option with `0` or `1` (e.g. `[cb(1)] = '1'`) compare it with its new labels. The ones that use the options as numbers (e.g. `[cb(1)] + [cb(2)] >= 2`) keep the codes and only the names of the options change.
 #'
 #'
 #' @examples
@@ -437,12 +438,28 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   replace2 <- setNames(cats$factor2, cats$redcap2)
 
   # Apply the new branching logic to the dictionary by replacing the old logic with the new ones
+  # A logic that uses an option as a number (e.g. `[cb(1)] + [cb(2)] >= 2`) can't compare it with the labels: it keeps
+  # the codes 0 and 1 and only the name of the option changes (`[cb(1)]` is `[cb_option]`), which rd_rlogic(),
+  # rd_dictionary() and rd_query() evaluate with the codes
+  checkbox_logic <- function(logic) {
+    relabeled <- stringr::str_replace_all(logic, replace)
+    relabeled <- stringr::str_replace_all(relabeled, replace2)
+    if (nrow(correspondence) == 0) {
+      return(relabeled)
+    }
+    options <- paste0("[", correspondence$V1, "]")
+    as_number <- !is.na(relabeled) & vapply(without_texts(relabeled), function(l) {
+      !is.na(l) && any(vapply(options, grepl, logical(1), x = l, fixed = TRUE))
+    }, logical(1), USE.NAMES = FALSE)
+    for (k in seq_along(options)) {
+      logic[as_number] <- gsub(options[k], paste0("[", correspondence$out[k], "]"), logic[as_number], fixed = TRUE)
+    }
+    ifelse(as_number, logic, relabeled)
+  }
   dic <- dic |>
     dplyr::mutate(
-      choices_calculations_or_slider_labels = stringr::str_replace_all(.data$choices_calculations_or_slider_labels, replace),
-      choices_calculations_or_slider_labels = stringr::str_replace_all(.data$choices_calculations_or_slider_labels, replace2),
-      branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace),
-      branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace2)
+      choices_calculations_or_slider_labels = checkbox_logic(.data$choices_calculations_or_slider_labels),
+      branching_logic_show_field_only_if = checkbox_logic(.data$branching_logic_show_field_only_if)
     )
 
   # Returning checkboxes to numeric version & applying the same missing values to their factor version

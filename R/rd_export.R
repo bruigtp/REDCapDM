@@ -117,8 +117,9 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
       "Link"
     }
 
-    # Mark the column as hyperlinks
-    class(queries[, column]) <- "hyperlink"
+    # Mark the column as hyperlinks (as text: a factor would write its internal codes)
+    queries[[column]] <- as.character(queries[[column]])
+    class(queries[[column]]) <- "hyperlink"
   }
 
   # Write data to the worksheet
@@ -132,14 +133,15 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
     tableStyle = "TableStyleLight11"
   )
 
-  # Center-align cells
+  # Center-align cells (added to their style, so that the dates and datetimes keep their format)
   openxlsx::addStyle(
     wb = wb,
     sheet = sheet,
     style = openxlsx::createStyle(halign = "CENTER"),
     rows = 1:(nrow(queries) + 1),
     cols = seq_along(queries),
-    gridExpand = TRUE
+    gridExpand = TRUE,
+    stack = TRUE
   )
 
   # Automatically adjust column widths

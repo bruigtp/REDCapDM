@@ -101,8 +101,12 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     repeat_instrument <- FALSE
   }
 
+  # The record identifier: the first field of the dictionary (REDCap's record ID, e.g. `record_id`, `subject` or
+  # `study_id`), or else the first column of the data. Every dataset of the split keeps it
+  id_var <- if (dic$field_name[1] %in% names(data)) dic$field_name[1] else names(data)[1]
+
   # Identify basic REDCap variables present in the dataset
-  basic_redcap_vars <- c("record_id", "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance", "redcap_data_access_group", "redcap_event_name.factor", "redcap_repeat_instrument.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")
+  basic_redcap_vars <- c(id_var, "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance", "redcap_data_access_group", "redcap_event_name.factor", "redcap_repeat_instrument.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")
 
   basic_redcap_vars <- intersect(basic_redcap_vars, names(data))
 
@@ -126,7 +130,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       shown_vars <- utils::head(other_check_vars, 10)
 
       # Forms with none of their fields in the data (e.g. data exported with only some instruments)
-      form_fields <- dic[!dic$field_type %in% "descriptive" & dic$field_name != "record_id", c("field_name", "form_name")]
+      form_fields <- dic[!dic$field_type %in% "descriptive" & dic$field_name != id_var, c("field_name", "form_name")]
       missing_forms <- unique(form_fields$form_name[form_fields$field_name %in% other_check_vars])
       missing_forms <- missing_forms[vapply(missing_forms, function(f) all(form_fields$field_name[form_fields$form_name == f] %in% vars_more), logical(1))]
       forms_code <- paste0("rd_delete_vars(project, forms = ", paste(deparse(missing_forms), collapse = ""), ")")
@@ -300,8 +304,8 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
           max_repeated_instance = purrr::map_dbl(
             .data$df,
             ~.x |>
-              dplyr::group_by(.data$record_id) |>
-              dplyr::mutate(id = seq_along(.data$record_id),
+              dplyr::group_by(dplyr::across(dplyr::all_of(id_var))) |>
+              dplyr::mutate(id = dplyr::row_number(),
                             max_id = dplyr::n()) |>
               dplyr::ungroup() |>
               dplyr::pull(max_id) |>
@@ -311,16 +315,17 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
           df = purrr::pmap(list(.data$vars, .data$df, if (longitudinal) .data$events else as.list(rep(NA, dplyr::n()))), function(x, y, z) {
 
             y <- y |>
-              dplyr::select(dplyr::any_of(c("record_id", setdiff(x, basic_redcap_vars))))
+              dplyr::select(dplyr::any_of(c(id_var, setdiff(x, basic_redcap_vars))))
 
             # One row per record: the rows of a record (events, instances of a repeated instrument or event) become numbered columns
-            if (dplyr::n_distinct(z) > 1 || any(duplicated(y$record_id))) {
+            if (dplyr::n_distinct(z) > 1 || any(duplicated(y[[id_var]]))) {
 
               y <- y |>
-                dplyr::group_by(.data$record_id) |>
-                dplyr::mutate(id = seq_along(.data$record_id)) |>
+                dplyr::group_by(dplyr::across(dplyr::all_of(id_var))) |>
+                dplyr::mutate(id = dplyr::row_number()) |>
                 dplyr::ungroup() |>
-                tidyr::pivot_wider(names_from = "id", values_from = -c("record_id", "id"))
+                # (`<variable>_<number>`, also when the form has only one variable)
+                tidyr::pivot_wider(names_from = "id", values_from = -dplyr::all_of(c(id_var, "id")), names_glue = "{.value}_{id}")
             }
 
             return(y)
@@ -356,7 +361,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       tidyr::unnest("redcap_event_name") |>
       tidyr::unnest("vars") |>
       dplyr::distinct(.data$redcap_event_name, field_name = .data$vars) |>
-      dplyr::filter(.data$field_name != "record_id") |>
+      dplyr::filter(.data$field_name != id_var) |>
       tibble::as_tibble()
 
     var_event_add <- data.frame(redcap_event_name = NA, field_name = basic_redcap_vars)

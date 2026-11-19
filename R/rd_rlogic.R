@@ -455,8 +455,9 @@ rlogic_eval_data <- function(data, eval) {
 #'   they can't be determined.
 #' @noRd
 factor_code_mapping <- function(field, dic) {
-  # Checkbox options: REDCap exports them as Unchecked/Checked
-  if (grepl("___", field)) {
+  # Checkbox options: REDCap exports them as Unchecked/Checked (after rd_checkbox(), the dictionary has their labels)
+  options_dic <- dic$choices_calculations_or_slider_labels[match(field, dic$field_name)]
+  if (grepl("___", field) && (length(options_dic) == 0 || is.na(options_dic) || !nzchar(options_dic))) {
     return(c(Unchecked = "0", Checked = "1"))
   }
 

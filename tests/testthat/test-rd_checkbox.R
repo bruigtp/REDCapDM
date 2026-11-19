@@ -212,3 +212,42 @@ test_that("rd_checkbox gives the same labels to an option without its .factor co
   expect_setequal(names(out), names(ref))
   expect_equal(out[names(ref)], ref)
 })
+
+# A project with a checkbox `cb` (options 1 and 2) and a text field `b` whose branching logic uses it
+checkbox_project <- function(logic, calc = "") {
+  data <- data.frame(record_id = as.character(1:4), cb___1 = c(1, 1, 0, 0), cb___2 = c(1, 0, 1, 0), b = NA, s = NA)
+  data$cb___1.factor <- factor(ifelse(data$cb___1 == 1, "Checked", "Unchecked"), levels = c("Unchecked", "Checked"))
+  data$cb___2.factor <- factor(ifelse(data$cb___2 == 1, "Checked", "Unchecked"), levels = c("Unchecked", "Checked"))
+  dic <- data.frame(
+    field_name = c("record_id", "cb", "b", "s"), form_name = "form1", field_type = c("text", "checkbox", "text", "calc"),
+    field_label = c("Record", "CB", "B", "S"), choices_calculations_or_slider_labels = c("", "1, One | 2, Two", "", calc),
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = c("", "", logic, "")
+  )
+  list(data = data, dictionary = dic)
+}
+
+test_that("the logic that uses the options of a checkbox as numbers keeps working after rd_transform()", {
+  cases <- list(
+    c("[cb(1)] + [cb(2)] >= 2", "1", "[cb_one] + [cb_two] >= 2"),
+    c("[cb(1)] = '1' or [cb(1)] + [cb(2)] >= 2", "1,2", "[cb_one] = '1' or [cb_one] + [cb_two] >= 2"),
+    c("sum([cb(1)], [cb(2)]) = 1", "2,3", "sum([cb_one], [cb_two]) = 1"),
+    c("[cb(2)] = '1'", "1,3", "data$cb_two=='Yes'")
+  )
+  queries <- function(project) paste(suppressWarnings(suppressMessages(rd_query(project, variables = "b", expression = "is.na(x)")))$queries$Identifier, collapse = ",")
+  for (case in cases) {
+    project <- checkbox_project(case[1], calc = "[cb(1)] + [cb(2)]")
+    expect_equal(queries(project), case[2], info = case[1])
+
+    expect_no_warning(transformed <- suppressMessages(rd_transform(project)))
+    dic <- transformed$dictionary
+    expect_equal(dic$branching_logic_show_field_only_if[dic$field_name == "b"], case[3], info = case[1])
+    expect_equal(dic$choices_calculations_or_slider_labels[dic$field_name == "s"], "[cb_one] + [cb_two]")
+    expect_equal(queries(transformed), case[2], info = case[1])
+
+    # Without renaming the options, and with rd_factor() and rd_dictionary() only
+    kept <- suppressMessages(rd_dictionary(rd_factor(rd_checkbox(project, checkbox_names = FALSE))))
+    expect_equal(queries(kept), case[2], info = case[1])
+    factors <- suppressWarnings(suppressMessages(rd_dictionary(rd_factor(project))))
+    expect_equal(queries(factors), case[2], info = case[1])
+  }
+})

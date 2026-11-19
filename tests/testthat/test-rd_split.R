@@ -313,3 +313,28 @@ test_that("rd_split names the fields of the dictionary that are not in the data 
   out <- rd_split(rd_delete_vars(data = data, dic = dic, forms = "form2"), by = "form")
   expect_equal(out$data$form, "form1")
 })
+
+test_that("rd_split keeps a record identifier with another name in every dataset", {
+  dic <- data.frame(
+    field_name = c("subject", "age", "weight"), form_name = c("demo", "demo", "visit"), field_type = "text",
+    field_label = c("Subject", "Age", "Weight"), choices_calculations_or_slider_labels = "",
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(subject = c("S1", "S2"), age = c(30, 40), weight = c(70, 80))
+  for (wide in c(FALSE, TRUE)) {
+    out <- suppressMessages(rd_split(data = data, dic = dic, by = "form", wide = wide))
+    expect_true(all(vapply(out$data$df, function(df) "subject" %in% names(df), logical(1))))
+  }
+
+  # Longitudinal, by form and by event
+  data <- data.frame(study_id = rep(c("S1", "S2"), each = 2), redcap_event_name = rep(c("v1_arm_1", "v2_arm_1"), 2), age = c(30, NA, 40, NA), weight = c(NA, 70, NA, 80))
+  dic$field_name[1] <- "study_id"
+  event_form <- data.frame(arm_num = 1, unique_event_name = c("v1_arm_1", "v1_arm_1", "v2_arm_1"), form = c("demo", "visit", "visit"))
+  for (by in c("form", "event")) {
+    out <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = by))
+    expect_true(all(vapply(out$data$df, function(df) "study_id" %in% names(df), logical(1))), info = by)
+  }
+  out <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = "form", wide = TRUE))
+  # (the columns of each event keep the name of the variable, also in a form with only one variable)
+  expect_equal(names(out$data$df[[which(out$data$form == "visit")]]), c("study_id", "weight_1", "weight_2"))
+})
