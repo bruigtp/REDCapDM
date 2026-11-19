@@ -106,27 +106,13 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
 
     factor_labels <- split(cat_factors$cat, cat_factors$field_name)
 
-    # Transform each branching logic into R logic
-    cat_factors <- cat_factors |>
-      dplyr::mutate(
-        redcap_v1 = paste0("\\[", .data$field_name, "\\] ?= ?['\"]?", .data$num, "['\"]?(?![0-9.])"),
-        redcap_v2 = paste0("\\[", .data$field_name, "\\] ?(<>|!=) ?['\"]?", .data$num, "['\"]?(?![0-9.])"),
-        factor_v1 = paste0("[", .data$field_name, "]=", logic_label(.data$cat)),
-        factor_v2 = paste0("[", .data$field_name, "]<>", logic_label(.data$cat))
-      ) |>
-      dplyr::arrange(.data$field_name, dplyr::desc(.data$num))
-
-    # Create a mapping for replacing the branching logic in the dictionary
-    replace_v1 <- setNames(cat_factors$factor_v1, cat_factors$redcap_v1)
-    replace_v2 <- setNames(cat_factors$factor_v2, cat_factors$redcap_v2)
-
-    # Apply the replacements to the dictionary
+    # Write the comparisons with the codes of the options as comparisons with their labels (e.g. `[sex] = '1'` is
+    # `[sex]='Male'`), in one reading of each logic: a label that is the code of another option is not changed again
+    options <- data.frame(ref = cat_factors$field_name, code = cat_factors$num, name = cat_factors$field_name, label = cat_factors$cat)
     dic <- dic |>
       dplyr::mutate(
-        branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace_v1),
-        branching_logic_show_field_only_if = stringr::str_replace_all(.data$branching_logic_show_field_only_if, replace_v2),
-        choices_calculations_or_slider_labels = stringr::str_replace_all(.data$choices_calculations_or_slider_labels, replace_v1),
-        choices_calculations_or_slider_labels = stringr::str_replace_all(.data$choices_calculations_or_slider_labels, replace_v2)
+        branching_logic_show_field_only_if = relabel_logic(.data$branching_logic_show_field_only_if, options),
+        choices_calculations_or_slider_labels = relabel_logic(.data$choices_calculations_or_slider_labels, options)
       )
   }
 
@@ -165,15 +151,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     }
     logic <- checkbox_columns(logic)
     for (field in names(factor_labels)) {
-      field_pattern <- paste0("\\[", field, "\\]")
-      if (!grepl(field_pattern, without_texts(logic))) next
-      comparisons <- gregexpr(paste0(field_pattern, "\\s*(=|<>|!=)\\s*(", quoted_pattern(), ")"), logic, perl = TRUE)
-      found <- regmatches(logic, comparisons)[[1]]
-      texts <- sub(paste0("^", field_pattern, "\\s*(=|<>|!=)\\s*"), "", found, perl = TRUE)
-      rest <- logic
-      regmatches(rest, comparisons) <- list(ifelse(text_value(texts) %in% c(factor_labels[[field]], ""), "''", found))
-      rest <- gsub(paste0("isblankormissingcode\\(\\s*", field_pattern, "\\s*\\)"), "''", rest, perl = TRUE)
-      if (grepl(field_pattern, without_texts(rest))) {
+      if (factor_other_use(logic, field, factor_labels[[field]])) {
         return(TRUE)
       }
     }

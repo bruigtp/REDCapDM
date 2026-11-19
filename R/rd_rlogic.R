@@ -195,10 +195,24 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       "\\[", field, "\\]\\s*(=|<>|!=)\\s*((['\"])(", paste(escape_regex(labels), collapse = "|"), ")\\3|",
       paste(escape_regex(r_text(labels)), collapse = "|"), ")"
     )
-    codes <- unname(mapping[as.character(data[[field]])])
+    codes <- unmapped <- unname(mapping[as.character(data[[field]])])
+    unmasked <- unmask_texts(rlogic, masked$texts)
+    uses_labels <- grepl(label_pattern, unmasked, perl = TRUE)
+
+    # A logic that also uses the variable as a number (e.g. `[score] = '2' or [score] + 1 >= 4`) is evaluated with the
+    # codes: its comparisons are with codes, as in REDCap (a label that isn't a code is written as its code)
+    if (uses_labels && factor_other_use(unmasked, field, labels)) {
+      not_codes <- labels[!labels %in% mapping]
+      if (length(not_codes) > 0) {
+        unmasked <- relabel_logic(unmasked, data.frame(ref = field, code = not_codes, name = field, label = unname(mapping[not_codes])))
+        masked <- mask_texts(unmasked)
+        rlogic <- masked$logic
+      }
+      uses_labels <- FALSE
+    }
 
     # Leave the variable as it is if the logic uses its labels or if any of its values isn't one of them
-    if (grepl(label_pattern, unmask_texts(rlogic, masked$texts), perl = TRUE) || any(!is.na(data[[field]]) & is.na(codes))) {
+    if (uses_labels || any(!is.na(data[[field]]) & is.na(codes))) {
       next
     }
 
@@ -839,7 +853,7 @@ recycle_constant_conditions <- function(x) {
 #'
 #' Between single quotes, or between double quotes when it has an apostrophe (e.g. `"O'Brien"`). A label with both quotes
 #' or with backslashes is written between single quotes with these characters escaped, as in R (e.g. `'O\'Brien "A"'`
-#' or `'C:\\Ward'`). It is the replacement of stringr::str_replace_all(), so `\` is escaped again.
+#' or `'C:\\Ward'`).
 #'
 #' @param x Labels.
 #' @return The labels between quotes.
@@ -847,8 +861,95 @@ recycle_constant_conditions <- function(x) {
 logic_label <- function(x) {
   plain <- !grepl("\\", x, fixed = TRUE)
   double <- plain & grepl("'", x, fixed = TRUE) & !grepl("\"", x, fixed = TRUE)
-  text <- ifelse(double, paste0("\"", x, "\""), r_text(x))
-  gsub("\\", "\\\\", text, fixed = TRUE)
+  ifelse(double, paste0("\"", x, "\""), r_text(x))
+}
+
+#' Comparisons of a logic with a field
+#'
+#' Finds, in one reading of the logic, the texts between quotes and the comparisons `[field] = value`, `[field] <> value`
+#' and `[field] != value`, with the value between quotes or a whole number (e.g. `1`, `1.0` or `10`, never the start of
+#' another number).
+#'
+#' @param logic A logic.
+#' @return A list with the match data of gregexpr() (`matches`) and, for each match, the field (`field`, `NA` for a
+#'   text), the operator (`op`) and the value as it is written (`value`).
+#' @noRd
+logic_comparisons <- function(logic) {
+  quoted <- sub("^\\(\\?s\\)", "", quoted_pattern())
+  number <- "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?![\\w.])"
+  comparison <- paste0("\\[([^\\[\\]]+)\\]\\s*(=|<>|!=)\\s*(", quoted, "|", number, ")")
+  matches <- gregexpr(paste0("(?s)(?:", quoted, ")|", comparison), logic, perl = TRUE)
+  found <- regmatches(logic, matches)[[1]]
+  parts <- regmatches(found, regexec(paste0("(?s)^", comparison, "$"), found, perl = TRUE))
+  list(
+    matches = matches,
+    found = found,
+    field = vapply(parts, function(p) if (length(p) > 0) p[2] else NA_character_, character(1)),
+    op = vapply(parts, function(p) if (length(p) > 0) p[3] else NA_character_, character(1)),
+    value = vapply(parts, function(p) if (length(p) > 0) p[4] else NA_character_, character(1))
+  )
+}
+
+#' Write the comparisons of a logic with the codes of options as comparisons with their labels
+#'
+#' Each comparison of an option with one of its codes (between quotes, e.g. `'1'`, or as a number, e.g. `1` or `1.0`)
+#' becomes `[name]='label'` or `[name]<>'label'`. The logic is read once, so a label that is the code of another option is
+#' not changed again (e.g. code 1 with label `2`), and the texts between quotes (e.g. `'[cb(1)]'`) are kept.
+#'
+#' @param logic Character vector with the logic.
+#' @param options Data frame with `ref` (the field as written in the logic, e.g. `sex` or `cb(1)`), `code`, `name` (the
+#'   field in the new logic) and `label`.
+#' @return The logic with the comparisons changed.
+#' @noRd
+relabel_logic <- function(logic, options) {
+  if (nrow(options) == 0) {
+    return(logic)
+  }
+  # (as text, also a column of the dictionary without any value, read as logical)
+  vapply(as.character(logic), function(l) {
+    if (is.na(l) || !grepl("[", l, fixed = TRUE)) {
+      return(l)
+    }
+    found <- logic_comparisons(l)
+    new <- found$found
+    for (k in which(found$field %in% options$ref)) {
+      rows <- options[options$ref == found$field[k], ]
+      value <- found$value[k]
+      hit <- if (grepl("^['\"]", value)) {
+        match(text_value(value), rows$code)
+      } else {
+        which(suppressWarnings(as.numeric(rows$code)) == as.numeric(value))[1]
+      }
+      if (!is.na(hit)) {
+        new[k] <- paste0("[", rows$name[hit], "]", if (found$op[k] == "=") "=" else "<>", logic_label(rows$label[hit]))
+      }
+    }
+    regmatches(l, found$matches) <- list(new)
+    l
+  }, character(1), USE.NAMES = FALSE)
+}
+
+#' Whether a logic uses a factor in another way than comparing it with its labels
+#'
+#' Comparisons with a label or with an empty text (`[a] = 'Yes'`, `[a] <> ''`) and `isblankormissingcode([a])` work with
+#' the factor. Any other use (e.g. `[a] >= 3`, `[a] + 1`, or a comparison with a code that isn't a label) needs its codes.
+#'
+#' @param logic A logic.
+#' @param field The field.
+#' @param labels Labels of the field.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+factor_other_use <- function(logic, field, labels) {
+  field_pattern <- paste0("\\[", field, "\\]")
+  if (is.na(logic) || !grepl(field_pattern, without_texts(logic))) {
+    return(FALSE)
+  }
+  found <- logic_comparisons(logic)
+  with_label <- found$field %in% field & grepl("^['\"]", found$value) & text_value(ifelse(is.na(found$value), "''", found$value)) %in% c(labels, "")
+  rest <- logic
+  regmatches(rest, found$matches) <- list(ifelse(with_label, "''", found$found))
+  rest <- gsub(paste0("isblankormissingcode\\(\\s*", field_pattern, "\\s*\\)"), "''", rest, perl = TRUE)
+  grepl(field_pattern, without_texts(rest))
 }
 
 #' A value written as an R text between single quotes

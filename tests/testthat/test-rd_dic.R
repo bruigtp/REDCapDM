@@ -197,3 +197,14 @@ test_that("rd_dictionary keeps in REDCap syntax, with the codes, the logic that 
   out <- suppressMessages(rd_dictionary(suppressMessages(rd_factor(factor_project(choices, "[a] >= 3")))))
   expect_true(any(grepl("as numbers", out$results)))
 })
+
+test_that("rd_dictionary doesn't change again a label that is the code of another option", {
+  project <- factor_project("1, 2 | 2, 1 | 3, 3 | 5, 5", "[a] = '2' or [a] = '1'")
+  transformed <- suppressMessages(rd_transform(project))
+  expect_equal(transformed$dictionary$branching_logic_show_field_only_if[3], "data$a=='1' | data$a=='2'")
+  queries <- function(p) suppressWarnings(suppressMessages(rd_query(p, variables = "b", expression = "is.na(x)")))$queries$Identifier
+  expect_equal(queries(transformed), queries(project))
+
+  project <- factor_project("1, 2 | 2, 1 | 3, 3 | 5, 5", "[a] = '2'")
+  expect_equal(queries(suppressMessages(rd_transform(project))), 2, ignore_attr = TRUE)
+})

@@ -338,3 +338,22 @@ test_that("rd_split keeps a record identifier with another name in every dataset
   # (the columns of each event keep the name of the variable, also in a form with only one variable)
   expect_equal(names(out$data$df[[which(out$data$form == "visit")]]), c("study_id", "weight_1", "weight_2"))
 })
+
+test_that("rd_split(wide = TRUE) keeps the fields called `id`", {
+  dic <- data.frame(
+    field_name = c("id", "weight"), form_name = "visit", field_type = "text", field_label = c("ID", "Weight"),
+    choices_calculations_or_slider_labels = "", text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(id = rep(c("S1", "S2"), each = 2), redcap_event_name = rep(c("v1_arm_1", "v2_arm_1"), 2), weight = c(70, 71, 80, 81))
+  event_form <- data.frame(arm_num = 1, unique_event_name = c("v1_arm_1", "v2_arm_1"), form = "visit")
+  out <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = "form", wide = TRUE))$data$df[[1]]
+  expect_equal(out$id, c("S1", "S2"))
+  expect_equal(out$weight_2, c(71, 81))
+
+  # A field `id` that isn't the record identifier
+  data <- data.frame(record_id = rep(c("S1", "S2"), each = 2), redcap_event_name = rep(c("v1_arm_1", "v2_arm_1"), 2), id = c("a", "b", "c", "d"), weight = c(70, 71, 80, 81))
+  dic <- rbind(transform(dic[1, ], field_name = "record_id"), dic)
+  out <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = "form", wide = TRUE))$data$df[[1]]
+  expect_equal(names(out), c("record_id", "id_1", "id_2", "weight_1", "weight_2"))
+  expect_equal(out$id_2, c("b", "d"))
+})

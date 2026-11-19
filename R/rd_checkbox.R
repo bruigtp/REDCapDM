@@ -421,29 +421,17 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   # Merge the transformed data with the correspondence to link new names with the original variables
   cats <- merge(cats, correspondence, by.x = "field_name", by.y = "out")
 
-  # Prepare the branching logic expressions for the transformed checkbox variables
-  cats <- cats |>
-    dplyr::mutate(
-      factor = paste0("[", .data$field_name, "]=", logic_label(.data$cat)),
-      factor2 = paste0("[", .data$field_name, "]<>", logic_label(.data$cat)),
-      V1 = stringi::stri_replace_all_fixed(cats$V1, c("(", ")"), c("\\(", "\\)"), vectorize_all = FALSE),
-      redcap = paste0("\\[", .data$V1, "\\] ?=? ?['\"]?", .data$num, "['\"]?"),
-      redcap2 = paste0("\\[", .data$V1, "\\] ?<> ?['\"]?", .data$num, "['\"]?")
-    ) |>
-    dplyr::select(-"V1") |>
-    dplyr::arrange(dplyr::desc(.data$redcap))
-
-  # Create the final mappings for replacing the branching logic in REDCap with the new factor logic
-  replace <- setNames(cats$factor, cats$redcap)
-  replace2 <- setNames(cats$factor2, cats$redcap2)
+  # Comparisons of the options with their codes (e.g. `[cb(1)] = '1'`) that become comparisons with their labels
+  # (`[cb_option]='Yes'`)
+  options <- data.frame(ref = as.character(cats$V1), code = cats$num, name = cats$field_name, label = cats$cat)
 
   # Apply the new branching logic to the dictionary by replacing the old logic with the new ones
   # A logic that uses an option as a number (e.g. `[cb(1)] + [cb(2)] >= 2`) can't compare it with the labels: it keeps
   # the codes 0 and 1 and only the name of the option changes (`[cb(1)]` is `[cb_option]`), which rd_rlogic(),
   # rd_dictionary() and rd_query() evaluate with the codes
+  # (the texts between quotes are kept, e.g. `[t] = '[cb(1)]'`)
   checkbox_logic <- function(logic) {
-    relabeled <- stringr::str_replace_all(logic, replace)
-    relabeled <- stringr::str_replace_all(relabeled, replace2)
+    relabeled <- relabel_logic(logic, options)
     if (nrow(correspondence) == 0) {
       return(relabeled)
     }
@@ -452,7 +440,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       !is.na(l) && any(vapply(options, grepl, logical(1), x = l, fixed = TRUE))
     }, logical(1), USE.NAMES = FALSE)
     for (k in seq_along(options)) {
-      logic[as_number] <- gsub(options[k], paste0("[", correspondence$out[k], "]"), logic[as_number], fixed = TRUE)
+      logic[as_number] <- outside_quotes(logic[as_number], function(s) gsub(options[k], paste0("[", correspondence$out[k], "]"), s, fixed = TRUE))
     }
     ifelse(as_number, logic, relabeled)
   }

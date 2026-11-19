@@ -12,7 +12,7 @@
 #' @param exclude Optional. Character vector of field names to exclude from recalculation.
 #'
 #' @details
-#' * Fields of type `calc` in the dictionary are recalculated.
+#' * Fields of type `calc` in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (`NA`).
 #' * Recalculated values are compared with the original values.
 #' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary.
 #' * Works for single-event projects; for longitudinal projects, `event_form` must be provided.
@@ -155,7 +155,10 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
         }),
         recalc = purrr::map(.data$rlogic, function(x) {
           if (!is.null(x)) {
-            x$eval
+            # As in REDCap, a calculation without a numeric result (e.g. a division by zero, 3/0 or 0/0) is blank
+            value <- x$eval
+            if (is.numeric(value)) value[!is.finite(value)] <- NA
+            value
           } else {
             NULL
           }

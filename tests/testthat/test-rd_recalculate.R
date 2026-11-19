@@ -183,3 +183,19 @@ test_that("rd_recalculate warns about excluded variables that are not calculated
   expect_match(conditionMessage(w), "not\\s+calculated\\s+fields")
   expect_match(conditionMessage(w), "`copd`", fixed = TRUE)
 })
+
+test_that("rd_recalculate leaves blank the calculations without a numeric result, as REDCap", {
+  dic <- data.frame(
+    field_name = c("record_id", "a", "b", "r"), form_name = "f1", field_type = c("text", "text", "text", "calc"),
+    field_label = c("ID", "A", "B", "R"), choices_calculations_or_slider_labels = c("", "", "", "[a]/[b]"),
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(record_id = 1:4, a = c(3, 0, -3, 6), b = c(0, 0, 0, 2), r = c(NA, NA, NA, 3))
+  out <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic)))
+  # The values of REDCap are the same: no `_recalc` field
+  expect_false("r_recalc" %in% names(out$data))
+
+  data$r[4] <- 4
+  out <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic)))
+  expect_equal(out$data$r_recalc, c(NA, NA, NA, 3), ignore_attr = TRUE)
+})

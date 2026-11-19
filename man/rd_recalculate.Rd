@@ -39,7 +39,7 @@ Recalculates fields marked as calculated in the REDCap dictionary, compares them
 }
 \details{
 \itemize{
-\item Fields of type \code{calc} in the dictionary are recalculated.
+\item Fields of type \code{calc} in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (\code{NA}).
 \item Recalculated values are compared with the original values.
 \item If differences exist, new fields \verb{[field_name]_recalc} are added to the dataset and dictionary.
 \item Works for single-event projects; for longitudinal projects, \code{event_form} must be provided.

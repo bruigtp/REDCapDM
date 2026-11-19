@@ -860,3 +860,21 @@ test_that("rd_rlogic translates datediff() of two time fields", {
   dic$text_validation_type_or_show_slider_number <- c("", "time_hh_mm_ss", "time_hh_mm_ss", "")
   expect_equal(ev("datediff([start],[end],'s',true)"), c(-59430, 27015, 0, NA, 86399))
 })
+
+test_that("rd_rlogic evaluates with the codes a factor compared and used as a number", {
+  data <- data.frame(record_id = 1:3, res = NA)
+  dic <- make_dic(c("record_id", "score", "res"))
+  dic$field_type <- c("text", "radio", "text")
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+
+  # Labels that are the codes
+  data$score <- factor(c("1", "2", "3"), levels = c("1", "2", "3"))
+  dic$choices_calculations_or_slider_labels <- c("", "1, 1 | 2, 2 | 3, 3", "")
+  expect_equal(ev("[score] = '2' or [score] + 1 >= 4"), c(FALSE, TRUE, TRUE))
+
+  # Labels that aren't codes
+  data$score <- factor(c("Low", "Mid", "High"), levels = c("Low", "Mid", "High"))
+  dic$choices_calculations_or_slider_labels <- c("", "1, Low | 2, Mid | 3, High", "")
+  expect_equal(ev("[score] = 'Mid' or [score] + 1 >= 4"), c(FALSE, TRUE, TRUE))
+  expect_equal(ev("[score] = 'Mid'"), c(FALSE, TRUE, FALSE))
+})

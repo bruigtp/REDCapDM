@@ -251,3 +251,22 @@ test_that("the logic that uses the options of a checkbox as numbers keeps workin
     expect_equal(queries(factors), case[2], info = case[1])
   }
 })
+
+test_that("rd_checkbox keeps the texts between quotes and reads whole numbers", {
+  queries <- function(project) paste(suppressWarnings(suppressMessages(rd_query(project, variables = "b", expression = "is.na(x)")))$queries$Identifier, collapse = ",")
+  cases <- list(
+    c("[t] = '[cb(1)]'", "data$t == '[cb(1)]'"),
+    c("[t] = '[cb(1)]' and [cb(1)] + [cb(2)] >= 1", "[t] = '[cb(1)]' and [cb_one] + [cb_two] >= 1"),
+    c("[cb(1)] = 1.0", "data$cb_one=='Yes'"),
+    c("[cb(2)] = 10 or [cb(1)] = 1", "[cb_two] = 10 or [cb_one] = 1")
+  )
+  for (case in cases) {
+    project <- checkbox_project(case[1])
+    project$data$t <- c("[cb(1)]", "x", "[cb(1)]", "x")
+    project$dictionary <- rbind(project$dictionary, transform(project$dictionary[3, ], field_name = "t"))
+    transformed <- suppressMessages(rd_transform(project))
+    dic <- transformed$dictionary
+    expect_equal(dic$branching_logic_show_field_only_if[dic$field_name == "b"], case[2], info = case[1])
+    expect_equal(queries(transformed), queries(project), info = case[1])
+  }
+})

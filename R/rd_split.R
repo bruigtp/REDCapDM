@@ -303,14 +303,8 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
         dplyr::mutate(
           max_repeated_instance = purrr::map_dbl(
             .data$df,
-            ~.x |>
-              dplyr::group_by(dplyr::across(dplyr::all_of(id_var))) |>
-              dplyr::mutate(id = dplyr::row_number(),
-                            max_id = dplyr::n()) |>
-              dplyr::ungroup() |>
-              dplyr::pull(max_id) |>
-              # 0 when the form has no rows (e.g. a project without records)
-              max(0)
+            # Most rows of a record (0 when the form has no rows, e.g. a project without records)
+            ~ max(0, tabulate(match(.x[[id_var]], unique(.x[[id_var]]))))
           ),
           df = purrr::pmap(list(.data$vars, .data$df, if (longitudinal) .data$events else as.list(rep(NA, dplyr::n()))), function(x, y, z) {
 
@@ -320,12 +314,12 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
             # One row per record: the rows of a record (events, instances of a repeated instrument or event) become numbered columns
             if (dplyr::n_distinct(z) > 1 || any(duplicated(y[[id_var]]))) {
 
+              # (the number of each row of a record, in a column whose name isn't one of the data, e.g. a field `id`)
+              number <- utils::tail(make.unique(c(names(y), ".rd_number")), 1)
+              y[[number]] <- stats::ave(seq_len(nrow(y)), match(y[[id_var]], unique(y[[id_var]])), FUN = seq_along)
               y <- y |>
-                dplyr::group_by(dplyr::across(dplyr::all_of(id_var))) |>
-                dplyr::mutate(id = dplyr::row_number()) |>
-                dplyr::ungroup() |>
                 # (`<variable>_<number>`, also when the form has only one variable)
-                tidyr::pivot_wider(names_from = "id", values_from = -dplyr::all_of(c(id_var, "id")), names_glue = "{.value}_{id}")
+                tidyr::pivot_wider(names_from = dplyr::all_of(number), values_from = -dplyr::all_of(c(id_var, number)), names_glue = paste0("{.value}_{", number, "}"))
             }
 
             return(y)
