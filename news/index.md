@@ -194,6 +194,26 @@
   lost the queries of those fields. They also read the options written
   without a space after the comma (e.g. `5,Always`): they warned
   “Expected 2 pieces” and the logic with that option was wrong.
+- [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  write the labels in the logic in one reading of it: a label that is
+  the code of another option (e.g. code 1 with label `2`) was changed
+  again, and the logic selected the other option. They also keep the
+  texts between quotes (e.g. `[t] = '[cb(1)]'`) and read whole numbers
+  (`[cb(1)] = 1.0` became `[cb_one]='Yes'.0`, and `[cb(2)] = 10` became
+  `[cb_two]='Yes'0`).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  evaluates with the codes a variable that is a factor when the logic
+  compares it with a label and also uses it as a number
+  (e.g. `[score] = '2' or [score] + 1 >= 4`): the operation gave NA.
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  leaves blank, as REDCap, the calculations without a numeric result
+  (e.g. a division by zero): they were `Inf`, `-Inf` or `NaN`, and were
+  reported as different from REDCap.
+- `rd_split(wide = TRUE)` keeps the fields called `id`: it used this
+  name for the number of each row of a record, which mixed records or
+  removed the field.
 - [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)
   removes from the dictionary the variables of `pattern` without
   distinguishing upper and lower case, as in the data (they were left in

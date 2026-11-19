@@ -70,7 +70,9 @@ A list with:
 
 ## Details
 
-- Fields of type `calc` in the dictionary are recalculated.
+- Fields of type `calc` in the dictionary are recalculated. As in
+  REDCap, a calculation without a numeric result (e.g. a division by
+  zero) is blank (`NA`).
 
 - Recalculated values are compared with the original values.
 

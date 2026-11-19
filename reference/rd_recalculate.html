@@ -106,7 +106,7 @@ Recalculates fields marked as calculated in the REDCap dictionary, compares them
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
-<ul><li><p>Fields of type <code>calc</code> in the dictionary are recalculated.</p></li>
+<ul><li><p>Fields of type <code>calc</code> in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (<code>NA</code>).</p></li>
 <li><p>Recalculated values are compared with the original values.</p></li>
 <li><p>If differences exist, new fields <code>[field_name]_recalc</code> are added to the dataset and dictionary.</p></li>
 <li><p>Works for single-event projects; for longitudinal projects, <code>event_form</code> must be provided.</p></li>

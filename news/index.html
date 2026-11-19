@@ -111,6 +111,14 @@
 <li>
 <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> keep in REDCap syntax, with the codes of the options, the logic that uses as a number a variable already converted into a factor (e.g. <code>[score] &gt;= 3</code>, <code>[a] + [b]</code>, or <code>[a] = '1' or [a] &gt;= 3</code>): the R logic compared the factor as a number, with warnings such as “‘&gt;=’ not meaningful for factors”, and <code><a href="../reference/rd_query.html">rd_query()</a></code> lost the queries of those fields. They also read the options written without a space after the comma (e.g. <code>5,Always</code>): they warned “Expected 2 pieces” and the logic with that option was wrong.</li>
 <li>
+<code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code> and <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> write the labels in the logic in one reading of it: a label that is the code of another option (e.g. code 1 with label <code>2</code>) was changed again, and the logic selected the other option. They also keep the texts between quotes (e.g. <code>[t] = '[cb(1)]'</code>) and read whole numbers (<code>[cb(1)] = 1.0</code> became <code>[cb_one]='Yes'.0</code>, and <code>[cb(2)] = 10</code> became <code>[cb_two]='Yes'0</code>).</li>
+<li>
+<code><a href="../reference/rd_rlogic.html">rd_rlogic()</a></code> evaluates with the codes a variable that is a factor when the logic compares it with a label and also uses it as a number (e.g. <code>[score] = '2' or [score] + 1 &gt;= 4</code>): the operation gave NA.</li>
+<li>
+<code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> leaves blank, as REDCap, the calculations without a numeric result (e.g. a division by zero): they were <code>Inf</code>, <code>-Inf</code> or <code>NaN</code>, and were reported as different from REDCap.</li>
+<li>
+<code>rd_split(wide = TRUE)</code> keeps the fields called <code>id</code>: it used this name for the number of each row of a record, which mixed records or removed the field.</li>
+<li>
 <code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code> removes from the dictionary the variables of <code>pattern</code> without distinguishing upper and lower case, as in the data (they were left in the dictionary), and accepts a variable together with its factor version or its column of Missing Data Codes in <code>vars</code> (e.g. <code>vars = c("status", "status.factor")</code> stopped with an error).</li>
 <li>
 <code><a href="../reference/rd_export.html">rd_export()</a></code> writes the links of a factor column (it wrote the internal codes of the factor, also as the destination of the links), and the dates and datetimes keep their format when the cells are centered (they were shown as numbers, e.g. <code>45351</code>).</li>
