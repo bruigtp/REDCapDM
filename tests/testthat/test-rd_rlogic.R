@@ -819,3 +819,25 @@ test_that("the texts of a logic are never taken for the internal placeholders of
   expect_equal(ev("[t] = 'REDCapDMtext2x' or [t] = 'a=b'"), c(FALSE, TRUE, FALSE))
   expect_equal(ev("[t] = 'REDCapDMtextx1x' or [t] = '(z)'"), c(FALSE, FALSE, FALSE))
 })
+
+test_that("rd_rlogic keeps two apostrophes inside a text", {
+  data <- data.frame(record_id = 1:3, text = c("L''Z", "LNAZ", NA), res = NA)
+  dic <- make_dic(c("record_id", "text", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  # (a blank value gives NA with `=`, as before)
+  expect_equal(ev("[text] = \"L''Z\""), c(TRUE, FALSE, NA))
+  expect_equal(ev("[text] <> \"L''Z\""), c(FALSE, TRUE, TRUE))
+  expect_equal(ev("[text] = ''"), c(FALSE, FALSE, TRUE))
+  expect_equal(ev("[text] = \"''\" or [text] = 'LNAZ'"), c(FALSE, TRUE, NA))
+
+  # A label with two apostrophes
+  data <- data.frame(record_id = c("1", "2"), name = c(1, 2), q = c(NA, NA))
+  data$name.factor <- factor(c("L''Z", "Other"), levels = c("L''Z", "Other"))
+  dic <- make_dic(c("record_id", "name", "q"))
+  dic$field_type <- c("text", "radio", "text")
+  dic$choices_calculations_or_slider_labels <- c("", "1, L''Z | 2, Other", "")
+  dic$branching_logic_show_field_only_if <- c("", "", "[name] = '1'")
+  transformed <- suppressWarnings(suppressMessages(rd_transform(list(data = data, dictionary = dic))))
+  queries <- suppressWarnings(suppressMessages(rd_query(transformed, variables = "q", expression = "is.na(x)")))$queries
+  expect_equal(queries$Identifier, 1, ignore_attr = TRUE)
+})

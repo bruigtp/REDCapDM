@@ -191,6 +191,20 @@ convert_dates <- function(x, formats, datetime) {
     value[pending] <- if (datetime) as.POSIXct(text[pending], format = format, tz = "UTC") else as.Date(text[pending], format = format)
   }
 
+  # A time out of range isn't a date: as.POSIXct() changes it without warning (`12:30:99` is 12:30:00, `12:30:60` is
+  # 12:31:00 and `24:00` the next day)
+  if (datetime) {
+    time <- regmatches(text, regexec("[[:space:]]([0-9]{1,2}):([0-9]{1,2})(:([0-9]{1,2})([.][0-9]+)?)?$", text))
+    wrong_time <- vapply(time, function(parts) {
+      if (length(parts) == 0) {
+        return(FALSE)
+      }
+      numbers <- suppressWarnings(as.numeric(parts[c(2, 3, 5)]))
+      isTRUE(numbers[1] > 23) || isTRUE(numbers[2] > 59) || isTRUE(numbers[3] > 59)
+    }, logical(1))
+    value[wrong_time] <- NA
+  }
+
   list(value = value, not_dates = text[is.na(value) & !is.na(text)])
 }
 

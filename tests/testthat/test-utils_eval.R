@@ -70,3 +70,20 @@ test_that("each of several filters explains its mistake", {
   )
   expect_error(rd_event(covican, event = "follow_up_visit_da_arm_1", filter = "agee > 50"), "agee", class = "REDCapDM_error_argument")
 })
+
+test_that("only the variable x is replaced, not the argument x of a function", {
+  expect_identical(replace_x(quote(vapply(x, function(x) is.na(x), logical(1))), "age"), quote(vapply(age, function(x) is.na(x), logical(1))))
+  expect_identical(replace_x(quote(sapply(x, function(v, w = x) v > w)), "age"), quote(sapply(age, function(v, w = age) v > w)))
+  expect_identical(replace_x(quote(c(NULL, x[, 1])), "age"), quote(c(NULL, age[, 1])))
+})
+
+test_that("the conditions don't see the internal columns of the functions", {
+  data <- data.frame(record_id = as.character(1:6), a = c(1, 2, 3, 1, 2, 3), b = 1, .rd_row = 1:6)
+  kept <- filter_text(data, "if_all(where(is.numeric), ~ .x < 5)", environment())
+  expect_equal(nrow(kept), 6)
+  expect_equal(kept$.rd_row, 1:6)
+  # The rows kept don't depend on their order
+  expect_equal(nrow(filter_text(data[6:1, ], "if_all(where(is.numeric), ~ .x < 3)", environment())), 4)
+  # (as in dplyr::filter(), each condition is evaluated in all the rows)
+  expect_equal(filter_text(data[6:1, ], "a < 3, dplyr::row_number() > 1", environment())$a, c(2, 1, 2, 1))
+})

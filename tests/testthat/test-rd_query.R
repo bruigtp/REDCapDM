@@ -1074,3 +1074,25 @@ test_that("rd_query doesn't translate again R logic with brackets inside a text"
   out <- suppressWarnings(suppressMessages(rd_query(data = data, dic = transform(dic, branching_logic_show_field_only_if = ""), variables = "age", expression = "x > 0", filter = "data$status == '[age]'")))
   expect_equal(nrow(out$queries), 1)
 })
+
+test_that("rd_query filters by the type of the variables only with the columns of the project", {
+  data <- data.frame(record_id = as.character(1:6), a = c(1, 2, 3, 1, 2, 3), b = 1)
+  dic <- data.frame(
+    field_name = c("record_id", "a", "b"), form_name = "form1", field_type = "text", field_label = c("Record", "A", "B"),
+    choices_calculations_or_slider_labels = "", text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  for (rows in list(1:6, 6:1)) {
+    out <- suppressWarnings(suppressMessages(rd_query(data = data[rows, ], dic = dic, variables = "b", expression = "x > 0", filter = "if_all(where(is.numeric), ~ .x < 5)")))
+    expect_equal(nrow(out$queries), 6)
+    out <- suppressWarnings(suppressMessages(rd_query(data = data[rows, ], dic = dic, variables = "b", expression = "if_all(where(is.numeric), ~ .x < 5)")))
+    expect_equal(nrow(out$queries), 6)
+  }
+})
+
+test_that("rd_query keeps the argument x of a function of the expression", {
+  expected <- nrow(suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "is.na(x)")))$queries)
+  for (expression in c("vapply(x, function(x) is.na(x), logical(1))", "sapply(x, \\(x) is.na(x))", "vapply(x, function(v) is.na(v), logical(1))")) {
+    out <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = expression)))
+    expect_equal(nrow(out$queries), expected, info = expression)
+  }
+})

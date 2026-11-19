@@ -264,3 +264,13 @@ test_that("rd_insert_na doesn't take the components of objects of the session fo
   expect_equal(na_dm("sapply(age, function(v) isTRUE(v > 30))"), expected)
   expect_equal(na_dm("data[, 'age'] > 30"), expected)
 })
+
+test_that("rd_insert_na doesn't take the arguments of the formulas of purrr for variables", {
+  na_dm <- function(filter) suppressWarnings(suppressMessages(rd_insert_na(covican, vars = "dm", filter = filter)))$data$dm
+  cutoff <- 30
+  expected <- na_dm("age > cutoff")
+  for (filter in c("purrr::map_lgl(age, ~ isTRUE(.x > cutoff))", "purrr::map_lgl(age, ~ isTRUE(..1 > cutoff))", "purrr::map2_lgl(age, cutoff, ~ isTRUE(.x > .y))")) {
+    expect_equal(na_dm(filter), expected, info = filter)
+  }
+  expect_error(rd_insert_na(covican, vars = "dm", filter = "purrr::map_lgl(no_variable, ~ .x > 1)"), "not found in data")
+})

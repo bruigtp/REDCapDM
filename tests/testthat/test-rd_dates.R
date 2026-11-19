@@ -116,3 +116,14 @@ test_that("rd_dates only converts the values that follow a whole format: invalid
   # (a datetime field with only the date is at midnight, as before)
   expect_equal(out$dt, as.POSIXct(c("2024-02-29 12:30:00", NA, NA, NA, "2024-02-29 00:00:00", "2024-02-29 08:05:00"), tz = "UTC"), ignore_attr = "label")
 })
+
+test_that("rd_dates sets to NA the times out of range instead of changing them", {
+  dic <- data.frame(field_name = c("record_id", "dt"), text_validation_type_or_show_slider_number = c("", "datetime_seconds_ymd"))
+  data <- data.frame(
+    record_id = 1:8,
+    dt = c("2024-02-29 12:30:99", "2024-02-29 12:30:62", "2024-02-29 12:30:70", "2024-02-29 12:30:60", "2024-02-29 24:00",
+           "2024-02-29 23:59:59", "2024-02-29 00:00", "2024-02-29")
+  )
+  expect_warning(out <- suppressMessages(rd_dates(data = data, dic = dic))$data, "5 values", class = "REDCapDM_warning")
+  expect_equal(out$dt, as.POSIXct(c(NA, NA, NA, NA, NA, "2024-02-29 23:59:59", "2024-02-29 00:00:00", "2024-02-29 00:00:00"), tz = "UTC"), ignore_attr = "label")
+})

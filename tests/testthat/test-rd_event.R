@@ -247,3 +247,11 @@ test_that("rd_event works with fields called like its objects (e.g. `data` or `e
   expect_gt(nrow(ref), 0)
   for (name in c("data", "event", "ids", "k")) expect_equal(ev(add_covican_field(name)), ref)
 })
+
+test_that("rd_event filters by the type of the variables only with the columns of the project", {
+  cv <- covican
+  cv$data <- cv$data[, c("record_id", "redcap_event_name", "redcap_event_name.factor", "age", "copd", "dm", "potassium")]
+  by_type <- suppressWarnings(suppressMessages(rd_event(cv, event = "follow_up_visit_da_arm_1", filter = "if_all(where(is.numeric), ~ is.na(.x) | .x < 300)")))
+  by_name <- suppressWarnings(suppressMessages(rd_event(cv, event = "follow_up_visit_da_arm_1", filter = "if_all(c(age, copd, dm, potassium), ~ is.na(.x) | .x < 300)")))
+  expect_equal(by_type$queries$Identifier, by_name$queries$Identifier)
+})

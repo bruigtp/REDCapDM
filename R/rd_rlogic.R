@@ -846,7 +846,8 @@ mask_texts <- function(x) {
   found <- regmatches(x, quotes)[[1]]
   # (also the texts with backslashes, i.e. with escaped characters, e.g. 'O\'Brien "A"': they are put back as R texts)
   escaped <- grepl("\\", found, fixed = TRUE)
-  special <- grepl("[=<>()]|\\[|\\]", found) | escaped
+  # (and the texts with two apostrophes, e.g. "L''Z": the empty texts '' are translated into NA)
+  special <- grepl("[=<>()]|\\[|\\]", found) | escaped | (nchar(found) > 2 & grepl("''", found, fixed = TRUE))
   if (!any(special)) {
     return(list(logic = x, texts = texts))
   }

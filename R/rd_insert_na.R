@@ -280,6 +280,14 @@ filter_names <- function(expr, env = emptyenv(), columns = character(0)) {
     if (identical(head, as.name("::")) || identical(head, as.name(":::"))) {
       return(invisible())
     }
+    # The arguments of a formula of purrr or of the selection helpers (e.g. `~ .x > 1`, with `.x`, `.y`, `.` or `..1`)
+    # aren't variables
+    if (identical(head, as.name("~"))) {
+      inner <- filter_names(as.call(c(as.name("list"), as.list(e)[-1])), env, columns)
+      out <<- c(out, inner$names[!grepl("^[.]([xy]|[.][0-9]+)?$", inner$names)])
+      out_columns <<- c(out_columns, inner$columns)
+      return(invisible())
+    }
     # The arguments of a function written in the filter (e.g. `function(v) v > 1`) aren't variables
     if (identical(head, as.name("function"))) {
       inner <- filter_names(e[[3]], env, columns)

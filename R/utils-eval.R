@@ -30,7 +30,26 @@ replace_x <- function(expr, variable) {
     return(as.symbol(variable))
   }
   if (is.call(expr)) {
-    return(as.call(lapply(as.list(expr), replace_x, variable = variable)))
+    # Inside a function with an argument `x` (e.g. `function(x) is.na(x)` or `\(x) is.na(x)`), `x` is that argument
+    if (identical(expr[[1]], as.name("function"))) {
+      args <- expr[[2]]
+      if ("x" %in% names(args)) {
+        return(expr)
+      }
+      # (the default values of the other arguments and the body can use the variable)
+      for (k in seq_along(args)) {
+        if (!identical(args[[k]], quote(expr = )) && !is.null(args[[k]])) args[[k]] <- replace_x(args[[k]], variable)
+      }
+      if (!is.null(args)) expr[[2]] <- args
+      expr[[3]] <- replace_x(expr[[3]], variable)
+      return(expr)
+    }
+    parts <- as.list(expr)
+    for (k in seq_along(parts)) {
+      # (an empty argument, e.g. in `x[, 1]`, or a NULL one is kept as it is)
+      if (!identical(parts[[k]], quote(expr = )) && !is.null(parts[[k]])) parts[[k]] <- replace_x(parts[[k]], variable)
+    }
+    return(as.call(parts))
   }
   expr
 }
@@ -50,11 +69,24 @@ filter_text <- function(data, text, env, x = NULL) {
 
   # The conditions are evaluated without the class `labelled` of the variable labels, which some functions don't accept
   # (e.g. dplyr::between()). The rows returned are those of `data`, with their labels.
+  # They only see the columns of the project: not the internal ones of the functions (`.rd_row` of rd_query()), which
+  # would be selected by e.g. `if_all(where(is.numeric), ~ .x < 5)`
   plain <- without_labelled(data)
+  plain <- plain[!names(plain) %in% ".rd_row"]
   eval_env <- rlang::env(env, data = plain)
-  row_col <- utils::tail(make.unique(c(names(plain), ".row")), 1)
-  plain[[row_col]] <- seq_len(nrow(plain))
-  kept <- dplyr::filter(plain, !!!lapply(conditions, rlang::new_quosure, env = eval_env))[[row_col]]
+  quosures <- lapply(conditions, rlang::new_quosure, env = eval_env)
+
+  # The rows kept are known by their row names (a column with the number of each row would also be seen)
+  indexed <- as.data.frame(plain)
+  row_ids <- sprintf("r%d", seq_len(nrow(indexed)))
+  row.names(indexed) <- row_ids
+  kept <- match(row.names(dplyr::filter(indexed, !!!quosures)), row_ids)
+  if (anyNA(kept)) {
+    # (in case the row names were not kept)
+    row_col <- utils::tail(make.unique(c(names(plain), ".row")), 1)
+    plain[[row_col]] <- seq_len(nrow(plain))
+    kept <- dplyr::filter(plain, !!!quosures)[[row_col]]
+  }
   dplyr::slice(data, !!kept)
 }
 
