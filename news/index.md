@@ -143,13 +143,21 @@
   [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
   evaluate `filter` and `expression` without the class of the variable
   labels, which some functions don’t accept:
-  e.g. `dplyr::between(age, 17, 18)` stopped with an error.
+  e.g. `dplyr::between(age, 17, 18)` stopped with an error. They only
+  see the columns of the project: a filter that selects the variables by
+  their type (e.g. `if_all(where(is.numeric), ~ .x < 5)`) also took the
+  internal row counters, so the result depended on the order of the
+  rows. In the `expression` of
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  `x` is the variable except where it is the argument of a function
+  (e.g. `vapply(x, function(x) is.na(x), logical(1))`).
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   leaves as they are the texts between quotes that look like operators,
   functions or fields (e.g. `[x] = 'a=b'`, `'if(x)'` or `'[age]'`): they
   were translated, and the comparison was wrong or stopped with an
   error. Quotes and backslashes inside a text can be escaped as in R
-  (e.g. `'O\'Brien'`).
+  (e.g. `'O\'Brien'`), and two apostrophes inside a text are kept
+  (e.g. `"L''Z"` was compared with `"LNAZ"`).
 - [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
   and
   [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
@@ -169,8 +177,9 @@
 - [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
   accepts filters with R functions (e.g. `abs(score) > 1`), parentheses
   (e.g. `(age > 30)` in longitudinal projects), objects of the session
-  (also their components, e.g. `settings$threshold`), columns chosen
-  with `.data[[field]]` and logical vectors of the session
+  (also their components, e.g. `settings$threshold`), formulas of purrr
+  (e.g. `purrr::map_lgl(age, ~ .x > 30)`), columns chosen with
+  `.data[[field]]` and logical vectors of the session
   (e.g. `filter = "eligible"`); it took the functions as variables or
   didn’t find the variable.
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
@@ -198,9 +207,10 @@
   turned the next dates into NA without a warning when it wasn’t the
   first value; now it is set to NA and a warning lists the fields and
   the values. A value is a date only when it follows the whole format: a
-  wrong time or extra text (e.g. `2024-02-29 99:00:00` or
-  `2024-02-29 extra`) are not dates. Datetimes with and without seconds
-  in the same field keep their seconds.
+  time out of range or extra text (e.g. `2024-02-29 99:00:00`,
+  `2024-02-29 12:30:60`, `2024-02-29 24:00` or `2024-02-29 extra`) are
+  not dates. Datetimes with and without seconds in the same field keep
+  their seconds.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   (and so
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
