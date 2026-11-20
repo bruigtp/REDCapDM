@@ -300,10 +300,17 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Change variable specification from [] to data$
 
+  # Fields whose name isn't a valid name in R (e.g. `if`, `in`, `TRUE` or `_x`) are written between backticks
+  # (e.g. data$`if`)
+  fields <- unique(gsub("^\\[|\\]$", "", unlist(regmatches(rlogic, gregexpr("\\[\\w+\\]", rlogic)))))
+  for (field in fields[make.names(fields) != fields]) {
+    rlogic <- gsub(paste0("[", field, "]"), paste0("[`", field, "`]"), rlogic, fixed = TRUE)
+  }
+
   # Change first [.] = '' for is.na(data$.) and [.] <>'' for !is.na(data$.)
-  rlogic <- gsub("\\[(\\w+)\\]\\s?(<>|!=)\\s?''", "!is.na(data$\\1)", rlogic)
-  rlogic <- gsub("\\[(\\w+)\\]\\s?=\\s?''", "is.na(data$\\1)", rlogic)
-  rlogic <- gsub("\\[(\\w+)\\]", "data$\\1", rlogic)
+  rlogic <- gsub("\\[(\\w+|`\\w+`)\\]\\s?(<>|!=)\\s?''", "!is.na(data$\\1)", rlogic)
+  rlogic <- gsub("\\[(\\w+|`\\w+`)\\]\\s?=\\s?''", "is.na(data$\\1)", rlogic)
+  rlogic <- gsub("\\[(\\w+|`\\w+`)\\]", "data$\\1", rlogic)
 
   # Optional: Inside the interval function, there might be date variables. We would need to wrap them with as.Date().
   # The code is commented out because it's not always needed, but you can enable it if needed.
@@ -817,7 +824,7 @@ blank_comparisons <- function(x) {
 #' @return The logic.
 #' @noRd
 not_equal_blank <- function(x) {
-  pattern <- "(data\\$\\w+)\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)"
+  pattern <- "(data\\$(?:\\w+|`\\w+`))\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)"
   out <- ""
   rest <- x
   repeat {
@@ -1174,7 +1181,12 @@ date_conditionals <- function(x, data) {
 #' @noRd
 one_line <- function(e) {
   blocks <- character(0)
+  # (placeholders that aren't in the expression, e.g. in its texts)
   base <- "REDCapDMblock"
+  written <- paste(deparse(e, width.cutoff = 500L), collapse = " ")
+  while (grepl(base, written, fixed = TRUE)) {
+    base <- paste0(base, "x")
+  }
   hide <- function(e) {
     if (!is.call(e)) {
       return(e)
@@ -1599,7 +1611,7 @@ translate_functions <- function(x) {
   # Missing values: redcap_data() turns the Missing Data Codes into NA
   # (the result of a function can be an empty text, e.g. trim([text]) of a field with spaces: it is blank too)
   x <- replace_function(x, "isblankormissingcode", function(args) {
-    if (grepl("^data\\$\\w+$", args[1])) {
+    if (grepl("^data\\$(\\w+|`\\w+`)$", args[1])) {
       paste0("is.na(", args[1], ")")
     } else {
       paste0("(function(v) is.na(v) | as.character(v) %in% \"\")(", args[1], ")")

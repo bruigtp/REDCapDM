@@ -130,7 +130,8 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       r_logic <- unlist(lapply(dic[logic_cols], as.character), use.names = FALSE)
       r_logic <- without_texts(r_logic[!is.na(r_logic)])
       r_logic <- r_logic[grepl("data\\$", r_logic)]
-      logic_vars <- unique(unlist(stringr::str_extract_all(r_logic, "(?<=data\\$)\\w+")))
+      # (also the names between backticks, e.g. data$`if`)
+      logic_vars <- unique(gsub("`", "", unlist(stringr::str_extract_all(r_logic, "(?<=data\\$)(\\w+|`\\w+`)"))))
       affected <- intersect(factors, logic_vars)
 
       if (length(affected) > 0) {

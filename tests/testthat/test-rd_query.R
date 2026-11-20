@@ -1131,3 +1131,16 @@ test_that("rd_query applies the R logic written by rd_dictionary() and rd_transf
     expect_equal(ids(suppressWarnings(suppressMessages(rd_transform(project)))), original, info = logic)
   }
 })
+
+test_that("rd_query applies the branching logic in R with double brackets", {
+  toy_data <- data.frame(record_id = LETTERS[1:6], value = c(1, 2, 0, 3, 4, 5), q = NA, stringsAsFactors = FALSE)
+  toy_dic <- data.frame(field_name = c("record_id", "value", "q"), form_name = "f1", field_type = "text", field_label = c("ID", "V", "Q"),
+                        text_validation_type_or_show_slider_number = c("", "integer", ""), branching_logic_show_field_only_if = "", stringsAsFactors = FALSE)
+  ids <- function(logic) {
+    toy_dic$branching_logic_show_field_only_if[3] <- logic
+    sort(as.character(suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "q", expression = "is.na(x)"))$queries$Identifier))
+  }
+  expect_no_warning(expect_equal(ids("data[['value']] == 0"), "C"))
+  expect_no_warning(expect_length(ids("data[['value']] == 9"), 0))
+  expect_equal(ids("data$value == 0"), "C")
+})

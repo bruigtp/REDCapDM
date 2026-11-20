@@ -33,9 +33,9 @@ redcap_logic <- function(logic, env) {
   if (length(logic) != 1 || is.na(logic) || !nzchar(trimws(logic))) {
     return(FALSE)
   }
-  # (a field between brackets: not the `[` of R, which follows a name or a parenthesis, e.g. `v[is.finite(v)]` in the R
-  # logic of rd_dictionary())
-  if (grepl("(^|[^\\w.)\\]])\\[", gsub("\\s+", "", without_texts(logic)), perl = TRUE)) {
+  # (a field between brackets: not the `[` of R, which follows a name, a parenthesis or another bracket, e.g.
+  # `v[is.finite(v)]` in the R logic of rd_dictionary() or `data[['value']]`)
+  if (grepl("(^|[^\\w.)\\]\\[])\\[", gsub("\\s+", "", without_texts(logic)), perl = TRUE)) {
     return(TRUE)
   }
   conditions <- tryCatch(parse_conditions(logic), error = function(e) NULL)

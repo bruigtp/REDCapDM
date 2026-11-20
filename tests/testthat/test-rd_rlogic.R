@@ -1159,3 +1159,28 @@ test_that("rd_rlogic keeps the dates in longitudinal projects", {
   expect_equal(run("[a]", "e1")$eval, as.Date(c("2023-01-01", NA)))
   expect_equal(run("[flag] + 1")$eval, c(2, 1))
 })
+
+test_that("rd_rlogic writes between backticks the fields whose name isn't valid in R", {
+  words <- c("if", "for", "repeat", "next", "function", "else", "while", "break", "in", "TRUE", "NA", "_x")
+  data <- data.frame(record_id = 1:2, res = NA)
+  for (w in words) data[[w]] <- c(1, 0)
+  dic <- make_dic(c("record_id", words, "res"))
+  for (w in words) {
+    ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+    expect_equal(ev(paste0("[", w, "] = 1")), c(TRUE, FALSE), info = w)
+    expect_equal(ev(paste0("[", w, "] + 1")), c(2, 1), info = w)
+    expect_equal(ev(paste0("[", w, "] <> 1")), c(FALSE, TRUE), info = w)
+    expect_equal(ev(paste0("isblankormissingcode([", w, "])")), c(FALSE, FALSE), info = w)
+    expect_equal(ev(paste0("if([", w, "] = 1, 'a', 'b')")), c("a", "b"), info = w)
+  }
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[if] = 1", var = "res")$rlogic, "data$`if` == 1")
+})
+
+test_that("rd_rlogic keeps the texts that look like its internal placeholders", {
+  data <- data.frame(record_id = 1:2, t = c("REDCapDMblock1x", "a"), o = c("o", NA), r = c("r", "s"), res = NA)
+  dic <- make_dic(c("record_id", "t", "o", "r", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("[t] = 'REDCapDMblock1x' and concat_ws(':', [o], [r]) <> ''"), c(TRUE, FALSE))
+  expect_equal(ev("concat_ws(':', [o], [r]) <> '' and [t] = 'REDCapDMblock1x'"), c(TRUE, FALSE))
+  expect_equal(ev("[t] = 'xREDCapDMblock1xy' and concat_ws(':', [o], [r]) <> ''"), c(FALSE, FALSE))
+})
