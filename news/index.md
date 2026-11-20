@@ -261,7 +261,26 @@
   of another function that is a unit (e.g. `if([sex] = '1', 'f', 'm')`
   or `ends_with([t], 's')`) was read as one and the logic couldn’t be
   evaluated. It also accepts spaces around the unit
-  (e.g. `datediff([a], [b], 'y' )`).
+  (e.g. `datediff([a], [b], 'y' )`) and `false` as its last argument
+  (e.g. `datediff([a], [b], 'd', false)` couldn’t be evaluated).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md))
+  reads the dates of each `datediff()` with its own date format: with
+  several formats in the same logic, all the dates were read with the
+  first one
+  (e.g. `datediff('01-02-2024', '02-02-2024', 'd', 'dmy') + datediff('02-01-2024', '02-02-2024', 'd', 'mdy')`
+  gave 32 instead of 2). `'today'`, `'now'` and the dates are only read
+  as dates in `datediff()` and in the comparisons of date fields
+  (e.g. `[visit] < 'today'`): the texts of other functions were changed
+  (e.g. `concat('today', ':', [text])` wrote the current date and
+  `contains([text], 'now')` didn’t find the text `now`).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  reads the functions written with spaces before their parenthesis
+  (e.g. `if (`, `datediff (` or `year ([date])`): some of them couldn’t
+  be evaluated.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   reads the empty texts of the fields as blank values (e.g. in data
   modified after
@@ -269,6 +288,9 @@
   so `[text] = ''`, `'' = [text]` and `isblankormissingcode([text])`
   give the same result, and works with logic without variables (e.g. `1`
   or `upper('abc')`) in data without rows.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  translates the branching logic without fields written in REDCap syntax
+  (e.g. `1 = 1` or `sum(1, 1) = 2`): it stopped with an error.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   also translates the `<>` and `!=` inside the value of another `<>`
   (e.g. `[a] <> 0 + if([b] <> 1, 1, 0)`): a blank value gave NA instead
