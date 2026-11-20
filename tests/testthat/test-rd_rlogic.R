@@ -900,3 +900,53 @@ test_that("rd_rlogic translates the <> inside the value of another <>", {
   expect_equal(ev("[a] <> 0 + if([b] <> 1, 1, 0)"), ev("[a] <> if([b] <> 1, 1, 0)"))
   expect_equal(ev("[a] <> 0 + if([b] <> 1, 1, 0)")[1:2], c(TRUE, FALSE))
 })
+
+test_that("rd_rlogic reads the text of factors in isnumber() and searches record by record between fields", {
+  data <- data.frame(record_id = 1:3, res = NA)
+  dic <- make_dic(c("record_id", "t", "p", "r", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+
+  for (values in list(c("abc", "12", ""), factor(c("abc", "12", "")), factor(c("abc", "12", ""), ordered = TRUE))) {
+    data$t <- values
+    expect_equal(ev("isnumber([t])"), c(FALSE, TRUE, FALSE), info = class(values)[1])
+  }
+
+  data$t <- c("alpha", "bravo", "cider")
+  data$p <- c("ph", "ra", "id")
+  data$r <- c("PH", "RA", "ID")
+  expect_no_warning(ev("contains([t], [p])"))
+  expect_equal(ev("contains([t], [p])"), c(TRUE, TRUE, TRUE))
+  expect_equal(ev("not_contain([t], [p])"), c(FALSE, FALSE, FALSE))
+  expect_equal(ev("find([p], [t])"), c(3, 2, 2))
+  expect_equal(ev("replace_text([t], [p], [r])"), c("alPHa", "bRAvo", "cIDer"))
+  # (the result of each record doesn't depend on the order of the rows)
+  reversed <- data[3:1, ]
+  expect_equal(as.vector(rd_rlogic(data = reversed, dic = dic, logic = "contains([t], [p])", var = "res")$eval), c(TRUE, TRUE, TRUE))
+  # Fixed texts as before
+  expect_equal(ev("contains([t], 'ra')"), c(FALSE, TRUE, FALSE))
+})
+
+test_that("rd_rlogic keeps the empty texts of the text functions and finds the blank results", {
+  data <- data.frame(record_id = 1:3, t = c("abc", "x-y", "   "), a = c("a", "b", "c"), res = NA)
+  dic <- make_dic(c("record_id", "t", "a", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("concat('', [t])"), c("abc", "x-y", "   "))
+  expect_equal(ev("replace_text([t], '-', '')"), c("abc", "xy", "   "))
+  expect_equal(ev("concat_ws('', [t], [a])"), c("abca", "x-yb", "   c"))
+  expect_equal(ev("isblankormissingcode(trim([t]))"), c(FALSE, FALSE, TRUE))
+  data$t[3] <- NA
+  expect_equal(ev("isblankormissingcode([t])"), c(FALSE, FALSE, TRUE))
+})
+
+test_that("rd_rlogic compares an operation with an empty text as a check of blank values", {
+  data <- data.frame(record_id = 1:4, t = c("   ", "a", NA, " b "), a = c(1, 2, NA, 4), res = NA)
+  dic <- make_dic(c("record_id", "t", "a", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("trim([t]) = ''"), c(TRUE, FALSE, TRUE, FALSE))
+  expect_equal(ev("trim([t]) <> ''"), c(FALSE, TRUE, FALSE, TRUE))
+  expect_equal(ev("'' = trim([t])"), c(TRUE, FALSE, TRUE, FALSE))
+  expect_equal(ev("if(trim([t]) = '', 1, 0)"), c(1, 0, 1, 0))
+  expect_equal(ev("[a] + 1 = ''"), c(FALSE, FALSE, TRUE, FALSE))
+  # A field compared with an empty text is translated as before
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[t] = ''", var = "res")$rlogic, "is.na(data$t)")
+})

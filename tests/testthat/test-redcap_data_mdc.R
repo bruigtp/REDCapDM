@@ -359,10 +359,42 @@ test_that("redcap_data recognizes the numeric Missing Data Codes written as text
     write.csv(fx$dic, tmp_dic, row.names = FALSE, quote = FALSE)
     suppressMessages(redcap_data(data_path = tmp_r, dic_path = tmp_dic, rm_mdc = rm_mdc, mdc = -999))
   }
-  expect_warning(out <- run(TRUE), "have been removed", class = "REDCapDM_warning")
+  # (no warning: the codes of the project were given in `mdc`)
+  expect_no_warning(out <- run(TRUE))
   expect_equal(out$data$lab_value, c(5.2, NA, NA, NA, 7.1), ignore_attr = TRUE)
 
   expect_warning(out <- run(FALSE), "lab_value_mdc", class = "REDCapDM_warning")
   expect_equal(out$data$lab_value, c(5.2, NA, NA, NA, 7.1), ignore_attr = TRUE)
   expect_equal(out$data$lab_value_mdc, c(NA, "ASKU", "-999", "-999", NA), ignore_attr = TRUE)
+})
+
+test_that("redcap_data only warns that the Missing Data Codes were removed when the data has them and `mdc` is not given", {
+  warnings_of <- function(fx, ...) {
+    tmp_r <- tempfile(fileext = ".R")
+    write_redcap_r_export_mdc(fx$data, tmp_r)
+    tmp_dic <- tempfile(fileext = ".csv")
+    write.csv(fx$dic, tmp_dic, row.names = FALSE, quote = FALSE)
+    w <- character(0)
+    withCallingHandlers(
+      suppressMessages(redcap_data(data_path = tmp_r, dic_path = tmp_dic, rm_mdc = TRUE, ...)),
+      warning = function(x) {
+        w <<- c(w, conditionMessage(x))
+        invokeRestart("muffleWarning")
+      }
+    )
+    any(grepl("have been removed", w))
+  }
+  fx <- make_mdc_fixture()
+  # Codes in the data and no `mdc`
+  expect_true(warnings_of(fx))
+  # With the codes of the project in `mdc`
+  expect_false(warnings_of(fx, mdc = c("-999")))
+  # Without codes in the data (the empty checkbox column of a code is not a code)
+  fx$data$sex <- c("1", "2", "1")
+  fx$data$sex.factor <- factor(c("Male", "Female", "Male"), levels = c("Male", "Female"))
+  fx$data$lab_value <- c("5.2", "6.1", "7.1")
+  expect_false(warnings_of(fx))
+  # A checked option of a code in a checkbox
+  fx$data$chk___NI <- c(0, 1, 0)
+  expect_true(warnings_of(fx))
 })

@@ -357,6 +357,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # The texts set aside at the beginning
   rlogic <- unmask_texts(rlogic, masked$texts)
 
+  # An operation compared with an empty text (e.g. `trim([text]) = ''`) is compared with a blank value
+  rlogic <- blank_comparisons(rlogic)
+
   # A condition of if() that doesn't use any variable (e.g. `if(1 < 2, [a], 0)`) gives one value per row, as in REDCap
   rlogic <- recycle_constant_conditions(rlogic)
 
@@ -614,6 +617,41 @@ datediff_absolute <- function(logic) {
   paste0(out, rest)
 }
 
+
+#' Comparisons of an operation with an empty text
+#'
+#' As in REDCap, `trim([text]) = ''` is `TRUE` when the result is blank: `NA` or an empty text. The empty texts of the
+#' logic are `NA` in its translation (`[field] = ''` is `is.na(data$field)`), so a comparison of an operation with them
+#' (`== NA` or `!= NA`) would always be `NA`: it is written as a check of blank values.
+#'
+#' @param x A logic translated to R.
+#' @return The logic.
+#' @noRd
+blank_comparisons <- function(x) {
+  if (is.na(x) || !grepl("(==|!=)\\s*NA\\b|\\bNA\\s*(==|!=)", x, perl = TRUE)) {
+    return(x)
+  }
+  parsed <- tryCatch(parse(text = x, keep.source = FALSE), error = function(e) NULL)
+  if (length(parsed) != 1) {
+    return(x)
+  }
+  is_na <- function(e) identical(e, NA)
+  rewrite <- function(e) {
+    if (!is.call(e)) {
+      return(e)
+    }
+    for (k in seq_along(e)[-1]) {
+      if (!identical(e[[k]], quote(expr = )) && !is.null(e[[k]])) e[[k]] <- rewrite(e[[k]])
+    }
+    if (length(e) == 3 && (identical(e[[1]], as.name("==")) || identical(e[[1]], as.name("!="))) && (is_na(e[[2]]) || is_na(e[[3]]))) {
+      operation <- if (is_na(e[[3]])) e[[2]] else e[[3]]
+      blank <- bquote((function(v) is.na(v) | as.character(v) %in% "")(.(operation)))
+      e <- if (identical(e[[1]], as.name("=="))) blank else bquote(!.(blank))
+    }
+    e
+  }
+  paste(deparse(rewrite(parsed[[1]]), width.cutoff = 500L), collapse = " ")
+}
 
 #' Different values, also when one of them is blank
 #'
@@ -1224,34 +1262,76 @@ translate_functions <- function(x) {
   x <- replace_function(x, "mod", function(args) paste0("((", args[1], ") - (", args[2], ") * trunc((", args[1], ") / (", args[2], ")))"))
   x <- replace_function(x, "stdev", function(args) paste0("apply(", values(args), ", 1, stats::sd, na.rm = TRUE)"))
   x <- replace_function(x, "exponential", function(args) paste0("exp(", args[1], ")"))
-  x <- replace_function(x, "isnumber", function(args) paste0("!is.na(suppressWarnings(as.numeric(", args[1], ")))"))
+  # (as text: the number of a factor is its internal code, not its value)
+  x <- replace_function(x, "isnumber", function(args) paste0("!is.na(suppressWarnings(as.numeric(as.character(", args[1], "))))"))
+
+  # Texts of the arguments: an empty text '' is "" (the '' left in the logic become NA below). With an argument that
+  # isn't a fixed text or number (e.g. another field), the search or replacement is made record by record
+  empty <- function(arg) if (identical(arg, "''")) "\"\"" else arg
+  fixed_value <- function(arg) grepl("^('[^']*'|\"[^\"]*\"|-?[0-9.]+)$", arg)
+  by_record <- function(fun, args) {
+    paste0("unlist(mapply(", fun, ", ", paste(args, collapse = ", "), ", USE.NAMES = FALSE))")
+  }
   x <- replace_function(x, "isinteger", function(args) {
     paste0("(function(v) !is.na(v) & v == trunc(v))(suppressWarnings(as.numeric(as.character(", args[1], "))))")
   })
-  x <- replace_function(x, "contains", function(args) paste0("grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)"))
+  x <- replace_function(x, "contains", function(args) {
+    args <- vapply(args, empty, character(1), USE.NAMES = FALSE)
+    if (fixed_value(args[2])) {
+      paste0("grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)")
+    } else {
+      paste0("as.logical(", by_record("function(t, p) grepl(p, t, fixed = TRUE)", paste0("tolower(", args[1:2], ")")), ")")
+    }
+  })
   x <- replace_function(x, "length", function(args) paste0("ifelse(is.na(", args[1], "), 0, nchar(as.character(", args[1], ")))"))
 
   # Missing values: redcap_data() turns the Missing Data Codes into NA
-  x <- replace_function(x, "isblankormissingcode", function(args) paste0("is.na(", args[1], ")"))
+  # (the result of a function can be an empty text, e.g. trim([text]) of a field with spaces: it is blank too)
+  x <- replace_function(x, "isblankormissingcode", function(args) {
+    if (grepl("^data\\$\\w+$", args[1])) {
+      paste0("is.na(", args[1], ")")
+    } else {
+      paste0("(function(v) is.na(v) | as.character(v) %in% \"\")(", args[1], ")")
+    }
+  })
 
   # Text functions (as in REDCap, the comparisons of text don't distinguish upper and lower case, and a blank value is an empty text)
   # (written with double quotes: the '' left in the logic become NA below)
   text <- function(arg) {
+    arg <- empty(arg)
     if (grepl("^('[^']*'|\"[^\"]*\")$", arg)) arg else paste0("ifelse(is.na(", arg, "), \"\", as.character(", arg, "))")
   }
-  x <- replace_function(x, "not_contain", function(args) paste0("!grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)"))
-  x <- replace_function(x, "starts_with", function(args) paste0("startsWith(tolower(", text(args[1]), "), tolower(", args[2], "))"))
-  x <- replace_function(x, "ends_with", function(args) paste0("endsWith(tolower(", text(args[1]), "), tolower(", args[2], "))"))
+  x <- replace_function(x, "not_contain", function(args) {
+    args <- vapply(args, empty, character(1), USE.NAMES = FALSE)
+    if (fixed_value(args[2])) {
+      paste0("!grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)")
+    } else {
+      paste0("!as.logical(", by_record("function(t, p) grepl(p, t, fixed = TRUE)", paste0("tolower(", args[1:2], ")")), ")")
+    }
+  })
+  x <- replace_function(x, "starts_with", function(args) paste0("startsWith(tolower(", text(args[1]), "), tolower(", empty(args[2]), "))"))
+  x <- replace_function(x, "ends_with", function(args) paste0("endsWith(tolower(", text(args[1]), "), tolower(", empty(args[2]), "))"))
   x <- replace_function(x, "left", function(args) paste0("substr(", text(args[1]), ", 1, ", args[2], ")"))
   x <- replace_function(x, "right", function(args) paste0("substring(", text(args[1]), ", pmax(nchar(", text(args[1]), ") - (", args[2], ") + 1, 1))"))
   x <- replace_function(x, "mid", function(args) paste0("substr(", text(args[1]), ", ", args[2], ", (", args[2], ") + (", args[3], ") - 1)"))
   x <- replace_function(x, "find", function(args) {
-    paste0("pmax(regexpr(tolower(", args[1], "), tolower(", text(args[2]), "), fixed = TRUE), 0)")
+    if (fixed_value(empty(args[1]))) {
+      paste0("pmax(regexpr(tolower(", empty(args[1]), "), tolower(", text(args[2]), "), fixed = TRUE), 0)")
+    } else {
+      paste0("pmax(as.numeric(", by_record("function(n, h) regexpr(n, h, fixed = TRUE)", c(paste0("tolower(", args[1], ")"), paste0("tolower(", text(args[2]), ")"))), "), 0)")
+    }
   })
-  x <- replace_function(x, "replace_text", function(args) paste0("gsub(", args[2], ", ", args[3], ", ", text(args[1]), ", fixed = TRUE)"))
+  x <- replace_function(x, "replace_text", function(args) {
+    args[2:3] <- vapply(args[2:3], empty, character(1), USE.NAMES = FALSE)
+    if (fixed_value(args[2]) && fixed_value(args[3])) {
+      paste0("gsub(", args[2], ", ", args[3], ", ", text(args[1]), ", fixed = TRUE)")
+    } else {
+      paste0("as.character(", by_record("function(t, s, r) gsub(s, r, t, fixed = TRUE)", c(text(args[1]), args[2:3])), ")")
+    }
+  })
   x <- replace_function(x, "concat_ws", function(args) {
     parts <- paste0("as.character(", args[-1], ")", collapse = ", ")
-    paste0("apply(cbind(", parts, "), 1, function(v) paste(v[!is.na(v) & nzchar(v)], collapse = ", args[1], "))")
+    paste0("apply(cbind(", parts, "), 1, function(v) paste(v[!is.na(v) & nzchar(v)], collapse = ", empty(args[1]), "))")
   })
   x <- replace_function(x, "concat", function(args) paste0("paste0(", paste(vapply(args, text, character(1)), collapse = ", "), ")"))
   x <- replace_function(x, "upper", function(args) paste0("toupper(", text(args[1]), ")"))

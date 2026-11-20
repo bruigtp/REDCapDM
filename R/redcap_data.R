@@ -31,7 +31,7 @@
 #' @param sep Character string specifying the field separator for the exported dictionary CSV file. Default `","`.
 #' @param filter_field Optional character vector of field names to request from the API.
 #' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
-#' @param rm_mdc Logical; Removes the Missing Data Codes from de data. Default `TRUE`. With `FALSE`, the codes are kept: in multiple-choice fields as an additional category (in the `.factor` version), and in validated text fields (numbers, dates, ...) in a new `<field>_mdc` column, while the field itself keeps its type and has `NA` in those rows.
+#' @param rm_mdc Logical; Removes the Missing Data Codes from the data. Default `TRUE`. With `FALSE`, the codes are kept: in multiple-choice fields as an additional category (in the `.factor` version), and in validated text fields (numbers, dates, ...) in a new `<field>_mdc` column, while the field itself keeps its type and has `NA` in those rows.
 #' @param mdc Optional Missing Data Codes of the project, besides the default ones of REDCap (`NI`, `UNK`, `NASK`, ...), which are always
 #'   used: a vector of codes, e.g. `c("-999", "-888")`. A code can have a label, written as `code = label`
 #'   (e.g. `c("-999" = "Not applicable", "-888")`): with `rm_mdc = FALSE`, the `.factor` version of the multiple-choice fields shows the
@@ -751,6 +751,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     target_columns <- intersect(all_target_fields, colnames(data_def$data))
 
     removed_checkbox_cols <- colnames(data_def$data)[stringr::str_detect(colnames(data_def$data), checkbox_mdc_pattern)]
+    # (a checkbox option of a code is in the data when a record has it checked: REDCap exports these columns empty too)
+    checked_checkbox_mdc <- any(vapply(removed_checkbox_cols[!grepl("\\.factor$", removed_checkbox_cols)], function(col) {
+      any(as.character(data_def$data[[col]]) %in% c("1", "Checked"))
+    }, logical(1)))
     n_mdc_values <- sum(vapply(
       intersect(target_columns, colnames(data_def$data)),
       function(col) {
@@ -788,7 +792,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
           }
         )
       )
-    if (length(removed_checkbox_cols) > 0 || n_mdc_values > 0) {
+    # Warning: only when the data has Missing Data Codes and the user didn't give the codes of the project in `mdc`
+    if ((checked_checkbox_mdc || n_mdc_values > 0) && nrow(mdc) == 0) {
       rd_warn("All the Missing Data Codes have been removed.")
     }
   } else {
