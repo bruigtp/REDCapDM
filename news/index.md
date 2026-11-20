@@ -249,6 +249,27 @@
   (e.g. `trim([text]) = ''`) checks if its result is blank: it was
   always NA.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  reads a blank text to search, replace or separate as an empty text, as
+  REDCap does: a blank field in
+  [`find()`](https://rdrr.io/r/utils/apropos.html) stopped the whole
+  evaluation, and in `replace_text()`, `contains()`, `not_contain()`,
+  `starts_with()` and `ends_with()` it gave NA. An empty text to search
+  leaves the text as it is in `replace_text()`, and `concat_ws()` uses
+  the separator of each record (it used the first one for all of them).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  only reads the units of `datediff()` in its arguments: the last text
+  of another function that is a unit (e.g. `if([sex] = '1', 'f', 'm')`
+  or `ends_with([t], 's')`) was read as one and the logic couldn’t be
+  evaluated. It also accepts spaces around the unit
+  (e.g. `datediff([a], [b], 'y' )`).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  reads the empty texts of the fields as blank values (e.g. in data
+  modified after
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)),
+  so `[text] = ''`, `'' = [text]` and `isblankormissingcode([text])`
+  give the same result, and works with logic without variables (e.g. `1`
+  or `upper('abc')`) in data without rows.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   also translates the `<>` and `!=` inside the value of another `<>`
   (e.g. `[a] <> 0 + if([b] <> 1, 1, 0)`): a blank value gave NA instead
   of being different from any value.
