@@ -26,7 +26,7 @@
 #' * Branching logic evaluation requires `event_form` for longitudinal projects.
 #' * Names are cleaned and truncated to 60 characters; uniqueness is enforced.
 #' * Fields that cannot be evaluated are listed in `results`.
-#' * The branching logic and calculations that compare an option with `0` or `1` (e.g. `[cb(1)] = '1'`) compare it with its new labels. The ones that use the options as numbers (e.g. `[cb(1)] + [cb(2)] >= 2`) keep the codes and only the names of the options change.
+#' * In the branching logic and calculations, the options get their new names and keep their codes `0` and `1`, as in REDCap logic (e.g. `[cb(1)] = '1'` is `[cb_option] = '1'`, and `[cb(1)] + [cb(2)] >= 2` is `[cb_option] + [cb_other] >= 2`). `rd_dictionary()` writes the labels when it translates the logic into R.
 #'
 #'
 #' @examples
@@ -421,28 +421,20 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   # Merge the transformed data with the correspondence to link new names with the original variables
   cats <- merge(cats, correspondence, by.x = "field_name", by.y = "out")
 
-  # Comparisons of the options with their codes (e.g. `[cb(1)] = '1'`) that become comparisons with their labels
-  # (`[cb_option]='Yes'`)
-  options <- data.frame(ref = as.character(cats$V1), code = cats$num, name = cats$field_name, label = cats$cat)
-
-  # Apply the new branching logic to the dictionary by replacing the old logic with the new ones
-  # A logic that uses an option as a number (e.g. `[cb(1)] + [cb(2)] >= 2`) can't compare it with the labels: it keeps
-  # the codes 0 and 1 and only the name of the option changes (`[cb(1)]` is `[cb_option]`), which rd_rlogic(),
-  # rd_dictionary() and rd_query() evaluate with the codes
+  # Apply the new names of the options to the branching logic and calculations of the dictionary: `[cb(1)]` is
+  # `[cb_option]`, with the codes 0 and 1 (REDCap logic always compares the codes). rd_dictionary() writes the labels of
+  # the options in the logic it translates into R, where the comparison with the factor is clear also with labels that
+  # look like codes (e.g. `checkbox_labels = c("1", "0")`)
   # (the texts between quotes are kept, e.g. `[t] = '[cb(1)]'`)
   checkbox_logic <- function(logic) {
-    relabeled <- relabel_logic(logic, options)
     if (nrow(correspondence) == 0) {
-      return(relabeled)
+      return(logic)
     }
-    options <- paste0("[", correspondence$V1, "]")
-    as_number <- !is.na(relabeled) & vapply(without_texts(relabeled), function(l) {
-      !is.na(l) && any(vapply(options, grepl, logical(1), x = l, fixed = TRUE))
-    }, logical(1), USE.NAMES = FALSE)
-    for (k in seq_along(options)) {
-      logic[as_number] <- outside_quotes(logic[as_number], function(s) gsub(options[k], paste0("[", correspondence$out[k], "]"), s, fixed = TRUE))
+    logic <- as.character(logic)
+    for (k in seq_len(nrow(correspondence))) {
+      logic <- outside_quotes(logic, function(s) gsub(paste0("[", correspondence$V1[k], "]"), paste0("[", correspondence$out[k], "]"), s, fixed = TRUE))
     }
-    ifelse(as_number, logic, relabeled)
+    logic
   }
   dic <- dic |>
     dplyr::mutate(

@@ -149,7 +149,16 @@ test_that("rd_checkbox translates the branching logic of checkbox codes with let
   expect_true(all(c("cb_letter", "cb_negative") %in% names(out$data)))
   expect_equal(as.character(out$data$cb_letter), c("Yes", "No", "No"))
   expect_equal(as.character(out$data$cb_negative), c("No", "Yes", "No"))
-  expect_equal(unname(logic[c("f1", "f2", "f3", "f4")]), c("[cb_letter]='Yes'", "[cb_negative]='Yes'", "[cb_letter]<>'Yes'", "[cb_negative]<>'Yes'"))
+  # (the options are renamed and keep their codes, as REDCap logic)
+  expect_equal(unname(logic[c("f1", "f2", "f3", "f4")]), c("[cb_letter] = '1'", "[cb_negative] = \"1\"", "[cb_letter] <> '1'", "[cb_negative] <> '1'"))
+  # and they select the same rows as the original logic
+  for (field in c("f1", "f2", "f3", "f4")) {
+    expect_equal(
+      as.vector(rd_rlogic(data = out$data, dic = out$dictionary, logic = logic[[field]], var = field)$eval),
+      as.vector(rd_rlogic(data = data, dic = dic, logic = dic$branching_logic_show_field_only_if[dic$field_name == field], var = field)$eval),
+      info = field
+    )
+  }
 })
 
 test_that("rd_checkbox leaves unchanged the checkboxes whose branching logic can't be evaluated", {
@@ -279,4 +288,24 @@ test_that("rd_checkbox and rd_dictionary don't change a comparison with an opera
   expect_equal(transformed$dictionary$branching_logic_show_field_only_if[transformed$dictionary$field_name == "b"], "[cb_one] = 0 + 1")
   expect_equal(queries(transformed), "1,2")
   expect_equal(queries(suppressMessages(rd_dictionary(rd_factor(project)))), "1,2")
+})
+
+test_that("rd_checkbox keeps the codes with labels that look like codes", {
+  data <- data.frame(record_id = c("A", "B", "C"), cb___1 = c(1, 0, 1), b = NA)
+  data$cb___1.factor <- factor(ifelse(data$cb___1 == 1, "Checked", "Unchecked"), levels = c("Unchecked", "Checked"))
+  dic <- data.frame(
+    field_name = c("record_id", "cb", "b"), form_name = "form1", field_type = c("text", "checkbox", "text"), field_label = c("ID", "CB", "B"),
+    choices_calculations_or_slider_labels = c("", "1, One", ""), text_validation_type_or_show_slider_number = "",
+    branching_logic_show_field_only_if = c("", "", "[cb(1)] = '1'")
+  )
+  project <- list(data = data, dictionary = dic)
+  queries <- function(p) suppressWarnings(suppressMessages(rd_query(p, variables = "b", expression = "is.na(x)")))$queries$Identifier
+  expect_equal(queries(project), c("A", "C"))
+  for (labels in list(c("No", "Yes"), c("1", "0"), c("0", "1"), c("No", "1"))) {
+    checkbox <- suppressMessages(rd_checkbox(project, checkbox_labels = labels))
+    expect_equal(checkbox$dictionary$branching_logic_show_field_only_if[3], "[cb_one] = '1'")
+    expect_equal(queries(checkbox), c("A", "C"), info = paste(labels, collapse = "/"))
+    expect_equal(queries(suppressMessages(rd_dictionary(rd_factor(checkbox)))), c("A", "C"), info = paste(labels, collapse = "/"))
+    expect_equal(queries(suppressMessages(rd_transform(project, checkbox_labels = labels))), c("A", "C"), info = paste(labels, collapse = "/"))
+  }
 })

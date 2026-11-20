@@ -678,9 +678,11 @@ not_equal_blank <- function(x) {
         }
         k <- k + 1
       }
-      operation <- trimws(paste0(value, substr(after, 1, used)))
+      # (the comparisons inside the operation too, e.g. `0 + ifelse(data$b != 1, 1, 0)`)
+      operation_rest <- not_equal_blank(substr(after, 1, used))
+      operation <- trimws(paste0(value, operation_rest))
       replacement <- if (grepl("data\\$", operation, fixed = FALSE)) {
-        paste0(found, substr(after, 1, used))
+        paste0(found, operation_rest)
       } else {
         paste0("!(", variable, " %in% (", operation, "))", if (grepl("\\s$", substr(after, 1, used))) " " else "")
       }

@@ -892,3 +892,11 @@ test_that("rd_rlogic keeps the operation of the value of <> and !=", {
   # With variables of the data, the operation is compared row by row
   expect_equal(ev("[a] <> 0 + [b]"), c(TRUE, FALSE, NA, NA))
 })
+
+test_that("rd_rlogic translates the <> inside the value of another <>", {
+  data <- data.frame(record_id = 1:3, a = c(0, 0, NA), b = c(NA, 1, 2), res = NA)
+  dic <- make_dic(c("record_id", "a", "b", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("[a] <> 0 + if([b] <> 1, 1, 0)"), ev("[a] <> if([b] <> 1, 1, 0)"))
+  expect_equal(ev("[a] <> 0 + if([b] <> 1, 1, 0)")[1:2], c(TRUE, FALSE))
+})

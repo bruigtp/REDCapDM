@@ -49,7 +49,7 @@ This function is used to process checkbox variables in a REDCap dataset. By defa
 \item Branching logic evaluation requires \code{event_form} for longitudinal projects.
 \item Names are cleaned and truncated to 60 characters; uniqueness is enforced.
 \item Fields that cannot be evaluated are listed in \code{results}.
-\item The branching logic and calculations that compare an option with \code{0} or \code{1} (e.g. \verb{[cb(1)] = '1'}) compare it with its new labels. The ones that use the options as numbers (e.g. \verb{[cb(1)] + [cb(2)] >= 2}) keep the codes and only the names of the options change.
+\item In the branching logic and calculations, the options get their new names and keep their codes \code{0} and \code{1}, as in REDCap logic (e.g. \verb{[cb(1)] = '1'} is \verb{[cb_option] = '1'}, and \verb{[cb(1)] + [cb(2)] >= 2} is \verb{[cb_option] + [cb_other] >= 2}). \code{rd_dictionary()} writes the labels when it translates the logic into R.
 }
 }
 \examples{

@@ -374,3 +374,34 @@ test_that("rd_split works with repeating instruments without the factor version 
   out <- suppressMessages(rd_split(data = data, dic = dic, by = "form"))$data
   expect_equal(out$df[[which(out$form == "med")]]$drug, c("a", "b"))
 })
+
+test_that("rd_split keeps the normal rows with an empty instrument and of forms that repeat only in some events", {
+  dic <- data.frame(
+    field_name = c("record_id", "age", "drug"), form_name = c("demo", "demo", "med"), field_type = "text", field_label = c("ID", "Age", "Drug"),
+    choices_calculations_or_slider_labels = "", text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(record_id = c("1", "1", "1", "2"), redcap_repeat_instrument = c("", "med", "med", ""), redcap_repeat_instance = c(NA, 1, 2, NA), age = c(30, NA, NA, 40), drug = c(NA, "a", "b", NA))
+  for (wide in c(FALSE, TRUE)) {
+    out <- suppressMessages(rd_split(data = data, dic = dic, by = "form", wide = wide))$data
+    expect_equal(nrow(out$df[[which(out$form == "demo")]]), 2, info = wide)
+  }
+
+  # A form that repeats in one event and not in the other
+  dic <- dic[1:2, ]
+  dic$field_name[2] <- "hb"
+  dic$form_name <- "labs"
+  data <- data.frame(record_id = "1", redcap_event_name = c("base_arm_1", "treat_arm_1", "treat_arm_1"), redcap_repeat_instrument = c(NA, "labs", "labs"), redcap_repeat_instance = c(NA, 1, 2), hb = c(12, 11, NA))
+  event_form <- data.frame(arm_num = 1, unique_event_name = c("base_arm_1", "treat_arm_1"), form = "labs")
+  for (factor_version in c(FALSE, TRUE)) {
+    if (factor_version) data$redcap_repeat_instrument.factor <- factor(ifelse(is.na(data$redcap_repeat_instrument), NA, "Labs"))
+    out <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = "form"))$data$df[[1]]
+    expect_equal(out$hb, c(12, 11, NA), info = factor_version)
+    wide <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = "form", wide = TRUE))$data$df[[1]]
+    expect_equal(unname(unlist(wide[c("hb_1", "hb_2", "hb_3")])), c(12, 11, NA), info = factor_version)
+  }
+
+  # The variables keep their labels
+  data$hb <- labelled::set_variable_labels(data["hb"], hb = "Hemoglobin")$hb
+  out <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = "form"))$data$df[[1]]
+  expect_equal(attr(out$hb, "label"), "Hemoglobin")
+})
