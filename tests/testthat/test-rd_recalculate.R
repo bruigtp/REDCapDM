@@ -215,3 +215,18 @@ test_that("rd_recalculate and rd_rlogic round very large numbers without turning
   expect_equal(ev("rounddown([a], 2)"), c(1e308, 1.23, -2.56))
   expect_equal(ev("roundup([a], 2)"), c(1e308, 1.24, -2.55))
 })
+
+test_that("rounding without the number of decimals gives NA", {
+  dic <- data.frame(
+    field_name = c("record_id", "a", "p", "r"), form_name = "f1", field_type = c("text", "text", "text", "calc"), field_label = "x",
+    choices_calculations_or_slider_labels = c("", "", "", "round([a], [p])"), text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(record_id = 1:3, a = c(2.346, 2.346, 1e308), p = c(NA, 2, 2), r = c(NA, 2.35, 1e308))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "r")$eval)
+  expect_equal(ev("round([a], [p])"), c(NA, 2.35, 1e308))
+  expect_equal(ev("roundup([a], [p])"), c(NA, 2.35, 1e308))
+  expect_equal(ev("rounddown([a], [p])"), c(NA, 2.34, 1e308))
+  # The blank results of REDCap are right: no `_recalc` field
+  out <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic)))
+  expect_false("r_recalc" %in% names(out$data))
+})

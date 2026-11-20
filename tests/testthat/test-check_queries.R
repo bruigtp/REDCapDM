@@ -204,3 +204,25 @@ test_that("check_queries tells apart queries whose texts have carriage returns",
   expect_setequal(as.character(out$Modification), c("Solved", "New"))
   expect_setequal(out$Description, c("Age\rRule", "Age"))
 })
+
+test_that("check_queries takes the same text in different encodings for the same query", {
+  base <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80")))$queries[1:2, ]
+  utf8 <- "M\u00fcller"
+  latin1 <- iconv(utf8, "UTF-8", "latin1")
+  old <- base
+  old$Description <- utf8
+  old$Query <- paste("Check", utf8)
+  new <- base
+  new$Description <- latin1
+  new$Query <- paste("Check", latin1)
+  out <- suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification), c("Pending", "Pending"))
+
+  # As factors, and with both encodings in each report
+  new$Description <- factor(new$Description)
+  expect_equal(nrow(suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries), 2)
+  old$Description <- c(latin1, utf8)
+  new$Description <- c(utf8, latin1)
+  out <- suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification), c("Pending", "Pending"))
+})

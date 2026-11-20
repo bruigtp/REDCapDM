@@ -117,7 +117,8 @@ round <- function(x, digits = 0) {
   z <- z / 10^digits
   out <- z * posneg
   # A number too large to have decimals is kept as it is (multiplied by 10^digits it would be Inf, e.g. 1e308)
-  too_large <- is.finite(x) & !is.finite(out)
+  # (only when the result is Inf: without digits, e.g. NA, the result is NA)
+  too_large <- is.finite(x) & is.infinite(out)
   out[too_large] <- x[too_large]
   out
 }

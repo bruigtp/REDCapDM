@@ -119,6 +119,18 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
     )
   }
 
+  # The texts of both reports in UTF-8: the same text in another encoding (e.g. Latin-1) is the same query
+  utf8 <- function(x) {
+    if (is.character(x)) {
+      x[] <- enc2utf8(x)
+    } else if (is.factor(x)) {
+      levels(x) <- enc2utf8(levels(x))
+    }
+    x
+  }
+  old[] <- lapply(old, utf8)
+  new[] <- lapply(new, utf8)
+
   # Error: queries without identifier (records without identifier in the data, or incomplete or edited reports)
   no_id <- c(old = sum(is.na(old$Identifier) | trimws(as.character(old$Identifier)) == ""), new = sum(is.na(new$Identifier) | trimws(as.character(new$Identifier)) == ""))
   if (any(no_id > 0)) {

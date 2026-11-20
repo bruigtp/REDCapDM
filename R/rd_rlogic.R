@@ -1200,9 +1200,10 @@ translate_functions <- function(x) {
     if (digits(args) %in% c("0", "'0'", "\"0\"")) {
       paste0(r_fun, "(", args[1], ")")
     } else {
-      # (a number too large to have decimals is kept: multiplied by 10^digits it would be Inf, e.g. 1e308)
+      # (a number too large to have decimals is kept: multiplied by 10^digits it would be Inf, e.g. 1e308; without
+      # digits, e.g. NA, the result is NA)
       paste0(
-        "(function(v, d) { r <- ", r_fun, "(v * 10^d) / 10^d; replace(r, is.finite(v) & !is.finite(r), v[is.finite(v) & !is.finite(r)]) })(",
+        "(function(v, d) { r <- ", r_fun, "(v * 10^d) / 10^d; replace(r, is.finite(v) & is.infinite(r), v[is.finite(v) & is.infinite(r)]) })(",
         args[1], ", ", digits(args), ")"
       )
     }
