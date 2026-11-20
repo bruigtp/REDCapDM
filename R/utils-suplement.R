@@ -15,11 +15,12 @@ fill_data <- function(which_event, which_var, data) {
     rd_abort("The logic can't be evaluated after the translation", call = rlang::caller_env())
   }
 
-  fill_values <- data |>
-    dplyr::select("record_id", "redcap_event_name", dplyr::all_of(which_var)) |>
-    dplyr::rename(var = dplyr::all_of(which_var)) |>
-    dplyr::group_by(.data$record_id) |>
-    dplyr::mutate(var = dplyr::case_when(.data$redcap_event_name != .env$which_event ~ NA, TRUE ~ .data$var)) |>
+  # Record identifier: record_id or, if it has another name (e.g. `study_id`), the first column
+  id_col <- if ("record_id" %in% names(data)) "record_id" else names(data)[1]
+
+  fill_values <- dplyr::tibble(.rd_id = data[[id_col]], .rd_event = data$redcap_event_name, var = data[[which_var]]) |>
+    dplyr::group_by(.data$.rd_id) |>
+    dplyr::mutate(var = dplyr::case_when(.data$.rd_event != .env$which_event ~ NA, TRUE ~ .data$var)) |>
     tidyr::fill("var", .direction = "downup") |>
     dplyr::pull("var")
 

@@ -1067,3 +1067,56 @@ test_that("rd_rlogic reads the functions with spaces before their parenthesis", 
   expect_equal(ev("([a] = 1) and  ([a] = 1)"), c(TRUE, FALSE))
   expect_equal(ev("[t] = 'if (x)'"), c(FALSE, FALSE))
 })
+
+# Longitudinal project with a baseline and a visit
+two_events <- function(id = "record_id") {
+  data <- data.frame(id = c("1", "1", "2", "2"), redcap_event_name = c("base_arm_1", "visit_arm_1", "base_arm_1", "visit_arm_1"),
+                     value = c(60, 65, 10, 30), value__base_arm_1 = c(100, 100, 7, 7), res = NA, stringsAsFactors = FALSE)
+  names(data)[1] <- id
+  list(
+    data = data,
+    dic = make_dic(c(id, "value", "value__base_arm_1", "res")),
+    event_form = data.frame(arm_num = 1, unique_event_name = c("base_arm_1", "visit_arm_1"), form = "form1")
+  )
+}
+
+test_that("rd_rlogic keeps apart the values of other events from the fields of the data", {
+  p <- two_events()
+  ev <- function(logic) as.vector(rd_rlogic(data = p$data, dic = p$dic, event_form = p$event_form, logic = logic, var = "res")$eval)
+  # (a field called like the auxiliary column of [base_arm_1][value])
+  expect_equal(ev("[visit_arm_1][value] - [base_arm_1][value] + [value__base_arm_1]"), c(105, 105, 27, 27))
+  expect_equal(ev("[visit_arm_1][value] - [base_arm_1][value]"), c(5, 5, 20, 20))
+  # (the field with and without event: without event, the value of the row)
+  expect_equal(ev("[base_arm_1][value] + [value]"), c(120, 125, 20, 40))
+})
+
+test_that("rd_rlogic reads the values of other events with an identifier that isn't record_id", {
+  p <- two_events("study_id")
+  ev <- function(logic) as.vector(rd_rlogic(data = p$data, dic = p$dic, event_form = p$event_form, logic = logic, var = "res")$eval)
+  expect_equal(ev("[visit_arm_1][value] - [base_arm_1][value]"), c(5, 5, 20, 20))
+  expect_equal(ev("[base_arm_1][value] * 2"), c(120, 120, 20, 20))
+})
+
+test_that("rd_rlogic keeps the dates chosen by if()", {
+  data <- data.frame(record_id = 1:2, flag = c(1, 0), a = as.Date(c("2023-05-01", "2023-06-01")), b = as.Date(c("2024-05-01", "2024-06-01")),
+                     t1 = as.POSIXct(c("2024-02-01 10:00", "2024-02-01 10:00"), tz = "UTC"), t2 = as.POSIXct(c("2024-02-02 10:00", "2024-02-02 12:00"), tz = "UTC"), res = NA)
+  dic <- make_dic(c("record_id", "flag", "a", "b", "t1", "t2", "res"))
+  ev <- function(logic) rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval
+  expect_equal(as.vector(ev("year(if([flag] = 1, [a], [b]))")), c(2023, 2024))
+  expect_equal(as.vector(ev("month(if([flag] = 1, [a], [b]))")), c(5, 6))
+  expect_equal(as.vector(ev("year(if([flag] = 1, if([flag] = 1, [a], [b]), [b]))")), c(2023, 2024))
+  expect_equal(as.vector(ev("datediff(if([flag] = 1, [a], [b]), '2025-01-01', 'd')")), c(611, 214))
+  expect_equal(ev("if([flag] = 1, [a], '')"), as.Date(c("2023-05-01", NA)))
+  expect_equal(as.vector(ev("datediff(if([flag] = 1, [t1], [t2]), [t2], 'h')")), c(24, 0))
+  # The other if() are translated as before
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "if([flag] = 1, 1, 0)", var = "res")$rlogic, "ifelse(data$flag == 1, 1, 0)")
+})
+
+test_that("rd_rlogic reads the dates between parentheses in datediff()", {
+  data <- data.frame(record_id = 1:2, res = NA)
+  dic <- make_dic(c("record_id", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("datediff(('01-02-2024'), '02-02-2024', 'd', 'dmy')"), 1)
+  expect_equal(ev("datediff(('01-02-2024 10:00'), '02-02-2024 10:00', 'h', 'dmy')"), 24)
+  expect_equal(ev("datediff(('2024-02-01 10:00'), '2024-02-02 10:00', 'h')"), 24)
+})

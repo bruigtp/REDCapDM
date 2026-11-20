@@ -253,7 +253,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Change variables specification. If [][] we get the event with the first claudator. If not, the event will be the same as the one of the calculated variable.
 
   # Vector with all the [][] if found:
-  var_event <- unlist(stringr::str_extract_all(rlogic, "\\[[\\w,\\-]+\\]\\[[\\w,\\-]+\\]"))
+  var_event <- unique(unlist(stringr::str_extract_all(rlogic, "\\[[\\w,\\-]+\\]\\[[\\w,\\-]+\\]")))
 
   # If there are variables in the format [][] (event + variable):
   if (length(var_event) > 0) {
@@ -271,8 +271,12 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       dplyr::group_by(.data$vars) |>
       dplyr::summarise(n = length(unique(.data$events)))
 
-    # Variables used in several events (e.g. the change between two visits)
-    multi_event_vars <- n_events$vars[n_events$n > 1]
+    # Variables used in several events (e.g. the change between two visits) or also without event (e.g.
+    # `[base_arm_1][value] + [value]`, where `[value]` is the value of the row): their values in each event are kept in
+    # auxiliary columns, so that the variable keeps its own values
+    without_event <- gsub("\\[[\\w,\\-]+\\]\\[[\\w,\\-]+\\]", "", rlogic, perl = TRUE)
+    alone_vars <- n_events$vars[vapply(n_events$vars, function(v) grepl(paste0("[", v, "]"), without_event, fixed = TRUE), logical(1))]
+    multi_event_vars <- union(n_events$vars[n_events$n > 1], alone_vars)
 
     # Apply the previously defined function to get the value in the corresponding event and fill it for all the rows of data
     for (i in seq_along(list_var_event)) {
@@ -280,8 +284,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       var_i <- list_var_event[[i]][2]
 
       if (var_i %in% multi_event_vars) {
-        # One column per event: `<variable>__<event>`
-        event_col_i <- paste0(var_i, "__", event_i)
+        # One column per event: `<variable>__<event>` (with another name if the data already has it, e.g. a field called
+        # `value__base_arm_1`)
+        event_col_i <- utils::tail(make.unique(c(unique(names(data)), paste0(var_i, "__", event_i)), sep = "_"), 1)
         data[[event_col_i]] <- fill_data(event_i, var_i, data)[[var_i]]
         rlogic <- gsub(paste0("[", event_i, "][", var_i, "]"), paste0("[", event_col_i, "]"), rlogic, fixed = TRUE)
       } else {
@@ -344,6 +349,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # A condition of if() that doesn't use any variable (e.g. `if(1 < 2, [a], 0)`) gives one value per row, as in REDCap
   rlogic <- recycle_constant_conditions(rlogic)
+
+  # An if() whose values are dates (e.g. `year(if([flag] = 1, [a], [b]))`) gives dates: ifelse() gives numbers
+  rlogic <- date_conditionals(rlogic, data)
 
   # After transcribing the logic, we need to evaluate it based on the corresponding event of the variable. This is only necessary if the data contains more than one event:
   if (!is.null(event_form)) {
@@ -627,16 +635,18 @@ datediff_arguments <- function(x) {
   out <- ""
   rest <- x
 
-  # Dates of an argument (not the ones already read, e.g. of another datediff() inside it)
+  # Dates of an argument (not the ones already read, e.g. of another datediff() inside it; a date between parentheses,
+  # e.g. `('01-02-2024')`, is read too)
+  read <- "(?<!lubridate::[a-z]{3}\\()(?<!lubridate::parse_date_time\\()"
   dates <- function(arg, format) {
     arg <- gsub("'today'", "Sys.Date()", arg, fixed = TRUE)
     arg <- gsub("'now'", "lubridate::force_tz(Sys.time(), 'UTC')", arg, fixed = TRUE)
     if (!is.na(format)) {
-      arg <- gsub(paste0("(?<!\\()'(", formats[[format]], ")'"), paste0("lubridate::", format, "('\\1')"), arg, perl = TRUE)
+      arg <- gsub(paste0(read, "'(", formats[[format]], ")'"), paste0("lubridate::", format, "('\\1')"), arg, perl = TRUE)
     }
     time_format <- if (is.na(format)) "ymd" else format
     gsub(
-      "(?<!\\()'(\\d{1,4}-\\d{1,2}-\\d{1,4} \\d{1,2}:\\d{2}(:\\d{2})?)'",
+      paste0(read, "'(\\d{1,4}-\\d{1,2}-\\d{1,4} \\d{1,2}:\\d{2}(:\\d{2})?)'"),
       paste0("lubridate::parse_date_time('\\1', c('", time_format, " HMS', '", time_format, " HM'))"),
       arg,
       perl = TRUE
@@ -1030,6 +1040,97 @@ replace_function <- function(x, fun, translate) {
   }
 
   paste0(out, rest)
+}
+
+#' Dates of the conditions of `ifelse()`
+#'
+#' `ifelse()` turns dates into numbers (e.g. `year(if([flag] = 1, [a], [b]))` gave 1970). The `ifelse()` whose two values
+#' are dates of the same class (`Date`, or dates with time of the same time zone), or a date and a missing value, are
+#' converted back into dates: `as.Date(ifelse(...), origin = "1970-01-01")`. The other ones are kept as they are.
+#'
+#' @param x A logic translated to R.
+#' @param data The data where the logic is evaluated.
+#' @return The logic.
+#' @noRd
+date_conditionals <- function(x, data) {
+  if (length(x) != 1 || is.na(x) || !grepl("ifelse(", x, fixed = TRUE)) {
+    return(x)
+  }
+  parsed <- tryCatch(parse(text = x, keep.source = FALSE), error = function(e) NULL)
+  if (length(parsed) != 1) {
+    return(x)
+  }
+
+  date_calls <- c(paste0("lubridate::", c("ymd", "dmy", "mdy", "ydm", "myd", "dym")), "Sys.Date", "as.Date")
+  time_calls <- c("lubridate::parse_date_time", "lubridate::force_tz")
+
+  # Class of the values of an expression: "Date", "tz:<time zone>" for dates with time, "NA" for a missing value or ""
+  date_kind <- function(e) {
+    if (identical(e, NA)) {
+      return("NA")
+    }
+    if (!is.call(e)) {
+      return("")
+    }
+    head <- paste(deparse(e[[1]]), collapse = "")
+    if (head == "$" && identical(e[[2]], as.name("data"))) {
+      v <- data[[as.character(e[[3]])]]
+      tz <- attr(v, "tzone")
+      return(if (inherits(v, "Date")) "Date" else if (inherits(v, "POSIXct")) paste0("tz:", if (length(tz) > 0) tz[1] else "") else "")
+    }
+    if (head == "(") {
+      return(date_kind(e[[2]]))
+    }
+    if (head %in% date_calls) {
+      return("Date")
+    }
+    if (head %in% time_calls) {
+      return("tz:UTC")
+    }
+    if (head == "as.POSIXct" && !is.null(e[["tz"]])) {
+      return(paste0("tz:", e[["tz"]]))
+    }
+    # (a date plus or minus a number is a date)
+    if (head %in% c("+", "-") && length(e) == 3) {
+      first <- date_kind(e[[2]])
+      second <- date_kind(e[[3]])
+      if (!first %in% c("", "NA") && second == "") {
+        return(first)
+      }
+      if (head == "+" && first == "" && !second %in% c("", "NA")) {
+        return(second)
+      }
+    }
+    ""
+  }
+
+  changed <- FALSE
+  rewrite <- function(e) {
+    if (!is.call(e)) {
+      return(e)
+    }
+    for (k in seq_along(e)[-1]) {
+      if (!identical(e[[k]], quote(expr = )) && !is.null(e[[k]])) e[[k]] <- rewrite(e[[k]])
+    }
+    if (identical(e[[1]], as.name("ifelse")) && length(e) == 4) {
+      kinds <- setdiff(unique(c(date_kind(e[[3]]), date_kind(e[[4]]))), "NA")
+      if (length(kinds) == 1 && kinds != "") {
+        changed <<- TRUE
+        e <- if (kinds == "Date") {
+          bquote(as.Date(.(e), origin = "1970-01-01"))
+        } else {
+          bquote(as.POSIXct(.(e), origin = "1970-01-01", tz = .(sub("^tz:", "", kinds))))
+        }
+      }
+    }
+    e
+  }
+  new <- rewrite(parsed[[1]])
+
+  if (!changed) {
+    return(x)
+  }
+  paste(deparse(new, width.cutoff = 500L), collapse = " ")
 }
 
 #' Repeat for each row the conditions of `ifelse()` that don't use any variable
