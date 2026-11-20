@@ -412,12 +412,18 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
     # If there's more than one event, return the evaluation only for the specified event(s):
     if (!is.null(event_form)) {
-      rlogic_eval <- data |>
-        dplyr::mutate(
-          calc = .env$rlogic_eval,
-          calc = ifelse(!.data$redcap_event_name %in% .env$event_var, NA, .data$calc)
-        ) |>
-        dplyr::pull(.data$calc)
+      if (inherits(rlogic_eval, c("Date", "POSIXct"))) {
+        # (dates keep their class and time zone: ifelse() would turn them into numbers)
+        rlogic_eval <- rlogic_eval[rep_len(seq_along(rlogic_eval), nrow(data))]
+        rlogic_eval[!data$redcap_event_name %in% event_var] <- NA
+      } else {
+        rlogic_eval <- data |>
+          dplyr::mutate(
+            calc = .env$rlogic_eval,
+            calc = ifelse(!.data$redcap_event_name %in% .env$event_var, NA, .data$calc)
+          ) |>
+          dplyr::pull(.data$calc)
+      }
     }
     
     # With repeated instruments, only the rows where `var` is collected are evaluated
@@ -797,7 +803,7 @@ blank_comparisons <- function(x) {
     }
     e
   }
-  paste(deparse(rewrite(parsed[[1]]), width.cutoff = 500L), collapse = " ")
+  one_line(rewrite(parsed[[1]]))
 }
 
 #' Different values, also when one of them is blank
@@ -1042,18 +1048,21 @@ replace_function <- function(x, fun, translate) {
   paste0(out, rest)
 }
 
-#' Dates of the conditions of `ifelse()`
+#' Dates of the conditions of `ifelse()` and of `min()` and `max()`
 #'
-#' `ifelse()` turns dates into numbers (e.g. `year(if([flag] = 1, [a], [b]))` gave 1970). The `ifelse()` whose two values
-#' are dates of the same class (`Date`, or dates with time of the same time zone), or a date and a missing value, are
-#' converted back into dates: `as.Date(ifelse(...), origin = "1970-01-01")`. The other ones are kept as they are.
+#' `ifelse()` turns dates into numbers (e.g. `year(if([flag] = 1, [a], [b]))` gave 1970), and `pmin()` and `pmax()` (the
+#' translation of `min()` and `max()`) give the class of their first value (e.g. `min('', [a])` gave a number). The
+#' `ifelse()` whose two values are dates of the same class (`Date`, or dates with time of the same time zone), or a date
+#' and a missing value, and the `pmin()` and `pmax()` whose values are dates and missing values but the first one isn't a
+#' date, are converted back into dates: `as.Date(ifelse(...), origin = "1970-01-01")`. The other ones are kept as they
+#' are.
 #'
 #' @param x A logic translated to R.
 #' @param data The data where the logic is evaluated.
 #' @return The logic.
 #' @noRd
 date_conditionals <- function(x, data) {
-  if (length(x) != 1 || is.na(x) || !grepl("ifelse(", x, fixed = TRUE)) {
+  if (length(x) != 1 || is.na(x) || !grepl("(ifelse|pmin|pmax)\\(", x)) {
     return(x)
   }
   parsed <- tryCatch(parse(text = x, keep.source = FALSE), error = function(e) NULL)
@@ -1090,6 +1099,11 @@ date_conditionals <- function(x, data) {
     if (head == "as.POSIXct" && !is.null(e[["tz"]])) {
       return(paste0("tz:", e[["tz"]]))
     }
+    # (the minimum and maximum of dates whose first value is a date, e.g. `pmin(data$a, data$b, na.rm = TRUE)`)
+    if (head %in% c("pmin", "pmax")) {
+      kinds <- value_kinds(e)
+      return(if (length(kinds) == 1 && kinds != "" && date_kind(e[[2]]) == kinds) kinds else "")
+    }
     # (a date plus or minus a number is a date)
     if (head %in% c("+", "-") && length(e) == 3) {
       first <- date_kind(e[[2]])
@@ -1104,6 +1118,18 @@ date_conditionals <- function(x, data) {
     ""
   }
 
+  # Classes of the values of pmin() and pmax() (without `na.rm`) and of ifelse() (without its condition), without the
+  # missing values
+  value_kinds <- function(e) {
+    args <- as.list(e)[-1]
+    if (identical(e[[1]], as.name("ifelse"))) {
+      args <- args[-1]
+    } else if (!is.null(names(args))) {
+      args <- args[!names(args) %in% "na.rm"]
+    }
+    setdiff(unique(vapply(args, date_kind, character(1))), "NA")
+  }
+
   changed <- FALSE
   rewrite <- function(e) {
     if (!is.call(e)) {
@@ -1112,15 +1138,20 @@ date_conditionals <- function(x, data) {
     for (k in seq_along(e)[-1]) {
       if (!identical(e[[k]], quote(expr = )) && !is.null(e[[k]])) e[[k]] <- rewrite(e[[k]])
     }
+    to_dates <- FALSE
     if (identical(e[[1]], as.name("ifelse")) && length(e) == 4) {
-      kinds <- setdiff(unique(c(date_kind(e[[3]]), date_kind(e[[4]]))), "NA")
-      if (length(kinds) == 1 && kinds != "") {
-        changed <<- TRUE
-        e <- if (kinds == "Date") {
-          bquote(as.Date(.(e), origin = "1970-01-01"))
-        } else {
-          bquote(as.POSIXct(.(e), origin = "1970-01-01", tz = .(sub("^tz:", "", kinds))))
-        }
+      kinds <- value_kinds(e)
+      to_dates <- length(kinds) == 1 && kinds != ""
+    } else if ((identical(e[[1]], as.name("pmin")) || identical(e[[1]], as.name("pmax"))) && length(e) > 2) {
+      kinds <- value_kinds(e)
+      to_dates <- length(kinds) == 1 && kinds != "" && date_kind(e[[2]]) != kinds
+    }
+    if (to_dates) {
+      changed <<- TRUE
+      e <- if (kinds == "Date") {
+        bquote(as.Date(.(e), origin = "1970-01-01"))
+      } else {
+        bquote(as.POSIXct(.(e), origin = "1970-01-01", tz = .(sub("^tz:", "", kinds))))
       }
     }
     e
@@ -1130,7 +1161,39 @@ date_conditionals <- function(x, data) {
   if (!changed) {
     return(x)
   }
-  paste(deparse(new, width.cutoff = 500L), collapse = " ")
+  one_line(new)
+}
+
+#' Write an R expression in one line
+#'
+#' `deparse()` writes the expressions between braces in several lines (e.g. the functions of the translation of
+#' `roundup()` or `concat_ws()`): they are joined with `;`, so that the logic can be read again.
+#'
+#' @param e An R expression.
+#' @return A string.
+#' @noRd
+one_line <- function(e) {
+  blocks <- character(0)
+  base <- "REDCapDMblock"
+  hide <- function(e) {
+    if (!is.call(e)) {
+      return(e)
+    }
+    if (identical(e[[1]], as.name("{"))) {
+      key <- paste0(base, length(blocks) + 1, "x")
+      blocks[[key]] <<- paste0("{ ", paste(vapply(as.list(e)[-1], one_line, character(1)), collapse = "; "), " }")
+      return(as.name(key))
+    }
+    for (k in seq_along(e)) {
+      if (!identical(e[[k]], quote(expr = )) && !is.null(e[[k]])) e[[k]] <- hide(e[[k]])
+    }
+    e
+  }
+  text <- paste(deparse(hide(e), width.cutoff = 500L), collapse = " ")
+  for (key in rev(names(blocks))) {
+    text <- sub(key, blocks[[key]], text, fixed = TRUE)
+  }
+  text
 }
 
 #' Repeat for each row the conditions of `ifelse()` that don't use any variable

@@ -1120,3 +1120,42 @@ test_that("rd_rlogic reads the dates between parentheses in datediff()", {
   expect_equal(ev("datediff(('01-02-2024 10:00'), '02-02-2024 10:00', 'h', 'dmy')"), 24)
   expect_equal(ev("datediff(('2024-02-01 10:00'), '2024-02-02 10:00', 'h')"), 24)
 })
+
+test_that("rd_rlogic compares with an empty text the functions written with several instructions", {
+  data <- data.frame(record_id = 1:3, t = c("abc", NA, "x"), p = c("b", "-", NA), n = c(1.21, NA, 3), res = NA)
+  dic <- make_dic(c("record_id", "t", "p", "n", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("concat_ws([p], [t], 'x') <> ''"), c(TRUE, TRUE, TRUE))
+  expect_equal(ev("replace_text([t], [p], '') = ''"), c(FALSE, TRUE, FALSE))
+  expect_equal(ev("roundup([n], 1) = ''"), c(FALSE, TRUE, FALSE))
+})
+
+test_that("rd_rlogic keeps the dates of min() and max()", {
+  data <- data.frame(record_id = 1:2, flag = c(1, 0), a = as.Date(c("2023-05-01", "2024-06-01")), b = as.Date(c("2024-05-01", "2023-06-01")), res = NA)
+  dic <- make_dic(c("record_id", "flag", "a", "b", "res"))
+  ev <- function(logic) rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval
+  expect_equal(as.vector(ev("year(if([flag] = 1, min([a], [b]), max([a], [b])))")), c(2023, 2024))
+  expect_equal(as.vector(ev("month(if([flag] = 1, min([a], [b]), max([a], [b])))")), c(5, 6))
+  expect_equal(as.vector(ev("year(min('', [a]))")), c(2023, 2024))
+  expect_equal(as.vector(ev("year(max('', [a]))")), c(2023, 2024))
+  expect_equal(ev("min('', [a])"), as.Date(c("2023-05-01", "2024-06-01")))
+  # (as before when the first value is a date)
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "min([a], [b])", var = "res")$rlogic, "pmin(data$a, data$b, na.rm = TRUE)")
+})
+
+test_that("rd_rlogic keeps the dates in longitudinal projects", {
+  data <- data.frame(record_id = c("1", "1"), redcap_event_name = c("e1", "e2"), flag = c(1, 0), a = as.Date(c("2023-01-01", "2024-06-01")),
+                     b = as.Date(c("2024-05-01", "2023-06-01")), t = as.POSIXct(c("2024-01-01 10:00", "2024-01-02 11:00"), tz = "UTC"), res = NA)
+  dic <- make_dic(c("record_id", "flag", "a", "b", "t", "res"))
+  run <- function(logic, events = c("e1", "e2")) {
+    rd_rlogic(data = data, dic = dic, event_form = data.frame(arm_num = 1, unique_event_name = events, form = "form1"), logic = logic, var = "res")
+  }
+  out <- run("[a]")
+  expect_equal(out$eval, as.Date(c("2023-01-01", "2024-06-01")))
+  expect_equal(out$eval_data$eval, as.Date(c("2023-01-01", "2024-06-01")))
+  expect_equal(run("[t]")$eval, as.POSIXct(c("2024-01-01 10:00", "2024-01-02 11:00"), tz = "UTC"))
+  expect_equal(run("if([flag] = 1, [a], [b])")$eval, as.Date(c("2023-01-01", "2023-06-01")))
+  # (blank in the events where `var` isn't collected)
+  expect_equal(run("[a]", "e1")$eval, as.Date(c("2023-01-01", NA)))
+  expect_equal(run("[flag] + 1")$eval, c(2, 1))
+})

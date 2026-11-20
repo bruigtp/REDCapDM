@@ -431,7 +431,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
         # When the logic was evaluated (also when it was already R logic, e.g. after rd_transform()), no row meeting it
         # means that the field is never shown: there is nothing to check
-        if (nrow(branching) > 0 || length(branch_eval[[variables[i]]]) == nrow(data_all) || !grepl("\\[|\\]", without_texts(logic))) {
+        if (nrow(branching) > 0 || length(branch_eval[[variables[i]]]) == nrow(data_all) || !redcap_logic(logic, user_env)) {
           compatible <- rbind(compatible, variables[i])
           raw0 <- branching
         } else {

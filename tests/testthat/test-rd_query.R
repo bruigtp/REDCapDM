@@ -1112,3 +1112,22 @@ test_that("rd_query applies the branching logic without fields written in REDCap
   expect_equal(nrow(run("record_id != '1'")$queries), 1)
   expect_equal(nrow(run("!is.na(record_id)")$queries), 2)
 })
+
+test_that("rd_query applies the R logic written by rd_dictionary() and rd_transform()", {
+  toy_data <- data.frame(record_id = LETTERS[1:6], text = c("abc", "xyz", "hello", "abc", "pat", "zz"), pattern = c("b", "y", "ell", "q", "pa", "a"),
+                         n = c(1.21, 2.5, 3.33, 1, 2, 3), q = NA, stringsAsFactors = FALSE)
+  toy_dic <- data.frame(field_name = c("record_id", "text", "pattern", "n", "q"), form_name = "f1", section_header = "", field_type = "text",
+                        field_label = c("ID", "T", "P", "N", "Q"), choices_calculations_or_slider_labels = "", field_note = "",
+                        text_validation_type_or_show_slider_number = c("", "", "", "number", ""), branching_logic_show_field_only_if = "", stringsAsFactors = FALSE)
+  ids <- function(project) sort(as.character(suppressMessages(rd_query(project, variables = "q", expression = "is.na(x)"))$queries$Identifier))
+  for (logic in c("contains([text], [pattern])", "not_contain([text], [pattern])", "find([pattern], [text]) > 0", "roundup([n], 1) > 1.5", "rounddown([n], 1) < 3",
+                  "concat_ws([pattern], [text], 'x') = 'abcbx'")) {
+    project <- list(data = toy_data, dictionary = toy_dic)
+    project$dictionary$branching_logic_show_field_only_if[5] <- logic
+    original <- ids(project)
+    expect_lt(length(original), 6)
+    expect_no_warning(after_dictionary <- ids(suppressMessages(rd_dictionary(project))))
+    expect_equal(after_dictionary, original, info = logic)
+    expect_equal(ids(suppressWarnings(suppressMessages(rd_transform(project)))), original, info = logic)
+  }
+})

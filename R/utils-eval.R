@@ -33,7 +33,9 @@ redcap_logic <- function(logic, env) {
   if (length(logic) != 1 || is.na(logic) || !nzchar(trimws(logic))) {
     return(FALSE)
   }
-  if (grepl("\\[|\\]", without_texts(logic))) {
+  # (a field between brackets: not the `[` of R, which follows a name or a parenthesis, e.g. `v[is.finite(v)]` in the R
+  # logic of rd_dictionary())
+  if (grepl("(^|[^\\w.)\\]])\\[", gsub("\\s+", "", without_texts(logic)), perl = TRUE)) {
     return(TRUE)
   }
   conditions <- tryCatch(parse_conditions(logic), error = function(e) NULL)
@@ -41,10 +43,14 @@ redcap_logic <- function(logic, env) {
     return(TRUE)
   }
 
-  # Functions used by the conditions
+  # Functions used by the conditions (not inside the functions they define, e.g. `(function(v, d) { r <- ... })(x, 1)` of
+  # the R logic of rd_dictionary(), whose assignments and arguments are R code)
   functions <- character(0)
   find_functions <- function(expr) {
     if (is.call(expr)) {
+      if (identical(expr[[1]], as.name("function"))) {
+        return(invisible())
+      }
       if (is.symbol(expr[[1]])) {
         functions <<- c(functions, as.character(expr[[1]]))
       }
