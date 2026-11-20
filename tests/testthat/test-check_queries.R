@@ -190,3 +190,17 @@ test_that("check_queries keeps one pending query when the link or the DAG are fa
   expect_s3_class(same$Link, "factor")
   expect_true(all(same$Modification == "Pending"))
 })
+
+test_that("check_queries tells apart queries whose texts have carriage returns", {
+  base <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80")))$queries[1, ]
+  old <- base
+  old$Description <- "Age\rRule"
+  old$Query <- "Check"
+  new <- base
+  new$Description <- "Age"
+  new$Query <- "Rule\rCheck"
+  out <- suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries
+  expect_equal(nrow(out), 2)
+  expect_setequal(as.character(out$Modification), c("Solved", "New"))
+  expect_setequal(out$Description, c("Age\rRule", "Age"))
+})

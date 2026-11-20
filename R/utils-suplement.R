@@ -115,7 +115,11 @@ round <- function(x, digits = 0) {
   z <- z + 0.5 + sqrt(.Machine$double.eps)
   z <- trunc(z)
   z <- z / 10^digits
-  z * posneg
+  out <- z * posneg
+  # A number too large to have decimals is kept as it is (multiplied by 10^digits it would be Inf, e.g. 1e308)
+  too_large <- is.finite(x) & !is.finite(out)
+  out[too_large] <- x[too_large]
+  out
 }
 
 

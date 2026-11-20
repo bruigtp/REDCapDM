@@ -131,7 +131,15 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   # Columns that identify a query. Event and Repetition are used when both reports have them, so the same variable in different events or instances of a repeated instrument are different queries.
   # Field too, so two fields with the same description are different queries.
   key_cols <- c("Identifier", intersect(c("Event", "Repetition", "Field"), intersect(names(old), names(new))), "Description")
-  query_key <- function(df, cols) do.call(paste, c(lapply(unname(as.list(df[cols])), id_text), sep = "\r"))
+  # (each value with its length before it and without carriage returns, which merge() uses to join the columns: two
+  # different queries never have the same identity, e.g. "Age\rRule" and "Check" or "Age" and "Rule\rCheck")
+  query_key <- function(df, cols) {
+    parts <- lapply(unname(as.list(df[cols])), function(x) {
+      x <- gsub("\r", "\001r", gsub("\001", "\001\001", id_text(x), fixed = TRUE), fixed = TRUE)
+      ifelse(is.na(x), "NA;", paste0(nchar(x, type = "bytes"), ":", x, ";"))
+    })
+    do.call(paste0, parts)
+  }
 
   # Merge old and new datasets
   new <- new |> dplyr::select(-dplyr::any_of("Code"))

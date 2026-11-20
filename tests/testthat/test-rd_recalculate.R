@@ -199,3 +199,19 @@ test_that("rd_recalculate leaves blank the calculations without a numeric result
   out <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic)))
   expect_equal(out$data$r_recalc, c(NA, NA, NA, 3), ignore_attr = TRUE)
 })
+
+test_that("rd_recalculate and rd_rlogic round very large numbers without turning them into Inf", {
+  dic <- data.frame(
+    field_name = c("record_id", "a", "r"), form_name = "f1", field_type = c("text", "text", "calc"), field_label = c("ID", "A", "R"),
+    choices_calculations_or_slider_labels = c("", "", "[a] * 1.1"), text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(record_id = 1:2, a = c(1e308, 2), r = c(1e308, 2.2))
+  out <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic)))
+  expect_equal(out$data$r_recalc, c(1.1e308, 2.2), ignore_attr = TRUE)
+
+  data <- data.frame(record_id = 1:3, a = c(1e308, 1.23456, -2.555))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "r")$eval)
+  expect_equal(ev("round([a], 3)"), c(1e308, 1.235, -2.555))
+  expect_equal(ev("rounddown([a], 2)"), c(1e308, 1.23, -2.56))
+  expect_equal(ev("roundup([a], 2)"), c(1e308, 1.24, -2.55))
+})

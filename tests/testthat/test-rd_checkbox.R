@@ -309,3 +309,29 @@ test_that("rd_checkbox keeps the codes with labels that look like codes", {
     expect_equal(queries(suppressMessages(rd_transform(project, checkbox_labels = labels))), c("A", "C"), info = paste(labels, collapse = "/"))
   }
 })
+
+test_that("rd_checkbox gives names that the logic can use and keeps apart options with the same clean name", {
+  queries <- function(p, v = "b") suppressWarnings(suppressMessages(rd_query(p, variables = v, expression = "is.na(x)")))$queries$Identifier
+  dic <- function(fields, types, choices, logic) data.frame(
+    field_name = fields, form_name = "form1", field_type = types, field_label = fields, choices_calculations_or_slider_labels = choices,
+    text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = logic
+  )
+
+  # The new name already exists
+  data <- data.frame(record_id = c("A", "B", "C"), cb___1 = c(1, 0, 1), cb_one = c(9, 9, 9), b = NA)
+  project <- list(data = data, dictionary = dic(c("record_id", "cb", "cb_one", "b"), c("text", "checkbox", "text", "text"), c("", "1, One", "", ""), c("", "", "", "[cb(1)] = '1'")))
+  expect_warning(checkbox <- suppressMessages(rd_checkbox(project)), "already exists")
+  expect_true("cb_one_1" %in% names(checkbox$data))
+  expect_equal(queries(checkbox), c("A", "C"))
+  expect_equal(queries(suppressWarnings(suppressMessages(rd_transform(project)))), c("A", "C"))
+
+  # Two options with the same clean name
+  data <- data.frame(record_id = c("A", "B", "C"), cb___1 = c(1, 0, 1), cb___2 = c(0, 1, 1), b = NA, b2 = NA)
+  project <- list(data = data, dictionary = dic(c("record_id", "cb", "b", "b2"), c("text", "checkbox", "text", "text"), c("", "1, A-B | 2, A B", "", ""), c("", "", "[cb(1)] = '1'", "[cb(2)] = '1'")))
+  checkbox <- suppressWarnings(suppressMessages(rd_checkbox(project)))
+  expect_equal(queries(checkbox), c("A", "C"))
+  expect_equal(queries(checkbox, "b2"), c("B", "C"))
+  transformed <- suppressWarnings(suppressMessages(rd_transform(project)))
+  expect_equal(queries(transformed), c("A", "C"))
+  expect_equal(queries(transformed, "b2"), c("B", "C"))
+})

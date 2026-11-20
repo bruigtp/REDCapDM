@@ -31,7 +31,8 @@ test_that("rd_checkbox() renames a checkbox whose new name already exists", {
   x$data$type_underlying_disease_haematological_cancer <- 1
 
   expect_warning(res <- rd_checkbox(x), "already exists in the dataset")
-  expect_true(all(c("type_underlying_disease_haematological_cancer", "type_underlying_disease_haematological_cancer.1") %in% names(res$data)))
+  # (`_1`: a name that the logic can use)
+  expect_true(all(c("type_underlying_disease_haematological_cancer", "type_underlying_disease_haematological_cancer_1") %in% names(res$data)))
 })
 
 test_that("rd_transform() explains what it needs to split the data", {

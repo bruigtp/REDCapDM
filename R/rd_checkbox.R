@@ -363,14 +363,16 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       for (j in seq_along(out)) {
         out0 <- out[j]
 
-        # Ensure uniqueness by appending a unique suffix if necessary
-        out[j] <- utils::tail(make.unique(c(names(data), out[j])), 1)
+        # Ensure uniqueness by appending a unique suffix if necessary (`_1`, `_2`, ...: a name that the logic can use, e.g.
+        # `[cb_one_1]`), also with the fields of the dictionary
+        out[j] <- utils::tail(make.unique(c(unique(c(names(data), dic$field_name)), out[j]), sep = "_"), 1)
 
         # If the name was changed to ensure uniqueness, issue a warning
         if (out[j] != out0) {
           rd_warn("The transformed checkbox name {.var {out0}} already exists in the dataset. It has been renamed to {.var {out[j]}} to avoid conflicts.")
 
-          correspondence[,"out"] <- ifelse(correspondence[,"out"] == out0, out[j], correspondence[,"out"])
+          # (only the row of this option: two options can have the same clean name, e.g. `A-B` and `A B`)
+          correspondence[nrow(correspondence) - length(out) + j, "out"] <- out[j]
         }
 
         # Update the variable names in the data and dictionary
