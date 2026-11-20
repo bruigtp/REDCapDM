@@ -197,6 +197,28 @@
 - [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
   and
   [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  don’t change a comparison whose value is an operation
+  (e.g. `[cb(1)] = 0 + 1` became `[cb_one]='No' + 1`), and
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  keeps the logic of other events with the codes of the options, which
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  read as codes: with labels that are codes of other options (e.g. code
+  1 with label `2`), the logic selected the other option.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  compares with `<>` and `!=` the whole operation of the value
+  (e.g. `[a] <> 0 + 1` was `!(data$a %in% 0) + 1`), and reads as a code
+  a label that is also a code.
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  works with repeating instruments when the data doesn’t have the factor
+  version of `redcap_repeat_instrument` (e.g. data that doesn’t come
+  from
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)):
+  it stopped with an error.
+- [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   write the labels in the logic in one reading of it: a label that is
   the code of another option (e.g. code 1 with label `2`) was changed
   again, and the logic selected the other option. They also keep the
