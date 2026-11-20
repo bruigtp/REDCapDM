@@ -304,14 +304,32 @@
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   left the field without recalculating.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
-  keeps the dates chosen by `if()`
-  (e.g. `year(if([flag] = 1, [a], [b]))` gave 1970, and `month()`,
-  `day()` and `datediff()` were also wrong), and reads the dates between
-  parentheses in `datediff()`
+  keeps the dates chosen by `if()` and the dates of
+  [`min()`](https://rdrr.io/r/base/Extremes.html) and
+  [`max()`](https://rdrr.io/r/base/Extremes.html)
+  (e.g. `year(if([flag] = 1, [a], [b]))` and `year(min('', [a]))` gave
+  1970, and `month()`, `day()` and `datediff()` were also wrong),
+  returns dates in longitudinal projects as in the others (`eval` and
+  `eval_data` gave numbers), and reads the dates between parentheses in
+  `datediff()`
   (e.g. `datediff(('01-02-2024'), '02-02-2024', 'd', 'dmy')` gave NA).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  compares with an empty text the functions translated with several
+  instructions (e.g. `concat_ws([sep], [a], [b]) <> ''` or
+  `roundup([n], 1) = ''`): the logic couldn’t be evaluated.
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   translates the branching logic without fields written in REDCap syntax
   (e.g. `1 = 1` or `sum(1, 1) = 2`): it stopped with an error.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  applies the branching logic translated into R by
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  that uses `contains()`, `not_contain()`,
+  [`find()`](https://rdrr.io/r/utils/apropos.html), `replace_text()`,
+  `concat_ws()`, `roundup()` or `rounddown()`: it was read as REDCap
+  logic and not applied, so the records where the field isn’t shown were
+  also checked.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   also translates the `<>` and `!=` inside the value of another `<>`
   (e.g. `[a] <> 0 + if([b] <> 1, 1, 0)`): a blank value gave NA instead
