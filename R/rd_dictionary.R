@@ -306,7 +306,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
     results <- c(results, "\n", knitr::kable(tabla, "pipe", align = c("ccc"), caption = "Variables whose logic uses multiple-choice fields as numbers (kept in REDCap syntax, with the codes)"))
   }
 
-  # Generating a global warning if one of the iteractions of the loop generates a warning inside rd_rlogic
+  # Generating a global warning if one of the iterations of the loop generates a warning inside rd_rlogic
   if (warnings_env$count > 0) {
     warnings_env$msgs <- warnings_env$msgs |> unique()
 

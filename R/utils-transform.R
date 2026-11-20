@@ -291,7 +291,7 @@ checkbox_names <- function(data, dic, labels, checkbox_labels = c("No", "Yes")){
       #Make unique if the name was already present in the names of the data
       out[j] <- utils::tail(make.unique(c(names(data), out[j])), 1)
       if(out[j] != out0) {
-        warning(stringr::str_glue("The new name after the transformation of the checkox ({out0}) was already present in the data so it will be transformed to {out[j]}"))
+        warning(stringr::str_glue("The new name after the transformation of the checkbox ({out0}) was already present in the data so it will be transformed to {out[j]}"))
       }
       #Change the name in the data and in the dictionary:
       names(data) <- dplyr::case_when(
