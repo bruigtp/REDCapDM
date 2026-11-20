@@ -195,6 +195,27 @@
   without a space after the comma (e.g. `5,Always`): they warned
   “Expected 2 pieces” and the logic with that option was wrong.
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  gives a name that the logic can use to an option whose new name
+  already exists (e.g. `cb_one_1` instead of `cb_one.1`, which
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  couldn’t read, so
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  checked every record), also with the fields of the dictionary, and
+  keeps apart two options with the same clean name (e.g. `A-B` and
+  `A B`): both pointed to the second one.
+- [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  tells apart queries whose texts have carriage returns (e.g. the
+  description `Age\rRule` with the query `Check`, and `Age` with
+  `Rule\rCheck`): they were taken for the same query.
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  and
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  round very large numbers without turning them into `Inf` (e.g. `1e308`
+  in [`round()`](https://rdrr.io/r/base/Round.html), `rounddown()`,
+  `roundup()` and in the comparison of
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)),
+  so their differences are detected.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   only renames the options of the checkboxes in the branching logic and
   calculations, which keep the codes 0 and 1 (e.g. `[cb(1)] = '1'` is
   `[cb_one] = '1'`), and
