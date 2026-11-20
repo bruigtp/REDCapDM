@@ -206,7 +206,9 @@
 - [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
   tells apart queries whose texts have carriage returns (e.g. the
   description `Age\rRule` with the query `Check`, and `Age` with
-  `Rule\rCheck`): they were taken for the same query.
+  `Rule\rCheck`): they were taken for the same query. The same text in
+  different encodings (e.g. UTF-8 and Latin-1) is the same query: it was
+  reported as solved and new.
 - [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   and
   [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
@@ -214,7 +216,8 @@
   in [`round()`](https://rdrr.io/r/base/Round.html), `rounddown()`,
   `roundup()` and in the comparison of
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)),
-  so their differences are detected.
+  so their differences are detected. Without decimals (e.g. a blank
+  field as the number of decimals), the result is blank.
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   only renames the options of the checkboxes in the branching logic and
   calculations, which keep the codes 0 and 1 (e.g. `[cb(1)] = '1'` is
