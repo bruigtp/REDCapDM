@@ -330,6 +330,20 @@
   `concat_ws()`, `roundup()` or `rounddown()`: it was read as REDCap
   logic and not applied, so the records where the field isn’t shown were
   also checked.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  applies the branching logic in R with double brackets
+  (e.g. `data[['value']] == 0`): it was read as REDCap logic and not
+  applied.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  writes between backticks the fields whose name isn’t a valid name in R
+  (e.g. `if`, `in`, `TRUE` or `_x`, written as `` data$`if` ``): the
+  logic couldn’t be evaluated, so
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  didn’t apply the branching logic and
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  didn’t recalculate the field.
+  [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  also finds these fields in the logic already translated to R.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   also translates the `<>` and `!=` inside the value of another `<>`
   (e.g. `[a] <> 0 + if([b] <> 1, 1, 0)`): a blank value gave NA instead
