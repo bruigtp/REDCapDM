@@ -31,7 +31,10 @@
   ([\#19](https://github.com/bruigtp/REDCapDM/issues/19)).
 - New `rm_mdc` argument in
   [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
-  to remove REDCap Missing Data Codes (default `TRUE`).
+  to remove REDCap Missing Data Codes (default `TRUE`). It warns that
+  the codes were removed only when the data has them (also a checked
+  option of a code in a checkbox) and the codes of the project weren’t
+  given in `mdc`.
 - With `redcap_data(rm_mdc = FALSE)`, the Missing Data Codes of
   validated text fields (numbers, dates, …) are kept in a new
   `<field>_mdc` column, so that the field keeps its type.
@@ -230,6 +233,21 @@
   (e.g. `checkbox_labels = c("1", "0")` selected the unchecked options),
   and didn’t work without
   [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  reads the text of a factor in `isnumber()` (it used the internal codes
+  of the factor, so any value was a number), searches and replaces
+  record by record when the text to find or the replacement is another
+  field in `contains()`, `not_contain()`,
+  [`find()`](https://rdrr.io/r/utils/apropos.html) and `replace_text()`
+  (it used the value of the first record for all of them), keeps the
+  empty texts `''` given to the text functions
+  (e.g. `concat('', [text])` gave `NAabc`, and
+  `replace_text([text], '-', '')` and `concat_ws('', ...)` failed), and
+  `isblankormissingcode()` finds the empty texts that the text functions
+  give (e.g. `isblankormissingcode(trim([text]))` of a field with
+  spaces). An operation compared with an empty text
+  (e.g. `trim([text]) = ''`) checks if its result is blank: it was
+  always NA.
 - [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   also translates the `<>` and `!=` inside the value of another `<>`
   (e.g. `[a] <> 0 + if([b] <> 1, 1, 0)`): a blank value gave NA instead
@@ -834,9 +852,7 @@
   [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
   and
   [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
-  (“arrangement”) and in a warning of
-  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
-  (“checkbox”).
+  (“arrangement”).
 
 ### Documentation
 
