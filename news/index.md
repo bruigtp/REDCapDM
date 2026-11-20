@@ -288,6 +288,27 @@
   so `[text] = ''`, `'' = [text]` and `isblankormissingcode([text])`
   give the same result, and works with logic without variables (e.g. `1`
   or `upper('abc')`) in data without rows.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md))
+  keeps the values of other events apart from the fields of the data: a
+  field called like its auxiliary column (e.g. `value__base_arm_1` in
+  `[visit_arm_1][value] - [base_arm_1][value] + [value__base_arm_1]`)
+  was overwritten, and a field used with and without event
+  (e.g. `[base_arm_1][value] + [value]`) took the value of the other
+  event in every row. It also reads the values of other events when the
+  record identifier isn’t `record_id` (e.g. `study_id`): it stopped with
+  an error, and
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  left the field without recalculating.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  keeps the dates chosen by `if()`
+  (e.g. `year(if([flag] = 1, [a], [b]))` gave 1970, and `month()`,
+  `day()` and `datediff()` were also wrong), and reads the dates between
+  parentheses in `datediff()`
+  (e.g. `datediff(('01-02-2024'), '02-02-2024', 'd', 'dmy')` gave NA).
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   translates the branching logic without fields written in REDCap syntax
   (e.g. `1 = 1` or `sum(1, 1) = 2`): it stopped with an error.
