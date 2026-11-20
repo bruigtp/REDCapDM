@@ -18,6 +18,49 @@ parse_conditions <- function(text) {
   as.list(call)[-1]
 }
 
+#' Branching logic written in REDCap syntax
+#'
+#' The branching logic of the dictionary can be REDCap logic or R logic (e.g. translated by rd_dictionary()). It is
+#' REDCap logic when it has fields between brackets outside its texts, or when it can't be R conditions: it can't be
+#' read (e.g. `1 <> 1`), it assigns (e.g. `(1 = 1)`) or it uses a function that doesn't exist where the user called the
+#' function (e.g. `datediff()`). Logic without fields such as `1 = 1` or `sum(1, 1) = 2` is REDCap logic.
+#'
+#' @param logic A branching logic.
+#' @param env Environment where the user called the exported function.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+redcap_logic <- function(logic, env) {
+  if (length(logic) != 1 || is.na(logic) || !nzchar(trimws(logic))) {
+    return(FALSE)
+  }
+  if (grepl("\\[|\\]", without_texts(logic))) {
+    return(TRUE)
+  }
+  conditions <- tryCatch(parse_conditions(logic), error = function(e) NULL)
+  if (is.null(conditions)) {
+    return(TRUE)
+  }
+
+  # Functions used by the conditions
+  functions <- character(0)
+  find_functions <- function(expr) {
+    if (is.call(expr)) {
+      if (is.symbol(expr[[1]])) {
+        functions <<- c(functions, as.character(expr[[1]]))
+      }
+      for (k in seq_along(expr)) {
+        if (!identical(expr[[k]], quote(expr = )) && !is.null(expr[[k]])) find_functions(expr[[k]])
+      }
+    }
+  }
+  for (condition in conditions) {
+    if (!identical(condition, quote(expr = ))) find_functions(condition)
+  }
+  functions <- unique(functions)
+
+  any(functions %in% c("=", "<-")) || !all(vapply(functions, exists, logical(1), envir = env, mode = "function"))
+}
+
 #' Replace the variable `x` of an expression of rd_query()
 #'
 #' Only the name `x` is replaced: an "x" inside a text value (`x == 'x'`) or inside another name (`max_x`) is kept.

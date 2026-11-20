@@ -1014,3 +1014,56 @@ test_that("rd_rlogic reads the empty texts of the fields as blank values", {
   data$record_id[2] <- ""
   expect_equal(rd_rlogic(data = data, dic = dic, logic = "[t] = ''", var = "res")$eval_data$record_id, c("1", "", "3"))
 })
+
+test_that("rd_rlogic reads the dates of each datediff() with its own format", {
+  data <- data.frame(record_id = 1:2, res = NA)
+  dic <- make_dic(c("record_id", "res"))
+  # (a logic without variables gives one value)
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("datediff('01-02-2024', '02-02-2024', 'd', 'dmy') + datediff('02-01-2024', '02-02-2024', 'd', 'mdy')"), 2)
+  expect_equal(ev("datediff('01-02-2024 10:00', '02-02-2024 12:00', 'h', 'dmy') + datediff('2024-02-01 10:00', '2024-02-02 10:00', 'h')"), 50)
+  expect_equal(ev("datediff('02-01-2024 10:00', '02-02-2024 12:00', 'h', 'mdy') + datediff('01-02-2024', '02-02-2024', 'd', 'dmy')"), 27)
+})
+
+test_that("rd_rlogic only reads 'today', 'now' and the dates as dates in datediff() and in comparisons of date fields", {
+  data <- data.frame(record_id = 1:2, t = c("now here", "abc"), d = as.Date(c("2020-01-01", "2999-01-01")),
+                     dt = as.POSIXct(c("2024-01-05 10:30", "2024-01-06 08:00"), tz = "UTC"), res = NA)
+  dic <- make_dic(c("record_id", "t", "d", "dt", "res"), text_validation = c(NA, NA, "date_ymd", "datetime_ymd", NA))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("concat('today', ':', [t])"), c("today:now here", "today:abc"))
+  expect_equal(ev("contains([t], 'now')"), c(TRUE, FALSE))
+  expect_equal(ev("[t] = 'today'"), c(FALSE, FALSE))
+  expect_equal(unique(ev("concat('01-02-2024', 'dmy')")), "01-02-2024dmy")
+  expect_equal(unique(ev("concat('2024-01-05 10:30', 'x')")), "2024-01-05 10:30x")
+  # (dates as before)
+  expect_equal(ev("datediff([d], 'today', 'd', true) > 0"), c(TRUE, FALSE))
+  expect_equal(ev("[d] < 'today'"), c(TRUE, FALSE))
+  expect_equal(ev("[dt] >= '2024-01-05 12:00'"), c(FALSE, TRUE))
+  expect_equal(ev("[dt] < 'now'"), c(TRUE, TRUE))
+})
+
+test_that("rd_rlogic translates datediff() with `false`", {
+  data <- data.frame(record_id = 1:2, d1 = as.Date(c("2024-01-11", "2024-01-01")), d2 = as.Date(c("2024-01-01", "2024-01-11")), res = NA)
+  dic <- make_dic(c("record_id", "d1", "d2", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  for (unit in c("y", "M", "d", "h", "m", "s")) {
+    expect_equal(ev(paste0("datediff([d1], [d2], '", unit, "', false)")), ev(paste0("datediff([d1], [d2], '", unit, "')")), info = unit)
+    expect_equal(ev(paste0("datediff([d1], [d2], '", unit, "', 'ymd', false)")), ev(paste0("datediff([d1], [d2], '", unit, "')")), info = unit)
+  }
+  expect_equal(ev("datediff([d1], [d2], 'd', false)"), c(10, 10))
+  expect_equal(ev("datediff([d1], [d2], 'd', true)"), c(-10, 10))
+})
+
+test_that("rd_rlogic reads the functions with spaces before their parenthesis", {
+  data <- data.frame(record_id = 1:2, a = c(1, 2), t = c("ab", "cd"), d1 = as.Date(c("2024-01-01", "2023-03-01")), d2 = as.Date(c("2024-01-11", "2023-03-02")), res = NA)
+  dic <- make_dic(c("record_id", "a", "t", "d1", "d2", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("if  ([a] = 1, 1, 0)"), c(1, 0))
+  expect_equal(ev("if\t([a] = 1, 1, 0)"), c(1, 0))
+  expect_equal(ev("if\n([a] = 1, 1, 0)"), c(1, 0))
+  expect_equal(ev("datediff  ([d1], [d2], 'd')"), c(10, 1))
+  expect_equal(ev("year ([d1])"), c(2024, 2023))
+  expect_equal(ev("upper   ([t])"), c("AB", "CD"))
+  expect_equal(ev("([a] = 1) and  ([a] = 1)"), c(TRUE, FALSE))
+  expect_equal(ev("[t] = 'if (x)'"), c(FALSE, FALSE))
+})

@@ -373,14 +373,16 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Convert REDCap logic into R-compatible logic
     if (!is.null(event_form) || all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      # (REDCap logic has fields between brackets outside its texts: `data$status == '[age]'` is already R logic)
-      for (j in which(grepl("\\[|\\]", without_texts(branch$branch)))) {
+      # (REDCap logic has fields between brackets outside its texts, e.g. `data$status == '[age]'` is already R logic, or
+      # can't be read as R logic, e.g. `1 = 1`)
+      for (j in which(vapply(branch$branch, redcap_logic, logical(1), env = user_env, USE.NAMES = FALSE))) {
         evaluation <- try(rd_rlogic(data = data_all, dic = dic, event_form = event_form, logic = branch$branch[j], var = branch$var[j]), silent = TRUE)
 
         if (!inherits(evaluation, "try-error")) {
           branch$branch[j] <- evaluation$rlogic
           # Keep the evaluation of rd_rlogic(): it uses the original codes of the variables that are already factors (rd_factor())
-          branch_eval[[branch$var[j]]] <- evaluation$eval
+          # (a logic without variables, e.g. `1 = 1`, gives one value for all the rows)
+          branch_eval[[branch$var[j]]] <- if (length(evaluation$eval) == 1) rep(evaluation$eval, nrow(data_all)) else evaluation$eval
         } else {
           logics <- rbind(logics, branch$var[j])
         }

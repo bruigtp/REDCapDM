@@ -1096,3 +1096,19 @@ test_that("rd_query keeps the argument x of a function of the expression", {
     expect_equal(nrow(out$queries), expected, info = expression)
   }
 })
+
+test_that("rd_query applies the branching logic without fields written in REDCap syntax", {
+  toy_data <- data.frame(record_id = as.character(1:3), a = c(NA, 1, NA))
+  toy_dic <- data.frame(field_name = c("record_id", "a"), form_name = "f1", field_type = "text", field_label = c("ID", "A"),
+                        text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = "", stringsAsFactors = FALSE)
+  run <- function(logic) {
+    toy_dic$branching_logic_show_field_only_if[2] <- logic
+    suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "a", expression = "is.na(x)"))
+  }
+  expect_equal(nrow(run("1 = 1")$queries), 2)
+  expect_equal(nrow(run("sum(1, 1) = 2")$queries), 2)
+  expect_equal(nrow(run("1 <> 1")$queries), 0)
+  # R logic without fields between brackets is evaluated as before
+  expect_equal(nrow(run("record_id != '1'")$queries), 1)
+  expect_equal(nrow(run("!is.na(record_id)")$queries), 2)
+})

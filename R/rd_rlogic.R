@@ -105,6 +105,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   masked <- mask_texts(rlogic)
   rlogic <- masked$logic
 
+  # A function can be written with spaces before its parenthesis (e.g. `if  (` or `year ([date])`): they are removed, so
+  # that all the functions are read in the same way (not `and (` or `or (`, which are operators; the texts with a
+  # parenthesis were set aside above)
+  rlogic <- gsub("(?<![\\w.$\\[])((?!(?i:and|or)\\s*\\()[A-Za-z_][\\w.]*)\\s+\\(", "\\1(", rlogic, perl = TRUE)
+
   # As in REDCap, datediff() returns the absolute difference unless its last argument is `true`
   rlogic <- datediff_absolute(rlogic)
 
@@ -235,46 +240,15 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # (only the functions: not a field whose name contains them, e.g. `[motif(1)]` or `[datediff]`)
   rlogic <- gsub("(?<![\\w.$\\[])if\\s?\\(", "ifelse(", rlogic, perl = TRUE)
   rlogic <- gsub("(?<![\\w.$\\[])datediff\\s?(?=\\()", "(lubridate::time_length(lubridate::interval", rlogic, perl = TRUE)
-  rlogic <- gsub("(?<![\\w.$\\[])year\\((.*?)\\)", "lubridate::year(\\1)", rlogic, perl = TRUE)
 
-  # Handle date formats in logic
-  if (grepl("'dmy'", rlogic)) {
-    rlogic <- gsub("'(\\d\\d-\\d\\d-\\d\\d\\d\\d)'", "lubridate::dmy('\\1')", rlogic)
-  } else if (grepl("'mdy'", rlogic)) {
-    rlogic <- gsub("'(\\d\\d-\\d\\d-\\d\\d\\d\\d)'", "lubridate::mdy('\\1')", rlogic)
-  } else if (grepl("'ymd'", rlogic)) {
-    rlogic <- gsub("'(\\d\\d\\d\\d-\\d\\d-\\d\\d)'", "lubridate::ymd('\\1')", rlogic)
-  } else if (grepl("'ydm'", rlogic)) {
-    rlogic <- gsub("'(\\d\\d\\d\\d-\\d\\d-\\d\\d)'", "lubridate::ydm('\\1')", rlogic)
-  } else if (grepl("'myd'", rlogic)) {
-    rlogic <- gsub("'(\\d\\d-\\d\\d\\d\\d-\\d\\d)'", "lubridate::myd('\\1')", rlogic)
-  } else if (grepl("'dym'", rlogic)) {
-    rlogic <- gsub("'(\\d\\d-\\d\\d\\d\\d-\\d\\d)'", "lubridate::dym('\\1')", rlogic)
-  }
+  # Arguments of datediff(): its dates are read with its own date format (e.g. 'dmy'; 'ymd' for the dates with time when it
+  # has none), 'today' is the current date and 'now' the current date and time (in UTC, as the dates of rd_dates()), its
+  # format and `true` or `false` (see datediff_absolute()) are removed, and its unit is translated. Only the arguments of
+  # each datediff() are changed: e.g. `concat('today', ':', [text])` keeps the text 'today'
+  rlogic <- datediff_arguments(rlogic)
 
-  # Dates with time in the logic (e.g. '2024-01-05 10:30'), in the format of datediff() (ymd by default). As in rd_dates(),
-  # they are read in UTC
-  date_format <- regmatches(rlogic, regexpr("'(dmy|mdy|ymd|ydm|myd|dym)'", rlogic))
-  date_format <- if (length(date_format) > 0) gsub("'", "", date_format) else "ymd"
-  rlogic <- gsub(
-    "'(\\d{1,4}-\\d{1,2}-\\d{1,4} \\d{1,2}:\\d{2}(:\\d{2})?)'",
-    paste0("lubridate::parse_date_time('\\1', c('", date_format, " HMS', '", date_format, " HM'))"),
-    rlogic
-  )
-
-  # Remove 'true' value from the logic as it's not used in R
-  rlogic <- gsub("\\,\\s?true", "", rlogic)
-
-  # Remove the date format argument of datediff() ('dmy', 'mdy', 'ymd'...): the dates in the logic were converted above
-  rlogic <- gsub("(\\,\\s?'[yMdhms]')\\,\\s?'(dmy|mdy|ymd|ydm|myd|dym)'", "\\1", rlogic)
-
-  # Units of datediff(): as in REDCap, 'M' are months and 'm' minutes, and years and months are 365.2425 and 30.44 days
-  # (only the last argument of datediff(): not a text of another function, e.g. `if([sex] = '1', 'f', 'm')`)
-  rlogic <- datediff_units(rlogic)
-
-  # 'today' in datediff() is the current date, and 'now' the current date and time (in UTC, as the dates of rd_dates())
-  rlogic <- gsub("'today'", "Sys.Date()", rlogic)
-  rlogic <- gsub("'now'", "lubridate::force_tz(Sys.time(), 'UTC')", rlogic)
+  # Comparisons of a date field with 'today', 'now' or a date with time (e.g. `[visit] < 'today'`)
+  rlogic <- date_comparisons(rlogic, dic)
 
   # Change variables specification. If [][] we get the event with the first claudator. If not, the event will be the same as the one of the calculated variable.
 
@@ -631,22 +605,43 @@ datediff_absolute <- function(logic) {
   paste0(out, rest)
 }
 
-#' Units of datediff()
+#' Arguments of datediff()
 #'
-#' The last argument of each `datediff()` (already written as `(lubridate::time_length(lubridate::interval(`) is its
-#' unit: `'y'` (years of 365.2425 days), `'M'` (months of 30.44 days), `'d'`, `'h'`, `'m'` (minutes) or `'s'`. Only the
-#' arguments of datediff() are changed: the same texts in other functions (e.g. `if([sex] = '1', 'f', 'm')`) are kept.
+#' Each `datediff()` (already written as `(lubridate::time_length(lubridate::interval(`) has two dates, its unit (`'y'`,
+#' years of 365.2425 days; `'M'`, months of 30.44 days; `'d'`; `'h'`; `'m'`, minutes; or `'s'`) and, optionally, its date
+#' format (e.g. `'dmy'`) and `true` or `false` (signed difference, see datediff_absolute()). The dates written in the
+#' logic are read with the format of their datediff() (the dates with time with `'ymd'` when it has none), `'today'` is
+#' the current date and `'now'` the current date and time. Only the arguments of datediff() are changed: the same texts
+#' in other functions (e.g. `concat('today', ':', [text])` or `if([sex] = '1', 'f', 'm')`) are kept.
 #'
 #' @param x A logic.
-#' @return The logic with the units of datediff() translated.
+#' @return The logic with the arguments of datediff() translated.
 #' @noRd
-datediff_units <- function(x) {
+datediff_arguments <- function(x) {
   units <- c(y = "'day') / 365.2425", M = "'day') / 30.44", d = "'day')", h = "'hour')", m = "'minute')", s = "'second')")
+  formats <- c(
+    dmy = "\\d\\d-\\d\\d-\\d\\d\\d\\d", mdy = "\\d\\d-\\d\\d-\\d\\d\\d\\d", ymd = "\\d\\d\\d\\d-\\d\\d-\\d\\d",
+    ydm = "\\d\\d\\d\\d-\\d\\d-\\d\\d", myd = "\\d\\d-\\d\\d\\d\\d-\\d\\d", dym = "\\d\\d-\\d\\d\\d\\d-\\d\\d"
+  )
   marker <- "(lubridate::time_length(lubridate::interval("
-  # (also with spaces around the unit, e.g. `datediff([a], [b], 'y' )`)
-  unit_pattern <- "\\,\\s*'([yMdhms])'\\s*$"
   out <- ""
   rest <- x
+
+  # Dates of an argument (not the ones already read, e.g. of another datediff() inside it)
+  dates <- function(arg, format) {
+    arg <- gsub("'today'", "Sys.Date()", arg, fixed = TRUE)
+    arg <- gsub("'now'", "lubridate::force_tz(Sys.time(), 'UTC')", arg, fixed = TRUE)
+    if (!is.na(format)) {
+      arg <- gsub(paste0("(?<!\\()'(", formats[[format]], ")'"), paste0("lubridate::", format, "('\\1')"), arg, perl = TRUE)
+    }
+    time_format <- if (is.na(format)) "ymd" else format
+    gsub(
+      "(?<!\\()'(\\d{1,4}-\\d{1,2}-\\d{1,4} \\d{1,2}:\\d{2}(:\\d{2})?)'",
+      paste0("lubridate::parse_date_time('\\1', c('", time_format, " HMS', '", time_format, " HM'))"),
+      arg,
+      perl = TRUE
+    )
+  }
 
   repeat {
     start <- regexpr(marker, rest, fixed = TRUE)
@@ -654,11 +649,12 @@ datediff_units <- function(x) {
       break
     }
 
-    # Closing parenthesis of the arguments
+    # Closing parenthesis of the call and its arguments (commas at the first level)
     chars <- strsplit(rest, "")[[1]]
     open <- start + nchar(marker) - 1
     depth <- 0
     close <- NA
+    commas <- integer(0)
     for (k in open:length(chars)) {
       if (chars[k] == "(") {
         depth <- depth + 1
@@ -668,6 +664,8 @@ datediff_units <- function(x) {
           close <- k
           break
         }
+      } else if (chars[k] == "," && depth == 1) {
+        commas <- c(commas, k)
       }
     }
     if (is.na(close)) {
@@ -675,12 +673,26 @@ datediff_units <- function(x) {
     }
 
     # (the arguments can have other datediff())
-    args <- datediff_units(substr(rest, open + 1, close - 1))
-    call <- if (grepl(unit_pattern, args)) {
-      unit <- sub(paste0("^.*", unit_pattern), "\\1", args)
-      paste0(substr(rest, start, open), sub(unit_pattern, "", args), "), ", units[[unit]], ")")
+    bounds <- c(open, commas, close)
+    args <- vapply(seq_len(length(bounds) - 1), function(i) datediff_arguments(substr(rest, bounds[i] + 1, bounds[i + 1] - 1)), character(1))
+    values <- trimws(args)
+
+    # Date format and `true` or `false` after the unit
+    if (length(args) >= 3) {
+      extra <- values[-(1:3)]
+      is_format <- grepl("^'(dmy|mdy|ymd|ydm|myd|dym)'$", extra)
+      format <- if (any(is_format)) gsub("'", "", extra[is_format][1]) else NA_character_
+      args[1:2] <- vapply(args[1:2], dates, character(1), format = format, USE.NAMES = FALSE)
+      keep <- !(is_format | tolower(gsub("^['\"]|['\"]$", "", extra)) %in% c("true", "false"))
+      args <- c(args[1:3], args[-(1:3)][keep])
+      values <- c(values[1:3], extra[keep])
+    }
+
+    unit <- if (length(args) == 3 && grepl("^'[yMdhms]'$", values[3])) gsub("'", "", values[3]) else NA_character_
+    call <- if (!is.na(unit)) {
+      paste0(substr(rest, start, open), args[1], ",", args[2], "), ", units[[unit]], ")")
     } else {
-      paste0(substr(rest, start, open), args, ")")
+      paste0(substr(rest, start, open), paste(args, collapse = ","), ")")
     }
     out <- paste0(out, substr(rest, 1, start - 1), call)
     rest <- substr(rest, close + 1, nchar(rest))
@@ -689,6 +701,59 @@ datediff_units <- function(x) {
   paste0(out, rest)
 }
 
+#' Comparisons of a date field with the current date or a date with time
+#'
+#' A date or datetime field compared with `'today'`, `'now'` or a date with time (e.g. `'2024-01-05 10:30'`, read as
+#' year-month-day and in UTC, as the dates of rd_dates()) is compared with that date. The same texts compared with other
+#' fields (e.g. `[text] = 'today'`) are kept.
+#'
+#' @param x A logic.
+#' @param dic The dictionary.
+#' @return The logic with these dates translated.
+#' @noRd
+date_comparisons <- function(x, dic) {
+  validation <- dic$text_validation_type_or_show_slider_number
+  date_fields <- dic$field_name[!is.na(validation) & grepl("^(date|datetime)_", validation)]
+  if (length(date_fields) == 0 || length(x) != 1 || is.na(x)) {
+    return(x)
+  }
+
+  literal <- "'(today|now|\\d{1,4}-\\d{1,2}-\\d{1,4} \\d{1,2}:\\d{2}(?::\\d{2})?)'"
+  field <- "(?:\\[[\\w-]+\\])?\\[(\\w+)\\]"
+  operator <- "\\s*(?:<=|>=|<>|!=|=|<|>)\\s*"
+  date_value <- function(text) {
+    if (text == "today") {
+      "Sys.Date()"
+    } else if (text == "now") {
+      "lubridate::force_tz(Sys.time(), 'UTC')"
+    } else {
+      paste0("lubridate::parse_date_time('", text, "', c('ymd HMS', 'ymd HM'))")
+    }
+  }
+
+  # (the field before or after the operator)
+  for (pattern in c(paste0(field, operator, literal), paste0(literal, operator, field))) {
+    m <- gregexpr(pattern, x, perl = TRUE)
+    found <- regmatches(x, m)[[1]]
+    if (length(found) == 0) {
+      next
+    }
+    parts <- regmatches(found, regexec(pattern, found, perl = TRUE))
+    field_first <- grepl("^(\\[[\\w-]+\\])?\\[", found, perl = TRUE)
+    changed <- vapply(seq_along(found), function(i) {
+      name <- if (field_first[i]) parts[[i]][2] else parts[[i]][3]
+      text <- if (field_first[i]) parts[[i]][3] else parts[[i]][2]
+      if (!name %in% date_fields) {
+        return(found[i])
+      }
+      quoted <- regexpr(literal, found[i], perl = TRUE)
+      paste0(substr(found[i], 1, quoted - 1), date_value(text), substring(found[i], quoted + attr(quoted, "match.length")))
+    }, character(1))
+    regmatches(x, m) <- list(changed)
+  }
+
+  x
+}
 
 #' Comparisons of an operation with an empty text
 #'
@@ -1419,6 +1484,7 @@ translate_functions <- function(x) {
   x <- replace_function(x, "trim", function(args) paste0("trimws(", text(args[1]), ")"))
 
   # Parts of a date
+  x <- replace_function(x, "year", function(args) paste0("lubridate::year(", args[1], ")"))
   x <- replace_function(x, "month", function(args) paste0("lubridate::month(", args[1], ")"))
   x <- replace_function(x, "day", function(args) paste0("lubridate::day(", args[1], ")"))
 
