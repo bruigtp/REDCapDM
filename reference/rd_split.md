@@ -319,7 +319,7 @@ print(result)
 #> 9       1 follow_up_visit_da_arm_1         laboratory_findings
 #> 
 #> $results
-#> Final arrangment of the data by form. (rd_split)
+#> Final arrangement of the data by form. (rd_split)
 #> 
 
 # Split by event (long format)
@@ -525,6 +525,6 @@ print(result)
 #> 9       1 follow_up_visit_da_arm_1         laboratory_findings
 #> 
 #> $results
-#> Final arrangment of the data by event. (rd_split)
+#> Final arrangement of the data by event. (rd_split)
 #> 
 ```

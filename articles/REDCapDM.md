@@ -341,7 +341,7 @@ covican_transformed$results
 #> 
 #> 4. Converting every branching logic in the dictionary into R logic. (rd_dictionary)
 #> 
-#> 5. Final arrangment of the data by event. (rd_split)
+#> 5. Final arrangement of the data by event. (rd_split)
 ```
 
 Each of these functions, and

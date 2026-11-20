@@ -830,6 +830,13 @@
   [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md)
   informs with a message, instead of a warning, that there are no dates
   to convert.
+- Fixed typos in the reports of
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  (“arrangement”) and in a warning of
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  (“checkbox”).
 
 ### Documentation
 
