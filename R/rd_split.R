@@ -269,21 +269,24 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     }
 
     if (repeat_instrument) {
+      # The name of each repeating instrument in the data: its factor version (redcap_data()), or else its name
+      instrument <- if ("redcap_repeat_instrument.factor" %in% names(data)) "redcap_repeat_instrument.factor" else "redcap_repeat_instrument"
       form_check <- data |>
-        dplyr::distinct(dplyr::pick(dplyr::contains("redcap_repeat_instrument")))
+        dplyr::distinct(dplyr::pick(dplyr::any_of(c("redcap_repeat_instrument", "redcap_repeat_instrument.factor"))))
+      form_check$form_factor <- form_check[[instrument]]
 
       ndata <- ndata |>
-        dplyr::left_join(form_check, by = dplyr::join_by("form" == "redcap_repeat_instrument")) |>
-        dplyr::relocate("form_factor" = "redcap_repeat_instrument.factor", .after = form) |>
+        dplyr::left_join(form_check[c("redcap_repeat_instrument", "form_factor")], by = dplyr::join_by("form" == "redcap_repeat_instrument")) |>
+        dplyr::relocate("form_factor", .after = form) |>
         dplyr::mutate(df = purrr::map2(.data$form_factor, .data$df, ~ {
           if (is.na(.x)) {
             .y |>
-              dplyr::filter(is.na(.data$redcap_repeat_instrument.factor)) |>
+              dplyr::filter(is.na(.data[[instrument]])) |>
               dplyr::select(-dplyr::starts_with("redcap_repeat_instrument"))
           } else {
             .y |>
-              dplyr::filter(.data$redcap_repeat_instrument.factor == .x) |>
-              dplyr::mutate(redcap_repeat_instrument = redcap_repeat_instrument.factor) |>
+              dplyr::filter(.data[[instrument]] == .x) |>
+              dplyr::mutate(redcap_repeat_instrument = .data[[instrument]]) |>
               dplyr::select(-dplyr::any_of("redcap_repeat_instrument.factor"))
           }
         })) |>

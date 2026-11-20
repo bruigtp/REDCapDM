@@ -191,13 +191,15 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     # (labels between single or double quotes, e.g. [name] = "O'Brien")
     # (and labels with both quotes or backslashes, written with escaped characters, e.g. [name] = 'O\'Brien "A"')
     labels <- names(mapping)
+    # (a label that is also a code, e.g. code 1 with label `2`, is read as a code, as in REDCap logic)
+    only_labels <- labels[!labels %in% mapping]
     label_pattern <- paste0(
-      "\\[", field, "\\]\\s*(=|<>|!=)\\s*((['\"])(", paste(escape_regex(labels), collapse = "|"), ")\\3|",
-      paste(escape_regex(r_text(labels)), collapse = "|"), ")"
+      "\\[", field, "\\]\\s*(=|<>|!=)\\s*((['\"])(", paste(escape_regex(only_labels), collapse = "|"), ")\\3|",
+      paste(escape_regex(r_text(only_labels)), collapse = "|"), ")"
     )
     codes <- unmapped <- unname(mapping[as.character(data[[field]])])
     unmasked <- unmask_texts(rlogic, masked$texts)
-    uses_labels <- grepl(label_pattern, unmasked, perl = TRUE)
+    uses_labels <- length(only_labels) > 0 && grepl(label_pattern, unmasked, perl = TRUE)
 
     # A logic that also uses the variable as a number (e.g. `[score] = '2' or [score] + 1 >= 4`) is evaluated with the
     # codes: its comparisons are with codes, as in REDCap (a label that isn't a code is written as its code)
@@ -337,7 +339,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("<-", "< -", rlogic, fixed = TRUE)
 
   # As in REDCap, a blank value is different from any value: [x] <> '1' is TRUE when x is blank
-  rlogic <- gsub("(data\\$\\w+)\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)", "!(\\1 %in% \\2)", rlogic, perl = TRUE)
+  rlogic <- not_equal_blank(rlogic)
   rlogic <- logical_operators(rlogic)
   
   # REDCap functions (after the operators, so that the `=` of their translation is not changed)
@@ -613,6 +615,82 @@ datediff_absolute <- function(logic) {
 }
 
 
+#' Different values, also when one of them is blank
+#'
+#' As in REDCap, a blank value is different from any value: `data$x != 1` is written `!(data$x %in% 1)`. When the value
+#' is the start of an operation (e.g. `data$x != 0 + 1`), the whole operation is compared (`!(data$x %in% (0 + 1))`), or
+#' the comparison is left as it is if the operation uses variables of the data (its value can change in each row) or the
+#' variable is the end of an operation (e.g. `1 + data$x != 2`).
+#'
+#' @param x A logic translated to R.
+#' @return The logic.
+#' @noRd
+not_equal_blank <- function(x) {
+  pattern <- "(data\\$\\w+)\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)"
+  out <- ""
+  rest <- x
+  repeat {
+    m <- regexpr(pattern, rest, perl = TRUE)
+    if (is.na(m) || m == -1) {
+      break
+    }
+    start <- as.integer(m)
+    len <- attr(m, "match.length")
+    before <- substr(rest, 1, start - 1)
+    found <- substr(rest, start, start + len - 1)
+    after <- substring(rest, start + len)
+    variable <- sub(pattern, "\\1", found, perl = TRUE)
+    value <- sub(pattern, "\\2", found, perl = TRUE)
+
+    if (grepl("[-+*/^%]\\s*$", before)) {
+      # (the variable is the end of an operation)
+      replacement <- found
+      used <- 0
+    } else if (!grepl("^\\s*[-+*/^%]", after)) {
+      replacement <- paste0("!(", variable, " %in% ", value, ")")
+      used <- 0
+    } else {
+      # The value is the start of an operation: it ends before a comparison, a logical operator, a comma or a closing
+      # parenthesis outside parentheses and quotes
+      chars <- strsplit(after, "")[[1]]
+      depth <- 0
+      quote <- ""
+      used <- length(chars)
+      k <- 1
+      while (k <= length(chars)) {
+        ch <- chars[k]
+        if (nzchar(quote)) {
+          if (ch == quote) quote <- ""
+        } else if (ch %in% c("'", "\"")) {
+          quote <- ch
+        } else if (ch == "(") {
+          depth <- depth + 1
+        } else if (ch == ")") {
+          if (depth == 0) {
+            used <- k - 1
+            break
+          }
+          depth <- depth - 1
+        } else if (depth == 0 && (ch %in% c(",", "&", "|", "<", ">", "=") || (ch == "!" && k < length(chars) && chars[k + 1] == "=") ||
+          grepl("^\\s(?i:and|or)\\b", paste(chars[k:min(length(chars), k + 4)], collapse = ""), perl = TRUE))) {
+          used <- k - 1
+          break
+        }
+        k <- k + 1
+      }
+      operation <- trimws(paste0(value, substr(after, 1, used)))
+      replacement <- if (grepl("data\\$", operation, fixed = FALSE)) {
+        paste0(found, substr(after, 1, used))
+      } else {
+        paste0("!(", variable, " %in% (", operation, "))", if (grepl("\\s$", substr(after, 1, used))) " " else "")
+      }
+    }
+    out <- paste0(out, before, replacement)
+    rest <- substring(after, used + 1)
+  }
+  paste0(out, rest)
+}
+
 #' Translate the datediff() of two time fields
 #'
 #' As in REDCap, `datediff([start], [end], 'h', ...)` of two time fields (validation `time`, `time_hh_mm_ss` or
@@ -868,11 +946,12 @@ logic_label <- function(x) {
 #'
 #' Finds, in one reading of the logic, the texts between quotes and the comparisons `[field] = value`, `[field] <> value`
 #' and `[field] != value`, with the value between quotes or a whole number (e.g. `1`, `1.0` or `10`, never the start of
-#' another number).
+#' another number). A comparison is complete when its value isn't the start of an operation and its field isn't the end
+#' of one (e.g. `[a] = 0 + 1` or `1 + [a] = 2` aren't comparisons of `[a]` with a value).
 #'
 #' @param logic A logic.
 #' @return A list with the match data of gregexpr() (`matches`) and, for each match, the field (`field`, `NA` for a
-#'   text), the operator (`op`) and the value as it is written (`value`).
+#'   text), the operator (`op`), the value as it is written (`value`) and whether it is complete (`complete`).
 #' @noRd
 logic_comparisons <- function(logic) {
   quoted <- sub("^\\(\\?s\\)", "", quoted_pattern())
@@ -881,9 +960,17 @@ logic_comparisons <- function(logic) {
   matches <- gregexpr(paste0("(?s)(?:", quoted, ")|", comparison), logic, perl = TRUE)
   found <- regmatches(logic, matches)[[1]]
   parts <- regmatches(found, regexec(paste0("(?s)^", comparison, "$"), found, perl = TRUE))
+  starts <- as.integer(matches[[1]])
+  ends <- starts + attr(matches[[1]], "match.length") - 1
+  operation <- "[-+*/^%]"
+  complete <- if (length(found) == 0) logical(0) else {
+    !grepl(paste0(operation, "\\s*$"), substr(rep(logic, length(starts)), 1, starts - 1)) &
+      !grepl(paste0("^\\s*", operation), substring(logic, ends + 1))
+  }
   list(
     matches = matches,
     found = found,
+    complete = complete,
     field = vapply(parts, function(p) if (length(p) > 0) p[2] else NA_character_, character(1)),
     op = vapply(parts, function(p) if (length(p) > 0) p[3] else NA_character_, character(1)),
     value = vapply(parts, function(p) if (length(p) > 0) p[4] else NA_character_, character(1))
@@ -912,7 +999,7 @@ relabel_logic <- function(logic, options) {
     }
     found <- logic_comparisons(l)
     new <- found$found
-    for (k in which(found$field %in% options$ref)) {
+    for (k in which(found$field %in% options$ref & found$complete)) {
       rows <- options[options$ref == found$field[k], ]
       value <- found$value[k]
       hit <- if (grepl("^['\"]", value)) {
@@ -945,7 +1032,7 @@ factor_other_use <- function(logic, field, labels) {
     return(FALSE)
   }
   found <- logic_comparisons(logic)
-  with_label <- found$field %in% field & grepl("^['\"]", found$value) & text_value(ifelse(is.na(found$value), "''", found$value)) %in% c(labels, "")
+  with_label <- found$field %in% field & found$complete & grepl("^['\"]", found$value) & text_value(ifelse(is.na(found$value), "''", found$value)) %in% c(labels, "")
   rest <- logic
   regmatches(rest, found$matches) <- list(ifelse(with_label, "''", found$found))
   rest <- gsub(paste0("isblankormissingcode\\(\\s*", field_pattern, "\\s*\\)"), "''", rest, perl = TRUE)

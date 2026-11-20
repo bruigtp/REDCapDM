@@ -161,7 +161,9 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
 
   # Loop through each row with branching logic
   for (i in pos_branch) {
+    # (with the codes of the options, which rd_rlogic() and rd_query() read as codes)
     if (other_event(dic$branching_logic_show_field_only_if[i])) {
+      dic$branching_logic_show_field_only_if[i] <- dic_codes$branching_logic_show_field_only_if[i]
       kept <- c(kept, dic$field_name[i])
       next
     }
@@ -217,6 +219,7 @@ rd_dictionary <- function(project = NULL, data = NULL, dic = NULL, event_form = 
   # Loop through each row with calculations
   for (i in pos_calc) {
     if (other_event(dic$choices_calculations_or_slider_labels[i])) {
+      dic$choices_calculations_or_slider_labels[i] <- dic_codes$choices_calculations_or_slider_labels[i]
       kept <- c(kept, dic$field_name[i])
       next
     }

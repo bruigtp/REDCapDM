@@ -357,3 +357,20 @@ test_that("rd_split(wide = TRUE) keeps the fields called `id`", {
   expect_equal(names(out), c("record_id", "id_1", "id_2", "weight_1", "weight_2"))
   expect_equal(out$id_2, c("b", "d"))
 })
+
+test_that("rd_split works with repeating instruments without the factor version of redcap_repeat_instrument", {
+  dic <- data.frame(
+    field_name = c("record_id", "age", "drug"), form_name = c("demo", "demo", "med"), field_type = "text", field_label = c("ID", "Age", "Drug"),
+    choices_calculations_or_slider_labels = "", text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = ""
+  )
+  data <- data.frame(record_id = c("1", "1", "1", "2"), redcap_repeat_instrument = c(NA, "med", "med", NA), redcap_repeat_instance = c(NA, 1, 2, NA), age = c(30, NA, NA, 40), drug = c(NA, "a", "b", NA))
+  with_factor <- data
+  with_factor$redcap_repeat_instrument.factor <- data$redcap_repeat_instrument
+  for (wide in c(FALSE, TRUE)) {
+    out <- suppressMessages(rd_split(data = data, dic = dic, by = "form", wide = wide))
+    expected <- suppressMessages(rd_split(data = with_factor, dic = dic, by = "form", wide = wide))
+    expect_equal(out$data$df, expected$data$df, info = wide)
+  }
+  out <- suppressMessages(rd_split(data = data, dic = dic, by = "form"))$data
+  expect_equal(out$df[[which(out$form == "med")]]$drug, c("a", "b"))
+})

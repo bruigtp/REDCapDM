@@ -270,3 +270,13 @@ test_that("rd_checkbox keeps the texts between quotes and reads whole numbers", 
     expect_equal(queries(transformed), queries(project), info = case[1])
   }
 })
+
+test_that("rd_checkbox and rd_dictionary don't change a comparison with an operation", {
+  queries <- function(project) paste(suppressWarnings(suppressMessages(rd_query(project, variables = "b", expression = "is.na(x)")))$queries$Identifier, collapse = ",")
+  project <- checkbox_project("[cb(1)] = 0 + 1")
+  expect_equal(queries(project), "1,2")
+  transformed <- suppressMessages(rd_transform(project))
+  expect_equal(transformed$dictionary$branching_logic_show_field_only_if[transformed$dictionary$field_name == "b"], "[cb_one] = 0 + 1")
+  expect_equal(queries(transformed), "1,2")
+  expect_equal(queries(suppressMessages(rd_dictionary(rd_factor(project)))), "1,2")
+})

@@ -151,8 +151,13 @@ test_that("rd_dictionary translates the codes of yes/no fields converted with rd
   expect_equal(as.vector(eval(parse(text = logic[["visit_note"]]), list(data = rd_factor(fx)$data))), c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE))
   # a > comparison is not turned into <>
   expect_false(grepl("<>|!=", logic[["pain_note"]]))
-  # logic with a variable of another event stays in REDCap syntax
-  expect_equal(logic[["preg"]], "[baseline_arm_1][sex]='Woman'")
+  # logic with a variable of another event stays in REDCap syntax, with the codes, and is evaluated as before
+  expect_equal(logic[["preg"]], "[baseline_arm_1][sex] = '2'")
+  factors <- rd_factor(fx)
+  expect_equal(
+    rd_rlogic(data = factors$data, dic = out$dictionary, event_form = fx$event_form, logic = logic[["preg"]], var = "preg")$eval,
+    rd_rlogic(data = fx$data, dic = fx$dictionary, event_form = fx$event_form, logic = fx$dictionary$branching_logic_show_field_only_if[fx$dictionary$field_name == "preg"], var = "preg")$eval
+  )
   expect_match(paste(out$results, collapse = " "), "other events")
 })
 
@@ -207,4 +212,26 @@ test_that("rd_dictionary doesn't change again a label that is the code of anothe
 
   project <- factor_project("1, 2 | 2, 1 | 3, 3 | 5, 5", "[a] = '2'")
   expect_equal(queries(suppressMessages(rd_transform(project))), 2, ignore_attr = TRUE)
+})
+
+test_that("rd_dictionary keeps the codes of a comparison with an operation and of the logic of other events", {
+  project <- factor_project("1, A | 2, B | 3, C | 5, D", "[a] = 1 + 1")
+  queries <- function(p, ...) suppressWarnings(suppressMessages(rd_query(p, variables = "b", expression = "is.na(x)", ...)))$queries$Identifier
+  transformed <- suppressMessages(rd_transform(project))
+  expect_equal(transformed$dictionary$branching_logic_show_field_only_if[3], "[a] = 1 + 1")
+  expect_equal(queries(transformed), queries(project))
+
+  # Labels that are codes of other options, in another event
+  data <- data.frame(record_id = rep(c("R1", "R2", "R3"), each = 2), redcap_event_name = rep(c("base_arm_1", "fu_arm_1"), 3), score = c(1, NA, 2, NA, 3, NA), b = NA)
+  data$score.factor <- factor(c("2", NA, "3", NA, "1", NA), levels = c("2", "3", "1"))
+  dic <- data.frame(
+    field_name = c("record_id", "score", "b"), form_name = c("f1", "f1", "f2"), field_type = c("text", "radio", "text"), field_label = c("ID", "Score", "B"),
+    choices_calculations_or_slider_labels = c("", "1, 2 | 2, 3 | 3, 1", ""), text_validation_type_or_show_slider_number = "",
+    branching_logic_show_field_only_if = c("", "", "[base_arm_1][score] = '2' or [base_arm_1][score] >= 3")
+  )
+  event_form <- data.frame(arm_num = 1, unique_event_name = c("base_arm_1", "fu_arm_1"), form = c("f1", "f2"))
+  project <- list(data = data, dictionary = dic, event_form = event_form)
+  expect_equal(queries(project, event = "fu_arm_1"), c("R2", "R3"))
+  expect_equal(queries(suppressMessages(rd_dictionary(rd_factor(project))), event = "fu_arm_1"), c("R2", "R3"))
+  expect_equal(queries(suppressMessages(rd_transform(project)), event = "fu_arm_1"), c("R2", "R3"))
 })

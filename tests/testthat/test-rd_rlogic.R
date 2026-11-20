@@ -878,3 +878,17 @@ test_that("rd_rlogic evaluates with the codes a factor compared and used as a nu
   expect_equal(ev("[score] = 'Mid' or [score] + 1 >= 4"), c(FALSE, TRUE, TRUE))
   expect_equal(ev("[score] = 'Mid'"), c(FALSE, TRUE, FALSE))
 })
+
+test_that("rd_rlogic keeps the operation of the value of <> and !=", {
+  data <- data.frame(record_id = 1:4, a = c(0, 1, 2, NA), b = c(1, 1, NA, 1), res = NA)
+  dic <- make_dic(c("record_id", "a", "b", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  for (logic in c("[a] <> 0 + 1", "[a] != 0 + 1", "[a] <> (0 + 1)", "[a] <> 2 * 0.5", "[a] <> 1")) {
+    # (a blank value is different from any value)
+    expect_equal(ev(logic), c(TRUE, FALSE, TRUE, if (grepl("\\(", logic)) NA else TRUE), info = logic)
+  }
+  expect_equal(ev("if([a] <> 0 + 1, 1, 0)"), c(1, 0, 1, 1))
+  expect_equal(ev("[a] <> 0 + 1 and [b] = 1"), c(TRUE, FALSE, NA, TRUE))
+  # With variables of the data, the operation is compared row by row
+  expect_equal(ev("[a] <> 0 + [b]"), c(TRUE, FALSE, NA, NA))
+})
