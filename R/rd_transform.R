@@ -290,10 +290,10 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       }
     }
 
-    # Final arrangment
+    # Final arrangement
 
     if (final_format == "by_event") {
-      results <- c(results, stringr::str_glue("\n\n{ind}. Final arrangment of the data by event"))
+      results <- c(results, stringr::str_glue("\n\n{ind}. Final arrangement of the data by event"))
       ind <- ind + 1
 
       if (is.null(which_event)) {
@@ -306,7 +306,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
         data <- split$data
       }
     } else if (final_format == "by_form") {
-      results <- c(results, stringr::str_glue("\n\n{ind}. Final arrangment of the data by form"))
+      results <- c(results, stringr::str_glue("\n\n{ind}. Final arrangement of the data by form"))
       ind <- ind + 1
 
       if (is.null(wide)) {

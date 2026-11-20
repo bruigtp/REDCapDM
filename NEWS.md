@@ -155,6 +155,7 @@
 - `rd_split()` and `rd_transform()` name the fields of the dictionary that are not in the data and, when whole instruments are missing (data exported with only some instruments), show how to remove them with `rd_delete_vars(forms = ...)`.
 - `rd_query()` suggests an option of the checkbox that exists in the data (e.g. `symptoms___a`) when a checkbox field is given in `variables`.
 - `rd_query()` no longer warns when one expression is given for several variables, the usual way to check them (it still warns when several expressions don't match the variables), and `rd_dates()` informs with a message, instead of a warning, that there are no dates to convert.
+- Fixed typos in the reports of `rd_split()` and `rd_transform()` ("arrangement") and in a warning of `rd_checkbox()` ("checkbox").
 
 ## Documentation
 

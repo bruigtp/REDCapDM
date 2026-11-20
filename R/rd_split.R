@@ -442,7 +442,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
   # Update results with the this transformation
   if (is.null(results)) {
-    results <- c(results, stringr::str_glue("Final arrangment of the data by {by}. (rd_split)\n"))
+    results <- c(results, stringr::str_glue("Final arrangement of the data by {by}. (rd_split)\n"))
   } else {
 
     if(grepl("^[A-Z]", results[1])) {
@@ -456,7 +456,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       stringr::str_remove("\\.") |>
       as.numeric()
 
-    results <- c(results, stringr::str_glue("\n\n{last_val_res + 1}. Final arrangment of the data by {by}. (rd_split)\n"))
+    results <- c(results, stringr::str_glue("\n\n{last_val_res + 1}. Final arrangement of the data by {by}. (rd_split)\n"))
   }
 
   # Return the modified data, dictionary, event_form, and results
