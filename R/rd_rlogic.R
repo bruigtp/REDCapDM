@@ -169,6 +169,16 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     rd_abort("REDCap logic contains variables that are not found in the database (possibly a smart variable or an event that doesn't exist): {.code {unknown_vars}}", class = "REDCapDM_error_logic")
   }
 
+  # As in REDCap, an empty text is a blank value: the empty texts of the variables of the logic (e.g. in data modified
+  # after redcap_data(), which reads them as NA) are evaluated as NA, so that `[text] = ''`, `'' = [text]` and
+  # `isblankormissingcode([text])` give the same result (the identifier of the record, the event and the repetition are kept)
+  key_cols <- c(if ("record_id" %in% names(data)) "record_id" else names(data)[1], "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance")
+  for (field in setdiff(intersect(rlogic_var, names(data)), key_cols)) {
+    if (is.character(data[[field]]) || is.factor(data[[field]])) {
+      data[[field]][data[[field]] %in% ""] <- NA
+    }
+  }
+
   # Proceed to transcribe REDCap logic to R logic
   # Texts between double quotes are written between single quotes, as the rest of the translation expects (except the
   # texts with an apostrophe, e.g. "O'Brien")
@@ -259,10 +269,8 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("(\\,\\s?'[yMdhms]')\\,\\s?'(dmy|mdy|ymd|ydm|myd|dym)'", "\\1", rlogic)
 
   # Units of datediff(): as in REDCap, 'M' are months and 'm' minutes, and years and months are 365.2425 and 30.44 days
-  datediff_units <- c(y = "'day') / 365.2425", M = "'day') / 30.44", d = "'day')", h = "'hour')", m = "'minute')", s = "'second')")
-  for (u in names(datediff_units)) {
-    rlogic <- gsub(paste0("\\,\\s?'", u, "'\\)"), paste0("), ", datediff_units[[u]], ")"), rlogic)
-  }
+  # (only the last argument of datediff(): not a text of another function, e.g. `if([sex] = '1', 'f', 'm')`)
+  rlogic <- datediff_units(rlogic)
 
   # 'today' in datediff() is the current date, and 'now' the current date and time (in UTC, as the dates of rd_dates())
   rlogic <- gsub("'today'", "Sys.Date()", rlogic)
@@ -415,6 +423,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       class = "REDCapDM_error_logic"
     )
   } else {
+    # Data without rows: no values (also for a logic without variables, e.g. `1` or `upper('abc')`, which gives one value)
+    if (nrow(data) == 0) {
+      rlogic_eval <- if (is.null(rlogic_eval)) logical(0) else rlogic_eval[0]
+    }
+
     # If there's more than one event, return the evaluation only for the specified event(s):
     if (!is.null(event_form)) {
       rlogic_eval <- data |>
@@ -459,7 +472,8 @@ rlogic_eval_data <- function(data, eval) {
   key_cols <- intersect(c(id_col, "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance"), names(data))
 
   eval_data <- as.data.frame(data)[, key_cols, drop = FALSE]
-  eval_data$eval <- eval
+  # (a single value is repeated in all the rows; data without rows has no values)
+  eval_data$eval <- if (nrow(eval_data) == 0) eval[0] else eval
   rownames(eval_data) <- NULL
 
   eval_data
@@ -611,6 +625,64 @@ datediff_absolute <- function(logic) {
 
     call <- substr(rest, start, close)
     out <- paste0(out, substr(rest, 1, start - 1), if (signed) call else paste0("abs(", call, ")"))
+    rest <- substr(rest, close + 1, nchar(rest))
+  }
+
+  paste0(out, rest)
+}
+
+#' Units of datediff()
+#'
+#' The last argument of each `datediff()` (already written as `(lubridate::time_length(lubridate::interval(`) is its
+#' unit: `'y'` (years of 365.2425 days), `'M'` (months of 30.44 days), `'d'`, `'h'`, `'m'` (minutes) or `'s'`. Only the
+#' arguments of datediff() are changed: the same texts in other functions (e.g. `if([sex] = '1', 'f', 'm')`) are kept.
+#'
+#' @param x A logic.
+#' @return The logic with the units of datediff() translated.
+#' @noRd
+datediff_units <- function(x) {
+  units <- c(y = "'day') / 365.2425", M = "'day') / 30.44", d = "'day')", h = "'hour')", m = "'minute')", s = "'second')")
+  marker <- "(lubridate::time_length(lubridate::interval("
+  # (also with spaces around the unit, e.g. `datediff([a], [b], 'y' )`)
+  unit_pattern <- "\\,\\s*'([yMdhms])'\\s*$"
+  out <- ""
+  rest <- x
+
+  repeat {
+    start <- regexpr(marker, rest, fixed = TRUE)
+    if (is.na(start) || start == -1) {
+      break
+    }
+
+    # Closing parenthesis of the arguments
+    chars <- strsplit(rest, "")[[1]]
+    open <- start + nchar(marker) - 1
+    depth <- 0
+    close <- NA
+    for (k in open:length(chars)) {
+      if (chars[k] == "(") {
+        depth <- depth + 1
+      } else if (chars[k] == ")") {
+        depth <- depth - 1
+        if (depth == 0) {
+          close <- k
+          break
+        }
+      }
+    }
+    if (is.na(close)) {
+      break
+    }
+
+    # (the arguments can have other datediff())
+    args <- datediff_units(substr(rest, open + 1, close - 1))
+    call <- if (grepl(unit_pattern, args)) {
+      unit <- sub(paste0("^.*", unit_pattern), "\\1", args)
+      paste0(substr(rest, start, open), sub(unit_pattern, "", args), "), ", units[[unit]], ")")
+    } else {
+      paste0(substr(rest, start, open), args, ")")
+    }
+    out <- paste0(out, substr(rest, 1, start - 1), call)
     rest <- substr(rest, close + 1, nchar(rest))
   }
 
@@ -1266,21 +1338,31 @@ translate_functions <- function(x) {
   x <- replace_function(x, "isnumber", function(args) paste0("!is.na(suppressWarnings(as.numeric(as.character(", args[1], "))))"))
 
   # Texts of the arguments: an empty text '' is "" (the '' left in the logic become NA below). With an argument that
-  # isn't a fixed text or number (e.g. another field), the search or replacement is made record by record
+  # isn't a fixed text or number (e.g. another field), the search or replacement is made record by record (with the
+  # values of each record, also with data without rows)
   empty <- function(arg) if (identical(arg, "''")) "\"\"" else arg
   fixed_value <- function(arg) grepl("^('[^']*'|\"[^\"]*\"|-?[0-9.]+)$", arg)
   by_record <- function(fun, args) {
-    paste0("unlist(mapply(", fun, ", ", paste(args, collapse = ", "), ", USE.NAMES = FALSE))")
+    paste0(
+      "(function(f, ...) { a <- list(...); n <- if (min(lengths(a)) == 0) 0 else max(lengths(a)); ",
+      "unlist(do.call(mapply, c(list(f), lapply(a, rep_len, n), USE.NAMES = FALSE))) })(", fun, ", ", paste(args, collapse = ", "), ")"
+    )
   }
+  # (as in REDCap, a blank value is an empty text, also in the texts to search, the replacements and the separators;
+  # written with double quotes: the '' left in the logic become NA below)
+  text <- function(arg) {
+    arg <- empty(arg)
+    if (grepl("^('[^']*'|\"[^\"]*\")$", arg)) arg else paste0("ifelse(is.na(", arg, "), \"\", as.character(", arg, "))")
+  }
+  lower_text <- function(arg) if (fixed_value(empty(arg))) paste0("tolower(", empty(arg), ")") else paste0("tolower(", text(arg), ")")
   x <- replace_function(x, "isinteger", function(args) {
     paste0("(function(v) !is.na(v) & v == trunc(v))(suppressWarnings(as.numeric(as.character(", args[1], "))))")
   })
   x <- replace_function(x, "contains", function(args) {
-    args <- vapply(args, empty, character(1), USE.NAMES = FALSE)
-    if (fixed_value(args[2])) {
-      paste0("grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)")
+    if (fixed_value(empty(args[2]))) {
+      paste0("grepl(", lower_text(args[2]), ", ", lower_text(args[1]), ", fixed = TRUE)")
     } else {
-      paste0("as.logical(", by_record("function(t, p) grepl(p, t, fixed = TRUE)", paste0("tolower(", args[1:2], ")")), ")")
+      paste0("as.logical(", by_record("function(t, p) grepl(p, t, fixed = TRUE)", c(lower_text(args[1]), lower_text(args[2]))), ")")
     }
   })
   x <- replace_function(x, "length", function(args) paste0("ifelse(is.na(", args[1], "), 0, nchar(as.character(", args[1], ")))"))
@@ -1296,42 +1378,40 @@ translate_functions <- function(x) {
   })
 
   # Text functions (as in REDCap, the comparisons of text don't distinguish upper and lower case, and a blank value is an empty text)
-  # (written with double quotes: the '' left in the logic become NA below)
-  text <- function(arg) {
-    arg <- empty(arg)
-    if (grepl("^('[^']*'|\"[^\"]*\")$", arg)) arg else paste0("ifelse(is.na(", arg, "), \"\", as.character(", arg, "))")
-  }
   x <- replace_function(x, "not_contain", function(args) {
-    args <- vapply(args, empty, character(1), USE.NAMES = FALSE)
-    if (fixed_value(args[2])) {
-      paste0("!grepl(tolower(", args[2], "), tolower(", args[1], "), fixed = TRUE)")
+    if (fixed_value(empty(args[2]))) {
+      paste0("!grepl(", lower_text(args[2]), ", ", lower_text(args[1]), ", fixed = TRUE)")
     } else {
-      paste0("!as.logical(", by_record("function(t, p) grepl(p, t, fixed = TRUE)", paste0("tolower(", args[1:2], ")")), ")")
+      paste0("!as.logical(", by_record("function(t, p) grepl(p, t, fixed = TRUE)", c(lower_text(args[1]), lower_text(args[2]))), ")")
     }
   })
-  x <- replace_function(x, "starts_with", function(args) paste0("startsWith(tolower(", text(args[1]), "), tolower(", empty(args[2]), "))"))
-  x <- replace_function(x, "ends_with", function(args) paste0("endsWith(tolower(", text(args[1]), "), tolower(", empty(args[2]), "))"))
+  x <- replace_function(x, "starts_with", function(args) paste0("startsWith(tolower(", text(args[1]), "), ", lower_text(args[2]), ")"))
+  x <- replace_function(x, "ends_with", function(args) paste0("endsWith(tolower(", text(args[1]), "), ", lower_text(args[2]), ")"))
   x <- replace_function(x, "left", function(args) paste0("substr(", text(args[1]), ", 1, ", args[2], ")"))
   x <- replace_function(x, "right", function(args) paste0("substring(", text(args[1]), ", pmax(nchar(", text(args[1]), ") - (", args[2], ") + 1, 1))"))
   x <- replace_function(x, "mid", function(args) paste0("substr(", text(args[1]), ", ", args[2], ", (", args[2], ") + (", args[3], ") - 1)"))
   x <- replace_function(x, "find", function(args) {
     if (fixed_value(empty(args[1]))) {
-      paste0("pmax(regexpr(tolower(", empty(args[1]), "), tolower(", text(args[2]), "), fixed = TRUE), 0)")
+      paste0("pmax(regexpr(", lower_text(args[1]), ", tolower(", text(args[2]), "), fixed = TRUE), 0)")
     } else {
-      paste0("pmax(as.numeric(", by_record("function(n, h) regexpr(n, h, fixed = TRUE)", c(paste0("tolower(", args[1], ")"), paste0("tolower(", text(args[2]), ")"))), "), 0)")
+      paste0("pmax(as.numeric(", by_record("function(n, h) regexpr(n, h, fixed = TRUE)", c(lower_text(args[1]), paste0("tolower(", text(args[2]), ")"))), "), 0)")
     }
   })
+  # (an empty text to search leaves the text as it is)
   x <- replace_function(x, "replace_text", function(args) {
     args[2:3] <- vapply(args[2:3], empty, character(1), USE.NAMES = FALSE)
-    if (fixed_value(args[2]) && fixed_value(args[3])) {
+    if (identical(args[2], "\"\"")) {
+      text(args[1])
+    } else if (fixed_value(args[2]) && fixed_value(args[3])) {
       paste0("gsub(", args[2], ", ", args[3], ", ", text(args[1]), ", fixed = TRUE)")
     } else {
-      paste0("as.character(", by_record("function(t, s, r) gsub(s, r, t, fixed = TRUE)", c(text(args[1]), args[2:3])), ")")
+      paste0("as.character(", by_record("function(t, s, r) if (nzchar(s)) gsub(s, r, t, fixed = TRUE) else t", vapply(args[1:3], text, character(1))), ")")
     }
   })
+  # (with the separator of each record)
   x <- replace_function(x, "concat_ws", function(args) {
-    parts <- paste0("as.character(", args[-1], ")", collapse = ", ")
-    paste0("apply(cbind(", parts, "), 1, function(v) paste(v[!is.na(v) & nzchar(v)], collapse = ", empty(args[1]), "))")
+    parts <- paste0("as.character(", args[-1], ")")
+    paste0("as.character(", by_record("function(s, ...) { v <- c(...); paste(v[!is.na(v) & nzchar(v)], collapse = s) }", c(text(args[1]), parts)), ")")
   })
   x <- replace_function(x, "concat", function(args) paste0("paste0(", paste(vapply(args, text, character(1)), collapse = ", "), ")"))
   x <- replace_function(x, "upper", function(args) paste0("toupper(", text(args[1]), ")"))

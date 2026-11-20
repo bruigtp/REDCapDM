@@ -950,3 +950,67 @@ test_that("rd_rlogic compares an operation with an empty text as a check of blan
   # A field compared with an empty text is translated as before
   expect_equal(rd_rlogic(data = data, dic = dic, logic = "[t] = ''", var = "res")$rlogic, "is.na(data$t)")
 })
+
+test_that("rd_rlogic reads a blank text to search, replace or separate as an empty text, with the separator of each record", {
+  data <- data.frame(record_id = 1:3, t = c("abc", "x y", "Bcd"), n = c(NA, "y", "c"), r = c(NA, "Z", ""), s = c("-", ":", NA), o = c("B", "B", "C"), res = NA)
+  dic <- make_dic(c("record_id", "t", "n", "r", "s", "o", "res"))
+  ev <- function(logic, data) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+
+  expect_equal(ev("find([n], [t])", data), c(1, 3, 2))
+  expect_equal(ev("replace_text([t], 'a', [r])", data), c("bc", "x y", "Bcd"))
+  expect_equal(ev("replace_text([t], [n], 'Q')", data), c("abc", "x Q", "BQd"))
+  expect_equal(ev("replace_text([t], '', 'Q')", data), c("abc", "x y", "Bcd"))
+  expect_equal(ev("contains([t], [n])", data), c(TRUE, TRUE, TRUE))
+  expect_equal(ev("not_contain([t], [n])", data), c(FALSE, FALSE, FALSE))
+  expect_equal(ev("starts_with([t], [n])", data), c(TRUE, FALSE, FALSE))
+  expect_equal(ev("ends_with([t], [n])", data), c(TRUE, TRUE, FALSE))
+  expect_equal(ev("contains([n], 'y')", data), c(FALSE, TRUE, FALSE))
+
+  expect_equal(ev("concat_ws([s], [t], [o])", data), c("abc-B", "x y:B", "BcdC"))
+  expect_equal(ev("concat_ws([s], 'a', 'b')", data), c("a-b", "a:b", "ab"))
+  # (the result of each record doesn't depend on the order of the rows)
+  expect_equal(ev("concat_ws([s], [t], [o])", data[3:1, ]), c("BcdC", "x y:B", "abc-B"))
+})
+
+test_that("rd_rlogic only reads the units of datediff() in its arguments", {
+  data <- data.frame(record_id = 1:2, a = c(1, 2), t = c("ab", "cs"), d1 = as.Date(c("2020-01-01", "2021-01-01")), d2 = as.Date(c("2021-01-01", "2020-01-01")), res = NA)
+  dic <- make_dic(c("record_id", "a", "t", "d1", "d2", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("if([a] = 1, 'f', 'm')"), c("f", "m"))
+  expect_equal(ev("ends_with([t], 's')"), c(FALSE, TRUE))
+  expect_equal(ev("concat([t], 'y')"), c("aby", "csy"))
+  expect_equal(ev("if([a] = 1, datediff([d1], [d2], 'd'), 'd')"), c("366", "d"))
+  expect_equal(ev("datediff([d1], [d2], 'd', true)"), c(366, -366))
+  expect_equal(ev("datediff([d1], [d2], 'd' )"), c(366, 366))
+  expect_equal(
+    rd_rlogic(data = data, dic = dic, logic = "datediff([d1],[d2],'y')", var = "res")$rlogic,
+    "abs((lubridate::time_length(lubridate::interval(data$d1,data$d2), 'day') / 365.2425))"
+  )
+})
+
+test_that("rd_rlogic gives no values with data without rows", {
+  data <- data.frame(record_id = character(0), a = numeric(0), t = character(0), res = logical(0))
+  dic <- make_dic(c("record_id", "a", "t", "res"))
+  for (logic in c("1", "2 + 3", "upper('abc')", "concat('prefix', [t])", "[a] + 1", "concat_ws('-', [t], 'x')", "find('a', [t])", "replace_text([t], 'a', [t])")) {
+    out <- rd_rlogic(data = data, dic = dic, logic = logic, var = "res")
+    expect_length(out$eval, 0)
+    expect_equal(nrow(out$eval_data), 0, info = logic)
+    expect_named(out$eval_data, c("record_id", "eval"))
+  }
+})
+
+test_that("rd_rlogic reads the empty texts of the fields as blank values", {
+  data <- data.frame(record_id = c("1", "2", "3"), t = c("abc", "", NA), f = factor(c("Yes", "", NA)), res = NA)
+  dic <- make_dic(c("record_id", "t", "f", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  for (field in c("t", "f")) {
+    expect_equal(ev(paste0("isblankormissingcode([", field, "])")), c(FALSE, TRUE, TRUE), info = field)
+    expect_equal(ev(paste0("[", field, "] = ''")), c(FALSE, TRUE, TRUE), info = field)
+    expect_equal(ev(paste0("'' = [", field, "]")), c(FALSE, TRUE, TRUE), info = field)
+    expect_equal(ev(paste0("[", field, "] <> ''")), c(TRUE, FALSE, FALSE), info = field)
+    expect_equal(ev(paste0("'' <> [", field, "]")), c(TRUE, FALSE, FALSE), info = field)
+  }
+  # The identifier of the records is kept
+  data$record_id[2] <- ""
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[t] = ''", var = "res")$eval_data$record_id, c("1", "", "3"))
+})
