@@ -120,7 +120,7 @@ This function is used to process checkbox variables in a REDCap dataset. By defa
 <li><p>Branching logic evaluation requires <code>event_form</code> for longitudinal projects.</p></li>
 <li><p>Names are cleaned and truncated to 60 characters; uniqueness is enforced.</p></li>
 <li><p>Fields that cannot be evaluated are listed in <code>results</code>.</p></li>
-<li><p>The branching logic and calculations that compare an option with <code>0</code> or <code>1</code> (e.g. <code>[cb(1)] = '1'</code>) compare it with its new labels. The ones that use the options as numbers (e.g. <code>[cb(1)] + [cb(2)] &gt;= 2</code>) keep the codes and only the names of the options change.</p></li>
+<li><p>In the branching logic and calculations, the options get their new names and keep their codes <code>0</code> and <code>1</code>, as in REDCap logic (e.g. <code>[cb(1)] = '1'</code> is <code>[cb_option] = '1'</code>, and <code>[cb(1)] + [cb(2)] &gt;= 2</code> is <code>[cb_option] + [cb_other] &gt;= 2</code>). <code><a href="rd_dictionary.html">rd_dictionary()</a></code> writes the labels when it translates the logic into R.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

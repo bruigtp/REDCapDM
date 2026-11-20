@@ -95,10 +95,12 @@ A list with:
 
 - Fields that cannot be evaluated are listed in `results`.
 
-- The branching logic and calculations that compare an option with `0`
-  or `1` (e.g. `[cb(1)] = '1'`) compare it with its new labels. The ones
-  that use the options as numbers (e.g. `[cb(1)] + [cb(2)] >= 2`) keep
-  the codes and only the names of the options change.
+- In the branching logic and calculations, the options get their new
+  names and keep their codes `0` and `1`, as in REDCap logic (e.g.
+  `[cb(1)] = '1'` is `[cb_option] = '1'`, and `[cb(1)] + [cb(2)] >= 2`
+  is `[cb_option] + [cb_other] >= 2`).
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  writes the labels when it translates the logic into R.
 
 ## See also
 

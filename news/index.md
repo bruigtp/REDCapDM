@@ -194,6 +194,27 @@
   lost the queries of those fields. They also read the options written
   without a space after the comma (e.g. `5,Always`): they warned
   “Expected 2 pieces” and the logic with that option was wrong.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  only renames the options of the checkboxes in the branching logic and
+  calculations, which keep the codes 0 and 1 (e.g. `[cb(1)] = '1'` is
+  `[cb_one] = '1'`), and
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  writes the labels when it translates the logic into R. The labels
+  written by
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  were read as codes when they looked like codes
+  (e.g. `checkbox_labels = c("1", "0")` selected the unchecked options),
+  and didn’t work without
+  [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md).
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  also translates the `<>` and `!=` inside the value of another `<>`
+  (e.g. `[a] <> 0 + if([b] <> 1, 1, 0)`): a blank value gave NA instead
+  of being different from any value.
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  keeps the rows of the forms that aren’t repeating when the instrument
+  of `redcap_repeat_instrument` is an empty text (e.g. read from a CSV
+  file), and the normal rows of a form that only repeats in some events
+  (they were removed).
 - [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
   and
   [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
