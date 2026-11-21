@@ -375,7 +375,7 @@ rd_event <- function(project = NULL,
   } else {
     # Ensure only one report title is provided
     if (length(report_title) > 1) {
-      rd_abort("Multiple titles provided for the report. Please specify only one..")
+      rd_abort("Multiple titles provided for the report. Please specify only one.")
     }
   }
 

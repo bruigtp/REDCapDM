@@ -45,7 +45,7 @@ rd_export <- function(project = NULL, queries = NULL, column = NULL, sheet_name 
       )
     }
     if (!is.null(queries)) {
-      rd_warn("Queries has been provided twice. The function will ignore the {.arg queries} argument.")
+      rd_warn("Queries have been provided twice. The function will ignore the {.arg queries} argument.")
     }
     queries <- project$queries
   }

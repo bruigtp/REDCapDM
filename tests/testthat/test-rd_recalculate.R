@@ -77,7 +77,7 @@ test_that("recalculate stops for longitudinal project without event_form", {
 
   expect_error(
     rd_recalculate(data = data_long, dic = cov_dic_test),
-    "Recalculation cannot proceed because the project has more than one event"
+    "Recalculation cannot proceed because the project is longitudinal"
   )
 })
 

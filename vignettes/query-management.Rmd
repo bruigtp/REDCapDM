@@ -77,7 +77,7 @@ Another example is when we try to identify missing values in variables where a b
 In both scenarios, if a variable contains branching logic that cannot be converted from REDCap logic to R logic, the function will issue a warning. The warning message will advise the user to review the `results` element of the output for more information. This is to indicate that there might be potential issues or limitations with the conversion process for that specific variable's branching logic:
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-covican_transformed$dictionary$branching_logic_show_field_only_if[covican_transformed$dictionary$field_name %in% "potassium"] <- "[available_analytics][current-instance]=‘1’"
+covican_transformed$dictionary$branching_logic_show_field_only_if[covican_transformed$dictionary$field_name %in% "potassium"] <- "[available_analytics]='1' and [user-name]='admin'"
 ```
 
 
@@ -91,7 +91,7 @@ example <- rd_query(covican_transformed,
 example$results
 ```
 
-Based on the information provided, in addition to the missing values of the _age_ and _copd_ variables already identified, there are 31 missing values in the _potassium_ variable. The branching logic associated with this variable, `[available_analytics][current-instance]=‘1’`, contains a smart variable `[current-instance]`, which cannot be directly transformed into R logic. 
+Based on the information provided, in addition to the missing values of the _age_ and _copd_ variables already identified, there are 31 missing values in the _potassium_ variable. The branching logic associated with this variable, `[available_analytics]='1' and [user-name]='admin'`, contains the smart variable `[user-name]` (the user who is entering the data), which isn't a column of the exported data, so the logic can't be evaluated in R. 
 
 To address this issue and correctly identify missing values only when _available_analytics_ has the value _1_, the filter argument can be utilized. By specifying the condition within the branching logic, you can ensure that the filtering process fulfills this condition.
 
@@ -502,7 +502,7 @@ rd_export(queries = example$queries,
           password = "123") 
 ```
 
-We specify the sheet name with the `sheet_name` argument and the path to the file to be exported with the `path` argument. To prevent anyone from modifying the exported file, we can also add a password.
+We specify the sheet name with the `sheet_name` argument and the path to the file to be exported with the `path` argument. We can also add a password that protects the worksheet against edits (the file can still be opened and copied without it).
 
 The `column` argument refers to the column of the report that contains the link to each query. The function converts this column into hyperlink format in the exported file, so that we can simply click on the link to go to the specific query in the REDCap project. This column only exists when the queries were identified with the `link` argument of `rd_query()`.
 

@@ -66,7 +66,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   check_strings(logic, "logic", null_ok = FALSE)
   check_strings(var, "var", null_ok = FALSE)
 
-  # Check if the project is longitudinal (more than one event present in the data)
+  # Check if the project is longitudinal (the data has events)
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
   # Repeating instruments of the project (event/form combinations)
@@ -74,7 +74,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Error: data is longitudinal, but event_form isn't provided
   if (is.null(event_form) && longitudinal) {
-    rd_abort("There is more than one event in the data, but the event-form correspondence hasn't been specified.")
+    rd_abort("The data is longitudinal (it has the column `redcap_event_name`), but the event-form correspondence hasn't been specified.")
   }
 
   # If user accidentally passes multiple logic expressions or multiple vars
@@ -360,7 +360,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # An if() whose values are dates (e.g. `year(if([flag] = 1, [a], [b]))`) gives dates: ifelse() gives numbers
   rlogic <- date_conditionals(rlogic, data)
 
-  # After transcribing the logic, we need to evaluate it based on the corresponding event of the variable. This is only necessary if the data contains more than one event:
+  # After transcribing the logic, we need to evaluate it based on the corresponding event of the variable. This is only necessary if the data has events:
   if (!is.null(event_form)) {
     # Get the form where the variable is found through the dictionary
     form_var <- dic |>
@@ -417,7 +417,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       rlogic_eval <- if (is.null(rlogic_eval)) logical(0) else rlogic_eval[0]
     }
 
-    # If there's more than one event, return the evaluation only for the specified event(s):
+    # If the data has events, return the evaluation only for the specified event(s):
     if (!is.null(event_form)) {
       if (inherits(rlogic_eval, c("Date", "POSIXct"))) {
         # (dates keep their class and time zone: ifelse() would turn them into numbers)
@@ -1561,28 +1561,27 @@ translate_functions <- function(x) {
   values <- function(args) paste0("cbind(", paste(args, collapse = ", "), ")")
   digits <- function(args) if (length(args) > 1) args[2] else "0"
   # rounddown() and roundup() with decimals: the result is the largest (rounddown) or smallest (roundup) number with
-  # these decimals, written as R reads it (k / 10^digits), that isn't larger or smaller than the value. So a value that
-  # already has these decimals is kept (e.g. roundup(1.1, 2) is 1.1, although 1.1 * 100 is 110.00000000000001), and the
-  # result is never on the wrong side of the value. A number too large to have decimals is kept (e.g. 1e308 or 309
-  # decimals), with so many negative decimals that 10^-digits is Inf (e.g. -324) the result is 0 or, beyond the largest
-  # number, Inf, and without digits (e.g. NA) the result is NA
-  # (the negative decimals divide by 10^-digits, which is exact; without the functions translated below, e.g. length()
-  # or ifelse())
+  # these decimals, read as R reads the numbers written with them (e.g. "0.29" or "29e-2", as the data), that isn't
+  # larger or smaller than the value. So a value that already has these decimals is kept (e.g. roundup(1.1, 2) is 1.1,
+  # although 1.1 * 100 is 110.00000000000001, or rounddown(1e-24, 24) is 1e-24), and the result is never on the wrong
+  # side of the value. The value is scaled in two steps, so that 10^digits doesn't overflow (e.g. 309 decimals). A number
+  # too large to have decimals is kept (e.g. 1e308 with one decimal), a result beyond the largest number is Inf (e.g.
+  # roundup(12, -324)), the decimals are whole numbers (as in REDCap) and without digits (e.g. NA) the result is NA
+  # (without the functions translated below, e.g. length() or ifelse())
   rounding <- function(r_fun) function(args) {
     if (digits(args) %in% c("0", "'0'", "\"0\"")) {
       paste0(r_fun, "(", args[1], ")")
     } else {
       steps <- if (r_fun == "floor") {
-        "k <- k + ((k + 1) / up * dn <= v); k <- k - (k / up * dn > v); k <- k - (k / up * dn > v)"
+        "k <- k + (dec(k + 1) <= v); k <- k - (dec(k) > v); k <- k - (dec(k) > v)"
       } else {
-        "k <- k - ((k - 1) / up * dn >= v); k <- k + (k / up * dn < v); k <- k + (k / up * dn < v)"
+        "k <- k - (dec(k - 1) >= v); k <- k + (dec(k) < v); k <- k + (dec(k) < v)"
       }
-      beyond <- if (r_fun == "floor") "c(0, -Inf)[1 + (v0[zero] < 0)]" else "c(0, Inf)[1 + (v0[zero] > 0)]"
       paste0(
-        "(function(v, d) { up <- 10^pmax(d, 0); dn <- 10^pmax(-d, 0); z <- v * up / dn; k <- floor(z); ", steps, "; ",
-        "r <- k / up * dn; v0 <- rep_len(v, NROW(r)); keep <- !is.na(d) & (!is.finite(v) | !is.finite(z) | abs(z) >= 2^52); ",
-        "r[keep] <- v0[keep]; zero <- !is.na(d) & is.infinite(dn) & is.finite(v); r[zero] <- ", beyond, "; r })(",
-        args[1], ", ", digits(args), ")"
+        "(function(v, d) { d <- trunc(d); z <- v * 10^(d %/% 2) * 10^(d - d %/% 2); ",
+        "dec <- function(k) suppressWarnings(as.numeric(sprintf(\"%.0fe%.0f\", k, -d))); k <- floor(z); ", steps, "; ",
+        "r <- dec(k); v0 <- rep_len(v, NROW(r)); keep <- !is.na(d) & (!is.finite(v) | !is.finite(z) | abs(z) >= 2^52); ",
+        "r[keep] <- v0[keep]; r })(", args[1], ", ", digits(args), ")"
       )
     }
   }

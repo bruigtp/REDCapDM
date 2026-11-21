@@ -68,7 +68,8 @@ test_that("rd_rlogic stops if logic references variables not in data", {
 
   expect_error(
     rd_rlogic(data = df_single, dic = dic, logic = "[nonexistent]='1'", var = field),
-    "There is more than one event in the data, but the event-form correspondence hasn't been specified."
+    "The data is longitudinal (it has the column `redcap_event_name`), but the event-form correspondence hasn't been specified.",
+    fixed = TRUE
   )
 })
 
@@ -1282,4 +1283,17 @@ test_that("rd_rlogic keeps the numbers of the logic when it rewrites it", {
   ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
   expect_equal(ev("[a] = 1.0000000000000002 and trim([text]) <> ''"), c(TRUE, FALSE))
   expect_equal(ev("[b] = 1125899906842624.5 and trim([text]) <> ''"), c(TRUE, FALSE))
+})
+
+test_that("rd_rlogic rounds with the numbers with these decimals as R reads them", {
+  dic <- make_dic(c("record_id", "a", "res"))
+  ev <- function(logic, a) as.vector(rd_rlogic(data = data.frame(record_id = seq_along(a), a = a, res = NA), dic = dic, logic = logic, var = "res")$eval)
+  # (values with these decimals read by R, as the data, are kept)
+  x <- as.numeric(c("0.531028", "0.749778", "-0.143997"))
+  for (f in c("round", "roundup", "rounddown")) expect_identical(ev(paste0(f, "([a], 6)"), x), x, info = f)
+  expect_identical(ev("rounddown([a], 24)", 1e-24), 1e-24)
+  expect_identical(ev("roundup([a], 25)", 1e-25), 1e-25)
+  # (extreme decimals with very small numbers)
+  expect_identical(ev("round([a], 308)", c(1e-320, 2.25e-308)), c(0, 2e-308))
+  expect_identical(ev("roundup([a], 309)", 1e-320), 1e-309)
 })

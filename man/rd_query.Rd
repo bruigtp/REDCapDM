@@ -34,7 +34,7 @@ rd_query(
 
 \item{negate}{Logical, if \code{TRUE}, identifies values that \strong{do not} meet the condition. Default is \code{FALSE}.}
 
-\item{event}{Required for longitudinal projects to avoid overestimation. REDCap event(s) to analyze.}
+\item{event}{REDCap event(s) to analyze in longitudinal projects. If it isn't given, the events where the form of each variable is collected are taken from \code{event_form}; without \code{event_form}, all the events are analyzed (with a warning), which can overestimate the number of queries.}
 
 \item{filter}{Optional filter of the rows to check, written as text (e.g. \code{"age > 18"}), such as the branching logic of a variable translated by \code{rd_dictionary()}. Give one filter, or one per variable. Several conditions separated by commas must all be met, and the filter can use objects created in your session or in your function.}
 

@@ -99,10 +99,11 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 
 #' Round Numbers to a Specified Number of Digits ----
 #'
-#' Rounds as REDCap: half is rounded away from zero (`round(2.5)` is 3 and `round(-2.5)` is -3). The value is compared
-#' with the half written with these decimals, as R reads it: `round(2.675, 2)` is 2.68 (2.675 is stored as
-#' 2.67499999999999982, which is how R reads the half 2.675), while `round(1.49999999)`, `round(1.499999999999999)` and
-#' `round(0.4999999999999999)` are below the half.
+#' Rounds as REDCap: half is rounded away from zero (`round(2.5)` is 3 and `round(-2.5)` is -3). The numbers with
+#' these decimals are read as R reads the numbers written with them (e.g. "2.675" or "2675e-3", as the data): the value
+#' is compared with the half read in this way, so `round(2.675, 2)` is 2.68 (2.675 is stored as 2.67499999999999982),
+#' while `round(1.49999999)`, `round(1.499999999999999)` and `round(0.4999999999999999)` are below the half. The
+#' decimals are whole numbers (as in REDCap).
 #'
 #' @param x A numeric vector to be rounded.
 #' @param digits Integer indicating the number of decimal places to round to.
@@ -113,20 +114,25 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 #' round(c(-2.718, 3.14159), 1)
 #' @noRd
 round <- function(x, digits = 0) {
-  # (the negative decimals divide by 10^-digits, which is exact)
-  up <- 10^pmax(digits, 0)
-  down <- 10^pmax(-digits, 0)
-  z <- abs(x) * up / down
+  digits <- trunc(digits)
+  a <- abs(x)
+  # (scaled in two steps, so that 10^digits doesn't overflow, e.g. with 309 decimals)
+  z <- a * 10^(digits %/% 2) * 10^(digits - digits %/% 2)
+  # The number k with these decimals, and the half between k and k + 1 (k and a 5 in the next decimal)
+  number <- function(k) suppressWarnings(as.numeric(sprintf("%.0fe%.0f", k, -digits)))
+  half <- function(k) suppressWarnings(as.numeric(sprintf("%.0f5e%.0f", k, -digits - 1)))
+  # The largest number with these decimals that isn't larger than the value (z can be one unit away)
   n <- floor(z)
-  # The half between n and n + 1 written with these decimals: (2n + 1) / (2 * 10^digits)
-  out <- sign(x) * ((n + (abs(x) >= (2 * n + 1) / (2 * up) * down)) / up * down)
+  n <- n + (number(n + 1) <= a)
+  n <- n - (number(n) > a)
+  # (a value that already is the number with these decimals is kept: with many digits, the half can be read as the
+  # same number, e.g. -280.634537 with 13 decimals)
+  out <- sign(x) * number(n + (a >= half(n) & number(n) != a))
   # A number without decimals at this precision is kept as it is: an integer too large to have decimals (e.g. 1e17),
-  # or a number that multiplied by 10^digits is Inf or NaN (e.g. 1e308 with one decimal, or 309 decimals), and so are
-  # Inf and NaN. With so many negative decimals that 10^-digits is Inf (e.g. -324) the result is 0, and without digits
-  # (e.g. NA) it is NA
+  # or a number that multiplied by 10^digits is Inf (e.g. 1e308 with one decimal), and so are Inf and NaN. Without
+  # digits (e.g. NA), the result is NA
   keep <- (!is.na(digits) & (!is.finite(x) | !is.finite(z) | z >= 2^52)) %in% TRUE
   out[keep] <- rep_len(as.numeric(x), length(out))[keep]
-  out[(!is.na(digits) & is.infinite(down) & is.finite(x)) %in% TRUE] <- 0
   out
 }
 

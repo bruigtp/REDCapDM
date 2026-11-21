@@ -11,7 +11,7 @@
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
 #' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels.
-#' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE`). Defaults to `"missing"`.
+#' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE` or `NA`). Defaults to `"missing"`.
 #'
 #' @return A list with:
 #' \describe{
@@ -45,7 +45,7 @@
 #' # Longitudinal project with NA logic
 #' res <- rd_checkbox(data = covican$data,
 #'                    dic = covican$dictionary,
-#'                    event_form = covican$event_form,,
+#'                    event_form = covican$event_form,
 #'                    na_logic = "eval")
 #'
 #' @family process functions

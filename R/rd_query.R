@@ -14,7 +14,7 @@
 #' @param negate Logical, if `TRUE`, identifies values that **do not** meet the condition. Default is `FALSE`.
 #' @param variables_names Optional character vector of descriptions for each variable. Defaults to the variables labels in the dictionary.
 #' @param query_name Optional character vector describing each query. Defaults to a standard format: `The value is [value] and it should not be [expression]`.
-#' @param event Required for longitudinal projects to avoid overestimation. REDCap event(s) to analyze.
+#' @param event REDCap event(s) to analyze in longitudinal projects. If it isn't given, the events where the form of each variable is collected are taken from `event_form`; without `event_form`, all the events are analyzed (with a warning), which can overestimate the number of queries.
 #' @param instrument Optional REDCap instrument(s) for each variable. Defaults to the instrument reported in the dictionary.
 #' @param filter Optional filter of the rows to check, written as text (e.g. `"age > 18"`), such as the branching logic of a variable translated by `rd_dictionary()`. Give one filter, or one per variable. Several conditions separated by commas must all be met, and the filter can use objects created in your session or in your function.
 #' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
@@ -477,9 +477,6 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       )
     }
 
-    # Transform the expression so it does not contain "x"
-    expression[i] <- gsub("\\bx\\b", "", expression[i])
-
     # Handle negation if specified
     if (negate) {
       raw <- suppressMessages(dplyr::anti_join(raw0, raw))
@@ -575,7 +572,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
               variables_names[i]
             } else {
               if (length(variables_names) != length(variables) & length(variables_names) > 1) {
-                rd_abort("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", class = "REDCapDM_error_argument")
+                rd_abort("Multiple variable names specified, but the number of names is different from the number of variables. Please match each variable to each name.", class = "REDCapDM_error_argument")
               }
             }
           }
@@ -594,9 +591,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           }
         } else {
           if (negate) {
-            trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<=", ">=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than or equal to ", " greater than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE))))
+            query_message(expression[i], function(d) trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should be", d))), x[, variables[i]])
           } else {
-            trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c("<=", ">=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" less than or equal to ", " greater than or equal to ", " less than ", "greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE))))
+            query_message(expression[i], function(d) trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should not be", d))), x[, variables[i]])
           }
         },
         Code = "",
@@ -654,7 +651,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
               variables_names[i]
             } else {
               if (length(variables_names) != length(variables) & length(variables_names) > 1) {
-                rd_abort("Multiple variables names specified, but the number of names is different from the number of variables. Please match each variable to each name.", class = "REDCapDM_error_argument")
+                rd_abort("Multiple variable names specified, but the number of names is different from the number of variables. Please match each variable to each name.", class = "REDCapDM_error_argument")
               }
             }
           }
@@ -674,9 +671,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           }
         } else {
           if (negate) {
-            gsub("  ", " ", paste("The value should be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c(">=", "<=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" greater than or equal to ", " less than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE)))
+            query_message(expression[i], function(d) gsub("  ", " ", paste("The value should be", d)))
           } else {
-            gsub("  ", " ", paste("The value should not be", stringi::stri_replace_all_regex(gsub(" ", "", expression[i]), pattern = c(">=", "<=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" greater than or equal to ", " less than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE)))
+            query_message(expression[i], function(d) gsub("  ", " ", paste("The value should not be", d)))
           }
         },
         stringsAsFactors = FALSE
@@ -810,9 +807,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           dplyr::filter((.data$var_event %in% complete_vars & .data$total != 0) | .data$var_event %in% zero_vars)
 
         for (i in zero_vars) {
-          report$query_descr[report$var_event %in% i] <- paste0(
-            "The value should not be ",
-            stringi::stri_replace_all_regex(gsub(" ", "", expression[which(variables %in% report$var[which(report$var_event %in% i)])]), pattern = c(">=", "<=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)"), replacement = c(" greater than or equal to ", " less than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing "), vectorize_all = FALSE)
+          report$query_descr[report$var_event %in% i] <- query_message(
+            expression[which(variables %in% report$var[which(report$var_event %in% i)])],
+            function(d) paste0("The value should not be ", d)
           )
         }
 
@@ -851,7 +848,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     # Reorder columns and prepare the final report for output
     report <- report |> dplyr::select("dag", "var", "descr", "event", "query_descr", "total")
     names(report) <- c("DAG", "Variables", "Description", "Event", "Query", "Total")
-    report[, "Query"] <- gsub("&", " & ", gsub("\\|", " \\| ", report[, "Query"]))
+    # (not inside the texts between quotes of the expressions, e.g. `x == 'a|b'`)
+    report[, "Query"] <- outside_quotes(report[, "Query"], function(s) gsub("&", " & ", gsub("\\|", " \\| ", s)))
     rownames(report) <- NULL
   } else {
     # If no queries identified, return a report with zero queries

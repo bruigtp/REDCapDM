@@ -32,7 +32,7 @@ rd_transform(
 
 \item{checkbox_labels}{Character vector of length 2 for labels of unchecked/checked values. Default: \code{c("No", "Yes")}.}
 
-\item{na_logic}{Controls how missing values are set based on the branching logic of a checkbox. Must be one of \code{"none"} (do nothing), \code{"missing"} (set to \code{NA} only when the logic evaluation is \code{NA}), or \code{"eval"} (set to \code{NA} when the logic evaluates to \code{FALSE}). Defaults to \code{"none"}.}
+\item{na_logic}{Controls how missing values are set based on the branching logic of a checkbox. Must be one of \code{"none"} (do nothing), \code{"missing"} (set to \code{NA} only when the logic evaluation is \code{NA}), or \code{"eval"} (set to \code{NA} when the logic evaluates to \code{FALSE} or \code{NA}). Defaults to \code{"none"}.}
 
 \item{exclude_recalc}{Optional. Character vector of field names to exclude from recalculation.}
 

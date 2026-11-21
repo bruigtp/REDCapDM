@@ -10,7 +10,7 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
-#' @param na_logic Controls how missing values are set based on the branching logic of a checkbox. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE`). Defaults to `"none"`.
+#' @param na_logic Controls how missing values are set based on the branching logic of a checkbox. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE` or `NA`). Defaults to `"none"`.
 #' @param exclude_recalc Optional. Character vector of field names to exclude from recalculation.
 #' @param exclude_factor Optional character vector of variable names (use original names **without** the `.factor` suffix) to exclude from conversion.
 #' @param delete_vars Optional. A character vector of variable names to remove from both the dataset and dictionary.
@@ -83,7 +83,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     check_flag(wide, "wide")
   }
 
-  # Check if the project is longitudinal (has more than one event) or not:
+  # Check if the project is longitudinal (the data has events) or not:
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
   if (final_format == "by_event" && is.null(event_form)) {
@@ -128,7 +128,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # If the project is longitudinal and the event hasn't been specified:
   if (longitudinal && is.null(event_form)) {
-    rd_warn("The project contains more than one event. For a complete transformation is recommended to include the event-form correspondence.")
+    rd_warn("The project is longitudinal (the data has the column `redcap_event_name`). For a complete transformation it is recommended to include the event-form correspondence.")
   }
 
   rd_inform("\u23F3 Transformation in progress...")
@@ -182,7 +182,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # If the project is longitudinal and the event hasn't been specified no recalculation is possible
   if (longitudinal && is.null(event_form)) {
-    results <- c(results, "\nNo recalculation is possible as the project has more than one event and the event-form correspondence has not been specified\n")
+    results <- c(results, "\nNo recalculation is possible as the project is longitudinal and the event-form correspondence has not been specified\n")
   } else {
     recalc <- rd_recalculate(data = data, dic = dic, event_form = event_form, exclude = exclude_recalc)
 
@@ -207,7 +207,7 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   if (length(names(data)[grep("___", names(data))]) > 0) {
     # If the event_form is not provided and the project is longitudinal
     if (is.null(event_form) && longitudinal) {
-      results <- c(results, "\nBranching logic evaluation is not possible as the project has more than one event and the event-form correspondence has not been specified\n")
+      results <- c(results, "\nBranching logic evaluation is not possible as the project is longitudinal and the event-form correspondence has not been specified\n")
     } else {
       # Transform missings of checkboxes with branching logic:
       trans <- rd_checkbox(data = data, dic = dic, event_form = event_form, checkbox_labels = checkbox_labels, checkbox_names = TRUE, na_logic = na_logic)

@@ -132,7 +132,7 @@ covican_recalc$results
 
 After running this function:
 
-- A new variable with the suffix `_recalc` is added to the dataset, placed immediately after the original variable and containing the recalculated values.
+- For each calculated field whose recalculated values are different from the values of REDCap, a new variable with the suffix `_recalc` is added to the dataset, placed immediately after the original variable and containing the recalculated values.
 
 - The data dictionary is updated with a corresponding entry, where the original variable label is extended with `"(Recalculate)"` to make these fields easy to identify.
 

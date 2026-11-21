@@ -237,7 +237,7 @@ test_that("rd_query errors when variables_names length mismatches variables", {
     rd_query(data = toy_data, dic = toy_dic,
              variables = "a", expression = "x>0",
              variables_names = c("Custom1", "Custom2")),
-    regexp = "Multiple variables names"
+    regexp = "Multiple variable names"
   )
 })
 
@@ -1155,4 +1155,17 @@ test_that("rd_query applies the branching logic in R with comments", {
   }
   expect_no_warning(expect_equal(ids("data$value == 0 # [note]"), "C"))
   expect_equal(ids("[value] = 0"), "C")
+})
+
+test_that("rd_query keeps the texts between quotes of the expression in the messages", {
+  toy_data <- data.frame(record_id = c("1", "2", "3"), t = c("x", "AB A B", "a>b"), stringsAsFactors = FALSE)
+  toy_dic <- data.frame(field_name = c("record_id", "t"), form_name = "f1", field_type = "text", field_label = c("ID", "T"), stringsAsFactors = FALSE)
+  msg <- function(expression) unique(suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "t", expression = expression))$queries$Query)
+  expect_equal(msg("x == 'x'"), "The value is x and it should not be equal to 'x'")
+  expect_equal(msg("x == 'a>b'"), "The value is a>b and it should not be equal to 'a>b'")
+  expect_equal(msg("x %in% c('A  B', 'AB A B')"), "The value is AB A B and it should not be equal to c('A  B','AB A B')")
+  # Two expressions with different texts give two queries
+  both <- suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = c("t", "t"), expression = c("grepl('A B', x, fixed = TRUE)", "grepl('AB', x, fixed = TRUE)")))
+  expect_equal(nrow(both$queries), 2)
+  expect_equal(both$queries$Query, c("The value is AB A B and it should not be grepl('A B',,fixed=TRUE)", "The value is AB A B and it should not be grepl('AB',,fixed=TRUE)"))
 })

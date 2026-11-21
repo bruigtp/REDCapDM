@@ -13,7 +13,7 @@
 #'
 #' @details
 #' * Fields of type `calc` in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (`NA`).
-#' * Recalculated values are compared with the original values.
+#' * Recalculated values are compared with the original values, both rounded to three decimals (e.g. 1.0004 and 1 are equal).
 #' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary.
 #' * Works for single-event projects; for longitudinal projects, `event_form` must be provided.
 #' * Fields with incomplete branching logic or smart variables may fail to recalculate.
@@ -253,7 +253,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     results <- stringr::str_glue("{results}")
   } else {
     # Stop if recalculation is not possible due to missing event-form mapping in longitudinal projects
-    rd_abort("Recalculation cannot proceed because the project has more than one event, but the event-form correspondence has not been provided. Please specify the event-form mapping for accurate recalculation.")
+    rd_abort("Recalculation cannot proceed because the project is longitudinal (the data has the column `redcap_event_name`), but the event-form correspondence has not been provided. Please specify the event-form mapping for accurate recalculation.")
   }
 
   # Return updated datasets and results
