@@ -3,7 +3,7 @@
 #' @description
 #' `r lifecycle::badge('stable')`
 #'
-#' Transforms the raw REDCap data read by the `redcap_data` function. The function runs in one-step pipeline all functions dedicated to processing the data and returns the transformed data and dictionary, along with a summary of each step done.
+#' Transforms the raw REDCap data read by the `redcap_data` function. The function runs in one-step pipeline the functions dedicated to processing the data (`rd_delete_vars()`, `rd_dates()`, `rd_recalculate()`, `rd_checkbox()`, `rd_factor()`, `rd_dictionary()` and, with `final_format`, `rd_split()`) and returns the transformed data and dictionary, along with a summary of each step done. `rd_insert_na()` is not part of it: its filters are specific to each project, so apply it separately.
 #'
 #' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
 #' @param data A `data.frame` or `tibble` with the REDCap dataset.
@@ -22,7 +22,7 @@
 #'
 #' @return A list with elements:
 #' \describe{
-#'   \item{data}{Transformed data (data.frame or nested list when split).}
+#'   \item{data}{Transformed data. With `final_format = "by_event"` or `"by_form"`, as in `rd_split()`: a tibble with one row per event or form and its dataset in the list-column `df` (e.g. `trans$data$df[[1]]`), or the `data.frame` of the event or form chosen with `which_event` or `which_form`.}
 #'   \item{dictionary}{Updated dictionary data.frame.}
 #'   \item{event_form}{Event–form mapping (if applicable).}
 #'   \item{results}{Character summary of transformation steps performed.}
@@ -276,7 +276,9 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   # If an event_form is specified or if the project has only one event and by_form has been specified
   if (!is.null(event_form) || (final_format == "by_form" && !longitudinal)) {
     if (!is.null(event_form)) {
-      var_noevent <- dic$field_name[!dic$form_name %in% event_form$form]
+      # (the record identifier, the first field of the dictionary or else the first column of the data, is always kept: every row needs it)
+      id_var <- if (length(dic$field_name) > 0 && dic$field_name[1] %in% names(data)) dic$field_name[1] else names(data)[1]
+      var_noevent <- setdiff(dic$field_name[!dic$form_name %in% event_form$form], id_var)
 
       if (length(var_noevent) > 0) {
         results <- c(results, stringr::str_glue("\n\n{ind}. Erasing variables from forms that are not linked to any event"))

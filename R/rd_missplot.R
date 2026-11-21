@@ -115,9 +115,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     base_name <- base_name[valid]
     base_name[is.na(base_name) | !nzchar(base_name)] <- names(base_name)[is.na(base_name) | !nzchar(base_name)]
 
-    unique_name <- base_name
-    shared_name <- unique_name %in% unique_name[duplicated(unique_name)]
-    unique_name[shared_name] <- paste0(unique_name[shared_name], " (", names(unique_name)[shared_name], ")")
+    unique_name <- stats::setNames(unique_labels(base_name, names(base_name)), names(base_name))
 
     event_vector_display <- unname(unique_name[raw_names])
   }
@@ -206,18 +204,8 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     axis_labels <- stringr::str_trunc(axis_labels, max_label_length)
   }
 
-  # Variables sharing a label would be merged in the plot: add their name (repeated until every label is unique, as the new labels can coincide with others)
-  with_name <- rep(FALSE, length(axis_labels))
-
-  repeat {
-    shared <- axis_labels %in% axis_labels[duplicated(axis_labels)] & !with_name
-    if (!any(shared)) break
-    axis_labels[shared] <- paste0(axis_labels[shared], " (", colnames(df)[shared], ")")
-    with_name <- with_name | shared
-  }
-
-  # (labels that still coincide, e.g. with repeated column names, are numbered)
-  axis_labels <- make.unique(axis_labels, sep = " ")
+  # Variables sharing a label would be merged in the plot: add their name
+  axis_labels <- unique_labels(axis_labels, colnames(df))
 
   label_lookup <- stats::setNames(axis_labels, colnames(df))
 
@@ -632,4 +620,28 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
     return(p)
   }
+}
+
+
+#' Different labels for different elements
+#'
+#' The labels shared by several elements (variables or events) get the name of each element in parentheses. This is repeated until every label is unique, as a new label can coincide with another one (e.g. `Lab`, `Lab` and `Lab (a)` for `a`, `b` and `c` give `Lab (a)`, `Lab (b)` and `Lab (a) (c)`). Labels that still coincide (e.g. elements with the same name) are numbered.
+#'
+#' @param labels Labels.
+#' @param names Names of the elements.
+#' @return Character vector of unique labels.
+#' @noRd
+unique_labels <- function(labels, names) {
+  labels <- as.character(labels)
+  names <- as.character(names)
+  with_name <- rep(FALSE, length(labels))
+
+  repeat {
+    shared <- labels %in% labels[duplicated(labels)] & !with_name
+    if (!any(shared)) break
+    labels[shared] <- paste0(labels[shared], " (", names[shared], ")")
+    with_name <- with_name | shared
+  }
+
+  make.unique(labels, sep = " ")
 }

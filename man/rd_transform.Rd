@@ -53,7 +53,7 @@ rd_transform(
 \value{
 A list with elements:
 \describe{
-\item{data}{Transformed data (data.frame or nested list when split).}
+\item{data}{Transformed data. With \code{final_format = "by_event"} or \code{"by_form"}, as in \code{rd_split()}: a tibble with one row per event or form and its dataset in the list-column \code{df} (e.g. \code{trans$data$df[[1]]}), or the \code{data.frame} of the event or form chosen with \code{which_event} or \code{which_form}.}
 \item{dictionary}{Updated dictionary data.frame.}
 \item{event_form}{Event–form mapping (if applicable).}
 \item{results}{Character summary of transformation steps performed.}
@@ -62,7 +62,7 @@ A list with elements:
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
-Transforms the raw REDCap data read by the \code{redcap_data} function. The function runs in one-step pipeline all functions dedicated to processing the data and returns the transformed data and dictionary, along with a summary of each step done.
+Transforms the raw REDCap data read by the \code{redcap_data} function. The function runs in one-step pipeline the functions dedicated to processing the data (\code{rd_delete_vars()}, \code{rd_dates()}, \code{rd_recalculate()}, \code{rd_checkbox()}, \code{rd_factor()}, \code{rd_dictionary()} and, with \code{final_format}, \code{rd_split()}) and returns the transformed data and dictionary, along with a summary of each step done. \code{rd_insert_na()} is not part of it: its filters are specific to each project, so apply it separately.
 }
 \examples{
 # Minimal usage (project object or data + dictionary)

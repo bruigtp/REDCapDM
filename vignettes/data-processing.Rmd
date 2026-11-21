@@ -257,6 +257,12 @@ forms_data <- covican |>
 forms_data$data
 ```
 
+The result is a tibble with one row per form, and the dataset of each form is in its list-column `df`. For example, the dataset of the first form:
+
+```{r}
+head(forms_data$data$df[[1]])
+```
+
 If repeated entries exist, you can reshape the data into wide format:
 
 ```{r}
@@ -346,7 +352,7 @@ The variables of the logic that have already been converted to factors with `rd_
 
 # **rd_transform**
 
-Alternatively, you can do all these steps at once using the `rd_transform()` function:
+Alternatively, you can do all these steps at once using the `rd_transform()` function, except `rd_insert_na()`: its filters are specific to each project, so apply it separately.
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 covican_transformed <- rd_transform(covican)

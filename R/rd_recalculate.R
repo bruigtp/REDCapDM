@@ -15,7 +15,7 @@
 #' * Fields of type `calc` in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (`NA`).
 #' * Recalculated values are compared with the original values, both rounded to three decimals (e.g. 1.0004 and 1 are equal).
 #' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary, with the label of the original field followed by `(Recalculated)`. Running the function again on its output updates these fields instead of duplicating them.
-#' * A field of the project whose name ends in `_recalc` is never overwritten: if `[field_name]_recalc` is already a field of the dictionary (and not one added by this function), the recalculated values are saved in `[field_name]_recalc_1` (or `_2`, ...) with a warning.
+#' * The fields added by this function are recognised because they are calculated fields with the same calculation as the original field and, when the dictionary has the column `field_label`, its label followed by `(Recalculated)`. No other field or column is overwritten: if `[field_name]_recalc` is already one of them, the recalculated values are saved in `[field_name]_recalc_1` (or `_2`, ...) with a warning.
 #' * Works for single-event projects; for longitudinal projects, `event_form` must be provided.
 #' * Fields with incomplete branching logic or smart variables may fail to recalculate.
 #'
@@ -181,9 +181,9 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     if (nrow(calc_change) > 0) {
       for (i in seq_len(nrow(calc_change))) {
         field <- as.character(calc_change$field_name[i])
-        name <- recalc_name(field, dic)
+        name <- recalc_name(field, data, dic)
 
-        if (name != paste0(field, "_recalc") && !name %in% c(names(data), dic$field_name)) {
+        if (name != paste0(field, "_recalc") && !recalc_generated(name, dic)) {
           renamed <- c(renamed, stats::setNames(name, field))
         }
 
@@ -214,7 +214,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     # Warning: the recalculations saved with another name
     if (length(renamed) > 0) {
       existing <- paste0(names(renamed), "_recalc")
-      rd_warn(c("The project already has fields named {.var {existing}}, which are not overwritten.", "i" = "The recalculated values of {.var {names(renamed)}} are saved in {.var {unname(renamed)}}."))
+      rd_warn(c("The project already has {.var {existing}}, which {?is/are} not overwritten.", "i" = "The recalculated values of {.var {names(renamed)}} are saved in {.var {unname(renamed)}}."))
     }
 
     # Reapply labels to the modified dataset
@@ -327,7 +327,7 @@ recalc_labels <- function(label) {
 
 #' Fields added by rd_recalculate()
 #'
-#' A field is a recalculated version added by `rd_recalculate()` when its name is `[field_name]_recalc` (or `[field_name]_recalc_1`, ...) of another field of the dictionary and its label is the label of that field followed by `(Recalculated)`. The fields of the project whose names end in `_recalc` are not.
+#' A field is a recalculated version added by `rd_recalculate()` when its name is `[field_name]_recalc` (or `[field_name]_recalc_1`, ...) of another calculated field of the dictionary, it is a calculated field with the same calculation and its label is the label of that field followed by `(Recalculated)` (`rd_recalculate()` copies the row of the field and only changes the name and the label). Without the column `field_label` in the dictionary, the type and the calculation decide. The other fields whose names end in `_recalc` are fields of the project.
 #'
 #' @param names Field names.
 #' @param dic Dictionary.
@@ -336,31 +336,45 @@ recalc_labels <- function(label) {
 recalc_generated <- function(names, dic) {
   names <- as.character(names)
   base <- sub("_recalc(_[0-9]+)?$", "", names)
-  label <- if ("field_label" %in% names(dic)) as.character(dic$field_label) else rep(NA_character_, nrow(dic))
+  own <- match(names, dic$field_name)
+  orig <- match(base, dic$field_name)
 
-  own_label <- label[match(names, dic$field_name)]
-  base_labels <- recalc_labels(label[match(base, dic$field_name)])
+  type <- as.character(dic$field_type)
+  calc <- as.character(dic$choices_calculations_or_slider_labels)
+  calc_own <- calc[own]
+  calc_orig <- calc[orig]
+  same_calc <- ifelse(is.na(calc_own) | is.na(calc_orig), is.na(calc_own) & is.na(calc_orig), calc_own == calc_orig)
 
-  base != names & base %in% dic$field_name & !is.na(own_label) &
-    (own_label == base_labels[, 1] | own_label == base_labels[, 2])
+  generated <- base != names & !is.na(own) & !is.na(orig) & type[own] %in% "calc" & type[orig] %in% "calc" & same_calc
+
+  if (!"field_label" %in% names(dic)) {
+    return(generated)
+  }
+
+  label <- as.character(dic$field_label)
+  own_label <- label[own]
+  orig_labels <- recalc_labels(label[orig])
+
+  generated & !is.na(own_label) & (own_label == orig_labels[, 1] | own_label == orig_labels[, 2])
 }
 
 
 #' Name of the recalculated version of a field
 #'
-#' `[field]_recalc`, unless the dictionary has a field of the project with that name: then `[field]_recalc_1`, `[field]_recalc_2`, ... The recalculated version added by a previous `rd_recalculate()` is reused, and so is a column of the data with that name that isn't in the dictionary (as in previous versions of the package).
+#' `[field]_recalc`, unless the dictionary or the data already have a field or column with that name: then `[field]_recalc_1`, `[field]_recalc_2`, ... The recalculated version added by a previous `rd_recalculate()` is reused.
 #'
 #' @param field Name of the calculated field.
+#' @param data Data.
 #' @param dic Dictionary.
 #' @return Character.
 #' @noRd
-recalc_name <- function(field, dic) {
+recalc_name <- function(field, data, dic) {
   k <- 0
 
   repeat {
     name <- if (k == 0) paste0(field, "_recalc") else paste0(field, "_recalc_", k)
 
-    if (!name %in% dic$field_name || recalc_generated(name, dic)) {
+    if (recalc_generated(name, dic) || !name %in% c(dic$field_name, names(data))) {
       return(name)
     }
 

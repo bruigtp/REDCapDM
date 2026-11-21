@@ -217,3 +217,25 @@ test_that("rd_transform asks to remove the status fields before splitting by for
 test_that("rd_transform accepts wide = FALSE with any final format", {
   expect_no_error(suppressWarnings(suppressMessages(rd_transform(covican, wide = FALSE))))
 })
+
+test_that("rd_transform keeps the identifier when its form is not in any event", {
+  for (id in c("record_id", "subject_id")) {
+    dic <- data.frame(
+      field_name = c(id, "age"), form_name = c("record_form", "clinical"), field_type = "text",
+      field_label = c("ID", "Age"), choices_calculations_or_slider_labels = "",
+      text_validation_type_or_show_slider_number = "", branching_logic_show_field_only_if = "",
+      stringsAsFactors = FALSE
+    )
+    data <- data.frame(id = c(1, 2), redcap_event_name = "v1_arm_1", age = c(30, 40))
+    names(data)[1] <- id
+    event_form <- data.frame(arm_num = 1, unique_event_name = "v1_arm_1", form = "clinical")
+
+    res <- suppressMessages(suppressWarnings(rd_transform(data = data, dic = dic, event_form = event_form)))
+    expect_equal(names(res$data), c(id, "redcap_event_name", "age"))
+    expect_equal(res$dictionary$field_name, c(id, "age"))
+    expect_equal(res$data[[id]], c(1, 2), ignore_attr = TRUE)
+
+    by_event <- suppressMessages(suppressWarnings(rd_transform(data = data, dic = dic, event_form = event_form, final_format = "by_event")))
+    expect_true(id %in% names(by_event$data$df[[1]]))
+  }
+})

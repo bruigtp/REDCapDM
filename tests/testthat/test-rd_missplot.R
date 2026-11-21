@@ -470,3 +470,29 @@ test_that("rd_missplot gives a different label to every variable", {
   expect_equal(nlevels(heat$data$display_label), 3)
   expect_equal(nlevels(rd_missplot(project, by = "record")$data$display_label), 3)
 })
+
+test_that("rd_missplot keeps apart an event whose name is the new name of another one", {
+  data <- data.frame(
+    record_id = 1,
+    redcap_event_name = c("baseline_arm_1", "baseline_arm_2", "c_arm_1"),
+    x = c(NA, 1, 1),
+    stringsAsFactors = FALSE
+  )
+  data$redcap_event_name.factor <- c("Baseline", "Baseline", "Baseline (baseline_arm_1)")
+
+  heat <- rd_missplot(data, drop_complete = FALSE)
+  expect_equal(nlevels(heat$data$clean_event_name), 3)
+  pct <- stats::setNames(heat$data$missing_pct, as.character(heat$data$clean_event_name))
+  expect_equal(unname(pct[c("Baseline (baseline_arm_1)", "Baseline (baseline_arm_2)", "Baseline (baseline_arm_1) (c_arm_1)")]), c(100, 0, 0))
+
+  map <- rd_missplot(data, by = "record", events = "all", drop_complete = FALSE)
+  expect_equal(nlevels(map$data$event), 3)
+})
+
+test_that("unique_labels gives a different label to every element", {
+  expect_equal(unique_labels(c("Lab", "Lab", "Lab (a)"), c("a", "b", "c")), c("Lab (a)", "Lab (b)", "Lab (a) (c)"))
+  expect_equal(unique_labels(c("A", "B"), c("a", "b")), c("A", "B"))
+  # Elements with the same name are numbered
+  expect_equal(anyDuplicated(unique_labels(c("A", "A"), c("a", "a"))), 0)
+  expect_equal(unique_labels(character(0), character(0)), character(0))
+})

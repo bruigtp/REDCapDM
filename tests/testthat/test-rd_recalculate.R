@@ -300,3 +300,49 @@ test_that("rd_recalculate labels the recalculated fields and summarises without 
   expect_false(grepl("NaN", report))
   expect_match(report, "\\|\\s+0\\s+\\|\\s+0 \\(-\\)\\s+\\|\\s+0 \\(-\\)\\s+\\|")
 })
+
+test_that("rd_recalculate doesn't take a field of the project for one of its fields because of its label", {
+  # A text field, with the label of the current and of previous versions
+  for (label in c("Q (Recalculated)", "Q (Recalculate)")) {
+    project <- make_recalc_name_project()
+    project$dictionary$field_label[5] <- label
+
+    expect_warning(res <- rd_recalculate(project), "q_recalc_1")
+    expect_equal(res$data$q_recalc, c(999, 999, 999), ignore_attr = TRUE)
+    expect_equal(res$data$q_recalc_1, c(2, 3, 4), ignore_attr = TRUE)
+  }
+
+  # A calculated field with another calculation is recalculated as a field of its own
+  project <- make_recalc_name_project("calc")
+  project$dictionary$field_label[5] <- "Q (Recalculated)"
+  project$data$q_recalc <- c(10, 20, 0)
+
+  expect_warning(res <- rd_recalculate(project), "q_recalc_1")
+  expect_equal(res$data$q_recalc, c(10, 20, 0), ignore_attr = TRUE)
+  expect_equal(res$data$q_recalc_1, c(2, 3, 4), ignore_attr = TRUE)
+  expect_equal(res$data$q_recalc_recalc, c(10, 20, 30), ignore_attr = TRUE)
+})
+
+test_that("rd_recalculate doesn't overwrite a column of the data that isn't in the dictionary", {
+  project <- make_recalc_name_project()
+  project$dictionary <- project$dictionary[1:4, ]
+
+  expect_warning(res <- rd_recalculate(project), "q_recalc_1")
+  expect_equal(res$data$q_recalc, c(999, 999, 999), ignore_attr = TRUE)
+  expect_equal(res$data$q_recalc_1, c(2, 3, 4), ignore_attr = TRUE)
+})
+
+test_that("rd_recalculate updates its fields with a dictionary without field_label", {
+  project <- make_recalc_name_project()
+  project$dictionary <- project$dictionary[1:4, setdiff(names(project$dictionary), "field_label")]
+  project$data$q_recalc <- NULL
+
+  once <- rd_recalculate(project)
+  expect_equal(names(once$data), c("record_id", "a", "b", "q", "q_recalc"))
+
+  expect_no_warning(twice <- rd_recalculate(once))
+  expect_no_warning(thrice <- rd_recalculate(twice))
+  expect_equal(names(thrice$data), names(once$data))
+  expect_equal(thrice$dictionary, once$dictionary)
+  expect_equal(thrice$data$q_recalc, c(2, 3, 4), ignore_attr = TRUE)
+})
