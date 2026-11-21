@@ -220,20 +220,30 @@
   `roundup()` and in the comparison of
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)),
   so their differences are detected, and keep the value with too many
-  decimals (e.g. `round([a], 309)` gave NaN). Without decimals (e.g. a
-  blank field as the number of decimals), the result is blank.
+  decimals (e.g. `round([a], 309)` gave NaN). With so many negative
+  decimals that the scale is 0 (e.g. `round(12, -324)`), the result
+  is 0. Without decimals (e.g. a blank field as the number of decimals),
+  the result is blank.
 - [`round()`](https://rdrr.io/r/base/Round.html) in
   [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   and
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   rounds down the values below the half (e.g. `round(1.49999999)` gave 2
   and `round(0.49999999)` gave 1), and keeps rounding the halves away
-  from zero, also when they are stored with a tiny error
-  (e.g. `round(2.675, 2)` is 2.68).
+  from zero, also when they are stored with the error of the binary
+  numbers (e.g. `round(2.675, 2)` is 2.68, while 2.675 is stored as
+  2.67499999999999982): a value within two units in the last place of a
+  half is a half.
+- `roundup()` and `rounddown()` in
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  keep the values that already have their decimals
+  (e.g. `roundup(1.1, 2)` gave 1.11 and `rounddown(0.29, 2)` gave 0.28,
+  because of the error of the binary numbers).
 - `mod()` in
   [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   gives the exact remainder of large numbers (e.g. `mod(2^54, 3)` gave 0
-  instead of 1, and with very different numbers it could be infinite).
+  instead of 1, and with very different numbers, such as the largest
+  number and 1, it could be infinite).
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   only renames the options of the checkboxes in the branching logic and
   calculations, which keep the codes 0 and 1 (e.g. `[cb(1)] = '1'` is
