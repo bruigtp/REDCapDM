@@ -15,9 +15,10 @@ classify each query into one of four statuses:
   the old report,
 
 - **Miscorrected** — a special case where a query in the new report is
-  marked as `New` but shares the same `Identifier` and `Description` as
-  an existing record (suggesting a re-issued or modified query for the
-  same identifier).
+  marked as `New` but the old report has a query with the same
+  `Identifier`, `Event`, `Repetition`, `Field` (each of them when both
+  reports have it) and `Description` (suggesting a re-issued or modified
+  query for the same record and field).
 
 The function returns a detailed comparison table of queries with a
 `Modification` factor (one of the four statuses) and an HTML summary
@@ -116,10 +117,13 @@ HTML summary viewer.
   `Query`. The other columns (e.g. `Link` or `DAG`) are taken from the
   new report, so a query whose link changed is still one pending query.
 
-- **Miscorrected detection:** A `Miscorrected` label is assigned when
-  more than one row shares the same `Identifier + Description` composite
-  and a row is otherwise classified as `New` — this signals a likely
-  re-issued or modified query for an existing identifier.
+- **Miscorrected detection:** A `Miscorrected` label is assigned to a
+  query that would otherwise be `New` when the old report has a query
+  with the same `Identifier`, `Event`, `Repetition`, `Field` (each of
+  them when both reports have it) and `Description` — this signals a
+  likely re-issued or modified query. New queries without such a query
+  in the old report are `New`, also when there are several of them for
+  the same field.
 
 ## See also
 

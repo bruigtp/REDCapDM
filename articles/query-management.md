@@ -384,21 +384,23 @@ There are two possibilities here:
     missing values, as the function considers all the events of the
     study if no event is specified.
 
-    The function will issue a warning if it detects that the REDCap
-    project contains multiple events, the event-form mapping is not
-    specified and the `event` argument is not specified.
+    The function will issue a warning if the project is longitudinal
+    (the data has the column of the events, even with only one event),
+    the event-form mapping is not specified and the `event` argument is
+    not specified.
 
   
 
 ### *Additional arguments*
 
-*variable_names, query_name, instrument*
+*variables_names, query_name, instrument*
 
 These arguments allow users to customize the data frame returned by the
-function. We can change the variables names using the `variables_names`
-argument, alter the description of the query using the `query_name`
-argument or even change the name of the instrument using the
-`instrument` argument:
+function. We can change the description of the variables in the report
+using the `variables_names` argument (the `Field` column keeps the name
+of the variable), alter the description of the query using the
+`query_name` argument or even change the name of the instrument using
+the `instrument` argument:
 
 ``` r
 

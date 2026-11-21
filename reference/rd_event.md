@@ -79,7 +79,7 @@ rd_event(
 
 - report_zeros:
 
-  Logical, include variables with zero queries in the report. Default is
+  Logical, include events with zero queries in the report. Default is
   `FALSE`.
 
 - link:

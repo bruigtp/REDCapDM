@@ -6,8 +6,9 @@ Pending — the same query is present in both reports (no change detected),
 Solved — the query was present in the old report but is absent from the new report,
 New — the query appears in the new report but was not present in the old report,
 Miscorrected — a special case where a query in the new report is marked as New
-but shares the same Identifier and Description as an existing record (suggesting a
-re-issued or modified query for the same identifier).
+but the old report has a query with the same Identifier, Event, Repetition,
+Field (each of them when both reports have it) and Description (suggesting a re-issued or
+modified query for the same record and field).
 
 
 The function returns a detailed comparison table of queries with a Modification factor (one of the four statuses) and an HTML summary table showing counts per status."><meta property="og:description" content="
@@ -17,8 +18,9 @@ Pending — the same query is present in both reports (no change detected),
 Solved — the query was present in the old report but is absent from the new report,
 New — the query appears in the new report but was not present in the old report,
 Miscorrected — a special case where a query in the new report is marked as New
-but shares the same Identifier and Description as an existing record (suggesting a
-re-issued or modified query for the same identifier).
+but the old report has a query with the same Identifier, Event, Repetition,
+Field (each of them when both reports have it) and Description (suggesting a re-issued or
+modified query for the same record and field).
 
 
 The function returns a detailed comparison table of queries with a Modification factor (one of the four statuses) and an HTML summary table showing counts per status."><meta property="og:image" content="https://bruigtp.github.io/REDCapDM/logo.png"></head><body>
@@ -74,8 +76,9 @@ query into one of four statuses:</p><ul><li><p><strong>Pending</strong> — the 
 <li><p><strong>Solved</strong> — the query was present in the old report but is absent from the new report,</p></li>
 <li><p><strong>New</strong> — the query appears in the new report but was not present in the old report,</p></li>
 <li><p><strong>Miscorrected</strong> — a special case where a query in the new report is marked as <code>New</code>
-but shares the same <code>Identifier</code> and <code>Description</code> as an existing record (suggesting a
-re-issued or modified query for the same identifier).</p></li>
+but the old report has a query with the same <code>Identifier</code>, <code>Event</code>, <code>Repetition</code>,
+<code>Field</code> (each of them when both reports have it) and <code>Description</code> (suggesting a re-issued or
+modified query for the same record and field).</p></li>
 </ul><p>The function returns a detailed comparison table of queries with a <code>Modification</code> factor (one of the four statuses) and an HTML summary table showing counts per status.</p>
     </div>
 
@@ -149,10 +152,11 @@ plain number without leading zeros (e.g. <code>"007"</code> is kept as text).</p
 <code>Event</code> and <code>Repetition</code> (when both reports have them), <code>Field</code> (when both reports have it),
 <code>Description</code> and <code>Query</code>. The other columns (e.g. <code>Link</code> or <code>DAG</code>) are taken from the new report,
 so a query whose link changed is still one pending query.</p></li>
-<li><p><strong>Miscorrected detection:</strong> A <code>Miscorrected</code> label is assigned when more
-than one row shares the same <code>Identifier + Description</code> composite and a row is
-otherwise classified as <code>New</code> — this signals a likely re-issued or modified query
-for an existing identifier.</p></li>
+<li><p><strong>Miscorrected detection:</strong> A <code>Miscorrected</code> label is assigned to a query that would
+otherwise be <code>New</code> when the old report has a query with the same <code>Identifier</code>, <code>Event</code>,
+<code>Repetition</code>, <code>Field</code> (each of them when both reports have it) and <code>Description</code> — this
+signals a likely re-issued or modified query. New queries without such a query in the old report are
+<code>New</code>, also when there are several of them for the same field.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

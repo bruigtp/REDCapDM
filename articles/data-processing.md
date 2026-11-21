@@ -249,8 +249,8 @@ controls how missing values are set, with the following options:
 - `"missing"` (default): set `NA` only where the branching logic
   evaluation is `NA`.
 
-- `"eval"`: set `NA` where the branching logic evaluates to `FALSE`
-  (i.e., logic not satisfied or missing).
+- `"eval"`: set `NA` where the branching logic evaluates to `FALSE` or
+  `NA` (i.e., logic not satisfied or missing).
 
 ``` r
 

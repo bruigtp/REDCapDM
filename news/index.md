@@ -360,10 +360,22 @@
   logic and not applied, so the records where the field isn’t shown were
   also checked.
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
-  keeps the texts between quotes of the expression in the messages of
-  the queries: they were changed (e.g. `x == 'a>b'` was described as
-  equal to `'agreater than b'` and `x == 'x'` as equal to `''`), and two
-  expressions with texts that became the same gave a single query.
+  keeps the texts between quotes and the raw strings of R of the
+  expression (e.g. `r"(a > b)"`), and the values of the variable, in the
+  messages of the queries: they were changed (e.g. `x == 'a>b'` was
+  described as equal to `'agreater than b'`, `x == 'x'` as equal to
+  `''`, and the value `"A B"` was written `A B`), so two expressions
+  with texts that became the same gave a single query, and
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  kept as `Pending` a query whose value had changed.
+- [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  marks as `Miscorrected` only the new queries of a record and field
+  (with the same `Identifier`, `Event`, `Repetition`, `Field` and
+  `Description`) that had a query in the old report: several new queries
+  of the same field were `Miscorrected` without any query in the old
+  report. It also keeps the columns of the reports called `comp`,
+  `comp2`, `n` or `cod`, which were replaced by its internal columns or
+  removed.
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   applies the branching logic in R with double brackets
   (e.g. `data[['value']] == 0`) or with comments

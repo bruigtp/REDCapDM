@@ -1078,9 +1078,10 @@ visit because the variable <em>copd</em> it is only present in the
 baseline visit. Thus, it might result in an overestimation of the number
 of missing values, as the function considers all the events of the study
 if no event is specified.</p>
-<p>The function will issue a warning if it detects that the REDCap
-project contains multiple events, the event-form mapping is not
-specified and the <code>event</code> argument is not specified.</p>
+<p>The function will issue a warning if the project is longitudinal (the
+data has the column of the events, even with only one event), the
+event-form mapping is not specified and the <code>event</code> argument
+is not specified.</p>
 </ol>
 <p><br></p>
 </div>
@@ -1088,12 +1089,14 @@ specified and the <code>event</code> argument is not specified.</p>
 <h3 id="additional-arguments">
 <em>Additional arguments</em><a class="anchor" aria-label="anchor" href="#additional-arguments"></a>
 </h3>
-<p><u>variable_names, query_name, instrument</u></p>
+<p><u>variables_names, query_name, instrument</u></p>
 <p>These arguments allow users to customize the data frame returned by
-the function. We can change the variables names using the
-<code>variables_names</code> argument, alter the description of the
-query using the <code>query_name</code> argument or even change the name
-of the instrument using the <code>instrument</code> argument:</p>
+the function. We can change the description of the variables in the
+report using the <code>variables_names</code> argument (the
+<code>Field</code> column keeps the name of the variable), alter the
+description of the query using the <code>query_name</code> argument or
+even change the name of the instrument using the <code>instrument</code>
+argument:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span><span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                   variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span><span class="op">)</span>,</span>
