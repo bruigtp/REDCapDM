@@ -99,8 +99,10 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 
 #' Round Numbers to a Specified Number of Digits ----
 #'
-#' This function rounds numeric values to the specified number of decimal digits,
-#' mimicking the behavior of the base R `round()` function but implemented manually.
+#' Rounds as REDCap: half is rounded away from zero (`round(2.5)` is 3 and `round(-2.5)` is -3). The value multiplied
+#' by `10^digits` is first rounded to 15 significant digits (or more, for its integer digits), so that a half stored
+#' with a tiny error is a half (e.g. `round(2.675, 2)` is 2.68, while 2.675 is stored as 2.67499999999999982) and a
+#' value below the half is not (e.g. `round(1.49999999)` is 1).
 #'
 #' @param x A numeric vector to be rounded.
 #' @param digits Integer indicating the number of decimal places to round to.
@@ -111,16 +113,16 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 #' round(c(-2.718, 3.14159), 1)
 #' @noRd
 round <- function(x, digits = 0) {
-  posneg <- sign(x)
   z <- abs(x) * 10^digits
-  z <- z + 0.5 + sqrt(.Machine$double.eps)
-  z <- trunc(z)
-  z <- z / 10^digits
-  out <- z * posneg
-  # A number too large to have decimals is kept as it is (multiplied by 10^digits it would be Inf, e.g. 1e308)
-  # (only when the result is Inf: without digits, e.g. NA, the result is NA)
-  too_large <- is.finite(x) & is.infinite(out)
-  out[too_large] <- x[too_large]
+  # (also without values, e.g. data without rows)
+  precision <- if (length(z) == 0) 15 else pmax(15, floor(log10(pmax(z, 1))) + 2)
+  out <- sign(x) * (floor(signif(z, precision) + 0.5) / 10^digits)
+  # A number without decimals at this precision is kept as it is: an integer too large to add 0.5 (e.g. 1e17), or a
+  # number that multiplied by 10^digits is Inf (e.g. 1e308 with one decimal) or NaN (e.g. 309 decimals)
+  # (without digits, e.g. NA, the result is NA)
+  keep <- is.finite(x) & !is.na(digits) & (z >= 2^52 | !is.finite(out))
+  keep <- keep %in% TRUE
+  out[keep] <- rep_len(as.numeric(x), length(out))[keep]
   out
 }
 

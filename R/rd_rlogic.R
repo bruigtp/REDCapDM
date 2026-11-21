@@ -1551,11 +1551,11 @@ translate_functions <- function(x) {
     if (digits(args) %in% c("0", "'0'", "\"0\"")) {
       paste0(r_fun, "(", args[1], ")")
     } else {
-      # (a number too large to have decimals is kept: multiplied by 10^digits it would be Inf, e.g. 1e308; without
-      # digits, e.g. NA, the result is NA)
+      # (a number too large to have decimals is kept: multiplied by 10^digits it would be Inf or NaN, e.g. 1e308 or 309
+      # digits; without digits, e.g. NA, the result is NA)
       paste0(
-        "(function(v, d) { r <- ", r_fun, "(v * 10^d) / 10^d; replace(r, is.finite(v) & is.infinite(r), v[is.finite(v) & is.infinite(r)]) })(",
-        args[1], ", ", digits(args), ")"
+        "(function(v, d) { r <- ", r_fun, "(v * 10^d) / 10^d; keep <- is.finite(v) & !is.na(d) & !is.finite(r); ",
+        "r[keep] <- rep_len(v, NROW(r))[keep]; r })(", args[1], ", ", digits(args), ")"
       )
     }
   }
@@ -1571,8 +1571,20 @@ translate_functions <- function(x) {
   x <- replace_function(x, "median", function(args) paste0("apply(", values(args), ", 1, stats::median, na.rm = TRUE)"))
   x <- replace_function(x, "min", function(args) paste0("pmin(", paste(args, collapse = ", "), ", na.rm = TRUE)"))
   x <- replace_function(x, "max", function(args) paste0("pmax(", paste(args, collapse = ", "), ", na.rm = TRUE)"))
-  # As in REDCap, the remainder of mod() has the sign of the dividend (mod(-7, 3) is -1)
-  x <- replace_function(x, "mod", function(args) paste0("((", args[1], ") - (", args[2], ") * trunc((", args[1], ") / (", args[2], ")))"))
+  # As in REDCap, the remainder of mod() has the sign of the dividend (mod(-7, 3) is -1). It is exact, also with large
+  # numbers (e.g. mod(2^54, 3) is 1): the divisor multiplied by a power of 2 is subtracted while the remainder is
+  # larger than it (subtractions without rounding errors)
+  # (without the functions translated below, e.g. length() or ifelse())
+  x <- replace_function(x, "mod", function(args) {
+    paste0(
+      "(function(a, b) { n <- if (min(lengths(list(a, b))) == 0) 0 else max(lengths(list(a, b))); ",
+      "a <- rep_len(as.numeric(a), n); b <- rep_len(as.numeric(b), n); r <- abs(a); m <- abs(b); ",
+      "while (any(is.finite(r) & m > 0 & r >= m, na.rm = TRUE)) { i <- which(is.finite(r) & m > 0 & r >= m); ",
+      "k <- floor(log2(r[i]) - log2(m[i])); s <- m[i] * 2^(k %/% 2) * 2^(k - k %/% 2); s <- s / 2^(s > r[i]); ",
+      "s <- s * 2^(2 * s <= r[i]); r[i] <- r[i] - s }; r[(is.finite(a) & m == 0) | is.infinite(a)] <- NaN; ",
+      "r[is.na(m)] <- NA; sign(a) * r })(", args[1], ", ", args[2], ")"
+    )
+  })
   x <- replace_function(x, "stdev", function(args) paste0("apply(", values(args), ", 1, stats::sd, na.rm = TRUE)"))
   x <- replace_function(x, "exponential", function(args) paste0("exp(", args[1], ")"))
   # (as text: the number of a factor is its internal code, not its value)

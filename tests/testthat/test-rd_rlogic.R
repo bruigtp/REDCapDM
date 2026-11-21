@@ -991,7 +991,8 @@ test_that("rd_rlogic only reads the units of datediff() in its arguments", {
 test_that("rd_rlogic gives no values with data without rows", {
   data <- data.frame(record_id = character(0), a = numeric(0), t = character(0), res = logical(0))
   dic <- make_dic(c("record_id", "a", "t", "res"))
-  for (logic in c("1", "2 + 3", "upper('abc')", "concat('prefix', [t])", "[a] + 1", "concat_ws('-', [t], 'x')", "find('a', [t])", "replace_text([t], 'a', [t])")) {
+  for (logic in c("1", "2 + 3", "upper('abc')", "concat('prefix', [t])", "[a] + 1", "concat_ws('-', [t], 'x')", "find('a', [t])", "replace_text([t], 'a', [t])",
+                  "round([a] / 3, 1)", "roundup([a], 1)", "rounddown([a], 2)", "mod([a], 3)")) {
     out <- rd_rlogic(data = data, dic = dic, logic = logic, var = "res")
     expect_length(out$eval, 0)
     expect_equal(nrow(out$eval_data), 0, info = logic)
@@ -1183,4 +1184,35 @@ test_that("rd_rlogic keeps the texts that look like its internal placeholders", 
   expect_equal(ev("[t] = 'REDCapDMblock1x' and concat_ws(':', [o], [r]) <> ''"), c(TRUE, FALSE))
   expect_equal(ev("concat_ws(':', [o], [r]) <> '' and [t] = 'REDCapDMblock1x'"), c(TRUE, FALSE))
   expect_equal(ev("[t] = 'xREDCapDMblock1xy' and concat_ws(':', [o], [r]) <> ''"), c(FALSE, FALSE))
+})
+
+test_that("rd_rlogic rounds the values below the half down and the halves away from zero", {
+  data <- data.frame(record_id = 1:7, a = c(1.49999999, -1.49999999, 0.49999999, 1.5, -1.5, 2.5, 0.5), res = NA)
+  dic <- make_dic(c("record_id", "a", "res"))
+  ev <- function(logic, data) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("round([a], 0)", data), c(1, -1, 0, 2, -2, 3, 1))
+  # (halves stored with a tiny error, e.g. 2.675 is 2.67499999999999982)
+  data2 <- data.frame(record_id = 1:5, a = c(2.675, 1.005, -2.675, 0.125, 1.0049999), res = NA)
+  expect_equal(ev("round([a], 2)", data2), c(2.68, 1.01, -2.68, 0.13, 1))
+})
+
+test_that("rd_rlogic gives the exact remainder of mod() with large numbers", {
+  data <- data.frame(record_id = 1:9, a = c(2^54, -2^54, 7, -7, 5.5, -5.5, 1e308, 0, NA), b = c(3, 3, 3, 3, 2, 2, 1e-10, 3, 3), res = NA)
+  dic <- make_dic(c("record_id", "a", "b", "res"))
+  out <- expect_no_warning(rd_rlogic(data = data, dic = dic, logic = "mod([a], [b])", var = "res")$eval)
+  expect_equal(out[1:6], c(1, -1, 1, -1, 1.5, -1.5))
+  expect_true(is.finite(out[7]) && out[7] >= 0 && out[7] < 1e-10)
+  expect_equal(out[8:9], c(0, NA))
+  expect_true(is.nan(rd_rlogic(data = data.frame(record_id = 1, a = 5, b = 0, res = NA), dic = dic, logic = "mod([a], [b])", var = "res")$eval))
+})
+
+test_that("rd_rlogic keeps the value when the number of decimals is too large", {
+  data <- data.frame(record_id = 1:2, a = c(1.2345, 1e308), d = c(309, NA), res = NA)
+  dic <- make_dic(c("record_id", "a", "d", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  for (f in c("round", "roundup", "rounddown")) {
+    expect_equal(ev(paste0(f, "([a], 309)")), c(1.2345, 1e308), info = f)
+    # (a blank number of decimals gives a blank value)
+    expect_equal(ev(paste0(f, "([a], [d])")), c(1.2345, NA), info = f)
+  }
 })
