@@ -1174,7 +1174,8 @@ date_conditionals <- function(x, data) {
 #' Write an R expression in one line
 #'
 #' `deparse()` writes the expressions between braces in several lines (e.g. the functions of the translation of
-#' `roundup()` or `concat_ws()`): they are joined with `;`, so that the logic can be read again.
+#' `roundup()` or `concat_ws()`): they are joined with `;`, so that the logic can be read again. The numbers are written
+#' with all the digits needed to read the same number (e.g. 1.0000000000000002 or 1125899906842624.5).
 #'
 #' @param e An R expression.
 #' @return A string.
@@ -1188,6 +1189,18 @@ one_line <- function(e) {
     base <- paste0(base, "x")
   }
   hide <- function(e) {
+    # The numbers are written with the digits that R needs to read the same number (deparse() writes 15, e.g.
+    # 1.0000000000000002 would be 1)
+    if (is.double(e) && length(e) == 1 && is.null(attributes(e)) && is.finite(e)) {
+      written_number <- sprintf("%.15g", e)
+      for (digits in 16:17) {
+        if (identical(as.numeric(written_number), e)) break
+        written_number <- sprintf(paste0("%.", digits, "g"), e)
+      }
+      key <- paste0(base, length(blocks) + 1, "x")
+      blocks[[key]] <<- written_number
+      return(as.name(key))
+    }
     if (!is.call(e)) {
       return(e)
     }
@@ -1547,23 +1560,28 @@ logical_operators <- function(x) {
 translate_functions <- function(x) {
   values <- function(args) paste0("cbind(", paste(args, collapse = ", "), ")")
   digits <- function(args) if (length(args) > 1) args[2] else "0"
-  # rounddown() and roundup() with decimals: as in REDCap, a value that already has these decimals is kept, also with
-  # the error of the binary numbers (e.g. 1.1 * 100 is 110.00000000000001 and 0.29 * 100 is 28.999999999999996: a
-  # value within two units in the last place of an integer is that integer). A number too large to have decimals is
-  # kept (e.g. 1e308 or 309 decimals, that multiplied by 10^digits are Inf or NaN), with so many negative decimals that
-  # 10^digits is 0 (e.g. -324) the result is 0 or, beyond the largest number, Inf, and without digits (e.g. NA) the
-  # result is NA
-  # (without the functions translated below, e.g. length() or ifelse())
+  # rounddown() and roundup() with decimals: the result is the largest (rounddown) or smallest (roundup) number with
+  # these decimals, written as R reads it (k / 10^digits), that isn't larger or smaller than the value. So a value that
+  # already has these decimals is kept (e.g. roundup(1.1, 2) is 1.1, although 1.1 * 100 is 110.00000000000001), and the
+  # result is never on the wrong side of the value. A number too large to have decimals is kept (e.g. 1e308 or 309
+  # decimals), with so many negative decimals that 10^-digits is Inf (e.g. -324) the result is 0 or, beyond the largest
+  # number, Inf, and without digits (e.g. NA) the result is NA
+  # (the negative decimals divide by 10^-digits, which is exact; without the functions translated below, e.g. length()
+  # or ifelse())
   rounding <- function(r_fun) function(args) {
     if (digits(args) %in% c("0", "'0'", "\"0\"")) {
       paste0(r_fun, "(", args[1], ")")
     } else {
-      step <- if (r_fun == "floor") "r <- r + ((r + 1) - z <= tol)" else "r <- r + (z - r > tol)"
+      steps <- if (r_fun == "floor") {
+        "k <- k + ((k + 1) / up * dn <= v); k <- k - (k / up * dn > v); k <- k - (k / up * dn > v)"
+      } else {
+        "k <- k - ((k - 1) / up * dn >= v); k <- k + (k / up * dn < v); k <- k + (k / up * dn < v)"
+      }
       beyond <- if (r_fun == "floor") "c(0, -Inf)[1 + (v0[zero] < 0)]" else "c(0, Inf)[1 + (v0[zero] > 0)]"
       paste0(
-        "(function(v, d) { z <- v * 10^d; r <- floor(z); tol <- 2 * 2^(floor(log2(abs(z))) - 52); ", step, "; ",
-        "r <- r / 10^d; v0 <- rep_len(v, NROW(r)); keep <- !is.na(d) & (!is.finite(v) | !is.finite(z) | abs(z) >= 2^52); ",
-        "r[keep] <- v0[keep]; zero <- !is.na(d) & 10^d == 0 & is.finite(v); r[zero] <- ", beyond, "; r })(",
+        "(function(v, d) { up <- 10^pmax(d, 0); dn <- 10^pmax(-d, 0); z <- v * up / dn; k <- floor(z); ", steps, "; ",
+        "r <- k / up * dn; v0 <- rep_len(v, NROW(r)); keep <- !is.na(d) & (!is.finite(v) | !is.finite(z) | abs(z) >= 2^52); ",
+        "r[keep] <- v0[keep]; zero <- !is.na(d) & is.infinite(dn) & is.finite(v); r[zero] <- ", beyond, "; r })(",
         args[1], ", ", digits(args), ")"
       )
     }

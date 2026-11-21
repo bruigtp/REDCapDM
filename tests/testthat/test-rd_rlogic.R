@@ -1250,3 +1250,36 @@ test_that("rd_rlogic rounds with so many negative decimals that the scale is 0",
   expect_equal(ev("roundup(12, -324)"), Inf)
   expect_equal(ev("rounddown(1234, -2)"), 1200)
 })
+
+test_that("rd_rlogic rounds large numbers and never to the wrong side of the value", {
+  data <- data.frame(record_id = 1:4, a = c(2^50, 2^50 + 0.25, 2^51 + 0.5, -2^50 - 0.75), res = NA)
+  dic <- make_dic(c("record_id", "a", "res"))
+  ev <- function(logic, data) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("round([a], 0)", data), c(2^50, 2^50, 2^51 + 1, -2^50 - 1))
+  expect_equal(ev("roundup([a], 0)", data), c(2^50, 2^50 + 1, 2^51 + 1, -2^50))
+  expect_equal(ev("rounddown([a], 0)", data), c(2^50, 2^50, 2^51, -2^50 - 1))
+  near <- data.frame(record_id = 1:2, a = c(0.28999999999999992, 0.29000000000000004), res = NA)
+  expect_equal(ev("rounddown([a], 2)", near), c(0.28, 0.29))
+  expect_equal(ev("roundup([a], 2)", near), c(0.29, 0.3))
+  halves <- data.frame(record_id = 1:3, a = c(0.4999999999999999, 2.6749999999999994, 2.675), res = NA)
+  expect_equal(ev("round([a], 0)", halves), c(0, 3, 3))
+  expect_equal(ev("round([a], 2)", halves), c(0.5, 2.67, 2.68))
+})
+
+test_that("rd_rlogic rounds in the same way with any number of decimals that is 0", {
+  data <- data.frame(record_id = 1:2, a = c(1.0000000000000002, -1.0000000000000002), b = 0, res = NA)
+  dic <- make_dic(c("record_id", "a", "b", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  for (digits in c("0", "0.0", "[b]", "+0", "-0", "(0)", "(1-1)")) {
+    expect_equal(ev(paste0("roundup([a], ", digits, ")")), c(2, -1), info = digits)
+    expect_equal(ev(paste0("rounddown([a], ", digits, ")")), c(1, -2), info = digits)
+  }
+})
+
+test_that("rd_rlogic keeps the numbers of the logic when it rewrites it", {
+  data <- data.frame(record_id = c("N001", "N002"), a = c(1.0000000000000002, 1), b = c(1125899906842624.5, 1125899906842624), text = "x", res = NA)
+  dic <- make_dic(c("record_id", "a", "b", "text", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("[a] = 1.0000000000000002 and trim([text]) <> ''"), c(TRUE, FALSE))
+  expect_equal(ev("[b] = 1125899906842624.5 and trim([text]) <> ''"), c(TRUE, FALSE))
+})

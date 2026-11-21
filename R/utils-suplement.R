@@ -99,10 +99,10 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 
 #' Round Numbers to a Specified Number of Digits ----
 #'
-#' Rounds as REDCap: half is rounded away from zero (`round(2.5)` is 3 and `round(-2.5)` is -3). A value within two
-#' units in the last place of a half, which is the error of the binary numbers, is a half: `round(2.675, 2)` is 2.68
-#' (2.675 is stored as 2.67499999999999982 and multiplied by 100 is 267.49999999999997), while `round(1.49999999)` and
-#' `round(1.499999999999999)` are 1.
+#' Rounds as REDCap: half is rounded away from zero (`round(2.5)` is 3 and `round(-2.5)` is -3). The value is compared
+#' with the half written with these decimals, as R reads it: `round(2.675, 2)` is 2.68 (2.675 is stored as
+#' 2.67499999999999982, which is how R reads the half 2.675), while `round(1.49999999)`, `round(1.499999999999999)` and
+#' `round(0.4999999999999999)` are below the half.
 #'
 #' @param x A numeric vector to be rounded.
 #' @param digits Integer indicating the number of decimal places to round to.
@@ -113,17 +113,20 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 #' round(c(-2.718, 3.14159), 1)
 #' @noRd
 round <- function(x, digits = 0) {
-  scale <- 10^digits
-  z <- abs(x) * scale
+  # (the negative decimals divide by 10^-digits, which is exact)
+  up <- 10^pmax(digits, 0)
+  down <- 10^pmax(-digits, 0)
+  z <- abs(x) * up / down
   n <- floor(z)
-  out <- sign(x) * ((n + (z - n >= 0.5 - 2 * 2^(floor(log2(z)) - 52))) / scale)
+  # The half between n and n + 1 written with these decimals: (2n + 1) / (2 * 10^digits)
+  out <- sign(x) * ((n + (abs(x) >= (2 * n + 1) / (2 * up) * down)) / up * down)
   # A number without decimals at this precision is kept as it is: an integer too large to have decimals (e.g. 1e17),
   # or a number that multiplied by 10^digits is Inf or NaN (e.g. 1e308 with one decimal, or 309 decimals), and so are
-  # Inf and NaN. With so many negative decimals that 10^digits is 0 (e.g. -324) the result is 0, and without digits
+  # Inf and NaN. With so many negative decimals that 10^-digits is Inf (e.g. -324) the result is 0, and without digits
   # (e.g. NA) it is NA
   keep <- (!is.na(digits) & (!is.finite(x) | !is.finite(z) | z >= 2^52)) %in% TRUE
   out[keep] <- rep_len(as.numeric(x), length(out))[keep]
-  out[(!is.na(digits) & scale == 0 & is.finite(x)) %in% TRUE] <- 0
+  out[(!is.na(digits) & is.infinite(down) & is.finite(x)) %in% TRUE] <- 0
   out
 }
 
