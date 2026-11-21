@@ -167,7 +167,9 @@ The function performs the following steps:
 
 - Generates structured query results with metadata including:
 
-  - Identifier (record_id)
+  - Identifier: the record identifier, `record_id` or else the first
+    field of the dictionary (e.g. `subject_id`), whatever its position
+    in the data. Filters and expressions can use it by its name.
 
   - DAG (if present)
 

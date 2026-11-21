@@ -880,6 +880,39 @@
   keeps the record identifier when its form is not designated in any
   event of `event_form`: it was removed from the data and the dictionary
   with the other variables of the forms without events.
+- The functions take the record identifier from the dictionary when it
+  isn’t called `record_id` (as
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  calls it): it is the first field of the dictionary
+  (e.g. `subject_id`), whatever its position in the data. With another
+  column first (e.g. `age`),
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  and
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  reported the values of that column as identifiers,
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md))
+  used it to match the events of each record, and
+  [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  labelled the records with it and plotted the identifier as a variable.
+  A first column that isn’t in the dictionary is still the identifier,
+  as before.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  keep the name of an identifier that isn’t called `record_id`, so their
+  `filter` can use it (e.g. `subject_id == '003'` or
+  `.data$subject_id == '003'`): they renamed it `record_id`, so the
+  filter failed, or used an object of the session with that name and
+  found no queries.
+- [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  takes the record identifier as present in every event, whatever its
+  form in the dictionary: a filter with the identifier
+  (e.g. `record_id == '003'`, or `record_id == '003' & value > 6`)
+  stopped saying that the variable and the filter didn’t share any
+  event, or that the variables of the filter belonged to different
+  events.
 - [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   doesn’t overwrite the fields of the project whose names end in
   `_recalc` (e.g. a field `q_recalc` when `q` is recalculated), nor a
@@ -1068,6 +1101,14 @@
   can be run as they are.
 - The screenshots of the queries vignette have alternative text, for
   screen readers.
+- The help of
+  [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md)
+  explains that the datetimes written as text are read in UTC, whatever
+  the time zone of the session (the time is kept as written in REDCap),
+  and the help of
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  that the label `(Recalculate)` of previous versions is also
+  recognised.
 - The help of
   [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
   and

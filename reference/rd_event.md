@@ -101,9 +101,11 @@ with two elements:
 - `queries`:
 
   A data frame listing records missing the specified events. Columns:
-  `Identifier`, `DAG`, `Event`, `Instrument`, `Field`, `Repetition`,
-  `Description`, `Query`, `Code`, and optionally `Link`. If no queries
-  are found this will be an empty data frame with the expected columns.
+  `Identifier` (the record identifier, `record_id` or else the first
+  field of the dictionary, which `filter` can use by its name), `DAG`,
+  `Event`, `Instrument`, `Field`, `Repetition`, `Description`, `Query`,
+  `Code`, and optionally `Link`. If no queries are found this will be an
+  empty data frame with the expected columns.
 
 - `results`:
 

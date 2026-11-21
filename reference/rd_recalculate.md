@@ -85,9 +85,11 @@ A list with:
 - The fields added by this function are recognised because they are
   calculated fields with the same calculation as the original field and,
   when the dictionary has the column `field_label`, its label followed
-  by `(Recalculated)`. No other field or column is overwritten: if
-  `[field_name]_recalc` is already one of them, the recalculated values
-  are saved in `[field_name]_recalc_1` (or `_2`, ...) with a warning.
+  by `(Recalculated)` (or by `(Recalculate)`, the label of previous
+  versions of the package, which are also recognised). No other field or
+  column is overwritten: if `[field_name]_recalc` is already one of
+  them, the recalculated values are saved in `[field_name]_recalc_1` (or
+  `_2`, ...) with a warning.
 
 - Works for single-event projects; for longitudinal projects,
   `event_form` must be provided.

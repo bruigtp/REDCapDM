@@ -168,7 +168,7 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 <li><p>Optionally negates the expressions to find values that <strong>do not</strong> satisfy the condition.</p></li>
 <li><p>Handles REDCap branching logic, converting it into R-compatible expressions for evaluation.</p></li>
 <li><p>Applies additional user-specified filters before identifying queries.</p></li>
-<li><p>Generates structured query results with metadata including:</p><ul><li><p>Identifier (record_id)</p></li>
+<li><p>Generates structured query results with metadata including:</p><ul><li><p>Identifier: the record identifier, <code>record_id</code> or else the first field of the dictionary (e.g. <code>subject_id</code>), whatever its position in the data. Filters and expressions can use it by its name.</p></li>
 <li><p>DAG (if present)</p></li>
 <li><p>Event and Instrument</p></li>
 <li><p>Field, Repetition, Description, Query statement</p></li>
