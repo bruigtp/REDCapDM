@@ -20,9 +20,9 @@ rd_missplot(
 \arguments{
 \item{data}{A \verb{data frame} or a list containing a \code{data} element retrieved from REDCap.}
 
-\item{sort_by_missingness}{Logical. Variables are ordered from highest to lowest missingness. Default \code{TRUE}.}
+\item{sort_by_missingness}{Logical. Variables are ordered from highest to lowest number of missing values (the count, also when \code{show_percentages = TRUE}; in longitudinal projects, the sum over the events). Default \code{TRUE}.}
 
-\item{max_vars}{Integer. If specified, only the top \code{max_vars} variables are plotted (by missingness, or by original column order if \code{sort_by_missingness = FALSE}). Default \code{NULL} (show all variables, as \code{Inf}).}
+\item{max_vars}{Integer. If specified, only \code{max_vars} variables are plotted: the ones with the most missing values (by count, as in \code{sort_by_missingness}), or the first ones in the original column order if \code{sort_by_missingness = FALSE}. Default \code{NULL} (show all variables, as \code{Inf}).}
 
 \item{show_percentages}{Logical. Displays missingness as percentages. Only used with \code{by = "vars"}. Default \code{TRUE}.}
 
@@ -30,11 +30,11 @@ rd_missplot(
 
 \item{drop_complete}{Logical. Variables with 0 missing values are excluded from the plot. Default \code{TRUE}.}
 
-\item{max_label_length}{Integer. Maximum number of characters of the axis labels. Use \code{NULL} to keep them complete. Default \code{40}.}
+\item{max_label_length}{Integer. Maximum number of characters of the axis labels: longer labels are shortened. When several variables share a label, their variable name is then added to it in parentheses, so these labels can be longer. Use \code{NULL} to keep them complete. Default \code{40}.}
 
 \item{by}{Character. \code{"vars"} (default) summarises the missing values of each variable; \code{"record"} shows them record by record.}
 
-\item{events}{Character vector. Only for longitudinal projects: events to plot, by their unique name (e.g. \code{"baseline_arm_1"}) or the name shown in the plot (e.g. \code{"Baseline"}). Use \code{"all"} to plot every event. Default \code{NULL}: every event with \code{by = "vars"} and the first event with \code{by = "record"}.}
+\item{events}{Character vector. Only for longitudinal projects: events to plot, by their unique name (e.g. \code{"baseline_arm_1"}) or the name shown in the plot (e.g. \code{"Baseline"}). When several events have the same name (e.g. the same event in two arms), the plot adds their unique name to it in parentheses, and giving the shared name selects all of them. Use \code{"all"} to plot every event. Default \code{NULL}: every event with \code{by = "vars"} and the first event with \code{by = "record"}.}
 
 \item{forms}{Character vector. Only plot the variables of these forms (instrument names as in the \code{form_name} column of the dictionary). Needs the dictionary. Default \code{NULL} (every form).}
 }

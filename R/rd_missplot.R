@@ -6,14 +6,14 @@
 #' Generates a visual summary of missing data for variables in a REDCap dataset or list structure. With `by = "vars"` (default), cross-sectional (single-event) studies get a barplot showing the proportion or count of missing values per variable, and longitudinal (multi-event) studies get a heatmap illustrating missingness across events and variables. With `by = "record"`, the plot shows one row per record and one column per variable, with the missing values painted.
 #'
 #' @param data A `data frame` or a list containing a `data` element retrieved from REDCap.
-#' @param sort_by_missingness Logical. Variables are ordered from highest to lowest missingness. Default `TRUE`.
-#' @param max_vars Integer. If specified, only the top `max_vars` variables are plotted (by missingness, or by original column order if `sort_by_missingness = FALSE`). Default `NULL` (show all variables, as `Inf`).
+#' @param sort_by_missingness Logical. Variables are ordered from highest to lowest number of missing values (the count, also when `show_percentages = TRUE`; in longitudinal projects, the sum over the events). Default `TRUE`.
+#' @param max_vars Integer. If specified, only `max_vars` variables are plotted: the ones with the most missing values (by count, as in `sort_by_missingness`), or the first ones in the original column order if `sort_by_missingness = FALSE`. Default `NULL` (show all variables, as `Inf`).
 #' @param show_percentages Logical. Displays missingness as percentages. Only used with `by = "vars"`. Default `TRUE`.
 #' @param use_field_labels Logical. Uses field labels from the dictionary for axis labels instead of variable names. Default `TRUE`.
 #' @param drop_complete Logical. Variables with 0 missing values are excluded from the plot. Default `TRUE`.
-#' @param max_label_length Integer. Maximum number of characters of the axis labels. Use `NULL` to keep them complete. Default `40`.
+#' @param max_label_length Integer. Maximum number of characters of the axis labels: longer labels are shortened. When several variables share a label, their variable name is then added to it in parentheses, so these labels can be longer. Use `NULL` to keep them complete. Default `40`.
 #' @param by Character. `"vars"` (default) summarises the missing values of each variable; `"record"` shows them record by record.
-#' @param events Character vector. Only for longitudinal projects: events to plot, by their unique name (e.g. `"baseline_arm_1"`) or the name shown in the plot (e.g. `"Baseline"`). Use `"all"` to plot every event. Default `NULL`: every event with `by = "vars"` and the first event with `by = "record"`.
+#' @param events Character vector. Only for longitudinal projects: events to plot, by their unique name (e.g. `"baseline_arm_1"`) or the name shown in the plot (e.g. `"Baseline"`). When several events have the same name (e.g. the same event in two arms), the plot adds their unique name to it in parentheses, and giving the shared name selects all of them. Use `"all"` to plot every event. Default `NULL`: every event with `by = "vars"` and the first event with `by = "record"`.
 #' @param forms Character vector. Only plot the variables of these forms (instrument names as in the `form_name` column of the dictionary). Needs the dictionary. Default `NULL` (every form).
 #' @return A `ggplot2` object representing a missingness barplot, a longitudinal missingness heatmap or a record-level missingness map.
 #' 
@@ -106,6 +106,22 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
       stringr::str_to_title()
   }
 
+  # One name per event: events with the same name (e.g. in different arms) would be merged in the plot, so their unique name is added
+  if (is_longitudinal) {
+    raw_names <- as.character(df[[event_col]])
+    base_name <- event_vector_display[match(unique(raw_names), raw_names)]
+    names(base_name) <- unique(raw_names)
+    valid <- !is.na(names(base_name)) & nzchar(names(base_name))
+    base_name <- base_name[valid]
+    base_name[is.na(base_name) | !nzchar(base_name)] <- names(base_name)[is.na(base_name) | !nzchar(base_name)]
+
+    unique_name <- base_name
+    shared_name <- unique_name %in% unique_name[duplicated(unique_name)]
+    unique_name[shared_name] <- paste0(unique_name[shared_name], " (", names(unique_name)[shared_name], ")")
+
+    event_vector_display <- unname(unique_name[raw_names])
+  }
+
     # Identifier of the records (REDCap's record ID is the first field of the project)
   id_col <- if ("record_id" %in% colnames(df)) "record_id" else colnames(df)[1]
   all_records <- unique(as.character(df[[id_col]]))
@@ -124,7 +140,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     # Chronological order: the one of event_form, then the order of appearance in the data
     events_in_data <- unique(raw_events[!is.na(raw_events) & nzchar(raw_events)])
     event_levels <- unique(c(intersect(as.character(event_form_df$unique_event_name), events_in_data), events_in_data))
-    shown_name <- stats::setNames(event_vector_display, raw_events)[event_levels]
+    shown_name <- unique_name[event_levels]
 
     if (is.null(events)) {
       selected_events <- if (by == "record") event_levels[1] else event_levels
@@ -135,15 +151,23 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     } else if (length(events) == 1 && tolower(events) == "all") {
       selected_events <- event_levels
     } else {
-      # Events can be given by their unique name or by the name shown in the plot
-      events_raw <- ifelse(events %in% event_levels, events, event_levels[match(events, shown_name)])
+      # Events can be given by their unique name or by the name shown in the plot (a name shared by several events selects all of them)
+      events_raw <- lapply(events, function(e) {
+        if (e %in% event_levels) {
+          e
+        } else if (e %in% shown_name) {
+          event_levels[shown_name == e]
+        } else {
+          event_levels[base_name[event_levels] == e]
+        }
+      })
 
-      if (anyNA(events_raw)) {
-        unknown_events <- events[is.na(events_raw)]
+      if (any(lengths(events_raw) == 0)) {
+        unknown_events <- events[lengths(events_raw) == 0]
         rd_abort(c("Event(s) not found in the data: {.val {unknown_events}}.", "i" = "Available events: {.val {event_levels}}."), class = "REDCapDM_error_argument")
       }
 
-      selected_events <- event_levels[event_levels %in% events_raw]
+      selected_events <- event_levels[event_levels %in% unlist(events_raw)]
     }
 
     keep <- raw_events %in% selected_events
@@ -182,9 +206,18 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     axis_labels <- stringr::str_trunc(axis_labels, max_label_length)
   }
 
-  # Variables sharing a label would be merged in the plot: add their name
-  shared <- axis_labels %in% axis_labels[duplicated(axis_labels)]
-  axis_labels[shared] <- paste0(axis_labels[shared], " (", colnames(df)[shared], ")")
+  # Variables sharing a label would be merged in the plot: add their name (repeated until every label is unique, as the new labels can coincide with others)
+  with_name <- rep(FALSE, length(axis_labels))
+
+  repeat {
+    shared <- axis_labels %in% axis_labels[duplicated(axis_labels)] & !with_name
+    if (!any(shared)) break
+    axis_labels[shared] <- paste0(axis_labels[shared], " (", colnames(df)[shared], ")")
+    with_name <- with_name | shared
+  }
+
+  # (labels that still coincide, e.g. with repeated column names, are numbered)
+  axis_labels <- make.unique(axis_labels, sep = " ")
 
   label_lookup <- stats::setNames(axis_labels, colnames(df))
 
@@ -461,9 +494,6 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
   } else {
 
-    # Attach the cleaned display event vector to dataset
-    df_cleaned$clean_event_name <- event_vector_display
-
     # Extract true chronological event order (First appearance)
     if ("unique_event_name" %in% colnames(event_form_df)) {
       raw_event_order <- unique(event_form_df$unique_event_name)
@@ -477,7 +507,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
     } else {
       # If event_form does not exist, use the order of occurrence in the clean dataset
-      event_order <- unique(df_cleaned$clean_event_name)
+      event_order <- unique(event_vector_display)
     }
 
     # Remove NAs or empty values
@@ -486,7 +516,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     # Calculate missingness grouped by clean_event_name, over the rows where each variable is collected (events without any such row are left out)
     missing_longitudinal <- purrr::map_dfr(plot_vars, function(v) {
       tibble::tibble(
-        clean_event_name = df_cleaned$clean_event_name,
+        clean_event_name = event_vector_display,
         is_home = home_rows[[v]],
         is_missing = is.na(df_cleaned[[v]])
       ) |>
@@ -546,7 +576,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
 
       var_order <- var_order_df$display_label
     } else {
-      raw_cols <- setdiff(colnames(df_cleaned), "clean_event_name")
+      raw_cols <- colnames(df_cleaned)
       var_order <- get_label_mapping(raw_cols, dictionary_df)
       if (drop_complete) {
         var_order <- setdiff(var_order, complete_vars)

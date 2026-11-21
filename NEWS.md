@@ -151,6 +151,8 @@
 - `rd_query()` without `event` failed in longitudinal projects when an event of the variable had no records yet (e.g. a follow-up visit that no one has reached, or an arm without records). It now checks the events with data.
 - `rd_export()` reported success when `path` was a folder or `sheet_name` had one of `/ \ ? * : [ ]`, which Excel doesn't accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.
 - `rd_export()` accepts the data frame of queries as its first argument (e.g. `rd_export(report$queries)`): before, it said that there were no queries to export.
+- `rd_recalculate()` doesn't overwrite the fields of the project whose names end in `_recalc` (e.g. a field `q_recalc` when `q` is recalculated): the recalculated values are saved in `q_recalc_1` (or `_2`, ...), with a warning. A calculated field of the project with such a name is now recalculated: it was skipped as if `rd_recalculate()` had added it. The fields added by `rd_recalculate()` are recognised by their label, the one of the original field followed by `(Recalculated)` (or `(Recalculate)`, as in previous versions).
+- `rd_missplot()` keeps apart the events with the same name (e.g. `Baseline` in two arms): they were merged in the heatmap and in the record map. The plot adds their unique name (e.g. `Baseline (baseline_arm_1)`), and in `events` the shared name selects all of them. A field called `clean_event_name` gets its own missing values (it got the ones of the event names) and keeps its label, and every variable gets a different label also when the name added to a shared label gives another existing label (e.g. `Lab`, `Lab` and `Lab (a)`): the bars were merged or the plot failed with "factor level is duplicated".
 
 ## Clearer messages
 
@@ -173,7 +175,8 @@
 - `rd_split()` and `rd_transform()` name the fields of the dictionary that are not in the data and, when whole instruments are missing (data exported with only some instruments), show how to remove them with `rd_delete_vars(forms = ...)`.
 - `rd_query()` suggests an option of the checkbox that exists in the data (e.g. `symptoms___a`) when a checkbox field is given in `variables`.
 - `rd_query()` no longer warns when one expression is given for several variables, the usual way to check them (it still warns when several expressions don't match the variables), and `rd_dates()` informs with a message, instead of a warning, that there are no dates to convert.
-- Fixed typos in the reports of `rd_split()` and `rd_transform()` ("arrangement").
+- `rd_recalculate()` shows `-` instead of a percentage (`NaN%`) in its summary when there are no calculated fields to recalculate (e.g. all of them in `exclude`) or none could be transcribed, and its last column is called "Fields with different recalculated values".
+- Fixed typos in the reports of `rd_split()` and `rd_transform()` ("arrangement"), and in the label of the fields added by `rd_recalculate()` ("(Recalculated)").
 
 ## Documentation
 
@@ -183,6 +186,7 @@
 - `rd_checkbox()`, `rd_dates()`, `rd_delete_vars()`, `rd_dictionary()`, `rd_export()`, `rd_factor()`, `rd_recalculate()` and `rd_split()` are now stable (their arguments and results won't change without a deprecation period). `rd_missplot()` remains experimental.
 - The examples of `rd_insert_na()` and `rd_export()` can be run as they are.
 - The screenshots of the queries vignette have alternative text, for screen readers.
+- The help of `rd_missplot()` explains that `sort_by_missingness` and `max_vars` use the number of missing values (also when the plot shows percentages), and that the labels shared by several variables, which get the variable name, can be longer than `max_label_length`.
 
 ## Internal changes
 

@@ -230,3 +230,73 @@ test_that("rounding without the number of decimals gives NA", {
   out <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic)))
   expect_false("r_recalc" %in% names(out$data))
 })
+
+
+# ---- Fields of the project whose names end in _recalc ----
+
+make_recalc_name_project <- function(type = "text") {
+  dic <- data.frame(
+    field_name = c("record_id", "a", "b", "q", "q_recalc"), form_name = "f",
+    field_type = c("text", "text", "text", "calc", type),
+    field_label = c("ID", "A", "B", "Q", "Q original"),
+    choices_calculations_or_slider_labels = c(NA, NA, NA, "[a]+[b]", if (type == "calc") "[a]*10" else NA),
+    text_validation_type_or_show_slider_number = NA, branching_logic_show_field_only_if = NA,
+    stringsAsFactors = FALSE
+  )
+  data <- data.frame(record_id = 1:3, a = c(1, 2, 3), b = c(1, 1, 1), q = c(2, 99, 4), q_recalc = c(999, 999, 999))
+  list(data = data, dictionary = dic)
+}
+
+test_that("rd_recalculate doesn't overwrite a field of the project named [field]_recalc", {
+  project <- make_recalc_name_project()
+
+  expect_warning(res <- rd_recalculate(project), "q_recalc_1")
+
+  expect_equal(res$data$q_recalc, c(999, 999, 999), ignore_attr = TRUE)
+  expect_equal(res$data$q_recalc_1, c(2, 3, 4), ignore_attr = TRUE)
+  expect_equal(names(res$data), c("record_id", "a", "b", "q", "q_recalc_1", "q_recalc"))
+  expect_equal(res$dictionary$field_label[res$dictionary$field_name == "q_recalc"], "Q original")
+  expect_equal(res$dictionary$field_label[res$dictionary$field_name == "q_recalc_1"], "Q (Recalculated)")
+
+  # Applied again, the same field is updated, without warnings
+  expect_no_warning(twice <- rd_recalculate(res))
+  expect_equal(names(twice$data), names(res$data))
+  expect_equal(twice$dictionary, res$dictionary)
+})
+
+test_that("rd_recalculate recalculates a calculated field of the project named [field]_recalc", {
+  project <- make_recalc_name_project("calc")
+  project$data$q_recalc <- c(10, 20, 0)
+
+  res <- suppressWarnings(rd_recalculate(project))
+  report <- paste(res$results, collapse = "\n")
+
+  expect_match(report, "\\|\\s+q_recalc\\s+\\|\\s+Yes\\s+\\|\\s+FALSE\\s+\\|\\s+1\\s+\\|")
+  expect_equal(res$data$q_recalc_recalc, c(10, 20, 30), ignore_attr = TRUE)
+  expect_equal(res$data$q_recalc, c(10, 20, 0), ignore_attr = TRUE)
+})
+
+test_that("rd_recalculate updates the _recalc fields of previous versions of the package", {
+  project <- make_recalc_name_project()
+  project$dictionary$field_label[5] <- "Q (Recalculate)"
+  project$dictionary$field_type[5] <- "calc"
+  project$dictionary$choices_calculations_or_slider_labels[5] <- "[a]+[b]"
+
+  expect_no_warning(res <- rd_recalculate(project))
+  expect_equal(res$data$q_recalc, c(2, 3, 4), ignore_attr = TRUE)
+  expect_false("q_recalc_1" %in% names(res$data))
+  # q_recalc is not recalculated as another calculated field
+  expect_false(grepl("q_recalc ", paste(res$results, collapse = "\n")))
+})
+
+test_that("rd_recalculate labels the recalculated fields and summarises without calculated fields", {
+  res <- rd_recalculate(covican)
+  expect_equal(res$dictionary$field_label[res$dictionary$field_name == "age_recalc"], "Age (Recalculated)")
+  expect_match(paste(res$results, collapse = "\n"), "Fields with different recalculated values", fixed = TRUE)
+
+  # Every calculated field excluded: there is no percentage
+  project <- make_recalc_name_project()
+  report <- paste(rd_recalculate(project, exclude = "q")$results, collapse = "\n")
+  expect_false(grepl("NaN", report))
+  expect_match(report, "\\|\\s+0\\s+\\|\\s+0 \\(-\\)\\s+\\|\\s+0 \\(-\\)\\s+\\|")
+})

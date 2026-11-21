@@ -14,7 +14,8 @@
 #' @details
 #' * Fields of type `calc` in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (`NA`).
 #' * Recalculated values are compared with the original values, both rounded to three decimals (e.g. 1.0004 and 1 are equal).
-#' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary.
+#' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary, with the label of the original field followed by `(Recalculated)`. Running the function again on its output updates these fields instead of duplicating them.
+#' * A field of the project whose name ends in `_recalc` is never overwritten: if `[field_name]_recalc` is already a field of the dictionary (and not one added by this function), the recalculated values are saved in `[field_name]_recalc_1` (or `_2`, ...) with a warning.
 #' * Works for single-event projects; for longitudinal projects, `event_form` must be provided.
 #' * Fields with incomplete branching logic or smart variables may fail to recalculate.
 #'
@@ -127,8 +128,8 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 
     # Process calculated fields: evaluate, transcribe logic, and compare results
     calc <- tibble::tibble(dic) |>
-      # The `_recalc` fields added by a previous rd_recalculate() are not recalculated again
-      dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude, !.data$field_name %in% paste0(dic$field_name, "_recalc")) |>
+      # The `_recalc` fields added by a previous rd_recalculate() are not recalculated again (the fields of the project whose names end in `_recalc` are)
+      dplyr::filter(.data$field_type == "calc", !.data$field_name %in% exclude, !recalc_generated(.data$field_name, dic)) |>
       dplyr::mutate(
         calc = purrr::map(.data$field_name, function(x) {
           val <- data[[x]]
@@ -174,31 +175,46 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
     calc_change <- calc |>
       dplyr::filter(!is.na(.data$trans) & !.data$is_equal)
 
+    # Fields of the project that already use the name `[field_name]_recalc`: the recalculation gets another name
+    renamed <- character(0)
+
     if (nrow(calc_change) > 0) {
       for (i in seq_len(nrow(calc_change))) {
-        name <- as.character(stringr::str_glue("{calc_change$field_name[i]}_recalc"))
+        field <- as.character(calc_change$field_name[i])
+        name <- recalc_name(field, dic)
+
+        if (name != paste0(field, "_recalc") && !name %in% c(names(data), dic$field_name)) {
+          renamed <- c(renamed, stats::setNames(name, field))
+        }
 
         # If rd_recalculate() was already applied, the `_recalc` field is updated instead of duplicated
         if (name %in% names(data)) {
           data[[name]] <- calc_change$recalc[[i]]
         } else {
           data <- data |>
-            tibble::add_column("{name}" := calc_change$recalc[[i]], .after = as.character(calc_change$field_name[i]))
+            tibble::add_column("{name}" := calc_change$recalc[[i]], .after = field)
         }
 
         if (!name %in% dic$field_name) {
           add_row <- dic |>
-            dplyr::filter(.data$field_name == calc_change$field_name[i]) |>
-            dplyr::mutate(
-              field_name = stringr::str_glue("{field_name}_recalc"),
-              field_label = stringr::str_glue("{field_label} (Recalculate)")
-            )
+            dplyr::filter(.data$field_name == field)
+          add_row$field_name <- rep(name, nrow(add_row))
 
-          pos <- which(dic$field_name == calc_change$field_name[i])
+          if ("field_label" %in% names(add_row)) {
+            add_row$field_label <- recalc_labels(add_row$field_label)[, 1]
+          }
+
+          pos <- which(dic$field_name == field)
 
           dic <- dic |> tibble::add_row(!!!as.list(add_row), .after = pos)
         }
       }
+    }
+
+    # Warning: the recalculations saved with another name
+    if (length(renamed) > 0) {
+      existing <- paste0(names(renamed), "_recalc")
+      rd_warn(c("The project already has fields named {.var {existing}}, which are not overwritten.", "i" = "The recalculated values of {.var {names(renamed)}} are saved in {.var {unname(renamed)}}."))
     }
 
     # Reapply labels to the modified dataset
@@ -234,11 +250,11 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
         no_equal = sum(!.data$is_equal, na.rm = TRUE)
       ) |>
       dplyr::mutate(
-        text1 = stringr::str_glue("{no_trans} ({round(no_trans*100/N, 2)}%)"),
-        # No field could be transcribed: there is no percentage
-        text2 = stringr::str_glue("{no_equal} ({ifelse(trans == 0, 0, round(no_equal*100/trans, 2))}%)")
+        # Without calculated fields (or without transcribed ones) there is no percentage
+        text1 = stringr::str_glue("{no_trans} ({ifelse(N == 0, '-', paste0(round(no_trans*100/N, 2), '%'))})"),
+        text2 = stringr::str_glue("{no_equal} ({ifelse(trans == 0, '-', paste0(round(no_equal*100/trans, 2), '%'))})")
       ) |>
-      dplyr::select("Total calculated fields" = "N", "Non-transcribed fields" = "text1", "Recalculated different fields" = "text2")
+      dplyr::select("Total calculated fields" = "N", "Non-transcribed fields" = "text1", "Fields with different recalculated values" = "text2")
 
     results <- c(results, "\n", knitr::kable(report1, "pipe", align = "ccc"))
 
@@ -294,4 +310,60 @@ count_differences <- function(x, y) {
   }
 
   as.integer(sum(xor(is.na(x), is.na(y)) | (!is.na(x) & !is.na(y) & x != y)))
+}
+
+
+
+#' Labels of the recalculated versions of some fields
+#'
+#' @param label Labels of the original fields.
+#' @return A matrix with the current label (`(Recalculated)`) in the first column and the one of previous versions of the package (`(Recalculate)`) in the second.
+#' @noRd
+recalc_labels <- function(label) {
+  label <- as.character(label)
+  cbind(paste0(label, " (Recalculated)"), paste0(label, " (Recalculate)"))
+}
+
+
+#' Fields added by rd_recalculate()
+#'
+#' A field is a recalculated version added by `rd_recalculate()` when its name is `[field_name]_recalc` (or `[field_name]_recalc_1`, ...) of another field of the dictionary and its label is the label of that field followed by `(Recalculated)`. The fields of the project whose names end in `_recalc` are not.
+#'
+#' @param names Field names.
+#' @param dic Dictionary.
+#' @return Logical vector.
+#' @noRd
+recalc_generated <- function(names, dic) {
+  names <- as.character(names)
+  base <- sub("_recalc(_[0-9]+)?$", "", names)
+  label <- if ("field_label" %in% names(dic)) as.character(dic$field_label) else rep(NA_character_, nrow(dic))
+
+  own_label <- label[match(names, dic$field_name)]
+  base_labels <- recalc_labels(label[match(base, dic$field_name)])
+
+  base != names & base %in% dic$field_name & !is.na(own_label) &
+    (own_label == base_labels[, 1] | own_label == base_labels[, 2])
+}
+
+
+#' Name of the recalculated version of a field
+#'
+#' `[field]_recalc`, unless the dictionary has a field of the project with that name: then `[field]_recalc_1`, `[field]_recalc_2`, ... The recalculated version added by a previous `rd_recalculate()` is reused, and so is a column of the data with that name that isn't in the dictionary (as in previous versions of the package).
+#'
+#' @param field Name of the calculated field.
+#' @param dic Dictionary.
+#' @return Character.
+#' @noRd
+recalc_name <- function(field, dic) {
+  k <- 0
+
+  repeat {
+    name <- if (k == 0) paste0(field, "_recalc") else paste0(field, "_recalc_", k)
+
+    if (!name %in% dic$field_name || recalc_generated(name, dic)) {
+      return(name)
+    }
+
+    k <- k + 1
+  }
 }

@@ -385,3 +385,88 @@ test_that("rd_missplot explains a wrong max_vars and takes Inf as all the variab
 test_that("rd_missplot works with data without columns, as before", {
   expect_no_error(suppressWarnings(suppressMessages(rd_missplot(covican$data[, 0]))))
 })
+
+
+# ---- Events and variables with the same name in the plot ----
+
+make_shared_event_project <- function() {
+  data <- data.frame(
+    record_id = c(1, 1, 2, 2),
+    redcap_event_name = c("baseline_arm_1", "baseline_arm_2", "baseline_arm_1", "baseline_arm_2"),
+    x = c(NA, 1, NA, 2),
+    y = c(1, NA, 2, 3),
+    stringsAsFactors = FALSE
+  )
+  data$redcap_event_name.factor <- factor(rep("Baseline", 4))
+  list(
+    data = data,
+    dictionary = data.frame(field_name = c("record_id", "x", "y"), form_name = "f", field_label = c("ID", "X", "Y")),
+    event_form = data.frame(unique_event_name = c("baseline_arm_1", "baseline_arm_2"), form = "f")
+  )
+}
+
+test_that("rd_missplot doesn't merge events with the same name", {
+  project <- make_shared_event_project()
+  shown <- c("Baseline (baseline_arm_1)", "Baseline (baseline_arm_2)")
+
+  heat <- rd_missplot(project, drop_complete = FALSE)
+  expect_setequal(levels(heat$data$clean_event_name), shown)
+  expect_equal(heat$data$missing_count[heat$data$clean_event_name == shown[1] & heat$data$variable == "x"], 2)
+  expect_equal(heat$data$missing_count[heat$data$clean_event_name == shown[2] & heat$data$variable == "y"], 1)
+  expect_true(all(heat$data$event_total_obs == 2))
+
+  # Without the factor version of the event either
+  project$data$redcap_event_name.factor <- NULL
+  expect_setequal(levels(rd_missplot(project, drop_complete = FALSE)$data$clean_event_name), shown)
+  project <- make_shared_event_project()
+
+  # Record map: one panel per event
+  map <- rd_missplot(project, by = "record", events = "all", drop_complete = FALSE)
+  expect_equal(levels(map$data$event), shown)
+  expect_equal(sum(map$data$status == "Missing" & map$data$event == shown[1]), 2)
+  expect_equal(sum(map$data$status == "Missing" & map$data$event == shown[2]), 1)
+
+  # The shared name selects every event with that name, the name shown selects one
+  expect_equal(levels(rd_missplot(project, by = "record", events = "Baseline")$data$event), shown)
+  one <- suppressMessages(rd_missplot(project, by = "record", events = "Baseline (baseline_arm_2)"))
+  expect_equal(levels(one$data$event), shown[2])
+})
+
+test_that("rd_missplot plots a field named clean_event_name", {
+  data <- data.frame(
+    record_id = c(1, 1, 2, 2),
+    redcap_event_name = c("v1_arm_1", "v2_arm_1", "v1_arm_1", "v2_arm_1"),
+    clean_event_name = c(NA, NA, NA, "z"),
+    y = c(NA, 1, 1, 1),
+    stringsAsFactors = FALSE
+  )
+
+  for (sort in c(TRUE, FALSE)) {
+    p <- rd_missplot(data, sort_by_missingness = sort)
+    pct <- p$data$missing_pct[p$data$variable == "clean_event_name"]
+    expect_equal(sort(pct), c(50, 100))
+    expect_false(anyNA(p$data$display_label))
+    expect_setequal(levels(p$data$display_label), c("clean_event_name", "y"))
+  }
+})
+
+test_that("rd_missplot gives a different label to every variable", {
+  project <- list(
+    data = data.frame(record_id = 1:4, a = c(NA, 1, 1, 1), b = c(NA, NA, 1, 1), c = c(NA, NA, NA, 1)),
+    dictionary = data.frame(field_name = c("record_id", "a", "b", "c"), field_label = c("ID", "Lab", "Lab", "Lab (a)"))
+  )
+
+  for (sort in c(TRUE, FALSE)) {
+    p <- rd_missplot(project, sort_by_missingness = sort)
+    labels <- as.character(p$data$display_label)
+    expect_equal(anyDuplicated(labels), 0)
+    expect_equal(labels[match(c("a", "b", "c"), p$data$variable)], c("Lab (a)", "Lab (b)", "Lab (a) (c)"))
+    expect_true(all(p$data$missing_pct <= 100))
+  }
+
+  # Longitudinal heatmap and record map
+  project$data$redcap_event_name <- "v1_arm_1"
+  heat <- rd_missplot(project)
+  expect_equal(nlevels(heat$data$display_label), 3)
+  expect_equal(nlevels(rd_missplot(project, by = "record")$data$display_label), 3)
+})
