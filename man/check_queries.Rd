@@ -42,8 +42,9 @@ query into one of four statuses:
 \item \strong{Solved} — the query was present in the old report but is absent from the new report,
 \item \strong{New} — the query appears in the new report but was not present in the old report,
 \item \strong{Miscorrected} — a special case where a query in the new report is marked as \code{New}
-but shares the same \code{Identifier} and \code{Description} as an existing record (suggesting a
-re-issued or modified query for the same identifier).
+but the old report has a query with the same \code{Identifier}, \code{Event}, \code{Repetition},
+\code{Field} (each of them when both reports have it) and \code{Description} (suggesting a re-issued or
+modified query for the same record and field).
 }
 
 The function returns a detailed comparison table of queries with a \code{Modification} factor (one of the four statuses) and an HTML summary table showing counts per status.
@@ -75,10 +76,11 @@ plain number without leading zeros (e.g. \code{"007"} is kept as text).
 \code{Event} and \code{Repetition} (when both reports have them), \code{Field} (when both reports have it),
 \code{Description} and \code{Query}. The other columns (e.g. \code{Link} or \code{DAG}) are taken from the new report,
 so a query whose link changed is still one pending query.
-\item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned when more
-than one row shares the same \code{Identifier + Description} composite and a row is
-otherwise classified as \code{New} — this signals a likely re-issued or modified query
-for an existing identifier.
+\item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned to a query that would
+otherwise be \code{New} when the old report has a query with the same \code{Identifier}, \code{Event},
+\code{Repetition}, \code{Field} (each of them when both reports have it) and \code{Description} — this
+signals a likely re-issued or modified query. New queries without such a query in the old report are
+\code{New}, also when there are several of them for the same field.
 }
 }
 

@@ -1169,3 +1169,15 @@ test_that("rd_query keeps the texts between quotes of the expression in the mess
   expect_equal(nrow(both$queries), 2)
   expect_equal(both$queries$Query, c("The value is AB A B and it should not be grepl('A B',,fixed=TRUE)", "The value is AB A B and it should not be grepl('AB',,fixed=TRUE)"))
 })
+
+test_that("rd_query keeps the values and the raw strings of the expression in the messages", {
+  toy_data <- data.frame(record_id = c("1", "2", "3"), t = c("A  B", " A B ", 'a" x > b & c'), stringsAsFactors = FALSE)
+  toy_dic <- data.frame(field_name = c("record_id", "t"), form_name = "f1", field_type = "text", field_label = c("ID", "T"), stringsAsFactors = FALSE)
+  run <- function(expression) suppressMessages(rd_query(data = toy_data, dic = toy_dic, variables = "t", expression = expression))
+  spaces <- run("x %in% c('A  B', ' A B ')")
+  expect_equal(spaces$queries$Query, c("The value is A  B and it should not be equal to c('A  B',' A B ')", "The value is  A B  and it should not be equal to c('A  B',' A B ')"))
+  raw <- run('x == r"--(a" x > b & c)--"')
+  expect_equal(raw$queries$Query, 'The value is a" x > b & c and it should not be equal to r"--(a" x > b & c)--"')
+  # (in the HTML summary, with > and & written as HTML)
+  expect_match(paste(raw$results, collapse = ""), 'r"--(a" x &gt; b &amp; c)--"', fixed = TRUE)
+})

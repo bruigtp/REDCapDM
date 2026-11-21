@@ -1436,6 +1436,17 @@ quoted_pattern <- function() {
   "(?s)'(?:[^'\\\\]|\\\\.)*'|\"(?:[^\"\\\\]|\\\\.)*\""
 }
 
+#' Regular expression of the texts of R code
+#'
+#' The texts between quotes and the raw strings of R (e.g. `r"(a" x > b)"`, `R'[a]'` or `r"--{a}--"`, whose text ends
+#' with the same bracket, dashes and quote), for the expressions of rd_query().
+#'
+#' @return A regular expression (perl = TRUE).
+#' @noRd
+r_texts_pattern <- function() {
+  paste0("(?s)[rR]([\"'])(-*)(?:\\((?:.*?)\\)|\\[(?:.*?)\\]|\\{(?:.*?)\\})\\2\\1|", sub("^\\(\\?s\\)", "", quoted_pattern()))
+}
+
 #' A logic without the texts between quotes
 #'
 #' To look for fields or R code in a logic (e.g. `[age]` in `data$status == '[age]'` is a text).
@@ -1520,14 +1531,15 @@ unmask_texts <- function(x, texts) {
 #'
 #' @param x Character vector with the logic.
 #' @param f A function that receives and returns the parts of the logic outside the quotes (character vector).
+#' @param pattern Regular expression of the texts (by default, the texts between quotes of REDCap logic).
 #' @return The logic with those parts changed and the texts between quotes as they were.
 #' @noRd
-outside_quotes <- function(x, f) {
+outside_quotes <- function(x, f, pattern = quoted_pattern()) {
   vapply(x, function(s) {
     if (is.na(s)) {
       return(s)
     }
-    quotes <- gregexpr(quoted_pattern(), s, perl = TRUE)
+    quotes <- gregexpr(pattern, s, perl = TRUE)
     texts <- regmatches(s, quotes)[[1]]
     rest <- f(regmatches(s, quotes, invert = TRUE)[[1]])
     paste0(rest, c(texts, ""), collapse = "")

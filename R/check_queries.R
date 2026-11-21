@@ -11,8 +11,9 @@
 #'   \item \strong{Solved} — the query was present in the old report but is absent from the new report,
 #'   \item \strong{New} — the query appears in the new report but was not present in the old report,
 #'   \item \strong{Miscorrected} — a special case where a query in the new report is marked as \code{New}
-#'     but shares the same \code{Identifier} and \code{Description} as an existing record (suggesting a
-#'     re-issued or modified query for the same identifier).
+#'     but the old report has a query with the same \code{Identifier}, \code{Event}, \code{Repetition},
+#'     \code{Field} (each of them when both reports have it) and \code{Description} (suggesting a re-issued or
+#'     modified query for the same record and field).
 #' }
 #'
 #' The function returns a detailed comparison table of queries with a \code{Modification} factor (one of the four statuses) and an HTML summary table showing counts per status.
@@ -64,10 +65,11 @@
 #'     \code{Event} and \code{Repetition} (when both reports have them), \code{Field} (when both reports have it),
 #'     \code{Description} and \code{Query}. The other columns (e.g. \code{Link} or \code{DAG}) are taken from the new report,
 #'     so a query whose link changed is still one pending query.
-#'   \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned when more
-#'     than one row shares the same \code{Identifier + Description} composite and a row is
-#'     otherwise classified as \code{New} — this signals a likely re-issued or modified query
-#'     for an existing identifier.
+#'   \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned to a query that would
+#'     otherwise be \code{New} when the old report has a query with the same \code{Identifier}, \code{Event},
+#'     \code{Repetition}, \code{Field} (each of them when both reports have it) and \code{Description} — this
+#'     signals a likely re-issued or modified query. New queries without such a query in the old report are
+#'     \code{New}, also when there are several of them for the same field.
 #' }
 #'
 #' @examples
@@ -155,15 +157,22 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
 
   # Merge old and new datasets
   new <- new |> dplyr::select(-dplyr::any_of("Code"))
-  old[, "comp"] <- query_key(old, c(key_cols, "Query"))
-  new[, "comp"] <- query_key(new, c(key_cols, "Query"))
+  # (internal columns with names that the reports don't have, e.g. a column `comp` of the reports is kept)
+  internal_name <- function(base) utils::tail(make.unique(c(unique(c(names(old), names(new))), base), sep = "_"), 1)
+  comp <- internal_name("comp")
+  comp2 <- internal_name("comp2")
+  old[[comp]] <- query_key(old, c(key_cols, "Query"))
+  new[[comp]] <- query_key(new, c(key_cols, "Query"))
+  # (the identity of the queries of the old report, without the query: Identifier, Event, Repetition, Field and
+  # Description)
+  old_keys <- query_key(old, key_cols)
 
   # The queries of both reports take the other columns of the new report (e.g. Link or DAG): otherwise a query whose
   # link changed would be two rows
   # (a column with a different class in each report, e.g. a factor in one of them, or factors with different levels, is
   # kept as text: the values of the new report can't be copied into a factor that doesn't have them)
-  other_cols <- setdiff(intersect(names(old), names(new)), c(key_cols, "Query", "comp"))
-  in_new <- match(old$comp, new$comp)
+  other_cols <- setdiff(intersect(names(old), names(new)), c(key_cols, "Query", comp))
+  in_new <- match(old[[comp]], new[[comp]])
   for (col in other_cols) {
     same_class <- identical(class(old[[col]]), class(new[[col]])) && identical(levels(old[[col]]), levels(new[[col]]))
     if (!same_class) {
@@ -178,30 +187,22 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   check <- merge(old, new, by = intersect(names(old), names(new)), all = TRUE)
 
   # Add columns for comparisons and determine statuses
-  check[, "comp"] <- query_key(check, c(key_cols, "Query"))
-  check[, "comp2"] <- query_key(check, key_cols)
+  check[[comp]] <- query_key(check, c(key_cols, "Query"))
+  check[[comp2]] <- query_key(check, key_cols)
   check[["Modification"]] <- rep(NA_character_, nrow(check))
-  check[, "Modification"][check$comp %in% old$comp & check$comp %in% new$comp] <- "Pending"
-  check[, "Modification"][check$comp %in% old$comp & !check$comp %in% new$comp] <- "Solved"
-  check[, "Modification"][!check$comp %in% old$comp & check$comp %in% new$comp] <- "New"
-
-  # Identify miscorrected queries: If a query does not exist in the old report, but there is a new query from the same variable with the same identifier
-  check <- check |>
-    dplyr::group_by(.data$comp2) |>
-    dplyr::mutate(n = dplyr::n())
+  check[, "Modification"][check[[comp]] %in% old[[comp]] & check[[comp]] %in% new[[comp]]] <- "Pending"
+  check[, "Modification"][check[[comp]] %in% old[[comp]] & !check[[comp]] %in% new[[comp]]] <- "Solved"
+  check[, "Modification"][!check[[comp]] %in% old[[comp]] & check[[comp]] %in% new[[comp]]] <- "New"
   check <- as.data.frame(check)
 
-  if (any(check[, "n"] > 1)) {
-    dups <- check |>
-      dplyr::filter(.data$n > 1 & .data$Modification %in% "New")
-    if (nrow(dups) > 0) {
-      dups[, "Modification"] <- "Miscorrected"
-
-      check <- check |>
-        dplyr::filter(!(.data$n > 1 & .data$Modification %in% "New"))
-
-      check <- rbind(check, dups)
-    }
+  # Identify miscorrected queries: a query that doesn't exist in the old report, when the old report has a query of the
+  # same record, event, repetition, field and description (e.g. re-issued with another value). Two new queries of
+  # the same field without a query in the old report are new
+  miscorrected <- check$Modification %in% "New" & check[[comp2]] %in% old_keys
+  if (any(miscorrected)) {
+    dups <- check[miscorrected, , drop = FALSE]
+    dups[, "Modification"] <- "Miscorrected"
+    check <- rbind(check[!miscorrected, , drop = FALSE], dups)
   }
 
   # Convert the "Modification" column to a factor
@@ -210,20 +211,16 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   )
 
   # Clean up unnecessary columns
-  check <- check |>
-    dplyr::select(-dplyr::any_of(c("comp", "comp2", "n")))
+  check <- check[, setdiff(names(check), c(comp, comp2)), drop = FALSE]
 
   # Arrange the dataset by identifier and previous code
   # (identifiers kept as text in a report, e.g. with leading zeros in some of them, are kept as text)
   check <- sort_by_identifier(check, by_code = TRUE, numeric = !is.character(old$Identifier) && !is.character(new$Identifier))
 
-  # Assign new codes to each query to match the old dataset
-  check <- data.frame(check |>
-    dplyr::group_by(.data$Identifier) |>
-    dplyr::mutate(cod = dplyr::row_number()))
-  check$Code <- if (nrow(check) > 0) paste0(id_text(check$Identifier), "-", check$cod) else character(0)
-  check <- check |>
-    dplyr::select(-dplyr::any_of("cod"))
+  # Assign new codes to each query to match the old dataset (the number of each query of a record)
+  check <- as.data.frame(check)
+  number <- if (nrow(check) > 0) stats::ave(seq_len(nrow(check)), id_text(check$Identifier), FUN = seq_along) else integer(0)
+  check$Code <- if (nrow(check) > 0) paste0(id_text(check$Identifier), "-", number) else character(0)
 
   # Summarize query statuses
   report <- check |>

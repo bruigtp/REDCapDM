@@ -72,7 +72,7 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # Error: For longitudinal data, ensure `event_form` is specified
   if (is.null(event_form) && longitudinal) {
-    rd_abort("The dataset contains multiple events, but the {.arg event_form} mapping was not provided. Please specify it.")
+    rd_abort("The data is longitudinal (it has the column `redcap_event_name`), but the {.arg event_form} mapping was not provided. Please specify it.")
   }
 
   # Validate there is exactly one filter and allow multiple vars

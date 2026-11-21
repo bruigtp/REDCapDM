@@ -15,7 +15,7 @@
 #' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
 #' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
-#' @param report_zeros Logical, include variables with zero queries in the report. Default is `FALSE`.
+#' @param report_zeros Logical, include events with zero queries in the report. Default is `FALSE`.
 #' @param link Optional list containing project information (`domain`, `redcap_version`, `proj_id`, `event_id`) to generate clickable links for each query.
 #'
 #'

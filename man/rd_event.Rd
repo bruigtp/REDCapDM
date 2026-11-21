@@ -38,7 +38,7 @@ rd_event(
 
 \item{report_title}{Optional string specifying the title of the final report. Defaults to \code{"Report of queries"}.}
 
-\item{report_zeros}{Logical, include variables with zero queries in the report. Default is \code{FALSE}.}
+\item{report_zeros}{Logical, include events with zero queries in the report. Default is \code{FALSE}.}
 
 \item{link}{Optional list containing project information (\code{domain}, \code{redcap_version}, \code{proj_id}, \code{event_id}) to generate clickable links for each query.}
 

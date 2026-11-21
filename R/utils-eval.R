@@ -71,42 +71,58 @@ redcap_logic <- function(logic, env) {
 #' Message of the queries of rd_query()
 #'
 #' The expression is described in words: the variable `x` is removed and the operators are written in words (e.g.
-#' `x > 5` is "greater than 5"), only outside the texts between quotes, which are kept as they are (e.g. `x == 'a>b'`
-#' is "equal to 'a>b'" and `x == 'A B'` keeps its space).
+#' `x > 5` is "greater than 5"), only outside the texts between quotes and the raw strings of R, which are kept as
+#' they are (e.g. `x == 'a>b'` is "equal to 'a>b'" and `x == 'A  B'` keeps its spaces). The values of the variable are
+#' also kept as they are (e.g. "A  B" or " A").
 #'
 #' @param expression The expression of rd_query() (one message for each expression).
-#' @param message A function that writes the message with the description of the expression.
-#' @param values Other texts of the message (e.g. the values of the variable).
+#' @param message A function that writes the message with the description of the expression and, if `values` are
+#'   given, with the value (a function of the description and the value).
+#' @param values The values of the variable (one message for each value), or none.
 #' @return The message.
 #' @noRd
-query_message <- function(expression, message, values = character(0)) {
+query_message <- function(expression, message, values = NULL) {
+  with_values <- length(formals(message)) > 1
+  values <- as.character(values)
   if (length(expression) == 0) {
-    return(message(""))
+    return(if (with_values) message("", values) else message(""))
   }
   if (length(expression) > 1) {
     return(unlist(lapply(expression, query_message, message = message, values = values)))
   }
   if (is.na(expression)) {
-    return(message("NA"))
+    expression <- "NA"
   }
   operators <- c("<=", ">=", "<", ">", "&", "\\|", "!=", "==", "%in%NA", "%in%", "%nin%", "is.na\\(\\)")
   words <- c(" less than or equal to ", " greater than or equal to ", " less than ", " greater than ", " and ", " or ", " not equal to ", " equal to ", " missing ", " equal to ", " not equal to ", " missing ")
-  quotes <- gregexpr(quoted_pattern(), expression, perl = TRUE)
+  quotes <- gregexpr(r_texts_pattern(), expression, perl = TRUE)
   texts <- regmatches(expression, quotes)[[1]]
   code <- regmatches(expression, quotes, invert = TRUE)[[1]]
   code <- vapply(code, function(s) {
     stringi::stri_replace_all_regex(gsub(" ", "", gsub("\\bx\\b", "", s)), pattern = operators, replacement = words, vectorize_all = FALSE)
   }, character(1), USE.NAMES = FALSE)
 
-  # The texts are set aside while the message is written (its spaces are joined)
+  # The texts and the value are set aside while the message is written (its spaces are joined)
   base <- "REDCapDMquote"
-  while (any(grepl(base, c(expression, as.character(values)), fixed = TRUE))) {
+  while (any(grepl(base, c(expression, values), fixed = TRUE))) {
     base <- paste0(base, "x")
   }
   holders <- if (length(texts) > 0) paste0(base, seq_along(texts), "x") else character(0)
-  out <- message(paste0(code, c(holders, ""), collapse = ""))
+  description <- paste0(code, c(holders, ""), collapse = "")
+  value_holder <- paste0(base, "valuex")
+  out <- if (!with_values) {
+    message(description)
+  } else if (length(values) == 0) {
+    message(description, character(0))
+  } else {
+    rep(message(description, value_holder), length(values))
+  }
   for (k in rev(seq_along(texts))) {
     out <- gsub(holders[k], texts[k], out, fixed = TRUE)
+  }
+  if (with_values && length(values) > 0) {
+    # (a value NA is written "NA", as paste() does)
+    out <- stringi::stri_replace_first_fixed(out, value_holder, ifelse(is.na(values), "NA", values))
   }
   out
 }

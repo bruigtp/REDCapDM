@@ -10,12 +10,12 @@ test_that("check_queries validates inputs with covican", {
 })
 
 test_that("check_queries detects Pending, Solved, New and Miscorrected with covican", {
-  # Old query report: record_id A (pending), record_id B (solved)
+  # Old query report: record_id A (pending), record_id B (solved), and a query of fio2 in 100-21
   old <- data.frame(
-    Identifier = c("100-6", "100-13"),
-    Description = c("age", "potassium"),
-    Query = c("age out of range", "potassium missing"),
-    Code = c("100-6-1", "100-13-1"),
+    Identifier = c("100-6", "100-13", "100-21"),
+    Description = c("age", "potassium", "fio2"),
+    Query = c("age out of range", "potassium missing", "fio2 missing"),
+    Code = c("100-6-1", "100-13-1", "100-21-1"),
     stringsAsFactors = FALSE
   )
 
@@ -23,7 +23,7 @@ test_that("check_queries detects Pending, Solved, New and Miscorrected with covi
   # - 100-6 still has same query -> Pending
   # - 100-13 missing -> Solved
   # - 100-20 new -> New
-  # - 100-21 has two different queries -> Miscorrected
+  # - 100-21 has two different queries of fio2, which had another query in the old report -> Miscorrected
   new <- data.frame(
     Identifier = c("100-6", "100-20", "100-21", "100-21"),
     Description = c("age", "dm", "fio2", "fio2"),
@@ -42,8 +42,8 @@ test_that("check_queries detects Pending, Solved, New and Miscorrected with covi
 
   # Pending: 100-6
   expect_equal(as.integer(counts["Pending"]), 1L)
-  # Solved: 100-13
-  expect_equal(as.integer(counts["Solved"]), 1L)
+  # Solved: 100-13 and the old query of 100-21
+  expect_equal(as.integer(counts["Solved"]), 2L)
   # New: 100-20
   expect_equal(as.integer(counts["New"]), 1L)
   # Miscorrected: 100-21 has 2 queries
@@ -225,4 +225,32 @@ test_that("check_queries takes the same text in different encodings for the same
   new$Description <- c(utf8, latin1)
   out <- suppressMessages(check_queries(old = old, new = new, return_viewer = FALSE))$queries
   expect_equal(as.character(out$Modification), c("Pending", "Pending"))
+})
+
+test_that("check_queries only marks as Miscorrected a new query whose record and field had a query in the old report", {
+  q <- function(id, query, field = "a", ...) data.frame(Identifier = id, DAG = "-", Event = "E1", Instrument = "f", Field = field, Repetition = "-",
+                                                     Description = "A", Query = query, Code = paste0(id, "-1"), ..., stringsAsFactors = FALSE)
+  new <- rbind(q("1", "q1"), q("1", "q2"))
+  status <- function(old) as.character(check_queries(old, new, return_viewer = FALSE)$queries$Modification)
+  expect_equal(status(q("1", "x")[0, ]), c("New", "New"))
+  expect_equal(sort(status(q("2", "q0"))), c("New", "New", "Solved"))
+  expect_equal(sort(status(q("1", "q0", field = "b"))), c("New", "New", "Solved"))
+  expect_equal(sort(status(q("1", "q0"))), c("Miscorrected", "Miscorrected", "Solved"))
+  expect_equal(sort(status(q("1", "q1"))), c("Miscorrected", "Pending"))
+})
+
+test_that("check_queries keeps the columns of the reports called like its internal columns", {
+  q <- function(query, ...) data.frame(Identifier = "1", Description = "A", Query = query, Code = "1-1", ..., stringsAsFactors = FALSE)
+  for (to_tibble in c(FALSE, TRUE)) {
+    old <- rbind(q("q1", comp = "c1", comp2 = "d1", n = 1, cod = "k1", note = "n1"), q("q2", comp = "c2", comp2 = "d2", n = 2, cod = "k2", note = "n2"))
+    new <- rbind(q("q1", comp = "c3", comp2 = "d3", n = 3, cod = "k3", note = "n3"), q("q3", comp = "c4", comp2 = "d4", n = 4, cod = "k4", note = "n4"))
+    if (to_tibble) {
+      old <- dplyr::as_tibble(old)
+      new <- dplyr::as_tibble(new)
+    }
+    out <- check_queries(old, new, return_viewer = FALSE)$queries
+    expect_true(all(c("comp", "comp2", "n", "cod", "note") %in% names(out)))
+    expect_equal(out$comp[match(c("q1", "q2", "q3"), out$Query)], c("c3", "c2", "c4"))
+    expect_equal(out$n[match(c("q1", "q2", "q3"), out$Query)], c(3, 2, 4))
+  }
 })

@@ -591,9 +591,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           }
         } else {
           if (negate) {
-            query_message(expression[i], function(d) trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should be", d))), x[, variables[i]])
+            query_message(expression[i], function(d, value) trimws(gsub("  ", " ", paste("The value is", value, "and it should be", d))), x[, variables[i]])
           } else {
-            query_message(expression[i], function(d) trimws(gsub("  ", " ", paste("The value is", x[, variables[i]], "and it should not be", d))), x[, variables[i]])
+            query_message(expression[i], function(d, value) trimws(gsub("  ", " ", paste("The value is", value, "and it should not be", d))), x[, variables[i]])
           }
         },
         Code = "",
@@ -849,7 +849,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     report <- report |> dplyr::select("dag", "var", "descr", "event", "query_descr", "total")
     names(report) <- c("DAG", "Variables", "Description", "Event", "Query", "Total")
     # (not inside the texts between quotes of the expressions, e.g. `x == 'a|b'`)
-    report[, "Query"] <- outside_quotes(report[, "Query"], function(s) gsub("&", " & ", gsub("\\|", " \\| ", s)))
+    report[, "Query"] <- outside_quotes(report[, "Query"], function(s) gsub("&", " & ", gsub("\\|", " \\| ", s)), r_texts_pattern())
     rownames(report) <- NULL
   } else {
     # If no queries identified, return a report with zero queries

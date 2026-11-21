@@ -104,7 +104,8 @@ test_that("rd_insert_na errors if longitudinal but event_form missing", {
       vars = v1,
       filter = paste0(v1, " == 1")
     ),
-    "The dataset contains multiple events, but the `event_form` mapping was not provided. Please specify it."
+    "The data is longitudinal (it has the column `redcap_event_name`), but the `event_form` mapping was not provided.",
+    fixed = TRUE
   )
 })
 

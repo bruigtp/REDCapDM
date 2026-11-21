@@ -200,7 +200,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   # Evaluate branching logic for checkbox variables if applicable
   if (any(dic$field_type %in% "checkbox" & !dic$branching_logic_show_field_only_if %in% c(NA, ""))) {
     if (is.null(event_form) && longitudinal) {
-      rd_warn("Branching logic evaluation could not be performed because the project contains multiple events and the event-form correspondence was not specified. Please provide the {.arg event_form} argument to enable branching logic evaluation.")
+      rd_warn("Branching logic evaluation could not be performed because the project is longitudinal (the data has the column `redcap_event_name`) and the event-form correspondence was not specified. Please provide the {.arg event_form} argument to enable branching logic evaluation.")
     } else {
 
       # Handle the fact that a rd_factor was performed before this function
