@@ -83,7 +83,7 @@ The function performs the following steps:
 \item Applies additional user-specified filters before identifying queries.
 \item Generates structured query results with metadata including:
 \itemize{
-\item Identifier (record_id)
+\item Identifier: the record identifier, \code{record_id} or else the first field of the dictionary (e.g. \code{subject_id}), whatever its position in the data. Filters and expressions can use it by its name.
 \item DAG (if present)
 \item Event and Instrument
 \item Field, Repetition, Description, Query statement

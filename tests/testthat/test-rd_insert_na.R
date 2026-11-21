@@ -275,3 +275,21 @@ test_that("rd_insert_na doesn't take the arguments of the formulas of purrr for 
   }
   expect_error(rd_insert_na(covican, vars = "dm", filter = "purrr::map_lgl(no_variable, ~ .x > 1)"), "not found in data")
 })
+
+
+# ---- Identifier in the filter ----
+
+test_that("rd_insert_na takes the identifier as present in every event", {
+  for (id in c("record_id", "subject_id")) {
+    project <- make_custom_id(id)
+
+    res <- rd_insert_na(project, vars = "value", filter = paste0(id, " == '003'"))
+    expect_equal(res$data$value, c(NA, 5, NA, NA, NA))
+
+    res <- rd_insert_na(project, vars = "value", filter = paste0(id, " == '003' & value > 6"))
+    expect_equal(res$data$value, c(NA, 5, NA, NA, NA))
+  }
+
+  # The other variables of the filter still choose the events
+  expect_error(rd_insert_na(make_custom_id(), vars = "value", filter = "subject_id == '003' & age > 50"), "do not overlap")
+})

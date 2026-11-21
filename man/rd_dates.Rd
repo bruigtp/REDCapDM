@@ -34,7 +34,7 @@ The function performs the following tasks:
 \itemize{
 \item Detects date and datetime fields from the REDCap dictionary (\verb{date_*} and \verb{datetime_*} validation types).
 \item Converts date fields to \code{Date} class.
-\item Converts datetime fields to \code{POSIXct} class, treating empty strings as \code{NA}.
+\item Converts datetime fields to \code{POSIXct} class, treating empty strings as \code{NA}. The texts are read in UTC, whatever the time zone of the session (e.g. \code{TZ = "Europe/Paris"}): the time is kept as it is written in REDCap (e.g. \verb{2024-01-05 10:30} is 10:30 UTC). The fields that are already \code{POSIXct} are left as they are.
 \item Each value is converted on its own (\code{YYYY-MM-DD} or \code{YYYY/MM/DD}, with or without time): a value that isn't a date or a
 datetime (e.g. a Missing Data Code that wasn't removed) is set to \code{NA}, and a warning lists the fields and the values.
 }

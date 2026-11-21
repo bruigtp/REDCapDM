@@ -72,6 +72,9 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Repeating instruments of the project (event/form combinations)
   rep_pairs <- repeat_info(data)$pairs
 
+  # Record identifier (record_id or else the first field of the dictionary, whatever its position in the data)
+  id_col <- id_field(data, dic)
+
   # Error: data is longitudinal, but event_form isn't provided
   if (is.null(event_form) && longitudinal) {
     rd_abort("The data is longitudinal (it has the column `redcap_event_name`), but the event-form correspondence hasn't been specified.")
@@ -164,7 +167,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
     # `var` belongs to a repeating instrument: as in REDCap, the variables of the other forms take the value of the base row of the same record and event
     if (!is.na(target_form) && any(rep_pairs$form == target_form & rep_pairs$event %in% target_events)) {
-      data <- fill_from_base(data, logic_fields[is.na(logic_forms) | logic_forms != target_form])
+      data <- fill_from_base(data, logic_fields[is.na(logic_forms) | logic_forms != target_form], id_col)
     }
   }
 
@@ -177,7 +180,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # As in REDCap, an empty text is a blank value: the empty texts of the variables of the logic (e.g. in data modified
   # after redcap_data(), which reads them as NA) are evaluated as NA, so that `[text] = ''`, `'' = [text]` and
   # `isblankormissingcode([text])` give the same result (the identifier of the record, the event and the repetition are kept)
-  key_cols <- c(if ("record_id" %in% names(data)) "record_id" else names(data)[1], "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance")
+  key_cols <- c(id_col, "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance")
   for (field in setdiff(intersect(rlogic_var, names(data)), key_cols)) {
     if (is.character(data[[field]]) || is.factor(data[[field]])) {
       data[[field]][data[[field]] %in% ""] <- NA
@@ -287,10 +290,10 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
         # One column per event: `<variable>__<event>` (with another name if the data already has it, e.g. a field called
         # `value__base_arm_1`)
         event_col_i <- utils::tail(make.unique(c(unique(names(data)), paste0(var_i, "__", event_i)), sep = "_"), 1)
-        data[[event_col_i]] <- fill_data(event_i, var_i, data)[[var_i]]
+        data[[event_col_i]] <- fill_data(event_i, var_i, data, id_col)[[var_i]]
         rlogic <- gsub(paste0("[", event_i, "][", var_i, "]"), paste0("[", event_col_i, "]"), rlogic, fixed = TRUE)
       } else {
-        data <- fill_data(event_i, var_i, data)
+        data <- fill_data(event_i, var_i, data, id_col)
       }
     }
 
@@ -443,7 +446,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       list(
         rlogic = rlogic,
         eval = rlogic_eval,
-        eval_data = rlogic_eval_data(data, rlogic_eval)
+        eval_data = rlogic_eval_data(data, rlogic_eval, id_col)
       )
     )
   }
@@ -455,15 +458,14 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 #'
 #' @param data REDCap dataset the logic was evaluated on.
 #' @param eval Evaluation of the logic (one value per row of `data`).
+#' @param id_col Name of the column of the record identifier (see `id_field()`).
 #' @return A `data.frame` with the record identifier, the event and repetition columns present in `data` and `eval`. `NULL` if `eval` doesn't have one value per row.
 #' @noRd
-rlogic_eval_data <- function(data, eval) {
+rlogic_eval_data <- function(data, eval, id_col = id_field(data)) {
   if (!length(eval) %in% c(1, nrow(data))) {
     return(NULL)
   }
 
-  # Record identifier: record_id or, if it has another name, the first column
-  id_col <- if ("record_id" %in% names(data)) "record_id" else names(data)[1]
   key_cols <- intersect(c(id_col, "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance"), names(data))
 
   eval_data <- as.data.frame(data)[, key_cols, drop = FALSE]
@@ -525,9 +527,10 @@ escape_regex <- function(x) {
 #'
 #' @param data REDCap dataset.
 #' @param fields Variables to fill.
+#' @param id_col Name of the column of the record identifier (see `id_field()`).
 #' @return `data` with `fields` filled in the rows of the repeating instruments.
 #' @noRd
-fill_from_base <- function(data, fields) {
+fill_from_base <- function(data, fields, id_col = id_field(data)) {
   instrument <- repeat_instrument_values(data)
   rows <- which(!is.na(instrument))
 
@@ -535,7 +538,7 @@ fill_from_base <- function(data, fields) {
     return(data)
   }
 
-  id <- if ("record_id" %in% names(data)) data$record_id else data[[1]]
+  id <- data[[id_col]]
   instance <- if ("redcap_repeat_instance" %in% names(data)) data$redcap_repeat_instance else rep(NA, nrow(data))
   key <- paste(id, event_values(data), sep = "\r")
   base <- which(is.na(instrument) & is.na(instance))

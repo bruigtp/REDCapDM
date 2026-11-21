@@ -31,7 +31,7 @@
 #' * Handles REDCap branching logic, converting it into R-compatible expressions for evaluation.
 #' * Applies additional user-specified filters before identifying queries.
 #' * Generates structured query results with metadata including:
-#'   - Identifier (record_id)
+#'   - Identifier: the record identifier, `record_id` or else the first field of the dictionary (e.g. `subject_id`), whatever its position in the data. Filters and expressions can use it by its name.
 #'   - DAG (if present)
 #'   - Event and Instrument
 #'   - Field, Repetition, Description, Query statement
@@ -134,10 +134,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   excel_zero <- as.data.frame(matrix(ncol = 4, nrow = 0))
   colnames(excel_zero) <- c("DAG", "Variables", "Description", "Query")
 
-  # Rename the first column of the dataset to 'record_id' if necessary
-  if (all(!names(data) == "record_id")) {
-    names(data)[1] <- "record_id"
-  }
+  # Record identifier (record_id or else the first field of the dictionary, see id_field()): its column keeps its name, so that the filters and expressions can use it
+  id_var <- id_field(data, dic)
 
   # Error: no variables or no expression
   if (all(is.na(variables))) {
@@ -183,7 +181,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   rep_pairs <- repeat_info(data)$pairs
 
   # The identifiers of the report are numbers only when all the record identifiers of the project are plain numbers
-  numeric_ids <- ids_are_numbers(data$record_id)
+  numeric_ids <- ids_are_numbers(data[[id_var]])
   
   # The branching logic is evaluated in the complete dataset, because it can use variables of rows that are left out below (e.g. `[baseline_arm_1][sex]` when only the follow-up events are checked). `.rd_row` matches each row with its evaluation.
   data_all <- data
@@ -242,7 +240,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     }
 
     # Warning: identifiers are missing observations in any event (it only appears when checking for missings - %in%NA)
-    if (length(unique(data0$record_id)) != length(unique(data$record_id)) && any(grepl("%in%NA", gsub(" ", "", expression)))) {
+    if (length(unique(data0[[id_var]])) != length(unique(data[[id_var]])) && any(grepl("%in%NA", gsub(" ", "", expression)))) {
       rd_warn(c("Some identifiers are missing observations in specified events.", "i" = "Use {.fn rd_event} to check which identifiers are missing."))
     }
   }
@@ -509,7 +507,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     # Generate query structure and metadata
     if (nrow(definitive) > 0) {
       # Construct query data frame
-      x <- definitive[, c("record_id", grep("redcap", names(definitive), value = TRUE), variables[i])]
+      # (the identifier can also be the variable checked: a single column, kept as a data frame)
+      x <- definitive[, unique(c(id_var, grep("redcap", names(definitive), value = TRUE), variables[i])), drop = FALSE]
 
       # Add event_id when the link argument is specified
       if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
@@ -518,7 +517,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
       # Filling the structure data frame with data
       excel <- data.frame(
-        Identifier = x[, "record_id"],
+        Identifier = x[, id_var],
         DAG = if (any(c("redcap_data_access_group", "redcap_data_access_group.factor") %in% names(x))) {
           if ("redcap_data_access_group.factor" %in% names(x)) {
             as.character(x[, "redcap_data_access_group.factor"])
@@ -609,11 +608,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
       # Add link to each query
       if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) && any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", id_text(x[, "record_id"]), link_instance)
+        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", id_text(x[, id_var]), link_instance)
       }
 
       if (all(c("domain", "redcap_version", "proj_id") %in% names(link)) && !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", id_text(x[, "record_id"]), link_instance)
+        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", id_text(x[, id_var]), link_instance)
       }
 
       # Adding each identified query to the queries data frame

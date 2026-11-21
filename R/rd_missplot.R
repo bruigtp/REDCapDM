@@ -121,7 +121,7 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
   }
 
     # Identifier of the records (REDCap's record ID is the first field of the project)
-  id_col <- if ("record_id" %in% colnames(df)) "record_id" else colnames(df)[1]
+  id_col <- id_field(df, dictionary_df)
   all_records <- unique(as.character(df[[id_col]]))
 
   # Repeating instruments of the complete dataset (before choosing events), see repeat_home_rows()

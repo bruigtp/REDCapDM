@@ -1181,3 +1181,40 @@ test_that("rd_query keeps the values and the raw strings of the expression in th
   # (in the HTML summary, with > and & written as HTML)
   expect_match(paste(raw$results, collapse = ""), 'r"--(a" x &gt; b &amp; c)--"', fixed = TRUE)
 })
+
+
+# ---- Identifier with another name ----
+
+test_that("rd_query filters by an identifier with another name", {
+  project <- make_custom_id()
+
+  res <- rd_query(project, variables = "value", expression = "x > 6", event = "visit_arm_1", filter = "subject_id == '003'")
+  expect_equal(res$queries$Identifier, "003")
+  res <- rd_query(project, variables = "value", expression = "x > 6", event = "visit_arm_1", filter = ".data$subject_id == '003'")
+  expect_equal(res$queries$Identifier, "003")
+
+  # An object of the session with the same name doesn't replace the column
+  subject_id <- "999"
+  res <- rd_query(project, variables = "value", expression = "x > 6", event = "visit_arm_1", filter = "subject_id == '003'")
+  expect_equal(res$queries$Identifier, "003")
+})
+
+test_that("rd_query checks the identifier itself", {
+  df <- data.frame(record_id = c(1, 2, NA), age = c(30, 40, 50))
+  toy_dic <- make_toy_dic(list(record_id = list(field_label = "ID", form_name = "demo"), age = list(field_label = "Age", form_name = "demo")))
+  res <- rd_query(data = df, dic = toy_dic, variables = "record_id", expression = "x > 1")
+  expect_equal(res$queries$Identifier, 2)
+  expect_equal(res$queries$Field, "record_id")
+
+  project <- make_custom_id()
+  res <- rd_query(project, variables = "subject_id", expression = "x == '002'", event = "base_arm_1")
+  expect_equal(res$queries$Identifier, "002")
+})
+
+test_that("rd_query takes the identifier from the dictionary, whatever the order of the columns", {
+  for (age_first in c(FALSE, TRUE)) {
+    res <- rd_query(make_custom_id(age_first = age_first), variables = "value", expression = "x > 6", event = "visit_arm_1")
+    expect_equal(res$queries$Identifier, "003")
+    expect_match(res$queries$Code, "^003-")
+  }
+})

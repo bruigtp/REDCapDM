@@ -110,11 +110,13 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     }
 
     # Events are only relevant in longitudinal projects (a filter without variables of the data, e.g. a logical vector
-    # created in the session, doesn't restrict the events: `events` is NULL)
+    # created in the session, doesn't restrict the events: `events` is NULL). The record identifier is in every row,
+    # whatever the form of its field, so it doesn't restrict them either.
     events <- NULL
-    if (longitudinal && length(vars_filter) > 0) {
+    vars_events <- setdiff(vars_filter, id_field(data, dic))
+    if (longitudinal && length(vars_events) > 0) {
       # Extract corresponding events for filter variables
-      event_filter <- tibble::tibble(vars_filter = vars_filter) |>
+      event_filter <- tibble::tibble(vars_filter = vars_events) |>
         dplyr::mutate(
           form = purrr::map_chr(.data$vars_filter, ~ dic |>
                                   dplyr::filter(.data$field_name %in% .x) |>

@@ -127,3 +127,19 @@ test_that("rd_dates sets to NA the times out of range instead of changing them",
   expect_warning(out <- suppressMessages(rd_dates(data = data, dic = dic))$data, "5 values", class = "REDCapDM_warning")
   expect_equal(out$dt, as.POSIXct(c(NA, NA, NA, NA, NA, "2024-02-29 23:59:59", "2024-02-29 00:00:00", "2024-02-29 00:00:00"), tz = "UTC"), ignore_attr = "label")
 })
+
+
+test_that("rd_dates reads the datetimes written as text in UTC, whatever the time zone of the session", {
+  dic <- data.frame(field_name = c("record_id", "dt"), form_name = "f", field_type = "text",
+                    text_validation_type_or_show_slider_number = c("", "datetime_ymd"))
+  # (with the time zone of the session restored afterwards)
+  in_paris <- function() {
+    old_tz <- Sys.getenv("TZ", unset = NA)
+    on.exit(if (is.na(old_tz)) Sys.unsetenv("TZ") else Sys.setenv(TZ = old_tz))
+    Sys.setenv(TZ = "Europe/Paris")
+    rd_dates(data = data.frame(record_id = 1, dt = "2024-01-05 10:30"), dic = dic)
+  }
+  res <- in_paris()
+  expect_equal(attr(res$data$dt, "tzone"), "UTC")
+  expect_equal(format(res$data$dt, "%H:%M"), "10:30")
+})

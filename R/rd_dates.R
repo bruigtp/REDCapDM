@@ -22,7 +22,7 @@
 #' The function performs the following tasks:
 #' * Detects date and datetime fields from the REDCap dictionary (`date_*` and `datetime_*` validation types).
 #' * Converts date fields to `Date` class.
-#' * Converts datetime fields to `POSIXct` class, treating empty strings as `NA`.
+#' * Converts datetime fields to `POSIXct` class, treating empty strings as `NA`. The texts are read in UTC, whatever the time zone of the session (e.g. `TZ = "Europe/Paris"`): the time is kept as it is written in REDCap (e.g. `2024-01-05 10:30` is 10:30 UTC). The fields that are already `POSIXct` are left as they are.
 #' * Each value is converted on its own (`YYYY-MM-DD` or `YYYY/MM/DD`, with or without time): a value that isn't a date or a
 #'   datetime (e.g. a Missing Data Code that wasn't removed) is set to `NA`, and a warning lists the fields and the values.
 #'

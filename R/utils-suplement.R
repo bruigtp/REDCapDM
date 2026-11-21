@@ -1,5 +1,39 @@
 ############### Other functions###############
 
+## Record identifier ----
+
+#' Record identifier of the data
+#'
+#' `record_id`, the name that `redcap_data()` gives to the identifier. Otherwise, REDCap's record ID is the first field of the dictionary, whatever its name (e.g. `subject_id`) and its position in the data (e.g. with another field in the first column). When the first column of the data isn't in the dictionary (nor is a column of REDCap, such as `redcap_event_name`, or a version of a field, such as `.factor`), the dictionary doesn't have the row of the identifier, and the identifier is that first column, as in previous versions of the package. Without dictionary, or when its first field isn't in the data, the first column.
+#'
+#' @param data REDCap dataset.
+#' @param dic REDCap dictionary (optional).
+#' @return Name of the column of the record identifier.
+#' @noRd
+id_field <- function(data, dic = NULL) {
+  columns <- names(data)
+  fields <- if (is.data.frame(dic) && "field_name" %in% names(dic)) as.character(dic$field_name) else character(0)
+
+  if ("record_id" %in% columns) {
+    return("record_id")
+  }
+
+  if (length(columns) == 0 || length(fields) == 0) {
+    return(columns[1])
+  }
+
+  # A first column that the dictionary doesn't describe is the identifier (dictionary without its row)
+  first_column <- columns[1]
+  described <- data_field(first_column, fields) %in% fields || grepl("^redcap_|_complete$|_timestamp$", first_column)
+
+  if (!described || !fields[1] %in% columns) {
+    first_column
+  } else {
+    fields[1]
+  }
+}
+
+
 ## Fill_data ----
 
 #' Fill Rows with Values from One Event
@@ -8,15 +42,13 @@
 #' @param which_event String specifying the name of the event.
 #' @param which_var String specifying the name of the variable.
 #' @param data Dataset containing the REDCap data.
+#' @param id_col Name of the column of the record identifier (see `id_field()`).
 #' @noRd
-fill_data <- function(which_event, which_var, data) {
+fill_data <- function(which_event, which_var, data, id_col = id_field(data)) {
 
   if (!which_event %in% data$redcap_event_name) {
     rd_abort("The logic can't be evaluated after the translation", call = rlang::caller_env())
   }
-
-  # Record identifier: record_id or, if it has another name (e.g. `study_id`), the first column
-  id_col <- if ("record_id" %in% names(data)) "record_id" else names(data)[1]
 
   fill_values <- dplyr::tibble(.rd_id = data[[id_col]], .rd_event = data$redcap_event_name, var = data[[which_var]]) |>
     dplyr::group_by(.data$.rd_id) |>

@@ -15,7 +15,7 @@
 #' * Fields of type `calc` in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (`NA`).
 #' * Recalculated values are compared with the original values, both rounded to three decimals (e.g. 1.0004 and 1 are equal).
 #' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary, with the label of the original field followed by `(Recalculated)`. Running the function again on its output updates these fields instead of duplicating them.
-#' * The fields added by this function are recognised because they are calculated fields with the same calculation as the original field and, when the dictionary has the column `field_label`, its label followed by `(Recalculated)`. No other field or column is overwritten: if `[field_name]_recalc` is already one of them, the recalculated values are saved in `[field_name]_recalc_1` (or `_2`, ...) with a warning.
+#' * The fields added by this function are recognised because they are calculated fields with the same calculation as the original field and, when the dictionary has the column `field_label`, its label followed by `(Recalculated)` (or by `(Recalculate)`, the label of previous versions of the package, which are also recognised). No other field or column is overwritten: if `[field_name]_recalc` is already one of them, the recalculated values are saved in `[field_name]_recalc_1` (or `_2`, ...) with a warning.
 #' * Works for single-event projects; for longitudinal projects, `event_form` must be provided.
 #' * Fields with incomplete branching logic or smart variables may fail to recalculate.
 #'

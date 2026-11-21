@@ -22,7 +22,7 @@
 #' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), with two elements:
 #' \describe{
 #'   \item{\code{queries}}{A data frame listing records missing the specified events.
-#'     Columns: \code{Identifier}, \code{DAG}, \code{Event}, \code{Instrument},
+#'     Columns: \code{Identifier} (the record identifier, \code{record_id} or else the first field of the dictionary, which \code{filter} can use by its name), \code{DAG}, \code{Event}, \code{Instrument},
 #'     \code{Field}, \code{Repetition}, \code{Description}, \code{Query}, \code{Code},
 #'     and optionally \code{Link}. If no queries are found this will be an empty
 #'     data frame with the expected columns.}
@@ -134,16 +134,14 @@ rd_event <- function(project = NULL,
   queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
   colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
 
-  # Rename the first column to "record_id" if necessary
-  if (!"record_id" %in% names(data)) {
-    names(data)[1] <- "record_id"
-  }
+  # Record identifier (record_id or else the first field of the dictionary, see id_field()): its column keeps its name, so that the filter can use it
+  id_var <- id_field(data, dic)
 
   # Save the original dataset for reference
   data0 <- data
 
   # The identifiers of the report are numbers only when all the record identifiers of the project are plain numbers
-  numeric_ids <- ids_are_numbers(data$record_id)
+  numeric_ids <- ids_are_numbers(data[[id_var]])
 
   # Apply the filter expression to the dataset if provided
   if (!is.na(filter) && length(filter) == 1) {
@@ -196,16 +194,16 @@ rd_event <- function(project = NULL,
     for (k in seq_along(event)) {
       # Find record IDs associated with the current event (raw form, or factor form if the event was given by its label)
       if (event[k] %in% data0$redcap_event_name || event[k] %in% events_without_records) {
-        ids <- data0$record_id[data0$redcap_event_name %in% event[k]]
+        ids <- data0[[id_var]][data0$redcap_event_name %in% event[k]]
       } else {
-        ids <- data0$record_id[data0$redcap_event_name.factor %in% event[k]]
+        ids <- data0[[id_var]][data0$redcap_event_name.factor %in% event[k]]
       }
 
 
       # Identify records missing the current event
       # (.data and .env: a field of the project can have the name of an object of the function, e.g. `data` or `event`)
       raw <- data |>
-        dplyr::filter(!.data$record_id %in% .env$ids) |>
+        dplyr::filter(!.data[[id_var]] %in% .env$ids) |>
         dplyr::slice(rep(seq_len(dplyr::n()), each = length(.env$event[.env$k])))
 
       
@@ -215,9 +213,9 @@ rd_event <- function(project = NULL,
         arm_k <- event_arm(event_raw, event_form)
 
         if (length(arm_k) > 0 && !anyNA(arm_k)) {
-          arm_records <- data0$record_id[event_arm(data0$redcap_event_name, event_form) %in% arm_k]
+          arm_records <- data0[[id_var]][event_arm(data0$redcap_event_name, event_form) %in% arm_k]
           raw <- raw |>
-            dplyr::filter(.data$record_id %in% .env$arm_records)
+            dplyr::filter(.data[[id_var]] %in% .env$arm_records)
         }
       }
 
@@ -239,9 +237,9 @@ rd_event <- function(project = NULL,
         }
 
         # Queries
-        x <- raw[, c("record_id", grep("redcap", names(raw), value = TRUE))]
+        x <- raw[, unique(c(id_var, grep("redcap", names(raw), value = TRUE))), drop = FALSE]
         excel <- data.frame(
-          Identifier = x[, "record_id"],
+          Identifier = x[, id_var],
           DAG = if ("redcap_data_access_group.factor" %in% names(x)) {
             as.character(x[, "redcap_data_access_group.factor"])
           } else if ("redcap_data_access_group" %in% names(x)) {
@@ -280,7 +278,7 @@ rd_event <- function(project = NULL,
 
         # Add a hyperlink for the query if link information is provided
         if (all(c("domain", "redcap_version", "proj_id") %in% names(link))) {
-          excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/record_home.php?pid=", link[["proj_id"]], "&id=", id_text(x[, "record_id"]))
+          excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/record_home.php?pid=", link[["proj_id"]], "&id=", id_text(x[, id_var]))
         }
 
         # Append the query to the list of identified queries

@@ -1297,3 +1297,36 @@ test_that("rd_rlogic rounds with the numbers with these decimals as R reads them
   expect_identical(ev("round([a], 308)", c(1e-320, 2.25e-308)), c(0, 2e-308))
   expect_identical(ev("roundup([a], 309)", 1e-320), 1e-309)
 })
+
+
+# ---- Identifier ----
+
+test_that("rd_rlogic takes the identifier from the dictionary, whatever the order of the columns", {
+  for (age_first in c(FALSE, TRUE)) {
+    project <- make_custom_id(age_first = age_first)
+    project$dictionary <- rbind(project$dictionary, data.frame(
+      field_name = "age_next", form_name = "visit", field_type = "calc", field_label = "Age next",
+      choices_calculations_or_slider_labels = "[base_arm_1][age] + 1", text_validation_type_or_show_slider_number = "",
+      branching_logic_show_field_only_if = "", stringsAsFactors = FALSE
+    ))
+
+    res <- rd_rlogic(project, logic = "[base_arm_1][age] + 1", var = "age_next")
+    expect_equal(res$eval, c(NA, 21, NA, NA, 61))
+    expect_equal(names(res$eval_data)[1], "subject_id")
+  }
+})
+
+test_that("id_field is the first field of the dictionary", {
+  project <- make_custom_id(age_first = TRUE)
+  expect_equal(id_field(project$data, project$dictionary), "subject_id")
+  # Without dictionary: the first column
+  expect_equal(id_field(project$data), "age")
+  # record_id (as named by redcap_data()), also with a dictionary without its row
+  expect_equal(id_field(data.frame(a = 1, record_id = 2)), "record_id")
+  expect_equal(id_field(data.frame(age = 1, record_id = 2), data.frame(field_name = c("age", "b"))), "record_id")
+  # A first column that isn't in the dictionary (a dictionary without the row of the identifier)
+  expect_equal(id_field(data.frame(myid = 1, age = 2), data.frame(field_name = "age")), "myid")
+  # A column of REDCap or a version of a field in the first column
+  expect_equal(id_field(data.frame(redcap_event_name = "a", age = 2, sid = 1), data.frame(field_name = c("sid", "age"))), "sid")
+  expect_equal(id_field(data.frame(age.factor = "a", age = 2, sid = 1), data.frame(field_name = c("sid", "age"))), "sid")
+})

@@ -48,7 +48,7 @@ rd_event(
 A list of class \code{REDCapDM_report}, which prints a short summary (see \code{\link[=print.REDCapDM_report]{print.REDCapDM_report()}}), with two elements:
 \describe{
 \item{\code{queries}}{A data frame listing records missing the specified events.
-Columns: \code{Identifier}, \code{DAG}, \code{Event}, \code{Instrument},
+Columns: \code{Identifier} (the record identifier, \code{record_id} or else the first field of the dictionary, which \code{filter} can use by its name), \code{DAG}, \code{Event}, \code{Instrument},
 \code{Field}, \code{Repetition}, \code{Description}, \code{Query}, \code{Code},
 and optionally \code{Link}. If no queries are found this will be an empty
 data frame with the expected columns.}

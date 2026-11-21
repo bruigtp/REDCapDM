@@ -259,12 +259,13 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 
   # Arrange our dataset by record_id and event (will keep the same order of events as in redcap)
   if (longitudinal) {
+    id_order <- id_field(data, dic)
     if ("redcap_event_name.factor" %in% names(data)) {
       data <- data |>
-        dplyr::arrange(factor(.data[[names(data)[1]]], levels = unique(.data[[names(data)[1]]])), .data$redcap_event_name.factor)
+        dplyr::arrange(factor(.data[[id_order]], levels = unique(.data[[id_order]])), .data$redcap_event_name.factor)
     } else {
       data <- data |>
-        dplyr::arrange(factor(.data[[names(data)[1]]], levels = unique(.data[[names(data)[1]]])), .data$redcap_event_name)
+        dplyr::arrange(factor(.data[[id_order]], levels = unique(.data[[id_order]])), .data$redcap_event_name)
     }
   }
 
@@ -276,8 +277,8 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   # If an event_form is specified or if the project has only one event and by_form has been specified
   if (!is.null(event_form) || (final_format == "by_form" && !longitudinal)) {
     if (!is.null(event_form)) {
-      # (the record identifier, the first field of the dictionary or else the first column of the data, is always kept: every row needs it)
-      id_var <- if (length(dic$field_name) > 0 && dic$field_name[1] %in% names(data)) dic$field_name[1] else names(data)[1]
+      # (the record identifier, record_id or else the first field of the dictionary (see id_field()), is always kept: every row needs it)
+      id_var <- id_field(data, dic)
       var_noevent <- setdiff(dic$field_name[!dic$form_name %in% event_form$form], id_var)
 
       if (length(var_noevent) > 0) {

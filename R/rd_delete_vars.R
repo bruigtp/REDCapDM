@@ -89,8 +89,8 @@ rd_delete_vars <- function(project = NULL, data = NULL, dic = NULL, event_form =
     }
   })
 
-  # The record identifier: the first field of the dictionary (REDCap's record ID), or else the first column of the data
-  id_var <- if (length(dic$field_name) > 0 && dic$field_name[1] %in% names(data)) dic$field_name[1] else names(data)[1]
+  # The record identifier: record_id or else the first field of the dictionary (REDCap's record ID), see id_field()
+  id_var <- id_field(data, dic)
   protected <- unique(c(id_var, "record_id"))
 
   # Checkbox fields with options in the data, to remove from the dictionary those that are left without any

@@ -98,9 +98,9 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     repeat_instrument <- FALSE
   }
 
-  # The record identifier: the first field of the dictionary (REDCap's record ID, e.g. `record_id`, `subject` or
-  # `study_id`), or else the first column of the data. Every dataset of the split keeps it
-  id_var <- if (dic$field_name[1] %in% names(data)) dic$field_name[1] else names(data)[1]
+  # The record identifier: record_id or else the first field of the dictionary (REDCap's record ID, e.g. `subject` or
+  # `study_id`), see id_field(). Every dataset of the split keeps it
+  id_var <- id_field(data, dic)
 
   # Identify basic REDCap variables present in the dataset
   basic_redcap_vars <- c(id_var, "redcap_event_name", "redcap_repeat_instrument", "redcap_repeat_instance", "redcap_data_access_group", "redcap_event_name.factor", "redcap_repeat_instrument.factor", "redcap_data_access_group.factor", "redcap_survey_identifier")

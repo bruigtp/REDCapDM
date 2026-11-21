@@ -255,3 +255,17 @@ test_that("rd_event filters by the type of the variables only with the columns o
   by_name <- suppressWarnings(suppressMessages(rd_event(cv, event = "follow_up_visit_da_arm_1", filter = "if_all(c(age, copd, dm, potassium), ~ is.na(.x) | .x < 300)")))
   expect_equal(by_type$queries$Identifier, by_name$queries$Identifier)
 })
+
+
+# ---- Identifier with another name ----
+
+test_that("rd_event filters by an identifier with another name and takes it from the dictionary", {
+  project <- make_custom_id()
+  expect_equal(rd_event(project, event = "visit_arm_1", filter = "subject_id %in% c('002', '003')")$queries$Identifier, "002")
+  expect_equal(nrow(rd_event(project, event = "visit_arm_1", filter = "subject_id == '003'")$queries), 0)
+
+  subject_id <- "999"
+  expect_equal(rd_event(project, event = "visit_arm_1", filter = "subject_id == '002'")$queries$Identifier, "002")
+
+  expect_equal(rd_event(make_custom_id(age_first = TRUE), event = "visit_arm_1")$queries$Identifier, "002")
+})
