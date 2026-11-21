@@ -1547,15 +1547,24 @@ logical_operators <- function(x) {
 translate_functions <- function(x) {
   values <- function(args) paste0("cbind(", paste(args, collapse = ", "), ")")
   digits <- function(args) if (length(args) > 1) args[2] else "0"
+  # rounddown() and roundup() with decimals: as in REDCap, a value that already has these decimals is kept, also with
+  # the error of the binary numbers (e.g. 1.1 * 100 is 110.00000000000001 and 0.29 * 100 is 28.999999999999996: a
+  # value within two units in the last place of an integer is that integer). A number too large to have decimals is
+  # kept (e.g. 1e308 or 309 decimals, that multiplied by 10^digits are Inf or NaN), with so many negative decimals that
+  # 10^digits is 0 (e.g. -324) the result is 0 or, beyond the largest number, Inf, and without digits (e.g. NA) the
+  # result is NA
+  # (without the functions translated below, e.g. length() or ifelse())
   rounding <- function(r_fun) function(args) {
     if (digits(args) %in% c("0", "'0'", "\"0\"")) {
       paste0(r_fun, "(", args[1], ")")
     } else {
-      # (a number too large to have decimals is kept: multiplied by 10^digits it would be Inf or NaN, e.g. 1e308 or 309
-      # digits; without digits, e.g. NA, the result is NA)
+      step <- if (r_fun == "floor") "r <- r + ((r + 1) - z <= tol)" else "r <- r + (z - r > tol)"
+      beyond <- if (r_fun == "floor") "c(0, -Inf)[1 + (v0[zero] < 0)]" else "c(0, Inf)[1 + (v0[zero] > 0)]"
       paste0(
-        "(function(v, d) { r <- ", r_fun, "(v * 10^d) / 10^d; keep <- is.finite(v) & !is.na(d) & !is.finite(r); ",
-        "r[keep] <- rep_len(v, NROW(r))[keep]; r })(", args[1], ", ", digits(args), ")"
+        "(function(v, d) { z <- v * 10^d; r <- floor(z); tol <- 2 * 2^(floor(log2(abs(z))) - 52); ", step, "; ",
+        "r <- r / 10^d; v0 <- rep_len(v, NROW(r)); keep <- !is.na(d) & (!is.finite(v) | !is.finite(z) | abs(z) >= 2^52); ",
+        "r[keep] <- v0[keep]; zero <- !is.na(d) & 10^d == 0 & is.finite(v); r[zero] <- ", beyond, "; r })(",
+        args[1], ", ", digits(args), ")"
       )
     }
   }
@@ -1573,15 +1582,17 @@ translate_functions <- function(x) {
   x <- replace_function(x, "max", function(args) paste0("pmax(", paste(args, collapse = ", "), ", na.rm = TRUE)"))
   # As in REDCap, the remainder of mod() has the sign of the dividend (mod(-7, 3) is -1). It is exact, also with large
   # numbers (e.g. mod(2^54, 3) is 1): the divisor multiplied by a power of 2 is subtracted while the remainder is
-  # larger than it (subtractions without rounding errors)
+  # larger than it (subtractions without rounding errors). The power is taken one smaller and then doubled, and is
+  # multiplied in three parts, so that it is never larger than the largest number (e.g. mod(1.797693e308, 1) or with a
+  # divisor such as 5e-324)
   # (without the functions translated below, e.g. length() or ifelse())
   x <- replace_function(x, "mod", function(args) {
     paste0(
       "(function(a, b) { n <- if (min(lengths(list(a, b))) == 0) 0 else max(lengths(list(a, b))); ",
       "a <- rep_len(as.numeric(a), n); b <- rep_len(as.numeric(b), n); r <- abs(a); m <- abs(b); ",
       "while (any(is.finite(r) & m > 0 & r >= m, na.rm = TRUE)) { i <- which(is.finite(r) & m > 0 & r >= m); ",
-      "k <- floor(log2(r[i]) - log2(m[i])); s <- m[i] * 2^(k %/% 2) * 2^(k - k %/% 2); s <- s / 2^(s > r[i]); ",
-      "s <- s * 2^(2 * s <= r[i]); r[i] <- r[i] - s }; r[(is.finite(a) & m == 0) | is.infinite(a)] <- NaN; ",
+      "k <- pmax(floor(log2(r[i]) - log2(m[i])) - 1, 0); s <- m[i] * 2^(k %/% 3) * 2^(k %/% 3) * 2^(k - 2 * (k %/% 3)); s <- s / 2^(s > r[i]); ",
+      "s <- s * 2^(2 * s <= r[i]); s <- s * 2^(2 * s <= r[i]); r[i] <- r[i] - s }; r[(is.finite(a) & m == 0) | is.infinite(a)] <- NaN; ",
       "r[is.na(m)] <- NA; sign(a) * r })(", args[1], ", ", args[2], ")"
     )
   })

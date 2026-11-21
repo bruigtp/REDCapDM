@@ -99,10 +99,10 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 
 #' Round Numbers to a Specified Number of Digits ----
 #'
-#' Rounds as REDCap: half is rounded away from zero (`round(2.5)` is 3 and `round(-2.5)` is -3). The value multiplied
-#' by `10^digits` is first rounded to 15 significant digits (or more, for its integer digits), so that a half stored
-#' with a tiny error is a half (e.g. `round(2.675, 2)` is 2.68, while 2.675 is stored as 2.67499999999999982) and a
-#' value below the half is not (e.g. `round(1.49999999)` is 1).
+#' Rounds as REDCap: half is rounded away from zero (`round(2.5)` is 3 and `round(-2.5)` is -3). A value within two
+#' units in the last place of a half, which is the error of the binary numbers, is a half: `round(2.675, 2)` is 2.68
+#' (2.675 is stored as 2.67499999999999982 and multiplied by 100 is 267.49999999999997), while `round(1.49999999)` and
+#' `round(1.499999999999999)` are 1.
 #'
 #' @param x A numeric vector to be rounded.
 #' @param digits Integer indicating the number of decimal places to round to.
@@ -113,16 +113,17 @@ check_proj <- function(project, data = NULL, dic = NULL, event_form = NULL, call
 #' round(c(-2.718, 3.14159), 1)
 #' @noRd
 round <- function(x, digits = 0) {
-  z <- abs(x) * 10^digits
-  # (also without values, e.g. data without rows)
-  precision <- if (length(z) == 0) 15 else pmax(15, floor(log10(pmax(z, 1))) + 2)
-  out <- sign(x) * (floor(signif(z, precision) + 0.5) / 10^digits)
-  # A number without decimals at this precision is kept as it is: an integer too large to add 0.5 (e.g. 1e17), or a
-  # number that multiplied by 10^digits is Inf (e.g. 1e308 with one decimal) or NaN (e.g. 309 decimals)
-  # (without digits, e.g. NA, the result is NA)
-  keep <- is.finite(x) & !is.na(digits) & (z >= 2^52 | !is.finite(out))
-  keep <- keep %in% TRUE
+  scale <- 10^digits
+  z <- abs(x) * scale
+  n <- floor(z)
+  out <- sign(x) * ((n + (z - n >= 0.5 - 2 * 2^(floor(log2(z)) - 52))) / scale)
+  # A number without decimals at this precision is kept as it is: an integer too large to have decimals (e.g. 1e17),
+  # or a number that multiplied by 10^digits is Inf or NaN (e.g. 1e308 with one decimal, or 309 decimals), and so are
+  # Inf and NaN. With so many negative decimals that 10^digits is 0 (e.g. -324) the result is 0, and without digits
+  # (e.g. NA) it is NA
+  keep <- (!is.na(digits) & (!is.finite(x) | !is.finite(z) | z >= 2^52)) %in% TRUE
   out[keep] <- rep_len(as.numeric(x), length(out))[keep]
+  out[(!is.na(digits) & scale == 0 & is.finite(x)) %in% TRUE] <- 0
   out
 }
 

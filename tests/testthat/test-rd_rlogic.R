@@ -1216,3 +1216,37 @@ test_that("rd_rlogic keeps the value when the number of decimals is too large", 
     expect_equal(ev(paste0(f, "([a], [d])")), c(1.2345, NA), info = f)
   }
 })
+
+test_that("rd_rlogic keeps the values that already have the decimals of roundup() and rounddown()", {
+  data <- data.frame(record_id = 1, res = NA)
+  dic <- make_dic(c("record_id", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("roundup(1.1, 2)"), 1.1)
+  expect_equal(ev("rounddown(0.29, 2)"), 0.29)
+  expect_equal(ev("roundup(roundup(1.1, 2), 2)"), 1.1)
+  expect_equal(ev("rounddown(-1.1, 2)"), -1.1)
+  expect_equal(ev("roundup(1.111, 2)"), 1.12)
+  expect_equal(ev("rounddown(1.119, 2)"), 1.11)
+  expect_equal(ev("round(1.499999999999999, 0)"), 1)
+  expect_equal(ev("round(-1.499999999999999, 0)"), -1)
+  # (as before: the halves stored with the error of the binary numbers)
+  expect_equal(ev("round(2.675, 2)"), 2.68)
+})
+
+test_that("rd_rlogic gives the remainder of mod() at the ends of the numbers", {
+  data <- data.frame(record_id = 1:4, a = c(.Machine$double.xmax, -.Machine$double.xmax, .Machine$double.xmax, 1), b = c(1, 1, 5e-324, 5e-324), res = NA)
+  dic <- make_dic(c("record_id", "a", "b", "res"))
+  expect_equal(as.vector(rd_rlogic(data = data, dic = dic, logic = "mod([a], [b])", var = "res")$eval), c(0, 0, 0, 0))
+})
+
+test_that("rd_rlogic rounds with so many negative decimals that the scale is 0", {
+  data <- data.frame(record_id = 1, res = NA)
+  dic <- make_dic(c("record_id", "res"))
+  ev <- function(logic) as.vector(rd_rlogic(data = data, dic = dic, logic = logic, var = "res")$eval)
+  expect_equal(ev("round(12, -323)"), 0)
+  expect_equal(ev("round(12, -324)"), 0)
+  expect_equal(ev("roundup(-12, -324)"), 0)
+  expect_equal(ev("rounddown(12, -324)"), 0)
+  expect_equal(ev("roundup(12, -324)"), Inf)
+  expect_equal(ev("rounddown(1234, -2)"), 1200)
+})
