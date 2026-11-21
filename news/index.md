@@ -231,18 +231,20 @@
   rounds down the values below the half (e.g. `round(1.49999999)` gave 2
   and `round(0.49999999)` gave 1), and keeps rounding the halves away
   from zero. The value is compared with the half written with these
-  decimals as R reads it, so the halves stored with the error of the
-  binary numbers are halves (e.g. `round(2.675, 2)` is 2.68, while 2.675
-  is stored as 2.67499999999999982), and the other values aren’t
-  (e.g. `round(0.4999999999999999)` is 0).
+  decimals as R reads it (as the data), so the halves stored with the
+  error of the binary numbers are halves (e.g. `round(2.675, 2)` is
+  2.68, while 2.675 is stored as 2.67499999999999982), and the other
+  values aren’t (e.g. `round(0.4999999999999999)` is 0).
 - `roundup()` and `rounddown()` in
   [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   keep the values that already have their decimals
   (e.g. `roundup(1.1, 2)` gave 1.11 and `rounddown(0.29, 2)` gave 0.28,
   because of the error of the binary numbers): the result is the
-  smallest or largest number with these decimals, as R reads it, that
-  isn’t smaller or larger than the value. Large integers are kept
-  (e.g. `2^50`).
+  smallest or largest number with these decimals, as R reads it (as the
+  data), that isn’t smaller or larger than the value. Large integers and
+  very small numbers are kept (e.g. `2^50` or `rounddown(1e-24, 24)`),
+  and a large number of decimals works with very small numbers
+  (e.g. `roundup(1e-320, 309)` is 1e-309).
 - `mod()` in
   [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   gives the exact remainder of large numbers (e.g. `mod(2^54, 3)` gave 0
@@ -357,6 +359,11 @@
   `concat_ws()`, `roundup()` or `rounddown()`: it was read as REDCap
   logic and not applied, so the records where the field isn’t shown were
   also checked.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  keeps the texts between quotes of the expression in the messages of
+  the queries: they were changed (e.g. `x == 'a>b'` was described as
+  equal to `'agreater than b'` and `x == 'x'` as equal to `''`), and two
+  expressions with texts that became the same gave a single query.
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   applies the branching logic in R with double brackets
   (e.g. `data[['value']] == 0`) or with comments

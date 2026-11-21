@@ -60,8 +60,11 @@ rd_query(
 
 - event:
 
-  Required for longitudinal projects to avoid overestimation. REDCap
-  event(s) to analyze.
+  REDCap event(s) to analyze in longitudinal projects. If it isn't
+  given, the events where the form of each variable is collected are
+  taken from `event_form`; without `event_form`, all the events are
+  analyzed (with a warning), which can overestimate the number of
+  queries.
 
 - filter:
 

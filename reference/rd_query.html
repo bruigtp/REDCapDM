@@ -97,7 +97,7 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 
 
 <dt id="arg-event">event<a class="anchor" aria-label="anchor" href="#arg-event"></a></dt>
-<dd><p>Required for longitudinal projects to avoid overestimation. REDCap event(s) to analyze.</p></dd>
+<dd><p>REDCap event(s) to analyze in longitudinal projects. If it isn't given, the events where the form of each variable is collected are taken from <code>event_form</code>; without <code>event_form</code>, all the events are analyzed (with a warning), which can overestimate the number of queries.</p></dd>
 
 
 <dt id="arg-filter">filter<a class="anchor" aria-label="anchor" href="#arg-filter"></a></dt>

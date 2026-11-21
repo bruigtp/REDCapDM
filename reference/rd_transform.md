@@ -60,7 +60,7 @@ rd_transform(
   Controls how missing values are set based on the branching logic of a
   checkbox. Must be one of `"none"` (do nothing), `"missing"` (set to
   `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA`
-  when the logic evaluates to `FALSE`). Defaults to `"none"`.
+  when the logic evaluates to `FALSE` or `NA`). Defaults to `"none"`.
 
 - exclude_recalc:
 

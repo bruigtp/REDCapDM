@@ -522,7 +522,7 @@ The value should not be missing
 31
 </td>
 <td style="text-align:center;">
-[available_analytics][current-instance]=‘1’
+[available_analytics]=‘1’ and [user-name]=‘admin’
 </td>
 </tr>
 <tr>
@@ -571,9 +571,10 @@ The value should not be missing
 of the <em>age</em> and <em>copd</em> variables already identified,
 there are 31 missing values in the <em>potassium</em> variable. The
 branching logic associated with this variable,
-<code>[available_analytics][current-instance]=‘1’</code>, contains a
-smart variable <code>[current-instance]</code>, which cannot be directly
-transformed into R logic.</p>
+<code>[available_analytics]='1' and [user-name]='admin'</code>, contains
+the smart variable <code>[user-name]</code> (the user who is entering
+the data), which isn’t a column of the exported data, so the logic can’t
+be evaluated in R.</p>
 <p>To address this issue and correctly identify missing values only when
 <em>available_analytics</em> has the value <em>1</em>, the filter
 argument can be utilized. By specifying the condition within the
@@ -639,7 +640,7 @@ The value should not be missing
 21
 </td>
 <td style="text-align:center;">
-[available_analytics][current-instance]=‘1’
+[available_analytics]=‘1’ and [user-name]=‘admin’
 </td>
 </tr></tbody>
 </table>
@@ -836,7 +837,7 @@ Age
 Baseline visit
 </td>
 <td style="text-align:center;">
-The value should not be (greater than 70 and less than 80) or missing
+The value should not be ( greater than 70 and less than 80) or missing
 </td>
 <td style="text-align:center;">
 54
@@ -2003,8 +2004,8 @@ information to the following arguments:</p>
 <span>          password <span class="op">=</span> <span class="st">"123"</span><span class="op">)</span> </span></code></pre></div>
 <p>We specify the sheet name with the <code>sheet_name</code> argument
 and the path to the file to be exported with the <code>path</code>
-argument. To prevent anyone from modifying the exported file, we can
-also add a password.</p>
+argument. We can also add a password that protects the worksheet against
+edits (the file can still be opened and copied without it).</p>
 <p>The <code>column</code> argument refers to the column of the report
 that contains the link to each query. The function converts this column
 into hyperlink format in the exported file, so that we can simply click

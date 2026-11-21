@@ -141,9 +141,10 @@ style="width: auto !important; margin-left: auto; margin-right: auto;"}
 Based on the information provided, in addition to the missing values of
 the *age* and *copd* variables already identified, there are 31 missing
 values in the *potassium* variable. The branching logic associated with
-this variable, `[available_analytics][current-instance]=‘1’`, contains a
-smart variable `[current-instance]`, which cannot be directly
-transformed into R logic.
+this variable, `[available_analytics]='1' and [user-name]='admin'`,
+contains the smart variable `[user-name]` (the user who is entering the
+data), which isn’t a column of the exported data, so the logic can’t be
+evaluated in R.
 
 To address this issue and correctly identify missing values only when
 *available_analytics* has the value *1*, the filter argument can be
@@ -178,7 +179,7 @@ example$results
 
 | Variables | Description | Event | Query | Total | Branching logic |
 |:--:|:--:|:--:|:--:|:--:|:--:|
-| potassium | Potassium | Baseline visit | The value should not be missing | 21 | \[available_analytics\]\[current-instance\]=‘1’ |
+| potassium | Potassium | Baseline visit | The value should not be missing | 21 | \[available_analytics\]=‘1’ and \[user-name\]=‘admin’ |
 
 Report of queries {.table .table .table-striped .table-condensed
 style="width: auto !important; margin-left: auto; margin-right: auto;"}
@@ -275,7 +276,7 @@ example$results
 
 | Variables | Description | Event | Query | Total |
 |:--:|:--:|:--:|:--:|:--:|
-| age | Age | Baseline visit | The value should not be (greater than 70 and less than 80) or missing | 54 |
+| age | Age | Baseline visit | The value should not be ( greater than 70 and less than 80) or missing | 54 |
 
 Report of queries {.table .table .table-striped .table-condensed
 style="width: auto !important; margin-left: auto; margin-right: auto;"}
@@ -812,8 +813,9 @@ rd_export(queries = example$queries,
 ```
 
 We specify the sheet name with the `sheet_name` argument and the path to
-the file to be exported with the `path` argument. To prevent anyone from
-modifying the exported file, we can also add a password.
+the file to be exported with the `path` argument. We can also add a
+password that protects the worksheet against edits (the file can still
+be opened and copied without it).
 
 The `column` argument refers to the column of the report that contains
 the link to each query. The function converts this column into hyperlink

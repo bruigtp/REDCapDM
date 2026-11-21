@@ -74,7 +74,8 @@ A list with:
   REDCap, a calculation without a numeric result (e.g. a division by
   zero) is blank (`NA`).
 
-- Recalculated values are compared with the original values.
+- Recalculated values are compared with the original values, both
+  rounded to three decimals (e.g. 1.0004 and 1 are equal).
 
 - If differences exist, new fields `[field_name]_recalc` are added to
   the dataset and dictionary.
