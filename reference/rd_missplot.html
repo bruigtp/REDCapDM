@@ -77,11 +77,11 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 
 
 <dt id="arg-sort-by-missingness">sort_by_missingness<a class="anchor" aria-label="anchor" href="#arg-sort-by-missingness"></a></dt>
-<dd><p>Logical. Variables are ordered from highest to lowest missingness. Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. Variables are ordered from highest to lowest number of missing values (the count, also when <code>show_percentages = TRUE</code>; in longitudinal projects, the sum over the events). Default <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-max-vars">max_vars<a class="anchor" aria-label="anchor" href="#arg-max-vars"></a></dt>
-<dd><p>Integer. If specified, only the top <code>max_vars</code> variables are plotted (by missingness, or by original column order if <code>sort_by_missingness = FALSE</code>). Default <code>NULL</code> (show all variables, as <code>Inf</code>).</p></dd>
+<dd><p>Integer. If specified, only <code>max_vars</code> variables are plotted: the ones with the most missing values (by count, as in <code>sort_by_missingness</code>), or the first ones in the original column order if <code>sort_by_missingness = FALSE</code>. Default <code>NULL</code> (show all variables, as <code>Inf</code>).</p></dd>
 
 
 <dt id="arg-show-percentages">show_percentages<a class="anchor" aria-label="anchor" href="#arg-show-percentages"></a></dt>
@@ -97,7 +97,7 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 
 
 <dt id="arg-max-label-length">max_label_length<a class="anchor" aria-label="anchor" href="#arg-max-label-length"></a></dt>
-<dd><p>Integer. Maximum number of characters of the axis labels. Use <code>NULL</code> to keep them complete. Default <code>40</code>.</p></dd>
+<dd><p>Integer. Maximum number of characters of the axis labels: longer labels are shortened. When several variables share a label, their variable name is then added to it in parentheses, so these labels can be longer. Use <code>NULL</code> to keep them complete. Default <code>40</code>.</p></dd>
 
 
 <dt id="arg-by">by<a class="anchor" aria-label="anchor" href="#arg-by"></a></dt>
@@ -105,7 +105,7 @@ Generates a visual summary of missing data for variables in a REDCap dataset or 
 
 
 <dt id="arg-events">events<a class="anchor" aria-label="anchor" href="#arg-events"></a></dt>
-<dd><p>Character vector. Only for longitudinal projects: events to plot, by their unique name (e.g. <code>"baseline_arm_1"</code>) or the name shown in the plot (e.g. <code>"Baseline"</code>). Use <code>"all"</code> to plot every event. Default <code>NULL</code>: every event with <code>by = "vars"</code> and the first event with <code>by = "record"</code>.</p></dd>
+<dd><p>Character vector. Only for longitudinal projects: events to plot, by their unique name (e.g. <code>"baseline_arm_1"</code>) or the name shown in the plot (e.g. <code>"Baseline"</code>). When several events have the same name (e.g. the same event in two arms), the plot adds their unique name to it in parentheses, and giving the shared name selects all of them. Use <code>"all"</code> to plot every event. Default <code>NULL</code>: every event with <code>by = "vars"</code> and the first event with <code>by = "record"</code>.</p></dd>
 
 
 <dt id="arg-forms">forms<a class="anchor" aria-label="anchor" href="#arg-forms"></a></dt>

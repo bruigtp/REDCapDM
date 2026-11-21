@@ -187,9 +187,9 @@ recalculated in R.</p>
 <pre><code><span><span class="co">## Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## | Total calculated fields | Non-transcribed fields | Recalculated different fields |</span></span>
-<span><span class="co">## |:-----------------------:|:----------------------:|:-----------------------------:|</span></span>
-<span><span class="co">## |            2            |         0 (0%)         |            1 (50%)            |</span></span>
+<span><span class="co">## | Total calculated fields | Non-transcribed fields | Fields with different recalculated values |</span></span>
+<span><span class="co">## |:-----------------------:|:----------------------:|:-----------------------------------------:|</span></span>
+<span><span class="co">## |            2            |         0 (0%)         |                  1 (50%)                  |</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## |     field_name      | Transcribed? | Is equal? | Different values |</span></span>
@@ -218,9 +218,9 @@ unnecessary warnings.</p>
 <pre><code><span><span class="co">## Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## | Total calculated fields | Non-transcribed fields | Recalculated different fields |</span></span>
-<span><span class="co">## |:-----------------------:|:----------------------:|:-----------------------------:|</span></span>
-<span><span class="co">## |            1            |         0 (0%)         |           1 (100%)            |</span></span>
+<span><span class="co">## | Total calculated fields | Non-transcribed fields | Fields with different recalculated values |</span></span>
+<span><span class="co">## |:-----------------------:|:----------------------:|:-----------------------------------------:|</span></span>
+<span><span class="co">## |            1            |         0 (0%)         |                 1 (100%)                  |</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## | field_name | Transcribed? | Is equal? | Different values |</span></span>
@@ -234,7 +234,7 @@ from the values of REDCap, a new variable with the suffix
 the original variable and containing the recalculated values.</p></li>
 <li><p>The data dictionary is updated with a corresponding entry, where
 the original variable label is extended with
-<code>"(Recalculate)"</code> to make these fields easy to
+<code>"(Recalculated)"</code> to make these fields easy to
 identify.</p></li>
 </ul>
 <p>The recalculation gives the same results if the variables used in the
@@ -581,9 +581,9 @@ codes, so the result is the same before and after the conversion.</p>
 3. Recalculating calculated fields and saving them as '[field_name]_recalc'
 
 
-| Total calculated fields | Non-transcribed fields | Recalculated different fields |
-|:-----------------------:|:----------------------:|:-----------------------------:|
-|            2            |         0 (0%)         |            1 (50%)            |
+| Total calculated fields | Non-transcribed fields | Fields with different recalculated values |
+|:-----------------------:|:----------------------:|:-----------------------------------------:|
+|            2            |         0 (0%)         |                  1 (50%)                  |
 
 
 |     field_name      | Transcribed? | Is equal? | Different values |

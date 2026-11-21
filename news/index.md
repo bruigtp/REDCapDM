@@ -876,6 +876,27 @@
   accepts the data frame of queries as its first argument
   (e.g. `rd_export(report$queries)`): before, it said that there were no
   queries to export.
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  doesn’t overwrite the fields of the project whose names end in
+  `_recalc` (e.g. a field `q_recalc` when `q` is recalculated): the
+  recalculated values are saved in `q_recalc_1` (or `_2`, …), with a
+  warning. A calculated field of the project with such a name is now
+  recalculated: it was skipped as if
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  had added it. The fields added by
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  are recognised by their label, the one of the original field followed
+  by `(Recalculated)` (or `(Recalculate)`, as in previous versions).
+- [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  keeps apart the events with the same name (e.g. `Baseline` in two
+  arms): they were merged in the heatmap and in the record map. The plot
+  adds their unique name (e.g. `Baseline (baseline_arm_1)`), and in
+  `events` the shared name selects all of them. A field called
+  `clean_event_name` gets its own missing values (it got the ones of the
+  event names) and keeps its label, and every variable gets a different
+  label also when the name added to a shared label gives another
+  existing label (e.g. `Lab`, `Lab` and `Lab (a)`): the bars were merged
+  or the plot failed with “factor level is duplicated”.
 
 ### Clearer messages
 
@@ -991,11 +1012,18 @@
   [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md)
   informs with a message, instead of a warning, that there are no dates
   to convert.
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  shows `-` instead of a percentage (`NaN%`) in its summary when there
+  are no calculated fields to recalculate (e.g. all of them in
+  `exclude`) or none could be transcribed, and its last column is called
+  “Fields with different recalculated values”.
 - Fixed typos in the reports of
   [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
   and
   [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
-  (“arrangement”).
+  (“arrangement”), and in the label of the fields added by
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  (“(Recalculated)”).
 
 ### Documentation
 
@@ -1031,6 +1059,12 @@
   can be run as they are.
 - The screenshots of the queries vignette have alternative text, for
   screen readers.
+- The help of
+  [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  explains that `sort_by_missingness` and `max_vars` use the number of
+  missing values (also when the plot shows percentages), and that the
+  labels shared by several variables, which get the variable name, can
+  be longer than `max_label_length`.
 
 ### Internal changes
 

@@ -108,7 +108,8 @@ Recalculates fields marked as calculated in the REDCap dictionary, compares them
 
 <ul><li><p>Fields of type <code>calc</code> in the dictionary are recalculated. As in REDCap, a calculation without a numeric result (e.g. a division by zero) is blank (<code>NA</code>).</p></li>
 <li><p>Recalculated values are compared with the original values, both rounded to three decimals (e.g. 1.0004 and 1 are equal).</p></li>
-<li><p>If differences exist, new fields <code>[field_name]_recalc</code> are added to the dataset and dictionary.</p></li>
+<li><p>If differences exist, new fields <code>[field_name]_recalc</code> are added to the dataset and dictionary, with the label of the original field followed by <code>(Recalculated)</code>. Running the function again on its output updates these fields instead of duplicating them.</p></li>
+<li><p>A field of the project whose name ends in <code>_recalc</code> is never overwritten: if <code>[field_name]_recalc</code> is already a field of the dictionary (and not one added by this function), the recalculated values are saved in <code>[field_name]_recalc_1</code> (or <code>_2</code>, ...) with a warning.</p></li>
 <li><p>Works for single-event projects; for longitudinal projects, <code>event_form</code> must be provided.</p></li>
 <li><p>Fields with incomplete branching logic or smart variables may fail to recalculate.</p></li>
 </ul></div>

@@ -78,7 +78,15 @@ A list with:
   rounded to three decimals (e.g. 1.0004 and 1 are equal).
 
 - If differences exist, new fields `[field_name]_recalc` are added to
-  the dataset and dictionary.
+  the dataset and dictionary, with the label of the original field
+  followed by `(Recalculated)`. Running the function again on its output
+  updates these fields instead of duplicating them.
+
+- A field of the project whose name ends in `_recalc` is never
+  overwritten: if `[field_name]_recalc` is already a field of the
+  dictionary (and not one added by this function), the recalculated
+  values are saved in `[field_name]_recalc_1` (or `_2`, ...) with a
+  warning.
 
 - Works for single-event projects; for longitudinal projects,
   `event_form` must be provided.

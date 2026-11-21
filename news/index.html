@@ -321,6 +321,10 @@
 <code><a href="../reference/rd_export.html">rd_export()</a></code> reported success when <code>path</code> was a folder or <code>sheet_name</code> had one of <code>/ \ ? * : [ ]</code>, which Excel doesn’t accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.</li>
 <li>
 <code><a href="../reference/rd_export.html">rd_export()</a></code> accepts the data frame of queries as its first argument (e.g. <code>rd_export(report$queries)</code>): before, it said that there were no queries to export.</li>
+<li>
+<code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> doesn’t overwrite the fields of the project whose names end in <code>_recalc</code> (e.g. a field <code>q_recalc</code> when <code>q</code> is recalculated): the recalculated values are saved in <code>q_recalc_1</code> (or <code>_2</code>, …), with a warning. A calculated field of the project with such a name is now recalculated: it was skipped as if <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> had added it. The fields added by <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> are recognised by their label, the one of the original field followed by <code>(Recalculated)</code> (or <code>(Recalculate)</code>, as in previous versions).</li>
+<li>
+<code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> keeps apart the events with the same name (e.g. <code>Baseline</code> in two arms): they were merged in the heatmap and in the record map. The plot adds their unique name (e.g. <code>Baseline (baseline_arm_1)</code>), and in <code>events</code> the shared name selects all of them. A field called <code>clean_event_name</code> gets its own missing values (it got the ones of the event names) and keeps its label, and every variable gets a different label also when the name added to a shared label gives another existing label (e.g. <code>Lab</code>, <code>Lab</code> and <code>Lab (a)</code>): the bars were merged or the plot failed with “factor level is duplicated”.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="clearer-messages-1-1-0">Clearer messages<a class="anchor" aria-label="anchor" href="#clearer-messages-1-1-0"></a></h3>
@@ -356,7 +360,9 @@
 <code><a href="../reference/rd_query.html">rd_query()</a></code> suggests an option of the checkbox that exists in the data (e.g. <code>symptoms___a</code>) when a checkbox field is given in <code>variables</code>.</li>
 <li>
 <code><a href="../reference/rd_query.html">rd_query()</a></code> no longer warns when one expression is given for several variables, the usual way to check them (it still warns when several expressions don’t match the variables), and <code><a href="../reference/rd_dates.html">rd_dates()</a></code> informs with a message, instead of a warning, that there are no dates to convert.</li>
-<li>Fixed typos in the reports of <code><a href="../reference/rd_split.html">rd_split()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> (“arrangement”).</li>
+<li>
+<code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> shows <code>-</code> instead of a percentage (<code>NaN%</code>) in its summary when there are no calculated fields to recalculate (e.g. all of them in <code>exclude</code>) or none could be transcribed, and its last column is called “Fields with different recalculated values”.</li>
+<li>Fixed typos in the reports of <code><a href="../reference/rd_split.html">rd_split()</a></code> and <code><a href="../reference/rd_transform.html">rd_transform()</a></code> (“arrangement”), and in the label of the fields added by <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> (“(Recalculated)”).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-1-1-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-1-0"></a></h3>
@@ -367,6 +373,7 @@
 <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code>, <code><a href="../reference/rd_dates.html">rd_dates()</a></code>, <code><a href="../reference/rd_delete_vars.html">rd_delete_vars()</a></code>, <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>, <code><a href="../reference/rd_export.html">rd_export()</a></code>, <code><a href="../reference/rd_factor.html">rd_factor()</a></code>, <code><a href="../reference/rd_recalculate.html">rd_recalculate()</a></code> and <code><a href="../reference/rd_split.html">rd_split()</a></code> are now stable (their arguments and results won’t change without a deprecation period). <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> remains experimental.</li>
 <li>The examples of <code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code> and <code><a href="../reference/rd_export.html">rd_export()</a></code> can be run as they are.</li>
 <li>The screenshots of the queries vignette have alternative text, for screen readers.</li>
+<li>The help of <code><a href="../reference/rd_missplot.html">rd_missplot()</a></code> explains that <code>sort_by_missingness</code> and <code>max_vars</code> use the number of missing values (also when the plot shows percentages), and that the labels shared by several variables, which get the variable name, can be longer than <code>max_label_length</code>.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="internal-changes-1-1-0">Internal changes<a class="anchor" aria-label="anchor" href="#internal-changes-1-1-0"></a></h3>

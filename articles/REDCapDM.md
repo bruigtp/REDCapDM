@@ -319,9 +319,9 @@ covican_transformed$results
 #> 1. Recalculating calculated fields and saving them as '[field_name]_recalc'. (rd_recalculate)
 #> 
 #> 
-#> | Total calculated fields | Non-transcribed fields | Recalculated different fields |
-#> |:-----------------------:|:----------------------:|:-----------------------------:|
-#> |            2            |         0 (0%)         |            1 (50%)            |
+#> | Total calculated fields | Non-transcribed fields | Fields with different recalculated values |
+#> |:-----------------------:|:----------------------:|:-----------------------------------------:|
+#> |            2            |         0 (0%)         |                  1 (50%)                  |
 #> 
 #> 
 #> |     field_name      | Transcribed? | Is equal? | Different values |

@@ -36,14 +36,16 @@ rd_missplot(
 
 - sort_by_missingness:
 
-  Logical. Variables are ordered from highest to lowest missingness.
-  Default `TRUE`.
+  Logical. Variables are ordered from highest to lowest number of
+  missing values (the count, also when `show_percentages = TRUE`; in
+  longitudinal projects, the sum over the events). Default `TRUE`.
 
 - max_vars:
 
-  Integer. If specified, only the top `max_vars` variables are plotted
-  (by missingness, or by original column order if
-  `sort_by_missingness = FALSE`). Default `NULL` (show all variables, as
+  Integer. If specified, only `max_vars` variables are plotted: the ones
+  with the most missing values (by count, as in `sort_by_missingness`),
+  or the first ones in the original column order if
+  `sort_by_missingness = FALSE`. Default `NULL` (show all variables, as
   `Inf`).
 
 - show_percentages:
@@ -63,8 +65,10 @@ rd_missplot(
 
 - max_label_length:
 
-  Integer. Maximum number of characters of the axis labels. Use `NULL`
-  to keep them complete. Default `40`.
+  Integer. Maximum number of characters of the axis labels: longer
+  labels are shortened. When several variables share a label, their
+  variable name is then added to it in parentheses, so these labels can
+  be longer. Use `NULL` to keep them complete. Default `40`.
 
 - by:
 
@@ -75,9 +79,11 @@ rd_missplot(
 
   Character vector. Only for longitudinal projects: events to plot, by
   their unique name (e.g. `"baseline_arm_1"`) or the name shown in the
-  plot (e.g. `"Baseline"`). Use `"all"` to plot every event. Default
-  `NULL`: every event with `by = "vars"` and the first event with
-  `by = "record"`.
+  plot (e.g. `"Baseline"`). When several events have the same name (e.g.
+  the same event in two arms), the plot adds their unique name to it in
+  parentheses, and giving the shared name selects all of them. Use
+  `"all"` to plot every event. Default `NULL`: every event with
+  `by = "vars"` and the first event with `by = "record"`.
 
 - forms:
 
