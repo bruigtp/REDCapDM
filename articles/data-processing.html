@@ -416,9 +416,35 @@ datasets based on forms.</p>
 <span><span class="co">## <span style="color: #BCBCBC;">5</span> vital_signs                 <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;df [342 × 7]&gt;</span> </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">6</span> laboratory_findings         <span style="color: #949494;">&lt;chr [2]&gt;</span> <span style="color: #949494;">&lt;df [342 × 8]&gt;</span> </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">7</span> microbiological_studies     <span style="color: #949494;">&lt;chr [1]&gt;</span> <span style="color: #949494;">&lt;df [190 × 7]&gt;</span></span></span></code></pre>
+<p>The result is a tibble with one row per form, and the dataset of each
+form is in its list-column <code>df</code>. For example, the dataset of
+the first form:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">forms_data</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">df</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##   record_id    redcap_event_name redcap_data_access_group</span></span>
+<span><span class="co">## 1     100-6 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 2    100-13 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 3    100-16 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 4    100-31 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 5    100-34 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">## 6    100-36 baseline_visit_arm_1              hospital_11</span></span>
+<span><span class="co">##   redcap_event_name.factor redcap_data_access_group.factor inc_1 inc_2 inc_3</span></span>
+<span><span class="co">## 1           Baseline visit                     Hospital 11     1     1     1</span></span>
+<span><span class="co">## 2           Baseline visit                     Hospital 11     1     1     1</span></span>
+<span><span class="co">## 3           Baseline visit                     Hospital 11     1     1     1</span></span>
+<span><span class="co">## 4           Baseline visit                     Hospital 11     1     1     1</span></span>
+<span><span class="co">## 5           Baseline visit                     Hospital 11     1     1     1</span></span>
+<span><span class="co">## 6           Baseline visit                     Hospital 11     1     1     1</span></span>
+<span><span class="co">##   exc_1 screening_fail_crit inc_1.factor inc_2.factor inc_3.factor exc_1.factor</span></span>
+<span><span class="co">## 1     0                   0          Yes          Yes          Yes           No</span></span>
+<span><span class="co">## 2     0                   0          Yes          Yes          Yes           No</span></span>
+<span><span class="co">## 3     0                   0          Yes          Yes          Yes           No</span></span>
+<span><span class="co">## 4     0                   0          Yes          Yes          Yes           No</span></span>
+<span><span class="co">## 5     0                   0          Yes          Yes          Yes           No</span></span>
+<span><span class="co">## 6     0                   0          Yes          Yes          Yes           No</span></span></code></pre>
 <p>If repeated entries exist, you can reshape the data into wide
 format:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">forms_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"form"</span>, wide <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
@@ -431,7 +457,7 @@ of events in each form.</p>
 <p>For longitudinal projects, you can also split the data by event. The
 function uses the <code>event_form</code> mapping to assign variables
 correctly to each event:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">events_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"event"</span><span class="op">)</span></span>
 <span></span>
@@ -443,7 +469,7 @@ correctly to each event:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> follow_up_visit_da_arm_1 <span style="color: #949494;">&lt;df [152 × 10]&gt;</span></span></span></code></pre>
 <p>If you want to extract only one form or event, use the
 <code>which</code> argument:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example by form</span></span>
 <span><span class="va">baseline_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"form"</span>, which <span class="op">=</span> <span class="st">"demographics"</span><span class="op">)</span></span>
@@ -484,7 +510,7 @@ transform the checkboxes with the <code><a href="../reference/rd_checkbox.html">
 and then use this function to set the values of the checkbox
 <em>type_underlying_disease_haematological_cancer</em> to missing when
 the age is less than 65 years old:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cb</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -493,7 +519,7 @@ the age is less than 65 years old:</p>
 <pre><code>
   0   1 
 103  87 </code></pre>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Run with this function</span></span>
 <span><span class="va">cb2</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/rd_checkbox.html">rd_checkbox</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
@@ -542,14 +568,14 @@ outside the transform workflow.</p>
 </blockquote>
 <p>Let’s see how it transforms the logic of one of the calculated fields
 in the built-in dataset:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">logic_trans</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/rd_rlogic.html">rd_rlogic</a></span><span class="op">(</span>logic <span class="op">=</span> <span class="st">"if([exc_1]='1' or [inc_1]='0' or [inc_2]='0' or [inc_3]='0',1,0)"</span>,</span>
 <span>            var <span class="op">=</span> <span class="st">"screening_fail_crit"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">logic_trans</span><span class="op">$</span><span class="va">rlogic</span></span></code></pre></div>
 <pre><code>[1] "ifelse(data$exc_1=='1' | data$inc_1=='0' | data$inc_2=='0' | data$inc_3=='0',1,0)"</code></pre>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">logic_trans</span><span class="op">$</span><span class="va">eval_data</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  record_id        redcap_event_name eval
 1     100-6     baseline_visit_arm_1    0
@@ -568,8 +594,10 @@ codes, so the result is the same before and after the conversion.</p>
 <strong>rd_transform</strong><a class="anchor" aria-label="anchor" href="#rd_transform"></a>
 </h2>
 <p>Alternatively, you can do all these steps at once using the
-<code><a href="../reference/rd_transform.html">rd_transform()</a></code> function:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code><a href="../reference/rd_transform.html">rd_transform()</a></code> function, except
+<code><a href="../reference/rd_insert_na.html">rd_insert_na()</a></code>: its filters are specific to each project,
+so apply it separately.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">covican_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_transform.html">rd_transform</a></span><span class="op">(</span><span class="va">covican</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">#Print the results of the transformation</span></span>

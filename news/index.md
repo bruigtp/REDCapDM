@@ -876,27 +876,36 @@
   accepts the data frame of queries as its first argument
   (e.g. `rd_export(report$queries)`): before, it said that there were no
   queries to export.
+- [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  keeps the record identifier when its form is not designated in any
+  event of `event_form`: it was removed from the data and the dictionary
+  with the other variables of the forms without events.
 - [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   doesn’t overwrite the fields of the project whose names end in
-  `_recalc` (e.g. a field `q_recalc` when `q` is recalculated): the
-  recalculated values are saved in `q_recalc_1` (or `_2`, …), with a
-  warning. A calculated field of the project with such a name is now
-  recalculated: it was skipped as if
+  `_recalc` (e.g. a field `q_recalc` when `q` is recalculated), nor a
+  column of the data with that name: the recalculated values are saved
+  in `q_recalc_1` (or `_2`, …), with a warning. A calculated field of
+  the project with such a name is now recalculated: it was skipped as if
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   had added it. The fields added by
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
-  are recognised by their label, the one of the original field followed
-  by `(Recalculated)` (or `(Recalculate)`, as in previous versions).
+  are recognised because they are calculated fields with the same
+  calculation as the original field and its label followed by
+  `(Recalculated)` (or `(Recalculate)`, as in previous versions);
+  without the column `field_label` in the dictionary, by the type and
+  the calculation, so running the function again updates them instead of
+  adding new ones.
 - [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
   keeps apart the events with the same name (e.g. `Baseline` in two
   arms): they were merged in the heatmap and in the record map. The plot
-  adds their unique name (e.g. `Baseline (baseline_arm_1)`), and in
-  `events` the shared name selects all of them. A field called
-  `clean_event_name` gets its own missing values (it got the ones of the
-  event names) and keeps its label, and every variable gets a different
-  label also when the name added to a shared label gives another
-  existing label (e.g. `Lab`, `Lab` and `Lab (a)`): the bars were merged
-  or the plot failed with “factor level is duplicated”.
+  adds their unique name (e.g. `Baseline (baseline_arm_1)`), also when
+  the new name is the name of another event, and in `events` the shared
+  name selects all of them. A field called `clean_event_name` gets its
+  own missing values (it got the ones of the event names) and keeps its
+  label, and every variable gets a different label also when the name
+  added to a shared label gives another existing label (e.g. `Lab`,
+  `Lab` and `Lab (a)`): the bars were merged or the plot failed with
+  “factor level is duplicated”.
 
 ### Clearer messages
 
@@ -1059,6 +1068,17 @@
   can be run as they are.
 - The screenshots of the queries vignette have alternative text, for
   screen readers.
+- The help of
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  explains that the data split by form or event is a tibble with the
+  dataset of each form or event in the list-column `df`
+  (e.g. `result$data$df[[1]]`), and the help of
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  and the vignettes say which functions it runs:
+  [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  is applied separately.
 - The help of
   [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
   explains that `sort_by_missingness` and `max_vars` use the number of

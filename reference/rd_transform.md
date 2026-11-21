@@ -3,9 +3,21 @@
 **\[stable\]**
 
 Transforms the raw REDCap data read by the `redcap_data` function. The
-function runs in one-step pipeline all functions dedicated to processing
-the data and returns the transformed data and dictionary, along with a
-summary of each step done.
+function runs in one-step pipeline the functions dedicated to processing
+the data
+([`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md),
+[`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md),
+[`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+[`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md),
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md),
+[`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+and, with `final_format`,
+[`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md))
+and returns the transformed data and dictionary, along with a summary of
+each step done.
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+is not part of it: its filters are specific to each project, so apply it
+separately.
 
 ## Usage
 
@@ -110,7 +122,12 @@ A list with elements:
 
 - data:
 
-  Transformed data (data.frame or nested list when split).
+  Transformed data. With `final_format = "by_event"` or `"by_form"`, as
+  in
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md):
+  a tibble with one row per event or form and its dataset in the
+  list-column `df` (e.g. `trans$data$df[[1]]`), or the `data.frame` of
+  the event or form chosen with `which_event` or `which_form`.
 
 - dictionary:
 

@@ -61,7 +61,9 @@ examples):
   Update dictionary (translation of REDCap logic into R syntax) to
   reflect transformed data and logic.
 
-Or we can use all these functions at once:
+Or we can use these functions at once, except
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+(its filters are specific to each project, so it is applied separately):
 
 - [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md):
   One-step pipeline to clean and preprocess the raw REDCap data.

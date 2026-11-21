@@ -402,6 +402,37 @@ forms_data$data
     ## 6 laboratory_findings         <chr [2]> <df [342 × 8]> 
     ## 7 microbiological_studies     <chr [1]> <df [190 × 7]>
 
+The result is a tibble with one row per form, and the dataset of each
+form is in its list-column `df`. For example, the dataset of the first
+form:
+
+``` r
+
+head(forms_data$data$df[[1]])
+```
+
+    ##   record_id    redcap_event_name redcap_data_access_group
+    ## 1     100-6 baseline_visit_arm_1              hospital_11
+    ## 2    100-13 baseline_visit_arm_1              hospital_11
+    ## 3    100-16 baseline_visit_arm_1              hospital_11
+    ## 4    100-31 baseline_visit_arm_1              hospital_11
+    ## 5    100-34 baseline_visit_arm_1              hospital_11
+    ## 6    100-36 baseline_visit_arm_1              hospital_11
+    ##   redcap_event_name.factor redcap_data_access_group.factor inc_1 inc_2 inc_3
+    ## 1           Baseline visit                     Hospital 11     1     1     1
+    ## 2           Baseline visit                     Hospital 11     1     1     1
+    ## 3           Baseline visit                     Hospital 11     1     1     1
+    ## 4           Baseline visit                     Hospital 11     1     1     1
+    ## 5           Baseline visit                     Hospital 11     1     1     1
+    ## 6           Baseline visit                     Hospital 11     1     1     1
+    ##   exc_1 screening_fail_crit inc_1.factor inc_2.factor inc_3.factor exc_1.factor
+    ## 1     0                   0          Yes          Yes          Yes           No
+    ## 2     0                   0          Yes          Yes          Yes           No
+    ## 3     0                   0          Yes          Yes          Yes           No
+    ## 4     0                   0          Yes          Yes          Yes           No
+    ## 5     0                   0          Yes          Yes          Yes           No
+    ## 6     0                   0          Yes          Yes          Yes           No
+
 If repeated entries exist, you can reshape the data into wide format:
 
 ``` r
@@ -583,7 +614,9 @@ before and after the conversion.
 
 Alternatively, you can do all these steps at once using the
 [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
-function:
+function, except
+[`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md):
+its filters are specific to each project, so apply it separately.
 
 ``` r
 

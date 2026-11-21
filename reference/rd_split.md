@@ -64,8 +64,12 @@ Depending on `which` and `wide`:
 
 - data:
 
-  A `data.frame` or a list of `data.frames` representing the split
-  datasets.
+  Without `which`, a tibble with one row per form (columns `form`,
+  `events` in longitudinal projects, and `df`) or per event (columns
+  `events` and `df`): the dataset of each form or event is in the
+  list-column `df` (e.g. `result$data$df[[1]]`, or
+  `result$data$df[result$data$form == "demographics"][[1]]`). With
+  `which`, the `data.frame` of that form or event.
 
 - dictionary:
 
