@@ -91,24 +91,24 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
 
   if (final_format == "by_event" && is.null(event_form)) {
-    rd_abort("To split the data by event the event_form has to be provided")
+    rd_abort("To split the data by event, {.arg event_form} has to be provided.")
   }
 
   # If the project is not longitudinal 'by_form' can be used without event_form:
   if (final_format == "by_form" && is.null(event_form) && longitudinal) {
-    rd_abort("To split the data by form the event_form has to be provided in a longitudinal project")
+    rd_abort("To split the data by form in a longitudinal project, {.arg event_form} has to be provided.")
   }
 
   if (!is.null(which_event) && final_format != "by_event") {
-    rd_abort("Which event has been specified but the final format is not to split the data by event")
+    rd_abort("{.arg which_event} has been specified, but the final format doesn't split the data by event: use {.code final_format = \"by_event\"}.")
   }
 
   if (!is.null(which_form) && final_format != "by_form") {
-    rd_abort("Which form has been specified but the final format is not to split the data by form")
+    rd_abort("{.arg which_form} has been specified, but the final format doesn't split the data by form: use {.code final_format = \"by_form\"}.")
   }
 
   if (isTRUE(wide) && final_format != "by_form") {
-    rd_abort("The argument wide has been specified but the final format is not to split the data by form")
+    rd_abort("{.arg wide} has been specified, but the final format doesn't split the data by form: use {.code final_format = \"by_form\"}.")
   }
   
   # Error: the form status and survey timestamp fields must be removed to split the data by event or form

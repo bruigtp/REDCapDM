@@ -23,7 +23,7 @@
 #'
 #' @return Depending on `which` and `wide`:
 #' \describe{
-#'   \item{data}{Without `which`, a tibble with one row per form (columns `form`, `events` in longitudinal projects, and `df`) or per event (columns `events` and `df`): the dataset of each form or event is in the list-column `df` (e.g. `result$data$df[[1]]`, or `result$data$df[result$data$form == "demographics"][[1]]`). With `which`, the `data.frame` of that form or event.}
+#'   \item{data}{Without `which`, a tibble with one row per form (columns `form`, `events` in longitudinal projects, and `df`) or per event (columns `events` and `df`): the dataset of each form or event is in the list-column `df` (e.g. `result$data$df[[1]]`, or `result$data$df[result$data$form == "demographics"][[1]]`). With `wide = TRUE`, the tibble of the forms also has the column `max_repeated_instance`, the highest repetition of each form. With `which`, the `data.frame` of that form or event.}
 #'   \item{dictionary}{The original REDCap dictionary.}
 #'   \item{event_form}{The original event-form mapping (if applicable).}
 #'   \item{results}{A summary message of the splitting operation.}
@@ -69,7 +69,7 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
   check_flag(wide, "wide")
 
   # Error: invalid `by`
-  if (!isTRUE(by %in% c("form", "event"))) {
+  if (!is.character(by) || !isTRUE(by %in% c("form", "event"))) {
     rd_abort("Invalid {.arg by} argument. Please specify either {.val form} or {.val event}.", class = "REDCapDM_error_argument")
   }
 

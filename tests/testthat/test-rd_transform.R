@@ -12,14 +12,14 @@ test_that("final_format argument validation works", {
 
 test_that("which_event and which_form validation works", {
   expect_error(rd_transform(data = covican$data, dic = covican$dictionary, which_event = "baseline_visit_arm_1"),
-               "Which event has been specified but the final format is not to split the data by event")
+               "`which_event` has been specified, but the final format doesn't split the data by event")
   expect_error(rd_transform(data = covican$data, dic = covican$dictionary, which_form = unique(covican$dictionary$form_name)[1]),
-               "Which form has been specified but the final format is not to split the data by form")
+               "`which_form` has been specified, but the final format doesn't split the data by form")
 })
 
 test_that("wide argument validation works", {
   expect_error(rd_transform(data = covican$data, dic = covican$dictionary, wide = TRUE),
-               "The argument wide has been specified but the final format is not to split the data by form")
+               "`wide` has been specified, but the final format doesn't split the data by form")
 })
 
 test_that("deleting variables works", {

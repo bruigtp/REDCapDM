@@ -93,6 +93,8 @@ rd_event <- function(project = NULL,
   }
 
   # Ensure the input data is a data frame
+  # (an argument that isn't a data frame, e.g. a function, stops with an explanation)
+  check_inputs(data, dic)
   data <- as.data.frame(data)
 
   # Error: the project has no events

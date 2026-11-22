@@ -507,3 +507,14 @@ test_that("rd_missplot takes the identifier from the dictionary, whatever the or
     expect_false("subject_id" %in% map$data$variable)
   }
 })
+
+test_that("rd_missplot plots grouped data as the whole data", {
+  ref <- suppressMessages(rd_missplot(covican, drop_complete = FALSE))
+  for (g in c("record_id", "redcap_event_name")) {
+    project <- covican
+    project$data <- dplyr::group_by(tibble::as_tibble(project$data), .data[[g]])
+    p <- suppressMessages(rd_missplot(project, drop_complete = FALSE))
+    expect_equal(as.data.frame(p$data), as.data.frame(ref$data))
+    expect_false(g %in% p$data$variable)
+  }
+})

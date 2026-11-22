@@ -158,3 +158,12 @@ test_that("rd_dates and rd_recalculate work with some of the columns of the dict
   expect_no_error(suppressMessages(rd_dates(data = d, dic = covican$dictionary, event_form = covican$event_form)))
   expect_no_error(suppressWarnings(suppressMessages(rd_recalculate(data = d, dic = covican$dictionary, event_form = covican$event_form))))
 })
+
+test_that("the arguments that receive a function by mistake stop with an explanation", {
+  expect_error(rd_event(data = mean, dic = covican$dictionary, event = "x"), "must be a data frame", class = "REDCapDM_error_argument")
+  expect_error(rd_query(covican, variables = mean, expression = "is.na(x)"), "`variables` must be text", class = "REDCapDM_error_argument")
+  expect_error(rd_query(covican, variables = "age", expression = mean), "`expression` must be text", class = "REDCapDM_error_argument")
+  expect_error(rd_split(covican, by = mean), "Invalid `by` argument", class = "REDCapDM_error_argument")
+  # a factor is still taken as text
+  expect_equal(nrow(rd_query(covican, variables = factor("age"), expression = "is.na(x)", event = "baseline_visit_arm_1")$queries), 5)
+})

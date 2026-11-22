@@ -77,6 +77,9 @@ rd_missplot <- function(data, sort_by_missingness = TRUE, max_vars = NULL, show_
     rd_abort("The {.code data} element must be a data frame: use the output of {.fn redcap_data}.", class = "REDCapDM_error_argument")
   }
 
+  # (grouped data, e.g. with dplyr::group_by(), is plotted as the whole data: its grouping columns are not variables)
+  df <- plain_data(df)
+
   # Error: nothing to plot
   if (nrow(df) == 0) {
     rd_abort("There is no data to plot: the data has 0 rows.")

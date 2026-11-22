@@ -325,11 +325,12 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     # Read labels from REDCap
 
-    ## Error SSL peer certificate (Github issue #6)
+    ## Error SSL peer certificate (GitHub issue #6)
 
-    tryCatch(
+    # (a function, as the labels are read again if the data changed between the two requests, see below)
+    read_labels <- function() tryCatch(
       {
-        labels <- suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field)$data)
+        suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field)$data)
       },
       error = function(e) {
         if (grepl("REDCap's PHP code is likely trying to process too much text in one bite", e$message) & !is.null(filter_field)) {
@@ -344,6 +345,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         }
       }
     )
+    labels <- read_labels()
 
     # Ensure labels were retrieved and assign a default column name
     if (nrow(labels) > 0) {
@@ -356,33 +358,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       )
     }
 
-    # Save the factor version of the default variables of redcap
-    redcap_names <- names(labels |>
-      dplyr::select(dplyr::any_of(c("Event Name", "Repeat Instrument", "Data Access Group"))))
-
-    default_names <- data.frame(fac = redcap_names) |>
-      dplyr::mutate(corres = dplyr::case_when(
-        fac %in% "Event Name" ~ "redcap_event_name.factor",
-        fac %in% "Repeat Instrument" ~ "redcap_repeat_instrument.factor",
-        fac %in% "Data Access Group" ~ "redcap_data_access_group.factor"
-      ))
-
-    rename_redcap <- default_names$fac
-    names(rename_redcap) <- default_names$corres
-
-    # (an empty column, e.g. the data access groups or the repeated instrument of a project without them in its records,
-    # is an empty factor, as with the exported files)
-    main_vars <- labels |>
-      dplyr::mutate_at(
-        redcap_names[!redcap_names %in% "Repeat Instrument"],
-        ~ if (all(is.na(.))) factor(as.character(.)) else forcats::fct_inorder(.)
-      ) |>
-      dplyr::mutate_at(
-        intersect("Repeat Instrument", redcap_names),
-        ~ if (all(is.na(.))) factor(as.character(.)) else .
-      ) |>
-      dplyr::rename(dplyr::all_of(rename_redcap)) |>
-      dplyr::select("record_id", default_names$corres)
+    # The labels of the events, repeated instruments and data access groups (their factor versions) are added to the data
+    # once it is read, after checking that both requests returned the same rows
+    labels_data <- labels
 
     # Clean up label names by removing suffixes
     labels <- gsub("\\.{3}\\d+$", "", c(record_id_label, names(labels)[-1]))
@@ -539,10 +517,25 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       data_api[[paste0(i, ".factor")]] <- factor(data_api[[i]], levels = c("0", "1", "2"), labels = c("Incomplete", "Unverified", "Complete"))
     }
 
-    # Merge main_vars with imported data
+    # Merge the labels of the events, repeated instruments and data access groups with the imported data
+    # The values and their labels are read with two requests: if the records changed in between (e.g. someone entered,
+    # deleted or imported data), their rows are not the same ones and the labels would go to other rows. The labels are
+    # read again (twice at most) until their rows are the rows of the data.
+    for (attempt in 1:3) {
+      if (api_rows_match(labels_data, data_api)) break
+      if (attempt == 3) {
+        rd_abort(
+          c("The records of the project changed while they were read from the REDCap API: the two requests of {.fn redcap_data} (the values and their labels) didn't return the same rows.",
+            "i" = "Try again when no one is entering, deleting or importing data in the project."),
+          class = "REDCapDM_error_api"
+        )
+      }
+      labels_data <- read_labels()
+      if (nrow(labels_data) > 0) names(labels_data)[1] <- "record_id"
+    }
 
     data_api <- data_api |>
-      dplyr::bind_cols(main_vars |> dplyr::select(-"record_id"))
+      dplyr::bind_cols(api_label_columns(labels_data) |> dplyr::select(-"record_id"))
 
     # Determine if project is longitudinal
     longitudinal <- ifelse("redcap_event_name" %in% names(data_api), TRUE, FALSE)
@@ -1124,4 +1117,107 @@ option_codes <- function(dic, field) {
   options <- strsplit(as.character(row$choices_calculations_or_slider_labels[1]), "|", fixed = TRUE)[[1]]
   codes <- suppressWarnings(as.numeric(trimws(sub(",.*$", "", options))))
   codes[!is.na(codes)]
+}
+
+
+#' Factor versions of the event, repeated instrument and data access group read from the REDCap API
+#'
+#' @param labels Data read from the API with labels (`raw_or_label = "label"`), with `record_id` as its first column.
+#' @return A data frame with `record_id` and the factor versions present (`redcap_event_name.factor`,
+#'   `redcap_repeat_instrument.factor` and `redcap_data_access_group.factor`). An empty column (e.g. the data access groups
+#'   of a project without them in its records) is an empty factor, as with the exported files.
+#' @noRd
+api_label_columns <- function(labels) {
+  redcap_names <- names(labels |>
+    dplyr::select(dplyr::any_of(c("Event Name", "Repeat Instrument", "Data Access Group"))))
+
+  default_names <- data.frame(fac = redcap_names) |>
+    dplyr::mutate(corres = dplyr::case_when(
+      fac %in% "Event Name" ~ "redcap_event_name.factor",
+      fac %in% "Repeat Instrument" ~ "redcap_repeat_instrument.factor",
+      fac %in% "Data Access Group" ~ "redcap_data_access_group.factor"
+    ))
+
+  rename_redcap <- default_names$fac
+  names(rename_redcap) <- default_names$corres
+
+  labels |>
+    dplyr::mutate_at(
+      redcap_names[!redcap_names %in% "Repeat Instrument"],
+      ~ if (all(is.na(.))) factor(as.character(.)) else forcats::fct_inorder(.)
+    ) |>
+    dplyr::mutate_at(
+      intersect("Repeat Instrument", redcap_names),
+      ~ if (all(is.na(.))) factor(as.character(.)) else .
+    ) |>
+    dplyr::rename(dplyr::all_of(rename_redcap)) |>
+    dplyr::select("record_id", default_names$corres)
+}
+
+
+#' Whether the rows read with labels are the rows of the data read from the REDCap API
+#'
+#' The labels are read with another request, so the records can change in between. The rows are the same ones when, row
+#' by row, they have the same record identifier and repeated instance, and each event, repeated instrument and data
+#' access group has a single label in the same rows (and each label of an event or data access group is of a single one).
+#' The number of rows is not enough: the same records can come in another order.
+#'
+#' @param labels Data read with labels, with `record_id` as its first column.
+#' @param data Data read with the raw values, with `record_id` as its first column.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+api_rows_match <- function(labels, data) {
+  if (nrow(labels) != nrow(data)) {
+    return(FALSE)
+  }
+
+  as_text <- function(x) {
+    x <- as.character(x)
+    x[x %in% ""] <- NA
+    x
+  }
+  same_values <- function(a, b) {
+    a <- as_text(a)
+    b <- as_text(b)
+    identical(is.na(a), is.na(b)) && all(a[!is.na(a)] == b[!is.na(b)])
+  }
+  # (the number of a repeated instance can be read as text or as a number)
+  same_numbers <- function(a, b) {
+    a <- suppressWarnings(as.numeric(as_text(a)))
+    b <- suppressWarnings(as.numeric(as_text(b)))
+    identical(is.na(a), is.na(b)) && all(a[!is.na(a)] == b[!is.na(b)])
+  }
+
+  if (!same_values(labels[[1]], data[[1]])) {
+    return(FALSE)
+  }
+  if ("Repeat Instance" %in% names(labels) && "redcap_repeat_instance" %in% names(data) &&
+    !same_numbers(labels[["Repeat Instance"]], data$redcap_repeat_instance)) {
+    return(FALSE)
+  }
+
+  pairs <- list(
+    c("Event Name", "redcap_event_name", "both"),
+    c("Repeat Instrument", "redcap_repeat_instrument", "raw"),
+    c("Data Access Group", "redcap_data_access_group", "both")
+  )
+  for (pair in pairs) {
+    if (!pair[1] %in% names(labels) || !pair[2] %in% names(data)) next
+
+    label <- as_text(labels[[pair[1]]])
+    raw <- as_text(data[[pair[2]]])
+    if (!identical(is.na(label), is.na(raw))) {
+      return(FALSE)
+    }
+
+    filled <- !is.na(raw)
+    if (any(tapply(label[filled], raw[filled], function(z) length(unique(z))) > 1)) {
+      return(FALSE)
+    }
+    if (pair[3] == "both" && any(tapply(raw[filled], label[filled], function(z) length(unique(z))) > 1)) {
+      return(FALSE)
+    }
+  }
+
+  TRUE
 }

@@ -13,7 +13,10 @@ test_that("the steps of $results are numbered when the functions are chained", {
 
 test_that("rd_checkbox() gives the same values after rd_factor() or rd_dictionary()", {
   usual <- suppressWarnings(covican |> rd_checkbox() |> rd_factor())
-  expect_warning(after_factor <- covican |> rd_factor() |> rd_checkbox(), "already in factor form")
+  # (no warning that asks to run rd_dictionary() first: the values are the same)
+  warns <- character(0)
+  after_factor <- withCallingHandlers(covican |> rd_factor() |> rd_checkbox(), warning = function(w) { warns <<- c(warns, conditionMessage(w)); invokeRestart("muffleWarning") })
+  expect_false(any(grepl("rd_dictionary", warns)))
   plain <- suppressWarnings(rd_checkbox(covican))
   after_dic <- suppressWarnings(covican |> rd_dictionary() |> rd_checkbox())
 

@@ -77,7 +77,7 @@ Or we can use these functions at once, except `rd_insert_na()` (its filters are 
 
 - `check_queries()`: Compare two query reports to track changes made.
 
-- `rd_export`: Export query/report tables to an Excel (.xlsx) file.
+- `rd_export()`: Export query/report tables to an Excel (.xlsx) file.
 
 Each group of functions is explained in detail in its own vignette: `vignette("missing-data")`, `vignette("data-processing")` and `vignette("query-management")`.
 
@@ -194,7 +194,7 @@ In this case, there is no need to specify the event-form file since the function
 
 > **Warning**: Please keep in mind that the API token gives you special access to the REDCap project and that it should not be shared with other people. Instead of writing it in your scripts, save it in your `.Renviron` file (e.g. with `usethis::edit_r_environ()`, adding a line `REDCAP_TOKEN=...`) and read it with `Sys.getenv("REDCAP_TOKEN")`, as in the example above.
 
-The `redcap_data()` function returns a list with three elements: imported data, dictionary and event-form mapping(if included).
+The `redcap_data()` function returns a list with three elements: imported data, dictionary and event-form mapping (if included).
 
 
 If the project uses REDCap's Missing Data Codes (e.g. `NI`, `UNK`, `ASKU`), by default (`rm_mdc = TRUE`) they are replaced by missing values (`NA`) and a warning is shown. With `rm_mdc = FALSE`, they are kept: in the multiple-choice variables as an additional category, and in the validated text fields (numbers, dates, ...) in a new `<field>_mdc` column next to the field, which keeps its type and has `NA` in those rows. A warning lists the fields with codes:

@@ -151,6 +151,9 @@
 - `rd_query()` without `event` failed in longitudinal projects when an event of the variable had no records yet (e.g. a follow-up visit that no one has reached, or an arm without records). It now checks the events with data.
 - `rd_export()` reported success when `path` was a folder or `sheet_name` had one of `/ \ ? * : [ ]`, which Excel doesn't accept, and failed with an unclear error with more than 31 characters. It now stops and explains the problem.
 - `rd_export()` accepts the data frame of queries as its first argument (e.g. `rd_export(report$queries)`): before, it said that there were no queries to export.
+- `redcap_data()` with the API checks that the two requests it makes (the values and their labels) return the same rows, by the record identifier, the repetition and the event, repeated instrument and data access group of each row. The labels were joined by position, so if the records changed between both requests (e.g. someone entered, deleted or imported data), the labels of the events, repeated instruments and data access groups went to other rows, or the rows were repeated, without warning. The labels are read again (twice at most) and, if the rows still differ, the function stops with an error.
+- `rd_missplot()` plots grouped data (e.g. with `dplyr::group_by()`) as the whole data: the grouping columns were plotted as variables.
+- `rd_event()`, `rd_query()` and `rd_split()` explain an argument that isn't data or text (e.g. a function given by mistake in `data`, `variables`, `expression` or `by`), instead of failing with an R error.
 - `rd_transform()` keeps the record identifier when its form is not designated in any event of `event_form`: it was removed from the data and the dictionary with the other variables of the forms without events.
 - The functions take the record identifier from the dictionary when it isn't called `record_id` (as `redcap_data()` calls it): it is the first field of the dictionary (e.g. `subject_id`), whatever its position in the data. With another column first (e.g. `age`, or a column added for an analysis that isn't in the dictionary), `rd_event()` and `rd_query()` reported the values of that column as identifiers, `rd_rlogic()` (and so `rd_recalculate()`) used it to match the events of each record, `rd_missplot()` labelled the records with it and plotted the identifier as a variable, and `rd_delete_vars(forms = ...)` removed the identifier. The first column is the identifier only when the first field of the dictionary isn't in the data.
 - `rd_query()` and `rd_event()` keep the name of an identifier that isn't called `record_id`, so their `filter` can use it (e.g. `subject_id == '003'` or `.data$subject_id == '003'`): they renamed it `record_id`, so the filter failed, or used an object of the session with that name and found no queries.
@@ -186,6 +189,8 @@
 - `rd_query()` no longer warns when one expression is given for several variables, the usual way to check them (it still warns when several expressions don't match the variables), and `rd_dates()` informs with a message, instead of a warning, that there are no dates to convert.
 - The results of `rd_checkbox()` and `rd_transform()` describe the labels given in `checkbox_labels` and, with `checkbox_names = FALSE`, don't say that the checkboxes were renamed: they always said "No/Yes" and that the names were changed.
 - `rd_recalculate()` shows `-` instead of a percentage (`NaN%`) in its summary when there are no calculated fields to recalculate (e.g. all of them in `exclude`) or none could be transcribed, and its last column is called "Fields with different recalculated values".
+- `rd_checkbox()` no longer warns that `rd_dictionary()` has to be run first when the variables were already converted to factors with `rd_factor()`: the checkboxes get the same values in both orders.
+- The errors of `rd_transform()` about the arguments of the final format name the argument and the `final_format` to use.
 - Fixed typos in the reports of `rd_split()` and `rd_transform()` ("arrangement"), and in the label of the fields added by `rd_recalculate()` ("(Recalculated)").
 
 ## Documentation
@@ -196,6 +201,7 @@
 - `rd_checkbox()`, `rd_dates()`, `rd_delete_vars()`, `rd_dictionary()`, `rd_export()`, `rd_factor()`, `rd_recalculate()` and `rd_split()` are now stable (their arguments and results won't change without a deprecation period). `rd_missplot()` remains experimental.
 - The examples of `rd_insert_na()` and `rd_export()` can be run as they are.
 - The screenshots of the queries vignette have alternative text, for screen readers.
+- The vignettes explain the record identifier of projects assembled from separate data frames, the time zone of the datetimes, the `.factor` columns that are text, the checkboxes transformed with `checkbox_names = FALSE`, the columns accepted by `rd_split()`, the events with the same name in `rd_missplot()` and the queries `Miscorrected` of `check_queries()` (by record, variable, event and repetition). The example of `rd_export()` with `column` creates the report with links, and the help of `rd_query()` says that `negate = TRUE` also reports the missing values.
 - The help of `rd_dates()` explains that the datetimes written as text are read in UTC, whatever the time zone of the session (the time is kept as written in REDCap), and the help of `rd_recalculate()` that the label `(Recalculate)` of previous versions is also recognised.
 - The help of `rd_split()` and `rd_transform()` explains that the data split by form or event is a tibble with the dataset of each form or event in the list-column `df` (e.g. `result$data$df[[1]]`), and the help of `rd_transform()` and the vignettes say which functions it runs: `rd_insert_na()` is applied separately.
 - The help of `rd_missplot()` explains that `sort_by_missingness` and `max_vars` use the number of missing values (also when the plot shows percentages), and that the labels shared by several variables, which get the variable name, can be longer than `max_label_length`.
@@ -284,7 +290,7 @@
 
 ## Changes
 
--   Update of the links leading to the Github page.
+-   Update of the links leading to the GitHub page.
 
 <br>
 <br>

@@ -22,6 +22,8 @@ library(purrr)
 
 The examples use `covican`, the dataset included in the package (described in `vignette("REDCapDM")`).
 
+For a project assembled from separate data frames, keep the record identifier as the first field of the dictionary, even if its column is moved in the dataset. The processing functions use that field when the identifier is not named `record_id`.
+
 Given any data imported from REDCap with `redcap_data()`, this would be the pipeline of an entire processing workflow:
 
 ```{r message=FALSE, warning=FALSE, eval = FALSE, comment="#>", collapse = TRUE}
@@ -72,7 +74,7 @@ When variables are deleted:
 
 # **rd_dates**
 
-This function is designed to process and standardize `date` and `datetime` fields in a REDCap dataset. In REDCap projects, date and datetime fields can sometimes be stored as character strings, which can make analyses difficult. This function detects which fields should be dates/datetimes from the REDCap dictionary and converts them to `Date` and `POSIXct`, respectively.
+This function is designed to process and standardize `date` and `datetime` fields in a REDCap dataset. In REDCap projects, date and datetime fields can sometimes be stored as character strings, which can make analyses difficult. This function detects which fields should be dates/datetimes from the REDCap dictionary and converts them to `Date` and `POSIXct`, respectively. Datetimes written as text are parsed in UTC, preserving the clock time written in REDCap; existing `POSIXct` columns keep their time zone.
 
 ```{r message=FALSE, warning=FALSE, comment="#>", collapse = TRUE}
 covican_dates <- covican |> 
@@ -164,6 +166,8 @@ cb <- covican |>
 str(cb$data$underlying_disease_hemato___1)
 ```
 
+In this case, each option becomes a field of the dictionary of its own and its values are already the labels, so running `rd_checkbox()` again on the result stops with an error instead of converting them again.
+
 If a checkbox field has a branching logic, the `na_logic` argument controls how missing values are set, with the following options:
 
 - `"none"`: do not set `NA` based on branching logic.
@@ -191,7 +195,7 @@ str(cb$data$underlying_disease_hemato_acute_myeloid_leukemia.factor)
 
 # **rd_factor**
 
-This function converts categorical variables in a REDCap dataset into R factors by replacing each original variable (numeric version) with its corresponding `.factor` version created by REDCap.
+This function converts categorical variables in a REDCap dataset into R factors by replacing each original variable (numeric version) with its corresponding `.factor` version created by REDCap. If a `.factor` column is text instead of a factor (e.g. after modifying the data), it is converted to a factor with the levels in the order of the options of the dictionary.
 
 ```{r}
 factored <- covican |> 
@@ -270,7 +274,11 @@ forms_data <- covican |>
   rd_split(by = "form", wide = TRUE)
 ```
 
-> Note: For longitudinal projects, the column events shows the number of events in each form.
+With `wide = TRUE`, the result also has the column `max_repeated_instance`, the highest repetition of each form.
+
+> Note: For longitudinal projects, the column `events` has the events where each form is collected.
+
+> Note: the columns of the data must be fields of the dictionary, their `.factor` and `_mdc` versions, the options of the checkbox fields or the `.factor` version of the status of the forms. Any other column stops the function with an error that names it, so that it isn't left out of the result without notice.
 
 - **By event**
 

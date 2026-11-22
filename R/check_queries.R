@@ -101,7 +101,7 @@
 check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   # Ensure both objects provided are dataframes
   if (!is.data.frame(old) || !is.data.frame(new)) {
-    rd_abort("The {.arg old} and {.arg new} arguments must be a data frame.", class = "REDCapDM_error_argument")
+    rd_abort("The {.arg old} and {.arg new} arguments must be data frames.", class = "REDCapDM_error_argument")
   }
   if (!is.null(report_title) && length(report_title) > 1) {
     rd_abort("There is more than one title for the report, please choose only one.")

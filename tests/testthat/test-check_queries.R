@@ -1,6 +1,6 @@
 test_that("check_queries validates inputs with covican", {
-  expect_error(check_queries(old = "not a df", new = covican$data), "must be a data frame")
-  expect_error(check_queries(old = covican$data, new = "nope"), "must be a data frame")
+  expect_error(check_queries(old = "not a df", new = covican$data), "must be data frames")
+  expect_error(check_queries(old = covican$data, new = "nope"), "must be data frames")
   expect_error(check_queries(
     old = covican$data[1:5, ],
     new = covican$data[1:5, ],

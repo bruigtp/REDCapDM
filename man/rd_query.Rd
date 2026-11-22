@@ -32,7 +32,7 @@ rd_query(
 
 \item{expression}{Character vector of R conditions, written as text, to evaluate for each variable, where \code{x} stands for the variable (e.g. \code{"is.na(x)"} or \code{"x > 100"}). Several conditions separated by commas must all be met. Besides the columns of the data, they can use objects created in your session or in your function.}
 
-\item{negate}{Logical, if \code{TRUE}, identifies values that \strong{do not} meet the condition. Default is \code{FALSE}.}
+\item{negate}{Logical, if \code{TRUE}, identifies values that \strong{do not} meet the condition, including the missing values (for which the condition can't be checked). Default is \code{FALSE}.}
 
 \item{event}{REDCap event(s) to analyze in longitudinal projects. If it isn't given, the events where the form of each variable is collected are taken from \code{event_form}; without \code{event_form}, all the events are analyzed (with a warning), which can overestimate the number of queries.}
 

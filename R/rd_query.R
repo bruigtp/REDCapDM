@@ -11,7 +11,7 @@
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param variables Character vector of variable names to check for queries.
 #' @param expression Character vector of R conditions, written as text, to evaluate for each variable, where `x` stands for the variable (e.g. `"is.na(x)"` or `"x > 100"`). Several conditions separated by commas must all be met. Besides the columns of the data, they can use objects created in your session or in your function.
-#' @param negate Logical, if `TRUE`, identifies values that **do not** meet the condition. Default is `FALSE`.
+#' @param negate Logical, if `TRUE`, identifies values that **do not** meet the condition, including the missing values (for which the condition can't be checked). Default is `FALSE`.
 #' @param variables_names Optional character vector of descriptions for each variable. Defaults to the variables labels in the dictionary.
 #' @param query_name Optional character vector describing each query. Defaults to a standard format: `The value is [value] and it should not be [expression]`.
 #' @param event REDCap event(s) to analyze in longitudinal projects. If it isn't given, the events where the form of each variable is collected are taken from `event_form`; without `event_form`, all the events are analyzed (with a warning), which can overestimate the number of queries.
@@ -122,6 +122,14 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   # Ensure data and dictionary are data frames
   data <- as.data.frame(data)
   dic <- as.data.frame(dic)
+
+  # Error: the variables and the expressions are text (e.g. not a function)
+  for (arg in c("variables", "expression")) {
+    value <- get(arg)
+    if (!is.null(value) && !is.atomic(value)) {
+      rd_abort("{.arg {arg}} must be text, not {.obj_type_friendly {value}}.", class = "REDCapDM_error_argument")
+    }
+  }
 
   # Ensure variables is a character string
   variables <- as.character(variables)

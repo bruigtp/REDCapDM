@@ -32,7 +32,7 @@ rd_split(
 \value{
 Depending on \code{which} and \code{wide}:
 \describe{
-\item{data}{Without \code{which}, a tibble with one row per form (columns \code{form}, \code{events} in longitudinal projects, and \code{df}) or per event (columns \code{events} and \code{df}): the dataset of each form or event is in the list-column \code{df} (e.g. \code{result$data$df[[1]]}, or \code{result$data$df[result$data$form == "demographics"][[1]]}). With \code{which}, the \code{data.frame} of that form or event.}
+\item{data}{Without \code{which}, a tibble with one row per form (columns \code{form}, \code{events} in longitudinal projects, and \code{df}) or per event (columns \code{events} and \code{df}): the dataset of each form or event is in the list-column \code{df} (e.g. \code{result$data$df[[1]]}, or \code{result$data$df[result$data$form == "demographics"][[1]]}). With \code{wide = TRUE}, the tibble of the forms also has the column \code{max_repeated_instance}, the highest repetition of each form. With \code{which}, the \code{data.frame} of that form or event.}
 \item{dictionary}{The original REDCap dictionary.}
 \item{event_form}{The original event-form mapping (if applicable).}
 \item{results}{A summary message of the splitting operation.}

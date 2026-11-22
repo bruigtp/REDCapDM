@@ -228,11 +228,6 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       rd_warn("Branching logic evaluation could not be performed because the project is longitudinal (the data has the column `redcap_event_name`) and the event-form correspondence was not specified. Please provide the {.arg event_form} argument to enable branching logic evaluation.")
     } else {
 
-      # Handle the fact that a rd_factor was performed before this function
-      if (already_factor && all(!grepl("data\\$", without_texts(dic$branching_logic_show_field_only_if)))) {
-        rd_warn("The checkboxes are already in factor form. To properly evaluate checkbox branching logic, please run {.fn rd_dictionary} first.")
-      }
-
       caption <- "Checkbox variables advisable to be reviewed"
       review <- NULL
       review2 <- NULL
