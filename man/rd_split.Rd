@@ -46,7 +46,7 @@ Splits a REDCap dataset into separate datasets by \strong{form} or \strong{event
 \details{
 \itemize{
 \item Handles checkbox variables and REDCap default variables (\verb{_complete}, \verb{_timestamp}) appropriately.
-\item Columns of the data that aren't fields of the dictionary, nor the \code{.factor} or \verb{_mdc} versions or the checkbox options of its fields (or the \code{.factor} version of the \verb{_complete} field of a form), stop the function with an error that names them.
+\item Columns of the data that aren't fields of the dictionary, nor the \code{.factor} or \verb{_mdc} versions of its fields or the options of its checkbox fields (or the \code{.factor} version of the \verb{_complete} field of a form), stop the function with an error that names them.
 \item For form-based splits in longitudinal projects, uses \code{event_form} to map variables to events.
 \item Wide format expands repeated instances into multiple columns per record.
 \item Filtering by \code{which} allows extracting a single form or event.

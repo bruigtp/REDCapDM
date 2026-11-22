@@ -82,6 +82,10 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
   if (!is.null(wide)) {
     check_flag(wide, "wide")
   }
+  # (as in rd_checkbox(): the description of the results uses the labels)
+  if (length(checkbox_labels) != 2) {
+    rd_abort("{.arg checkbox_labels} must have two labels: the first for unchecked and the second for checked (e.g. c(\"No\", \"Yes\")).")
+  }
 
   # Check if the project is longitudinal (the data has events) or not:
   longitudinal <- ifelse("redcap_event_name" %in% names(data), TRUE, FALSE)
@@ -192,13 +196,14 @@ rd_transform <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     results <- c(results, recalc$results[-1])
   }
 
-  # Message depends on na_logic option
+  # Message depends on na_logic option (and the labels of the checkboxes, which rd_transform() always renames)
+  checkbox_text <- checkbox_message(checkbox_labels, checkbox_names = TRUE)
   if (na_logic == "eval") {
-    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing"))
+    results <- c(results, stringr::str_glue("\n\n{ind}. {checkbox_text} For checkboxes that have a branching logic, when the logic isn't satisfied or it's missing their values will be set to missing"))
   } else if (na_logic == "missing") {
-    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options. For checkboxes that have a branching logic, when the logic is missing their values will be set to missing"))
+    results <- c(results, stringr::str_glue("\n\n{ind}. {checkbox_text} For checkboxes that have a branching logic, when the logic is missing their values will be set to missing"))
   } else {
-    results <- c(results, stringr::str_glue("\n\n{ind}. Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."))
+    results <- c(results, stringr::str_glue("\n\n{ind}. {checkbox_text}"))
   }
 
   ind <- ind + 1

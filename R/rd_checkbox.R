@@ -99,7 +99,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   var_check <- names(data)[grep("___", names(data))]
 
   # Remove factor-type checkbox variables from the list
-  var_check_factors <- var_check[grep(".factor$", var_check)]
+  var_check_factors <- var_check[grep("\\.factor$", var_check)]
 
   # Identify checkbox variables in the dictionary
   var_check_dic <- dic$field_name[dic$field_type == "checkbox"]
@@ -145,12 +145,12 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       if (option %in% names(labels)) labels[paste0(option, ".factor")] <- labels[[option]]
     }
     var_check <- names(data)[grep("___", names(data))]
-    var_check_factors <- var_check[grep(".factor$", var_check)]
+    var_check_factors <- var_check[grep("\\.factor$", var_check)]
   }
 
   # Remove factor-type checkbox variables from the data
   if (length(var_check_factors) > 0) {
-    var_check <- var_check[!grepl(".factor$", var_check)]
+    var_check <- var_check[!grepl("\\.factor$", var_check)]
   } else {
     if (any(purrr::map_lgl(var_check, ~ "Unchecked" %in% levels(data[[.x]])))) {
       # Transform checkbox variables into binary values (0 or 1)
@@ -174,7 +174,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   else
     ""
 
-  base <- "Transforming checkboxes: changing their values to No/Yes and changing their names to the names of its options."
+  base <- checkbox_message(checkbox_labels, checkbox_names)
 
   transf_message <- if (reason == "") base
   else paste0(base, " For checkboxes that have a branching logic, ", reason, " their values will be set to missing.")
@@ -215,7 +215,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
       for (i in seq_along(var_check_dic)) {
         # Identify variables associated with each checkbox option
         vars_data <- names(data)[grep(stringr::str_glue("^{var_check_dic[i]}___"), names(data))]
-        vars_data <- vars_data[!grepl(".factor$", vars_data)]
+        vars_data <- vars_data[!grepl("\\.factor$", vars_data)]
 
         # Retrieve branching logic for the checkbox field
         logic <- dic$branching_logic_show_field_only_if[dic$field_name == var_check_dic[i]]
@@ -308,7 +308,7 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   for (i in seq_along(names_trim)) {
     # Find variable names in `var_check` that start with the current name in `names_trim`
     svar_check <- grep(stringr::str_glue("^{names_trim[i]}___"), var_check, value = TRUE)
-    svar_check <- svar_check[!grepl(".factor$", svar_check)]
+    svar_check <- svar_check[!grepl("\\.factor$", svar_check)]
 
     # Extract labels corresponding to the found variables
     label <- labels[svar_check]
@@ -501,4 +501,19 @@ checkbox_code <- function(columns, field, choices) {
   }
   code <- codes[match(suffix, gsub("[-.]", "_", tolower(codes)))]
   ifelse(is.na(code), suffix, code)
+}
+
+
+#' Description of the transformation of the checkboxes in the results
+#'
+#' @param checkbox_labels Labels of the unchecked and checked options.
+#' @param checkbox_names Whether the options are renamed with their labels.
+#' @return Character: e.g. "Transforming checkboxes: changing their values to No/Yes and changing their names to the
+#'   names of its options."
+#' @noRd
+checkbox_message <- function(checkbox_labels, checkbox_names) {
+  paste0(
+    "Transforming checkboxes: changing their values to ", checkbox_labels[1], "/", checkbox_labels[2],
+    if (checkbox_names) " and changing their names to the names of its options", "."
+  )
 }

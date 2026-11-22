@@ -239,3 +239,16 @@ test_that("rd_transform keeps the identifier when its form is not in any event",
     expect_true(id %in% names(by_event$data$df[[1]]))
   }
 })
+
+test_that("rd_transform explains a wrong checkbox_labels", {
+  for (wrong in list(data.frame(), function(x) x, "No", c("a", "b", "c"))) {
+    expect_error(rd_transform(covican, checkbox_labels = wrong), "must have two labels", class = "REDCapDM_error")
+  }
+})
+
+test_that("rd_transform describes the labels of the checkboxes that it uses", {
+  res <- suppressMessages(suppressWarnings(rd_transform(covican, checkbox_labels = c("Absent", "Present"))))
+  report <- paste(res$results, collapse = "\n")
+  expect_match(report, "changing their values to Absent/Present and changing their names", fixed = TRUE)
+  expect_false(grepl("No/Yes", report, fixed = TRUE))
+})

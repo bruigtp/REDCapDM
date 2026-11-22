@@ -433,3 +433,14 @@ test_that("rd_split only takes as factor versions and checkbox options the colum
   data$f_complete <- c(2, 0)
   expect_error(rd_split(data = data, dic = dic, by = "form"), "rd_delete_vars", fixed = TRUE)
 })
+
+test_that("rd_split only takes as checkbox options the columns of checkbox fields", {
+  dic <- data.frame(field_name = c("record_id", "age"), form_name = "f", field_type = "text", field_label = c("ID", "Age"),
+                    stringsAsFactors = FALSE)
+  data <- data.frame(record_id = 1:2, age = c(30, 40), age___1 = c(0, 1))
+  expect_error(rd_split(data = data, dic = dic, by = "form"), "age___1", fixed = TRUE)
+
+  data$age___1 <- NULL
+  data$age___1.factor <- c("Unchecked", "Checked")
+  expect_error(rd_split(data = data, dic = dic, by = "form"), "age___1.factor", fixed = TRUE)
+})

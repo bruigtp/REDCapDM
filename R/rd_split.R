@@ -15,7 +15,7 @@
 #'
 #' @details
 #' * Handles checkbox variables and REDCap default variables (`_complete`, `_timestamp`) appropriately.
-#' * Columns of the data that aren't fields of the dictionary, nor the `.factor` or `_mdc` versions or the checkbox options of its fields (or the `.factor` version of the `_complete` field of a form), stop the function with an error that names them.
+#' * Columns of the data that aren't fields of the dictionary, nor the `.factor` or `_mdc` versions of its fields or the options of its checkbox fields (or the `.factor` version of the `_complete` field of a form), stop the function with an error that names them.
 #' * For form-based splits in longitudinal projects, uses `event_form` to map variables to events.
 #' * Wide format expands repeated instances into multiple columns per record.
 #' * Filtering by `which` allows extracting a single form or event.
@@ -166,17 +166,23 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       actions <- c(actions, stringr::str_glue("Default REDCap variables ({mss}) detected in the dataset. Please, run: rd_delete_vars(..., pattern = {mss})"))
     }
 
+    # Checkbox fields of the dictionary: only they have options `<field>___<code>` (without the type of the fields,
+    # every field of the dictionary)
+    checkbox_fields <- if ("field_type" %in% names(dic)) dic$field_name[dic$field_type %in% "checkbox"] else dic$field_name
+    is_option <- function(x) grepl("___", x) & sub("___.*$", "", x) %in% checkbox_fields
+
     # Factor versions of the fields of the dictionary (and of their checkbox options) and of the status field of the
     # forms (`<form>_complete`, also of the forms that redcap_data() removed from the dictionary because they are in no
     # event)
+    fact_base <- sub("\\.factor$", "", vars_less)
     fact_vars <- vars_less[grepl("\\.factor$", vars_less) &
-      (sub("___.*$", "", sub("\\.factor$", "", vars_less)) %in% dic$field_name | grepl("_complete\\.factor$", vars_less))]
+      ((!grepl("___", fact_base) & fact_base %in% dic$field_name) | is_option(fact_base) | grepl("_complete\\.factor$", vars_less))]
     
     # Columns with the Missing Data Codes kept by redcap_data(rm_mdc = FALSE)
     fact_vars <- c(fact_vars, intersect(vars_less, mdc_columns(names(data), dic$field_name)))
 
-    # Checkbox vars already identified in the previous step (vars_more): options of a field of the dictionary
-    less_check <- vars_less[grepl("___", vars_less) & sub("___.*$", "", vars_less) %in% dic$field_name]
+    # Checkbox vars already identified in the previous step (vars_more): options of a checkbox field of the dictionary
+    less_check <- vars_less[is_option(vars_less)]
 
     other_less_vars <- setdiff(vars_less, c(patt_vars, fact_vars, less_check))
 
