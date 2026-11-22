@@ -921,6 +921,17 @@
   left out. Now they stop the function, as the other columns that aren’t
   in the dictionary.
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  stops with an error when the checkboxes were already transformed with
+  `checkbox_names = FALSE` (their options keep their names, but their
+  values are the labels): running it again on its result turned all
+  their values into `NA` without notice (also the labels of their
+  `.factor` versions).
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  takes the `.factor` versions of the checkbox options that
+  `rd_checkbox(checkbox_names = FALSE)` keeps as fields of the
+  dictionary (e.g. `cb___1.factor`): they stopped the function as
+  unknown columns.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   (and so
   [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md))
   takes as factor versions only the columns that end in `.factor`: an
