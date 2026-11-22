@@ -70,12 +70,15 @@ A list with the following elements:
 
 The function looks for columns ending in `.factor` and replaces the
 original variable values with those `.factor` values (converted to
-factors). It preserves variable labels. The `exclude` argument must
-contain base variable names (no `.factor` suffix); if any `.factor`
-names are passed to `exclude` the function will throw an informative
-error. The columns `redcap_event_name`, `redcap_repeat_instrument` and
-`redcap_data_access_group` (and their `.factor` counterparts) are
-handled specially to avoid altering event or access-group data.
+factors). A `.factor` column that isn't a factor (e.g. text, after
+modifying the data) is converted to a factor, with the levels in the
+order of the options of the dictionary. It preserves variable labels.
+The `exclude` argument must contain base variable names (no `.factor`
+suffix); if any `.factor` names are passed to `exclude` the function
+will throw an informative error. The columns `redcap_event_name`,
+`redcap_repeat_instrument` and `redcap_data_access_group` (and their
+`.factor` counterparts) are handled specially to avoid altering event or
+access-group data.
 
 Use `rd_factor()` before
 [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md):

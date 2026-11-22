@@ -885,7 +885,8 @@
   [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
   calls it): it is the first field of the dictionary
   (e.g. `subject_id`), whatever its position in the data. With another
-  column first (e.g. `age`),
+  column first (e.g. `age`, or a column added for an analysis that isn’t
+  in the dictionary),
   [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
   and
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
@@ -893,11 +894,12 @@
   [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
   (and so
   [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md))
-  used it to match the events of each record, and
+  used it to match the events of each record,
   [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
-  labelled the records with it and plotted the identifier as a variable.
-  A first column that isn’t in the dictionary is still the identifier,
-  as before.
+  labelled the records with it and plotted the identifier as a variable,
+  and `rd_delete_vars(forms = ...)` removed the identifier. The first
+  column is the identifier only when the first field of the dictionary
+  isn’t in the data.
 - [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   and
   [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
@@ -906,6 +908,16 @@
   `.data$subject_id == '003'`): they renamed it `record_id`, so the
   filter failed, or used an object of the session with that name and
   found no queries.
+- [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  converts to factors the `.factor` columns that are text (e.g. after
+  modifying the data), with the levels in the order of the options of
+  the dictionary: the variables kept the labels as text.
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  only takes as factor versions and checkbox options the columns of
+  fields of the dictionary: other columns (e.g. `riskfactor`,
+  `risk_factor` or `ghost___1`, when `ghost` isn’t a field) were left
+  out of the result without notice. Now they stop the function, as the
+  other columns that aren’t in the dictionary.
 - [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
   takes the record identifier as present in every event, whatever its
   form in the dictionary: a filter with the identifier
