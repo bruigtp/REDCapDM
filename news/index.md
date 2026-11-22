@@ -923,9 +923,11 @@
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   stops with an error when the checkboxes were already transformed with
   `checkbox_names = FALSE` (their options keep their names, but their
-  values are the labels): running it again on its result turned all
-  their values into `NA` without notice (also the labels of their
-  `.factor` versions).
+  values are the labels and each option is a field of the dictionary):
+  running it again on its result turned all their values into `NA`
+  without notice (also the labels of their `.factor` versions), or
+  inverted the answers with labels that look like codes
+  (e.g. `checkbox_labels = c("1", "0")`).
 - [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
   takes the `.factor` versions of the checkbox options that
   `rd_checkbox(checkbox_names = FALSE)` keeps as fields of the

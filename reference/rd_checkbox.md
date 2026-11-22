@@ -53,8 +53,9 @@ rd_checkbox(
 
   Logical. If `TRUE` (default), checkbox columns are renamed using
   choice labels. With `FALSE`, the columns keep their names, but their
-  values are already the labels: running the function again on its
-  result stops with an error instead of converting them again.
+  values are already the labels and each option is a field of the
+  dictionary: running the function again on its result stops with an
+  error instead of converting them again.
 
 - na_logic:
 
