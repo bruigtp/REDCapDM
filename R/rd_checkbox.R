@@ -10,7 +10,7 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
-#' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels. With `FALSE`, the columns keep their names, but their values are already the labels: running the function again on its result stops with an error instead of converting them again.
+#' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels. With `FALSE`, the columns keep their names, but their values are already the labels and each option is a field of the dictionary: running the function again on its result stops with an error instead of converting them again.
 #' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE` or `NA`). Defaults to `"missing"`.
 #'
 #' @return A list with:
@@ -128,18 +128,26 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   }
 
   # Error: checkboxes already transformed (e.g. by rd_checkbox(checkbox_names = FALSE), which keeps their names): their
-  # values are labels, not the codes of REDCap, and converting them again would turn them into NA
+  # values are labels, not the codes of REDCap, and converting them again would change them or turn them into NA.
+  # - By the structure: in the dictionary of REDCap the options (`cb___1`) are never fields (the field is `cb`), while
+  #   rd_checkbox(checkbox_names = FALSE) writes each option as a field of its own (the labels can't tell it, as they can
+  #   look like codes, e.g. `checkbox_labels = c("0", "1")`)
+  options <- unique(sub("\\.factor$", "", var_check))
+  expanded <- options[options %in% dic$field_name & !sub("___.*$", "", options) %in% var_check_dic]
+  # - By the values (e.g. transformed data with the original dictionary)
   raw_codes <- c("0", "1", "Unchecked", "Checked", "")
   transformed <- var_check[vapply(var_check, function(v) {
     values <- as.character(data[[v]])
     !all(is.na(values) | values %in% raw_codes)
   }, logical(1))]
 
-  if (length(transformed) > 0) {
+  if (length(expanded) > 0 || length(transformed) > 0) {
+    shown_expanded <- utils::head(expanded, 10)
     shown <- utils::head(transformed, 10)
     rd_abort(
       c("The checkboxes have already been transformed (e.g. with {.fn rd_checkbox} or {.fn rd_transform}): there is nothing left to do.",
-        "i" = "{.var {shown}} {?has/have} values that aren't the codes of REDCap (0/1 or Unchecked/Checked)."),
+        "i" = if (length(expanded) > 0) "The dictionary already has the option{?s} {.var {shown_expanded}} as field{?s} of {?its/their} own.",
+        "i" = if (length(transformed) > 0) "{.var {shown}} {?has/have} values that aren't the codes of REDCap (0/1 or Unchecked/Checked)."),
       class = "REDCapDM_error_data"
     )
   }

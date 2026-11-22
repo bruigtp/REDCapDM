@@ -408,3 +408,27 @@ test_that("rd_checkbox stops instead of converting again the checkboxes that it 
   project$data$cb___2 <- factor(c("Unchecked", "Checked", "Unchecked"), levels = c("Unchecked", "Checked"))
   expect_equal(as.character(rd_checkbox(project, na_logic = "none")$data$cb_one), c("Yes", "No", NA))
 })
+
+test_that("rd_checkbox recognises its own result by the dictionary, also with labels that look like codes", {
+  dic <- data.frame(
+    field_name = c("record_id", "cb"), form_name = "f", field_type = c("text", "checkbox"), field_label = c("ID", "CB"),
+    choices_calculations_or_slider_labels = c("", "1, One"), branching_logic_show_field_only_if = "",
+    text_validation_type_or_show_slider_number = "", stringsAsFactors = FALSE
+  )
+  project <- list(data = data.frame(record_id = 1:3, cb___1 = c(0, 1, NA)), dictionary = dic)
+
+  # Labels that are the codes in the opposite order: a second pass inverted the answers
+  once <- rd_checkbox(project, checkbox_names = FALSE, na_logic = "none", checkbox_labels = c("1", "0"))
+  expect_equal(as.character(once$data$cb___1), c("1", "0", NA))
+  expect_error(rd_checkbox(once, checkbox_names = FALSE, na_logic = "none", checkbox_labels = c("1", "0")),
+               "as field of its own", class = "REDCapDM_error_data")
+
+  # Labels that are the codes, with the factor versions: a second pass removed the labels
+  project$data$cb___1 <- c(1, 0, NA)
+  project$data$cb___1.factor <- factor(c("Checked", "Unchecked", NA), levels = c("Unchecked", "Checked"))
+  once <- rd_checkbox(project, checkbox_names = FALSE, na_logic = "none", checkbox_labels = c("0", "1"))
+  expect_equal(as.character(once$data$cb___1.factor), c("1", "0", NA))
+  expect_error(rd_checkbox(once, checkbox_names = FALSE, na_logic = "none", checkbox_labels = c("0", "1")),
+               "already been transformed", class = "REDCapDM_error_data")
+  expect_equal(as.character(once$data$cb___1.factor), c("1", "0", NA))
+})
