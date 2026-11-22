@@ -876,6 +876,27 @@
   accepts the data frame of queries as its first argument
   (e.g. `rd_export(report$queries)`): before, it said that there were no
   queries to export.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the API checks that the two requests it makes (the values and
+  their labels) return the same rows, by the record identifier, the
+  repetition and the event, repeated instrument and data access group of
+  each row. The labels were joined by position, so if the records
+  changed between both requests (e.g. someone entered, deleted or
+  imported data), the labels of the events, repeated instruments and
+  data access groups went to other rows, or the rows were repeated,
+  without warning. The labels are read again (twice at most) and, if the
+  rows still differ, the function stops with an error.
+- [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  plots grouped data (e.g. with
+  [`dplyr::group_by()`](https://dplyr.tidyverse.org/reference/group_by.html))
+  as the whole data: the grouping columns were plotted as variables.
+- [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  explain an argument that isn’t data or text (e.g. a function given by
+  mistake in `data`, `variables`, `expression` or `by`), instead of
+  failing with an R error.
 - [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
   keeps the record identifier when its form is not designated in any
   event of `event_form`: it was removed from the data and the dictionary
@@ -1100,6 +1121,17 @@
   are no calculated fields to recalculate (e.g. all of them in
   `exclude`) or none could be transcribed, and its last column is called
   “Fields with different recalculated values”.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  no longer warns that
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  has to be run first when the variables were already converted to
+  factors with
+  [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md):
+  the checkboxes get the same values in both orders.
+- The errors of
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  about the arguments of the final format name the argument and the
+  `final_format` to use.
 - Fixed typos in the reports of
   [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
   and
@@ -1142,6 +1174,20 @@
   can be run as they are.
 - The screenshots of the queries vignette have alternative text, for
   screen readers.
+- The vignettes explain the record identifier of projects assembled from
+  separate data frames, the time zone of the datetimes, the `.factor`
+  columns that are text, the checkboxes transformed with
+  `checkbox_names = FALSE`, the columns accepted by
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+  the events with the same name in
+  [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
+  and the queries `Miscorrected` of
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  (by record, variable, event and repetition). The example of
+  [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md)
+  with `column` creates the report with links, and the help of
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  says that `negate = TRUE` also reports the missing values.
 - The help of
   [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md)
   explains that the datetimes written as text are read in UTC, whatever
@@ -1294,7 +1340,7 @@
 
 ### Changes
 
-- Update of the links leading to the Github page.
+- Update of the links leading to the GitHub page.
 
   
   

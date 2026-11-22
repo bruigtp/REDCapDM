@@ -79,6 +79,10 @@
     
 <p>The examples use <code>covican</code>, the dataset included in the
 package (described in <code><a href="../articles/REDCapDM.html">vignette("REDCapDM")</a></code>).</p>
+<p>For a project assembled from separate data frames, keep the record
+identifier as the first field of the dictionary, even if its column is
+moved in the dataset. The processing functions use that field when the
+identifier is not named <code>record_id</code>.</p>
 <p>Given any data imported from REDCap with <code><a href="../reference/redcap_data.html">redcap_data()</a></code>,
 this would be the pipeline of an entire processing workflow:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -143,7 +147,9 @@ In REDCap projects, date and datetime fields can sometimes be stored as
 character strings, which can make analyses difficult. This function
 detects which fields should be dates/datetimes from the REDCap
 dictionary and converts them to <code>Date</code> and
-<code>POSIXct</code>, respectively.</p>
+<code>POSIXct</code>, respectively. Datetimes written as text are parsed
+in UTC, preserving the clock time written in REDCap; existing
+<code>POSIXct</code> columns keep their time zone.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">covican_dates</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/rd_dates.html">rd_dates</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -284,6 +290,10 @@ variables based on option text:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">cb</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">underlying_disease_hemato___1</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##  num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</span></span>
 <span><span class="co">##  - attr(*, "label")= chr "Specify underlying disease (choice=Acute myeloid leukemia)"</span></span></code></pre>
+<p>In this case, each option becomes a field of the dictionary of its
+own and its values are already the labels, so running
+<code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> again on the result stops with an error
+instead of converting them again.</p>
 <p>If a checkbox field has a branching logic, the <code>na_logic</code>
 argument controls how missing values are set, with the following
 options:</p>
@@ -316,7 +326,10 @@ not satisfied or missing).</p></li>
 </h2>
 <p>This function converts categorical variables in a REDCap dataset into
 R factors by replacing each original variable (numeric version) with its
-corresponding <code>.factor</code> version created by REDCap.</p>
+corresponding <code>.factor</code> version created by REDCap. If a
+<code>.factor</code> column is text instead of a factor (e.g. after
+modifying the data), it is converted to a factor with the levels in the
+order of the options of the dictionary.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">factored</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/rd_factor.html">rd_factor</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -447,9 +460,19 @@ format:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">forms_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"form"</span>, wide <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>With <code>wide = TRUE</code>, the result also has the column
+<code>max_repeated_instance</code>, the highest repetition of each
+form.</p>
 <blockquote>
-<p>Note: For longitudinal projects, the column events shows the number
-of events in each form.</p>
+<p>Note: For longitudinal projects, the column <code>events</code> has
+the events where each form is collected.</p>
+</blockquote>
+<blockquote>
+<p>Note: the columns of the data must be fields of the dictionary, their
+<code>.factor</code> and <code>_mdc</code> versions, the options of the
+checkbox fields or the <code>.factor</code> version of the status of the
+forms. Any other column stops the function with an error that names it,
+so that it isn’t left out of the result without notice.</p>
 </blockquote>
 <ul>
 <li><strong>By event</strong></li>

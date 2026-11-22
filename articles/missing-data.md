@@ -56,3 +56,10 @@ Other useful arguments:
 - `use_field_labels` and `max_label_length`: use the labels of the
   dictionary for the variables, shortened to a maximum number of
   characters (default 40).
+
+Events with the same name (e.g. the same event in two arms) get their
+unique name in parentheses, so that they aren’t merged, and so do the
+variables that share a label (with their variable name). The data can be
+grouped (e.g. with
+[`dplyr::group_by()`](https://dplyr.tidyverse.org/reference/group_by.html)):
+the plot is the same.

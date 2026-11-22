@@ -422,10 +422,12 @@ Output:
 *negate*
 
 This argument can be used to negate the expression applied to the
-variables. For example, if we want to identify all the non missing
-values of the variable *copd*, we can apply the expression ‘is.na(x)’
-which normally would report the missing values and add `negate = TRUE`,
-so the result will be the number of non missing values in *copd*:
+variables (the missing values, for which the expression can’t be
+checked, are also reported). For example, if we want to identify all the
+non missing values of the variable *copd*, we can apply the expression
+‘is.na(x)’ which normally would report the missing values and add
+`negate = TRUE`, so the result will be the number of non missing values
+in *copd*:
 
 ``` r
 
@@ -665,11 +667,11 @@ example$results
 Report of queries {.table .table .table-striped .table-condensed
 style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
-There are a total of 38 events per record without any row corresponding
-to the event *Follow up visit day 14+/-5d*. Thus, when searching for
-missing values of variables in the *Follow up visit day 14+/-5d* event,
-we need to consider that there will be 38 additional missing values
-which will not be accounted for by
+There are a total of 38 records without any row corresponding to the
+event *Follow up visit day 14+/-5d*. Thus, when searching for missing
+values of variables in the *Follow up visit day 14+/-5d* event, we need
+to consider that there will be 38 additional missing values which will
+not be accounted for by
 [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md).
 
   
@@ -774,12 +776,14 @@ style="width: auto !important; margin-left: auto; margin-right: auto;"}
 There are 7 queries pending resolution, 4 solved queries, 1 miscorrected
 query, and 1 new query between the previous and the new query dataset.
 
-> Note: The “Miscorrected” category includes queries that belong to the
-> same combination of record identifier and variable in both the old and
-> new reports, but with a different reason. For instance, if a variable
-> had a missing value in the old report, but in the new report shows a
-> value outside the established range, it would be classified as
-> “Miscorrected”.
+> Note: A new query is “Miscorrected” when the old report had a query of
+> the same record (`Identifier`), variable (`Field` and `Description`),
+> event (`Event`) and repetition (`Repetition`), each of these columns
+> when both reports have it, but with another reason (`Query`). For
+> instance, if a variable had a missing value in the old report, but in
+> the new report it has a value outside the established range, the new
+> query is “Miscorrected” and the old one “Solved”. A query of another
+> event or repetition is “New”.
 
   
 
@@ -807,6 +811,16 @@ to the following arguments:
 
 ``` r
 
+# The column `Link` is in the reports created with the `link` argument
+example <- rd_query(covican_transformed,
+                    variables = c("copd", "age"),
+                    expression = c("is.na(x)", "is.na(x)"),
+                    event = "baseline_visit_arm_1",
+                    link = list(domain = "redcappre.igtp.cat",
+                                redcap_version = "13.1.9",
+                                proj_id = 800,
+                                event_id = c("baseline_visit_arm_1" = 811, "follow_up_visit_da_arm_1" = 812)))
+
 rd_export(queries = example$queries,
           column = "Link",
           sheet_name = "Queries - Proyecto",
@@ -814,10 +828,16 @@ rd_export(queries = example$queries,
           password = "123") 
 ```
 
-We specify the sheet name with the `sheet_name` argument and the path to
-the file to be exported with the `path` argument. We can also add a
-password that protects the worksheet against edits (the file can still
-be opened and copied without it).
+The `column` argument names the column with the links to REDCap (the
+reports created with the `link` argument of
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+or
+[`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+have it), so that they can be clicked in Excel. We specify the sheet
+name with the `sheet_name` argument and the path to the file to be
+exported with the `path` argument. We can also add a password that
+protects the worksheet against edits (the file can still be opened and
+copied without it).
 
 The `column` argument refers to the column of the report that contains
 the link to each query. The function converts this column into hyperlink

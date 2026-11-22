@@ -69,6 +69,8 @@ Depending on `which` and `wide`:
   `events` and `df`): the dataset of each form or event is in the
   list-column `df` (e.g. `result$data$df[[1]]`, or
   `result$data$df[result$data$form == "demographics"][[1]]`). With
+  `wide = TRUE`, the tibble of the forms also has the column
+  `max_repeated_instance`, the highest repetition of each form. With
   `which`, the `data.frame` of that form or event.
 
 - dictionary:

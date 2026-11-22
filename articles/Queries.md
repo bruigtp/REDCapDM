@@ -139,12 +139,14 @@ check$results
 Comparison report {.table .table .table-striped .table-condensed
 style="width: auto !important; margin-left: auto; margin-right: auto;"}
 
-> Note: The “Miscorrected” category includes queries that belong to the
-> same combination of record identifier and variable in both the old and
-> new reports, but with a different reason. For instance, if a variable
-> had a missing value in the old report, but in the new report shows a
-> value outside the established range, it would be classified as
-> “Miscorrected”.
+> Note: A new query is “Miscorrected” when the old report had a query of
+> the same record (`Identifier`), variable (`Field` and `Description`),
+> event (`Event`) and repetition (`Repetition`), each of these columns
+> when both reports have it, but with another reason (`Query`). For
+> instance, if a variable had a missing value in the old report, but in
+> the new report it has a value outside the established range, the new
+> query is “Miscorrected” and the old one “Solved”. A query of another
+> event or repetition is “New”.
 
   
   
@@ -166,6 +168,16 @@ named “example.xlsx” in your current working directory, but you can
 customise this exported file:
 
 ``` r
+
+# The column `Link` is in the reports created with the `link` argument
+example <- rd_query(covican_transformed,
+                    variables = c("copd", "age"),
+                    expression = c("is.na(x)", "is.na(x)"),
+                    event = "baseline_visit_arm_1",
+                    link = list(domain = "redcappre.igtp.cat",
+                                redcap_version = "13.1.9",
+                                proj_id = 800,
+                                event_id = c("baseline_visit_arm_1" = 811, "follow_up_visit_da_arm_1" = 812)))
 
 rd_export(queries = example$queries,
           column = "Link",

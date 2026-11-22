@@ -79,7 +79,8 @@ Or we can use these functions at once, except
 - [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md):
   Compare two query reports to track changes made.
 
-- `rd_export`: Export query/report tables to an Excel (.xlsx) file.
+- [`rd_export()`](https://bruigtp.github.io/REDCapDM/reference/rd_export.md):
+  Export query/report tables to an Excel (.xlsx) file.
 
 Each group of functions is explained in detail in its own vignette:
 [`vignette("missing-data")`](https://bruigtp.github.io/REDCapDM/articles/missing-data.md),
@@ -243,7 +244,7 @@ project is longitudinal.
 The
 [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
 function returns a list with three elements: imported data, dictionary
-and event-form mapping(if included).
+and event-form mapping (if included).
 
 If the project uses REDCap’s Missing Data Codes (e.g. `NI`, `UNK`,
 `ASKU`), by default (`rm_mdc = TRUE`) they are replaced by missing

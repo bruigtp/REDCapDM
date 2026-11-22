@@ -56,7 +56,8 @@ rd_query(
 - negate:
 
   Logical, if `TRUE`, identifies values that **do not** meet the
-  condition. Default is `FALSE`.
+  condition, including the missing values (for which the condition can't
+  be checked). Default is `FALSE`.
 
 - event:
 

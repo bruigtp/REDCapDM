@@ -1169,10 +1169,11 @@ COPD is a missing value.
 <p><br></p>
 <p><u>negate</u></p>
 <p>This argument can be used to negate the expression applied to the
-variables. For example, if we want to identify all the non missing
-values of the variable <em>copd</em>, we can apply the expression
-‘is.na(x)’ which normally would report the missing values and add
-<code>negate = TRUE</code>, so the result will be the number of non
+variables (the missing values, for which the expression can’t be
+checked, are also reported). For example, if we want to identify all the
+non missing values of the variable <em>copd</em>, we can apply the
+expression ‘is.na(x)’ which normally would report the missing values and
+add <code>negate = TRUE</code>, so the result will be the number of non
 missing values in <em>copd</em>:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
@@ -1598,12 +1599,11 @@ Follow up visit day 14+/-5d
 </td>
 </tr></tbody>
 </table>
-<p>There are a total of 38 events per record without any row
-corresponding to the event <em>Follow up visit day 14+/-5d</em>. Thus,
-when searching for missing values of variables in the <em>Follow up
-visit day 14+/-5d</em> event, we need to consider that there will be 38
-additional missing values which will not be accounted for by
-<code><a href="../reference/rd_query.html">rd_query()</a></code>.</p>
+<p>There are a total of 38 records without any row corresponding to the
+event <em>Follow up visit day 14+/-5d</em>. Thus, when searching for
+missing values of variables in the <em>Follow up visit day 14+/-5d</em>
+event, we need to consider that there will be 38 additional missing
+values which will not be accounted for by <code><a href="../reference/rd_query.html">rd_query()</a></code>.</p>
 <p><br></p>
 <p>It might happen that an event is not mandatory for all records so we
 only want to check if the event is missing in a subgroup of records. For
@@ -1781,12 +1781,15 @@ New
 miscorrected query, and 1 new query between the previous and the new
 query dataset.</p>
 <blockquote>
-<p>Note: The “Miscorrected” category includes queries that belong to the
-same combination of record identifier and variable in both the old and
-new reports, but with a different reason. For instance, if a variable
-had a missing value in the old report, but in the new report shows a
-value outside the established range, it would be classified as
-“Miscorrected”.</p>
+<p>Note: A new query is “Miscorrected” when the old report had a query
+of the same record (<code>Identifier</code>), variable
+(<code>Field</code> and <code>Description</code>), event
+(<code>Event</code>) and repetition (<code>Repetition</code>), each of
+these columns when both reports have it, but with another reason
+(<code>Query</code>). For instance, if a variable had a missing value in
+the old report, but in the new report it has a value outside the
+established range, the new query is “Miscorrected” and the old one
+“Solved”. A query of another event or repetition is “New”.</p>
 </blockquote>
 <p><br></p>
 <p>Query control output:</p>
@@ -2000,15 +2003,29 @@ with the name “example.xlsx” in your current working directory.</p>
 <p>In order to have a more personalised output file, we can add
 information to the following arguments:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/rd_export.html">rd_export</a></span><span class="op">(</span>queries <span class="op">=</span> <span class="va">example</span><span class="op">$</span><span class="va">queries</span>,</span>
+<code class="sourceCode R"><span><span class="co"># The column `Link` is in the reports created with the `link` argument</span></span>
+<span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
+<span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
+<span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"is.na(x)"</span>, <span class="st">"is.na(x)"</span><span class="op">)</span>,</span>
+<span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span>,</span>
+<span>                    link <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>domain <span class="op">=</span> <span class="st">"redcappre.igtp.cat"</span>,</span>
+<span>                                redcap_version <span class="op">=</span> <span class="st">"13.1.9"</span>,</span>
+<span>                                proj_id <span class="op">=</span> <span class="fl">800</span>,</span>
+<span>                                event_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"baseline_visit_arm_1"</span> <span class="op">=</span> <span class="fl">811</span>, <span class="st">"follow_up_visit_da_arm_1"</span> <span class="op">=</span> <span class="fl">812</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/rd_export.html">rd_export</a></span><span class="op">(</span>queries <span class="op">=</span> <span class="va">example</span><span class="op">$</span><span class="va">queries</span>,</span>
 <span>          column <span class="op">=</span> <span class="st">"Link"</span>,</span>
 <span>          sheet_name <span class="op">=</span> <span class="st">"Queries - Proyecto"</span>,</span>
 <span>          path <span class="op">=</span> <span class="st">"C:/User/Desktop/queries.xlsx"</span>,</span>
 <span>          password <span class="op">=</span> <span class="st">"123"</span><span class="op">)</span> </span></code></pre></div>
-<p>We specify the sheet name with the <code>sheet_name</code> argument
-and the path to the file to be exported with the <code>path</code>
-argument. We can also add a password that protects the worksheet against
-edits (the file can still be opened and copied without it).</p>
+<p>The <code>column</code> argument names the column with the links to
+REDCap (the reports created with the <code>link</code> argument of
+<code><a href="../reference/rd_query.html">rd_query()</a></code> or <code><a href="../reference/rd_event.html">rd_event()</a></code> have it), so that
+they can be clicked in Excel. We specify the sheet name with the
+<code>sheet_name</code> argument and the path to the file to be exported
+with the <code>path</code> argument. We can also add a password that
+protects the worksheet against edits (the file can still be opened and
+copied without it).</p>
 <p>The <code>column</code> argument refers to the column of the report
 that contains the link to each query. The function converts this column
 into hyperlink format in the exported file, so that we can simply click
