@@ -913,11 +913,20 @@
   modifying the data), with the levels in the order of the options of
   the dictionary: the variables kept the labels as text.
 - [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
-  only takes as factor versions and checkbox options the columns of
-  fields of the dictionary: other columns (e.g. `riskfactor`,
-  `risk_factor` or `ghost___1`, when `ghost` isn’t a field) were left
-  out of the result without notice. Now they stop the function, as the
-  other columns that aren’t in the dictionary.
+  only takes as factor versions the columns of fields of the dictionary,
+  and as checkbox options the columns of its checkbox fields: other
+  columns (e.g. `riskfactor`, `risk_factor`, `ghost___1` when `ghost`
+  isn’t a field, or `age___1` when `age` isn’t a checkbox) were left out
+  of the result without notice, and with `age___1` the field `age` was
+  left out. Now they stop the function, as the other columns that aren’t
+  in the dictionary.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  (and so
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md))
+  takes as factor versions only the columns that end in `.factor`: an
+  option with the code `factor` (e.g. `cb___factor`) was taken for one,
+  so the values of the checkbox became `NA` or the function stopped with
+  “‘by’ must specify a uniquely valid column”.
 - [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
   takes the record identifier as present in every event, whatever its
   form in the dictionary: a filter with the identifier
@@ -1066,6 +1075,13 @@
   [`rd_dates()`](https://bruigtp.github.io/REDCapDM/reference/rd_dates.md)
   informs with a message, instead of a warning, that there are no dates
   to convert.
+- The results of
+  [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md)
+  describe the labels given in `checkbox_labels` and, with
+  `checkbox_names = FALSE`, don’t say that the checkboxes were renamed:
+  they always said “No/Yes” and that the names were changed.
 - [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
   shows `-` instead of a percentage (`NaN%`) in its summary when there
   are no calculated fields to recalculate (e.g. all of them in

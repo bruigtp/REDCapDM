@@ -117,7 +117,7 @@ Splits a REDCap dataset into separate datasets by form or event using the data d
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
 <ul><li><p>Handles checkbox variables and REDCap default variables (<code>_complete</code>, <code>_timestamp</code>) appropriately.</p></li>
-<li><p>Columns of the data that aren't fields of the dictionary, nor the <code>.factor</code> or <code>_mdc</code> versions or the checkbox options of its fields (or the <code>.factor</code> version of the <code>_complete</code> field of a form), stop the function with an error that names them.</p></li>
+<li><p>Columns of the data that aren't fields of the dictionary, nor the <code>.factor</code> or <code>_mdc</code> versions of its fields or the options of its checkbox fields (or the <code>.factor</code> version of the <code>_complete</code> field of a form), stop the function with an error that names them.</p></li>
 <li><p>For form-based splits in longitudinal projects, uses <code>event_form</code> to map variables to events.</p></li>
 <li><p>Wide format expands repeated instances into multiple columns per record.</p></li>
 <li><p>Filtering by <code>which</code> allows extracting a single form or event.</p></li>

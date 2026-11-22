@@ -89,9 +89,9 @@ Depending on `which` and `wide`:
   `_timestamp`) appropriately.
 
 - Columns of the data that aren't fields of the dictionary, nor the
-  `.factor` or `_mdc` versions or the checkbox options of its fields (or
-  the `.factor` version of the `_complete` field of a form), stop the
-  function with an error that names them.
+  `.factor` or `_mdc` versions of its fields or the options of its
+  checkbox fields (or the `.factor` version of the `_complete` field of
+  a form), stop the function with an error that names them.
 
 - For form-based splits in longitudinal projects, uses `event_form` to
   map variables to events.
