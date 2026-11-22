@@ -1302,8 +1302,8 @@ test_that("rd_rlogic rounds with the numbers with these decimals as R reads them
 # ---- Identifier ----
 
 test_that("rd_rlogic takes the identifier from the dictionary, whatever the order of the columns", {
-  for (age_first in c(FALSE, TRUE)) {
-    project <- make_custom_id(age_first = age_first)
+  for (first in c("none", "age", "external")) {
+    project <- make_custom_id(age_first = first == "age", external_first = first == "external")
     project$dictionary <- rbind(project$dictionary, data.frame(
       field_name = "age_next", form_name = "visit", field_type = "calc", field_label = "Age next",
       choices_calculations_or_slider_labels = "[base_arm_1][age] + 1", text_validation_type_or_show_slider_number = "",
@@ -1324,8 +1324,10 @@ test_that("id_field is the first field of the dictionary", {
   # record_id (as named by redcap_data()), also with a dictionary without its row
   expect_equal(id_field(data.frame(a = 1, record_id = 2)), "record_id")
   expect_equal(id_field(data.frame(age = 1, record_id = 2), data.frame(field_name = c("age", "b"))), "record_id")
-  # A first column that isn't in the dictionary (a dictionary without the row of the identifier)
-  expect_equal(id_field(data.frame(myid = 1, age = 2), data.frame(field_name = "age")), "myid")
+  # A column that isn't in the dictionary in the first place (e.g. a column added for an analysis)
+  expect_equal(id_field(data.frame(analysis_score = 1, age = 2, sid = 3), data.frame(field_name = c("sid", "age"))), "sid")
+  # Without the first field of the dictionary in the data: the first column
+  expect_equal(id_field(data.frame(myid = 1, age = 2), data.frame(field_name = c("sid", "age"))), "myid")
   # A column of REDCap or a version of a field in the first column
   expect_equal(id_field(data.frame(redcap_event_name = "a", age = 2, sid = 1), data.frame(field_name = c("sid", "age"))), "sid")
   expect_equal(id_field(data.frame(age.factor = "a", age = 2, sid = 1), data.frame(field_name = c("sid", "age"))), "sid")

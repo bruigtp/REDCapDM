@@ -118,8 +118,10 @@ add_covican_field <- function(name, project = covican) {
 
 # Longitudinal project whose identifier is not called record_id. `age` is in the
 # baseline form and `value` in the visit form; record 002 has no visit.
-# With `age_first = TRUE`, `age` is the first column of the data.
-make_custom_id <- function(id = "subject_id", age_first = FALSE) {
+# With `age_first = TRUE`, `age` is the first column of the data; with
+# `external_first = TRUE`, the first column is `analysis_score`, which isn't in
+# the dictionary.
+make_custom_id <- function(id = "subject_id", age_first = FALSE, external_first = FALSE) {
   dic <- data.frame(
     field_name = c(id, "age", "value"), form_name = c("baseline", "baseline", "visit"),
     field_type = "text", field_label = c("ID", "Age", "Value"),
@@ -134,6 +136,7 @@ make_custom_id <- function(id = "subject_id", age_first = FALSE) {
   )
   names(data)[1] <- id
   if (age_first) data <- data[, c("age", id, "redcap_event_name", "value")]
+  if (external_first) data <- cbind(analysis_score = c(100, 101, 200, 300, 301), data)
   event_form <- data.frame(arm_num = 1, unique_event_name = c("base_arm_1", "visit_arm_1"), form = c("baseline", "visit"))
 
   list(data = data, dictionary = dic, event_form = event_form)

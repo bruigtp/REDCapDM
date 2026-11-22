@@ -1212,8 +1212,9 @@ test_that("rd_query checks the identifier itself", {
 })
 
 test_that("rd_query takes the identifier from the dictionary, whatever the order of the columns", {
-  for (age_first in c(FALSE, TRUE)) {
-    res <- rd_query(make_custom_id(age_first = age_first), variables = "value", expression = "x > 6", event = "visit_arm_1")
+  for (first in c("none", "age", "external")) {
+    project <- make_custom_id(age_first = first == "age", external_first = first == "external")
+    res <- rd_query(project, variables = "value", expression = "x > 6", event = "visit_arm_1")
     expect_equal(res$queries$Identifier, "003")
     expect_match(res$queries$Code, "^003-")
   }

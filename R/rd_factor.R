@@ -20,7 +20,7 @@
 #' }
 #'
 #' @details
-#' The function looks for columns ending in `.factor` and replaces the original variable values with those `.factor` values (converted to factors). It preserves variable labels. The `exclude` argument must contain base variable names (no `.factor` suffix); if any `.factor` names are passed to `exclude` the function will throw an informative error. The columns `redcap_event_name`, `redcap_repeat_instrument` and `redcap_data_access_group` (and their `.factor` counterparts) are handled specially to avoid altering event or access-group data.
+#' The function looks for columns ending in `.factor` and replaces the original variable values with those `.factor` values (converted to factors). A `.factor` column that isn't a factor (e.g. text, after modifying the data) is converted to a factor, with the levels in the order of the options of the dictionary. It preserves variable labels. The `exclude` argument must contain base variable names (no `.factor` suffix); if any `.factor` names are passed to `exclude` the function will throw an informative error. The columns `redcap_event_name`, `redcap_repeat_instrument` and `redcap_data_access_group` (and their `.factor` counterparts) are handled specially to avoid altering event or access-group data.
 #'
 #' Use `rd_factor()` before `rd_dictionary()`: the branching logic and calculations that `rd_dictionary()` translates to R compare the variables with their original codes, so they stop working once the variables are factors. If the dictionary already has logic translated to R that uses any of the converted variables, a warning is shown.
 #'
@@ -124,6 +124,12 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
         ))) |>
         dplyr::select(-stringr::str_glue("{factors}.factor"))
 
+      # `.factor` columns that aren't factors (e.g. text after modifying the data): the labels are converted to a factor,
+      # with the levels in the order of the options of the dictionary
+      for (f in factors[!vapply(data[factors], is.factor, logical(1))]) {
+        data[[f]] <- labels_factor(data[[f]], names(factor_code_mapping(f, dic)))
+      }
+
       # Branching logic or calculations already translated to R (rd_dictionary) compare the variables with their
       # original codes, so they no longer work once these variables are factors
       logic_cols <- intersect(c("branching_logic_show_field_only_if", "choices_calculations_or_slider_labels"), names(dic))
@@ -196,4 +202,25 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     results = stringr::str_glue("{results}")
   ) |>
     purrr::compact() # Remove any NULL elements from the output list
+}
+
+
+#' Labels of a variable as a factor
+#'
+#' @param x Labels (e.g. a `.factor` column that is text).
+#' @param options Labels of the options of the dictionary, in order.
+#' @return A factor. Its levels are the options of the dictionary when every label is one of them (as in the `.factor`
+#'   columns of `redcap_data()`); otherwise the options found, then the other labels in alphabetical order.
+#' @noRd
+labels_factor <- function(x, options) {
+  x <- as.character(x)
+  found <- unique(x[!is.na(x)])
+
+  levels <- if (length(options) > 0 && all(found %in% options)) {
+    unique(options)
+  } else {
+    unique(c(intersect(options, found), sort(setdiff(found, options))))
+  }
+
+  factor(x, levels = levels)
 }

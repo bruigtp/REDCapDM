@@ -498,9 +498,12 @@ test_that("unique_labels gives a different label to every element", {
 })
 
 test_that("rd_missplot takes the identifier from the dictionary, whatever the order of the columns", {
-  project <- make_custom_id(age_first = TRUE)
+  for (first in c("age", "external")) {
+    project <- make_custom_id(age_first = first == "age", external_first = first == "external")
 
-  map <- rd_missplot(project, by = "record", events = "all", drop_complete = FALSE)
-  expect_setequal(levels(map$data$row_id), c("001", "002", "003"))
-  expect_setequal(unique(as.character(map$data$variable)), c("age", "value"))
+    map <- rd_missplot(project, by = "record", events = "all", drop_complete = FALSE)
+    expect_setequal(levels(map$data$row_id), c("001", "002", "003"))
+    expect_true(all(c("age", "value") %in% map$data$variable))
+    expect_false("subject_id" %in% map$data$variable)
+  }
 })

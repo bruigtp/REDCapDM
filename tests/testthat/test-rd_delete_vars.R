@@ -219,3 +219,13 @@ test_that("rd_delete_vars removes the same variables from the data and the dicti
     expect_equal(out$dictionary$field_name, c("record_id", "age"), info = paste(vars, collapse = ", "))
   }
 })
+
+
+test_that("rd_delete_vars keeps the identifier when another column is the first one", {
+  project <- make_custom_id(external_first = TRUE)
+  res <- rd_delete_vars(project, forms = "baseline")
+
+  expect_true("subject_id" %in% names(res$data))
+  expect_equal(res$dictionary$field_name, c("subject_id", "value"))
+  expect_false("age" %in% names(res$data))
+})

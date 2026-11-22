@@ -268,4 +268,5 @@ test_that("rd_event filters by an identifier with another name and takes it from
   expect_equal(rd_event(project, event = "visit_arm_1", filter = "subject_id == '002'")$queries$Identifier, "002")
 
   expect_equal(rd_event(make_custom_id(age_first = TRUE), event = "visit_arm_1")$queries$Identifier, "002")
+  expect_equal(rd_event(make_custom_id(external_first = TRUE), event = "visit_arm_1")$queries$Identifier, "002")
 })

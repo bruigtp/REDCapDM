@@ -4,7 +4,7 @@
 
 #' Record identifier of the data
 #'
-#' `record_id`, the name that `redcap_data()` gives to the identifier. Otherwise, REDCap's record ID is the first field of the dictionary, whatever its name (e.g. `subject_id`) and its position in the data (e.g. with another field in the first column). When the first column of the data isn't in the dictionary (nor is a column of REDCap, such as `redcap_event_name`, or a version of a field, such as `.factor`), the dictionary doesn't have the row of the identifier, and the identifier is that first column, as in previous versions of the package. Without dictionary, or when its first field isn't in the data, the first column.
+#' `record_id`, the name that `redcap_data()` gives to the identifier. Otherwise, REDCap's record ID is the first field of the dictionary, whatever its name (e.g. `subject_id`) and its position in the data (e.g. with another field, or a column that isn't in the dictionary, in the first column). Only without dictionary, or when its first field isn't in the data, the first column.
 #'
 #' @param data REDCap dataset.
 #' @param dic REDCap dictionary (optional).
@@ -12,24 +12,14 @@
 #' @noRd
 id_field <- function(data, dic = NULL) {
   columns <- names(data)
-  fields <- if (is.data.frame(dic) && "field_name" %in% names(dic)) as.character(dic$field_name) else character(0)
+  first_field <- if (is.data.frame(dic) && "field_name" %in% names(dic) && nrow(dic) > 0) as.character(dic$field_name[1]) else NA_character_
 
   if ("record_id" %in% columns) {
-    return("record_id")
-  }
-
-  if (length(columns) == 0 || length(fields) == 0) {
-    return(columns[1])
-  }
-
-  # A first column that the dictionary doesn't describe is the identifier (dictionary without its row)
-  first_column <- columns[1]
-  described <- data_field(first_column, fields) %in% fields || grepl("^redcap_|_complete$|_timestamp$", first_column)
-
-  if (!described || !fields[1] %in% columns) {
-    first_column
+    "record_id"
+  } else if (!is.na(first_field) && first_field %in% columns) {
+    first_field
   } else {
-    fields[1]
+    columns[1]
   }
 }
 

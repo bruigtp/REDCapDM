@@ -38,8 +38,10 @@ test_that("rd_split errors when .factor versions of variables are present but no
   data <- tibble::tibble(record_id = 1, var1.factor = "A")
   dic  <- tibble::tibble(field_name = "record_id", field_type = "text", form_name = "meta")
 
-  expect_no_error(
-    rd_split(data = data, dic = dic)
+  # `var1` isn't a field of the dictionary: its factor version is an extra variable (it was left out without notice)
+  expect_error(
+    rd_split(data = data, dic = dic),
+    "var1.factor", fixed = TRUE
   )
 })
 
@@ -404,4 +406,30 @@ test_that("rd_split keeps the normal rows with an empty instrument and of forms 
   data$hb <- labelled::set_variable_labels(data["hb"], hb = "Hemoglobin")$hb
   out <- suppressMessages(rd_split(data = data, dic = dic, event_form = event_form, by = "form"))$data$df[[1]]
   expect_equal(attr(out$hb, "label"), "Hemoglobin")
+})
+
+
+test_that("rd_split only takes as factor versions and checkbox options the columns of fields of the dictionary", {
+  dic <- data.frame(field_name = c("record_id", "a", "cb"), form_name = "f", field_type = c("text", "text", "checkbox"),
+                    field_label = c("ID", "A", "CB"), choices_calculations_or_slider_labels = c("", "", "1, X"),
+                    branching_logic_show_field_only_if = "", stringsAsFactors = FALSE)
+
+  for (extra in c("riskfactor", "risk_factor", "ghost___1", "ghost___1.factor")) {
+    data <- data.frame(record_id = 1:2, a = 3:4, cb___1 = c(0, 1), x = 5:6)
+    names(data)[4] <- extra
+    expect_error(rd_split(data = data, dic = dic, by = "form"), extra, fixed = TRUE)
+  }
+
+  # The factor versions of the fields and of the checkbox options are still accepted
+  data <- data.frame(record_id = 1:2, a = 3:4, a.factor = c("x", "y"), cb___1 = c(0, 1), cb___1.factor = c("Unchecked", "Checked"))
+  res <- rd_split(data = data, dic = dic, by = "form")
+  expect_setequal(names(res$data$df[[1]]), names(data))
+
+  # and so is the factor version of the status of a form (the status itself has to be removed first, as before), also
+  # of a form that redcap_data() removed from the dictionary because it is in no event
+  data$f_complete.factor <- c("Complete", "Incomplete")
+  data$unused_complete.factor <- c("Incomplete", "Incomplete")
+  expect_no_error(rd_split(data = data, dic = dic, by = "form"))
+  data$f_complete <- c(2, 0)
+  expect_error(rd_split(data = data, dic = dic, by = "form"), "rd_delete_vars", fixed = TRUE)
 })

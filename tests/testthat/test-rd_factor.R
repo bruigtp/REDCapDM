@@ -101,3 +101,29 @@ test_that("rd_factor warns, instead of stopping, when every variable that can be
   expect_type(out$data$grp, "double")
   expect_true("grp.factor" %in% names(out$data))
 })
+
+
+test_that("rd_factor converts to factors the .factor columns that are text", {
+  dic <- data.frame(
+    field_name = c("record_id", "choice"), form_name = "f", field_type = c("text", "radio"),
+    field_label = c("ID", "Choice"), choices_calculations_or_slider_labels = c("", "1, Yes | 0, No"),
+    branching_logic_show_field_only_if = "", stringsAsFactors = FALSE
+  )
+
+  data <- data.frame(record_id = 1:3, choice = c(0, 1, NA), choice.factor = c("No", "Yes", NA), stringsAsFactors = FALSE)
+  res <- rd_factor(data = data, dic = dic)
+  expect_true(is.factor(res$data$choice))
+  # The levels follow the order of the options of the dictionary
+  expect_equal(levels(res$data$choice), c("Yes", "No"))
+  expect_equal(as.character(res$data$choice), c("No", "Yes", NA))
+  expect_false("choice.factor" %in% names(res$data))
+
+  # Without rows
+  res <- rd_factor(data = data[0, ], dic = dic)
+  expect_true(is.factor(res$data$choice))
+  expect_equal(nrow(res$data), 0)
+
+  # Labels that aren't options of the dictionary are kept after them
+  data$choice.factor[3] <- "Unknown"
+  expect_equal(levels(rd_factor(data = data, dic = dic)$data$choice), c("Yes", "No", "Unknown"))
+})
