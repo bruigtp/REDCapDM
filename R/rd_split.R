@@ -175,8 +175,9 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     # forms (`<form>_complete`, also of the forms that redcap_data() removed from the dictionary because they are in no
     # event)
     fact_base <- sub("\\.factor$", "", vars_less)
+    # (an exact field of the dictionary first, e.g. `cb___1` after rd_checkbox(checkbox_names = FALSE))
     fact_vars <- vars_less[grepl("\\.factor$", vars_less) &
-      ((!grepl("___", fact_base) & fact_base %in% dic$field_name) | is_option(fact_base) | grepl("_complete\\.factor$", vars_less))]
+      (fact_base %in% dic$field_name | is_option(fact_base) | grepl("_complete\\.factor$", vars_less))]
     
     # Columns with the Missing Data Codes kept by redcap_data(rm_mdc = FALSE)
     fact_vars <- c(fact_vars, intersect(vars_less, mdc_columns(names(data), dic$field_name)))

@@ -10,7 +10,7 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
-#' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels.
+#' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels. With `FALSE`, the columns keep their names, but their values are already the labels: running the function again on its result stops with an error instead of converting them again.
 #' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE` or `NA`). Defaults to `"missing"`.
 #'
 #' @return A list with:
@@ -125,6 +125,23 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
   }
   if (length(var_check) == 0 && length(var_check_dic) > 0) {
     rd_abort("No checkbox fields found in the data. If they have already been transformed (e.g. with rd_checkbox() or rd_transform()), there is nothing left to do.")
+  }
+
+  # Error: checkboxes already transformed (e.g. by rd_checkbox(checkbox_names = FALSE), which keeps their names): their
+  # values are labels, not the codes of REDCap, and converting them again would turn them into NA
+  raw_codes <- c("0", "1", "Unchecked", "Checked", "")
+  transformed <- var_check[vapply(var_check, function(v) {
+    values <- as.character(data[[v]])
+    !all(is.na(values) | values %in% raw_codes)
+  }, logical(1))]
+
+  if (length(transformed) > 0) {
+    shown <- utils::head(transformed, 10)
+    rd_abort(
+      c("The checkboxes have already been transformed (e.g. with {.fn rd_checkbox} or {.fn rd_transform}): there is nothing left to do.",
+        "i" = "{.var {shown}} {?has/have} values that aren't the codes of REDCap (0/1 or Unchecked/Checked)."),
+      class = "REDCapDM_error_data"
+    )
   }
 
   # Checkboxes already converted to factors by rd_factor() (their options have the labels Unchecked/Checked)

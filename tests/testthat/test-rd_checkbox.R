@@ -376,3 +376,35 @@ test_that("rd_checkbox describes the transformation that it does", {
   report <- paste(rd_checkbox(data = data, dic = dic)$results, collapse = "\n")
   expect_match(report, "changing their values to No/Yes and changing their names to the names of its options.", fixed = TRUE)
 })
+
+test_that("rd_checkbox stops instead of converting again the checkboxes that it already transformed", {
+  dic <- data.frame(
+    field_name = c("record_id", "cb"), form_name = "f", field_type = c("text", "checkbox"), field_label = c("ID", "CB"),
+    choices_calculations_or_slider_labels = c("", "1, One | 2, Two"), branching_logic_show_field_only_if = "",
+    text_validation_type_or_show_slider_number = "", stringsAsFactors = FALSE
+  )
+  project <- list(data = data.frame(record_id = 1:3, cb___1 = c(1, 0, NA), cb___2 = c(0, 1, 0)), dictionary = dic)
+
+  for (labels in list(c("No", "Yes"), c("Absent", "Present"))) {
+    once <- rd_checkbox(project, checkbox_names = FALSE, na_logic = "none", checkbox_labels = labels)
+    expect_equal(as.character(once$data$cb___1), c(labels[2], labels[1], NA))
+    expect_error(rd_checkbox(once, checkbox_names = FALSE, na_logic = "none", checkbox_labels = labels),
+                 "already been transformed", class = "REDCapDM_error_data")
+    # The first result is kept as it was
+    expect_equal(as.character(once$data$cb___1), c(labels[2], labels[1], NA))
+  }
+
+  # With the factor versions of redcap_data()
+  project$data$cb___1.factor <- factor(c("Checked", "Unchecked", NA), levels = c("Unchecked", "Checked"))
+  project$data$cb___2.factor <- factor(c("Unchecked", "Checked", "Unchecked"), levels = c("Unchecked", "Checked"))
+  once <- rd_checkbox(project, checkbox_names = FALSE, na_logic = "none")
+  expect_error(rd_checkbox(once, checkbox_names = FALSE, na_logic = "none"), "cb___1.factor", class = "REDCapDM_error_data")
+  expect_equal(as.character(once$data$cb___1.factor), c("Yes", "No", NA))
+
+  # The codes of REDCap, also as Unchecked/Checked (e.g. after rd_factor()), are still converted
+  project$data$cb___1.factor <- NULL
+  project$data$cb___2.factor <- NULL
+  project$data$cb___1 <- factor(c("Checked", "Unchecked", NA), levels = c("Unchecked", "Checked"))
+  project$data$cb___2 <- factor(c("Unchecked", "Checked", "Unchecked"), levels = c("Unchecked", "Checked"))
+  expect_equal(as.character(rd_checkbox(project, na_logic = "none")$data$cb_one), c("Yes", "No", NA))
+})

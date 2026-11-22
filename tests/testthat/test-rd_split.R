@@ -444,3 +444,21 @@ test_that("rd_split only takes as checkbox options the columns of checkbox field
   data$age___1.factor <- c("Unchecked", "Checked")
   expect_error(rd_split(data = data, dic = dic, by = "form"), "age___1.factor", fixed = TRUE)
 })
+
+test_that("rd_split takes the factor versions of the options kept by rd_checkbox(checkbox_names = FALSE)", {
+  dic <- data.frame(
+    field_name = c("record_id", "cb"), form_name = "f", field_type = c("text", "checkbox"), field_label = c("ID", "CB"),
+    choices_calculations_or_slider_labels = c("", "1, One | 2, Two"), branching_logic_show_field_only_if = "",
+    text_validation_type_or_show_slider_number = "", stringsAsFactors = FALSE
+  )
+  data <- data.frame(record_id = 1:3, cb___1 = c(1, 0, NA), cb___2 = c(0, 1, 0))
+  data$cb___1.factor <- factor(c("Checked", "Unchecked", NA), levels = c("Unchecked", "Checked"))
+  data$cb___2.factor <- factor(c("Unchecked", "Checked", "Unchecked"), levels = c("Unchecked", "Checked"))
+
+  kept <- rd_checkbox(data = data, dic = dic, checkbox_names = FALSE, na_logic = "none")
+  res <- rd_split(kept, by = "form")
+  expect_setequal(names(res$data$df[[1]]), c("record_id", "cb___1", "cb___2", "cb___1.factor", "cb___2.factor"))
+
+  res <- rd_split(rd_dictionary(kept), by = "form")
+  expect_true("cb___1.factor" %in% names(res$data$df[[1]]))
+})
