@@ -35,7 +35,7 @@ identifier (the first field of the project, e.g. \code{record_id}).}
 
 \item{survey_fields}{Logical; include survey-related fields when pulling via API. Default \code{FALSE}.}
 
-\item{rm_mdc}{Logical; Removes the Missing Data Codes from the data. Default \code{TRUE}. With \code{FALSE}, the codes are kept: in multiple-choice fields as an additional category (in the \code{.factor} version), and in validated text fields (numbers, dates, ...) in a new \verb{<field>_mdc} column, while the field itself keeps its type and has \code{NA} in those rows.}
+\item{rm_mdc}{Logical. Remove Missing Data Codes (default \code{TRUE}). With \code{FALSE}, validated text and categorical fields keep their original missing codes in \verb{<field>_mdc} columns. Validated text fields contain \code{NA} in those rows; categorical fields also retain an additional category in their \code{.factor} version.}
 
 \item{mdc}{Optional Missing Data Codes of the project, besides the default ones of REDCap (\code{NI}, \code{UNK}, \code{NASK}, ...), which are always
 used: a vector of codes, e.g. \code{c("-999", "-888")}. A code can have a label, written as \code{code = label}

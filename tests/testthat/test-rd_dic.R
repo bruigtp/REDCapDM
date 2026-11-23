@@ -147,7 +147,7 @@ test_that("rd_dictionary translates the codes of yes/no fields converted with rd
   logic <- stats::setNames(out$dictionary$branching_logic_show_field_only_if, out$dictionary$field_name)
 
   # yes/no codes are translated to the labels of the factor
-  expect_match(logic[["visit_note"]], "'No'|'Yes'")
+  expect_match(logic[["visit_note"]], "['\"](No|Yes)['\"]")
   expect_equal(as.vector(eval(parse(text = logic[["visit_note"]]), list(data = rd_factor(fx)$data))), c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE))
   # a > comparison is not turned into <>
   expect_false(grepl("<>|!=", logic[["pain_note"]]))

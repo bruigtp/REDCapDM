@@ -112,9 +112,56 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     # Exclude specified variables that should not be converted to factors
     factors <- setdiff(factors, exclude)
 
+        # Preserve raw codes when labels cannot identify them uniquely.
+    ambiguous <- factors[vapply(factors, function(field) {
+      mapping <- factor_code_mapping(field, dic)
+
+      dictionary_pairs <- data.frame(
+        code = as.character(unname(mapping)),
+        label = as.character(names(mapping)),
+        stringsAsFactors = FALSE
+      )
+
+      observed_pairs <- data.frame(
+        code = as.character(data[[field]]),
+        label = as.character(data[[paste0(field, ".factor")]]),
+        stringsAsFactors = FALSE
+      )
+
+      pairs <- unique(rbind(dictionary_pairs, observed_pairs))
+      pairs <- pairs[
+        !is.na(pairs$code) & !is.na(pairs$label),
+        ,
+        drop = FALSE
+      ]
+
+      anyDuplicated(pairs$label) > 0L
+    }, logical(1))]
+
+    if (length(ambiguous) > 0L) {
+      factor_bases <- ambiguous[
+        vapply(data[ambiguous], is.factor, logical(1))
+      ]
+
+      if (length(factor_bases) > 0L) {
+        rd_abort(
+          "Cannot recover unambiguous raw codes for {.var {factor_bases}}. Reload these variables from REDCap.",
+          class = "REDCapDM_error_data"
+        )
+      }
+
+      rd_warn(
+        "Labels of {.var {ambiguous}} refer to different codes. Their original values and .factor columns were preserved."
+      )
+
+      factors <- setdiff(factors, ambiguous)
+    }
+
     # Every variable that can be converted is in `exclude`: nothing to convert (as when there are no such variables)
     if (length(factors) == 0) {
-      rd_warn("All the variables that can be converted to factors are in {.arg exclude}: none was converted.")
+      if (length(ambiguous) == 0L) {
+        rd_warn("All the variables that can be converted to factors are in {.arg exclude}: none was converted.")
+      }
     } else {
       # Perform the transformation of factor columns into actual factor variables
       data <- data |>

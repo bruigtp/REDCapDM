@@ -160,8 +160,16 @@ test_that("rm_mdc = FALSE keeps the Missing Data Codes of validated text fields 
 test_that("rm_mdc = FALSE doesn't add `_mdc` columns when there are no codes", {
   fx <- make_mdc_fixture()
   fx$data$lab_value <- c("5.2", "6.0", "7.1")
+  fx$data$sex <- c("1", "2", "1")
+  fx$data$sex.factor <- factor(
+    c("Male", "Female", "Male"),
+    levels = c("Male", "Female")
+  )
 
-  out <- suppressWarnings(run_redcap_data_mdc(rm_mdc = FALSE, fx = fx))
+  out <- suppressWarnings(
+    run_redcap_data_mdc(rm_mdc = FALSE, fx = fx)
+  )
+
   expect_false(any(grepl("_mdc$", names(out$data))))
   expect_true(is.numeric(out$data$lab_value))
 })

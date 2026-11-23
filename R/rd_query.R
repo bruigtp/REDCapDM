@@ -304,8 +304,14 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       rd_abort(c("Incomplete {.arg link} argument.", "i" = "To properly use it, please provide {.field domain}, {.field redcap_version} and {.field proj_id}."), class = "REDCapDM_error_argument")
     }
   }
+  
+  # Keep link metadata separate from the fields of the project.
+  event_id_column <- utils::tail(
+    make.unique(c(names(data), ".rd_event_id"), sep = "_"),
+    1L
+  )
 
-    # Assign event IDs without joining or deleting observations.
+  # Assign event IDs without joining or deleting observations.
   if (!is.null(link[["event_id"]])) {
     supplied_ids <- link[["event_id"]]
 
@@ -345,14 +351,14 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         )
       }
 
-      data[["event_id"]] <- rep(id_values, nrow(data))
+      data[[event_id_column]] <- rep(id_values, nrow(data))
 
     } else if (
       is.null(names(supplied_ids)) &&
       length(id_values) == 1L &&
       length(unique(data[[event_column]])) <= 1L
     ) {
-      data[["event_id"]] <- rep(id_values, nrow(data))
+      data[[event_id_column]] <- rep(id_values, nrow(data))
 
     } else {
       map_names <- names(supplied_ids)
@@ -398,7 +404,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         )
       }
 
-      data[["event_id"]] <- id_values[index]
+      data[[event_id_column]] <- id_values[index]
     }
   }
 
@@ -602,9 +608,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       # (the identifier can also be the variable checked: a single column, kept as a data frame)
       x <- definitive[, unique(c(id_var, grep("redcap", names(definitive), value = TRUE), variables[i])), drop = FALSE]
 
-      # Add event_id when the link argument is specified
+      # Carry the internal event ID used to generate links.
       if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link))) {
-        x[, "event_id"] <- definitive[, "event_id"]
+        x[[event_id_column]] <- definitive[[event_id_column]]
       }
 
       # Filling the structure data frame with data
@@ -709,7 +715,18 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
       # Add link to each query
       if (all(c("domain", "redcap_version", "proj_id", "event_id") %in% names(link)) && any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-        excel[, "Link"] <- paste0("https://", link[["domain"]], "/redcap_v", link[["redcap_version"]], "/DataEntry/index.php?pid=", link[["proj_id"]], "&event_id=", x[, "event_id"], "&page=", dic[dic[, "field_name"] %in% gsub("___.*$", "", variables[i]), "form_name"], "&id=", id_text(x[, id_var]), link_instance)
+        excel[, "Link"] <- paste0(
+          "https://", link[["domain"]],
+          "/redcap_v", link[["redcap_version"]],
+          "/DataEntry/index.php?pid=", link[["proj_id"]],
+          "&event_id=", x[[event_id_column]],
+          "&page=", dic[
+            dic[, "field_name"] %in% gsub("___.*$", "", variables[i]),
+            "form_name"
+          ],
+          "&id=", id_text(x[, id_var]),
+          link_instance
+        )
       }
 
       if (all(c("domain", "redcap_version", "proj_id") %in% names(link)) && !any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
@@ -1080,8 +1097,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   new_report(def)
 }
 
-resolve_query_event_codes <- function(
-    x, events, canonical = events$code, allow_unknown = FALSE) {
+resolve_query_event_codes <- function(x, events, canonical = events$code, allow_unknown = FALSE) {
 
   canonical <- as.character(canonical)
 
@@ -1122,7 +1138,7 @@ resolve_query_event_codes <- function(
     }
 
     rd_abort(
-      "The event {.val {value}} was not found.",
+      "The specified events are not found in the dataset: {.val {value}}.",
       class = "REDCapDM_error_argument"
     )
   }, character(1), USE.NAMES = FALSE)

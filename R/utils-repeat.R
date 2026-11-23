@@ -84,7 +84,12 @@ var_form <- function(var, dic) {
   }
 
   base <- sub("\\.factor$", "", var)
-  candidates <- unique(c(base, sub("___.*$", "", base), sub("_recalc(_[0-9]+)?$", "", base)))
+  candidates <- unique(c(
+    base,
+    sub("___.*$", "", base),
+    sub("_recalc(_[0-9]+)?$", "", base),
+    sub("_mdc$", "", base)
+  ))
   form <- dic$form_name[match(candidates, dic$field_name)]
   form <- form[!is.na(form)]
 

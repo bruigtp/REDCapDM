@@ -131,6 +131,76 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("\\[user\\-dag\\-name\\]", "[redcap_data_access_group]", rlogic)
   rlogic <- gsub("\\[record\\-dag\\-name\\]", "[redcap_data_access_group]", rlogic)
 
+  # Keep categorical Missing Data Codes distinguishable from ordinary values.
+  rlogic <- replace_function(
+    rlogic,
+    "isblankormissingcode",
+    function(args) {
+      if (length(args) != 1L) {
+        rd_abort(
+          "isblankormissingcode() requires one argument.",
+          class = "REDCapDM_error_logic"
+        )
+      }
+
+      argument <- trimws(args[1])
+      pattern <- "^((?:\\[[\\w-]+\\])?)\\[(\\w+)\\](\\[current-instance\\])?$"
+
+      hit <- regmatches(
+        argument,
+        regexec(pattern, argument, perl = TRUE)
+      )[[1]]
+
+      if (length(hit) == 0L) {
+        fields <- unique(gsub(
+          "^\\[|\\]$",
+          "",
+          unlist(stringr::str_extract_all(argument, "\\[\\w+\\]"))
+        ))
+
+        companions <- paste0(fields, "_mdc")
+        companions <- companions[
+          companions %in% names(data) &
+            !companions %in% dic$field_name
+        ]
+
+        if (any(vapply(companions, function(f) {
+          any(
+            !is.na(data[[f]]) &
+              !is.na(data[[sub("_mdc$", "", f)]])
+          )
+        }, logical(1)))) {
+          rd_abort(
+            "Compound isblankormissingcode() expressions with preserved Missing Data Codes cannot be evaluated safely. Use a direct field reference or import with rm_mdc = TRUE.",
+            class = "REDCapDM_error_logic"
+          )
+        }
+
+        return(paste0(
+          "isblankormissingcode(", argument, ")"
+        ))
+      }
+
+      companion <- paste0(hit[3], "_mdc")
+
+      if (!companion %in% names(data) ||
+          companion %in% dic$field_name) {
+        return(paste0(
+          "isblankormissingcode(", argument, ")"
+        ))
+      }
+
+      companion_ref <- paste0(
+        hit[2], "[", companion, "]", hit[4]
+      )
+
+      paste0(
+        "(", argument, " = '' or ",
+        companion_ref, " <> '')"
+      )
+    }
+  )
+
   # Keep instance references in the logic, but not in the field list.
   logic_for_fields <- gsub(
     "][current-instance]",
@@ -937,8 +1007,9 @@ not_equal_blank <- function(x) {
     return(x)
   }
 
+  changed <- FALSE
+
   rewrite <- function(e) {
-    # Preserve the internal algorithms of translated helper functions.
     if (!is.call(e) ||
         identical(e[[1]], as.name("function"))) {
       return(e)
@@ -953,6 +1024,8 @@ not_equal_blank <- function(x) {
 
     if (length(e) == 3L &&
         identical(e[[1]], as.name("!="))) {
+      changed <<- TRUE
+
       left <- e[[2]]
       right <- e[[3]]
 
@@ -973,7 +1046,13 @@ not_equal_blank <- function(x) {
     e
   }
 
-  one_line(rewrite(parsed[[1L]]))
+  result <- rewrite(parsed[[1L]])
+
+  if (!changed) {
+    return(x)
+  }
+
+  one_line(result)
 }
 
 #' Translate the datediff() of two time fields

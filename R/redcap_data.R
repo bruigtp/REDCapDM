@@ -41,7 +41,7 @@
 #' @param filter_field Optional character vector of field names to request from the API. It must include the record
 #'   identifier (the first field of the project, e.g. `record_id`).
 #' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
-#' @param rm_mdc Logical; Removes the Missing Data Codes from the data. Default `TRUE`. With `FALSE`, the codes are kept: in multiple-choice fields as an additional category (in the `.factor` version), and in validated text fields (numbers, dates, ...) in a new `<field>_mdc` column, while the field itself keeps its type and has `NA` in those rows.
+#' @param rm_mdc Logical. Remove Missing Data Codes (default `TRUE`). With `FALSE`, validated text and categorical fields keep their original missing codes in `<field>_mdc` columns. Validated text fields contain `NA` in those rows; categorical fields also retain an additional category in their `.factor` version.
 #' @param mdc Optional Missing Data Codes of the project, besides the default ones of REDCap (`NI`, `UNK`, `NASK`, ...), which are always
 #'   used: a vector of codes, e.g. `c("-999", "-888")`. A code can have a label, written as `code = label`
 #'   (e.g. `c("-999" = "Not applicable", "-888")`): with `rm_mdc = FALSE`, the `.factor` version of the multiple-choice fields shows the
@@ -405,6 +405,12 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     if (!all(filter_field %in% NA)) {
       api_text_fields <- intersect(api_text_fields, filter_field)
     }
+    api_categorical_fields <- as.character(
+      dic_api[[1]][
+        dic_api$field_type %in%
+          c("radio", "dropdown", "yesno", "truefalse")
+      ]
+    )
     # Fetch main data using the REDCap API
     # (the data are read as text and their types are guessed afterwards over all the records, as REDCapR does, except
     # for the identifier and the text fields)
@@ -413,7 +419,13 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       error = api_error
     )
     if (any(vapply(data_api, is.character, logical(1)))) {
-      text_cols <- unique(c(names(data_api)[1], intersect(api_text_fields, names(data_api))))
+      text_cols <- unique(c(
+        names(data_api)[1],
+        intersect(
+          c(api_text_fields, api_categorical_fields),
+          names(data_api)
+        )
+      ))
       data_api <- readr::type_convert(
         data_api,
         col_types = do.call(readr::cols, c(stats::setNames(rep(list(readr::col_character()), length(text_cols)), text_cols), list(.default = readr::col_guess())))
@@ -426,9 +438,22 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         data_api[[1]] <- as_number
       }
       for (field in setdiff(text_cols, names(data_api)[1])) {
-        as_number <- utils::type.convert(data_api[[field]], as.is = TRUE)
-        if (is.character(data_api[[field]]) && !is.character(as_number) && all(is.na(data_api[[field]]) | as.character(as_number) == data_api[[field]])) {
-          data_api[[field]] <- as_number
+        if (field %in% api_categorical_fields) {
+          data_api[[field]] <- restore_choice_codes(data_api[[field]])
+        } else {
+          as_number <- utils::type.convert(
+            data_api[[field]],
+            as.is = TRUE
+          )
+
+          if (is.character(data_api[[field]]) &&
+              !is.character(as_number) &&
+              all(
+                is.na(data_api[[field]]) |
+                  as.character(as_number) == data_api[[field]]
+              )) {
+            data_api[[field]] <- as_number
+          }
         }
       }
     }
@@ -787,7 +812,19 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   numeric_fields <- c(numeric_fields, categorical_fields)
 
   restore_type <- function(x, field) {
-    if (field %in% numeric_fields && is.character(x)) utils::type.convert(x, as.is = TRUE) else x
+    if (!is.character(x)) {
+      return(x)
+    }
+
+    if (field %in% categorical_fields) {
+      return(restore_choice_codes(x))
+    }
+
+    if (field %in% numeric_fields) {
+      return(utils::type.convert(x, as.is = TRUE))
+    }
+
+    x
   }
 
   # Validated fields whose Missing Data Codes are kept in a `<field>_mdc` column (rm_mdc = FALSE)
@@ -919,6 +956,29 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
         orig_vals <- as.character(data_def$data[[var]])
 
         if (any(is_mdc_mask, na.rm = TRUE)) {
+          mdc_col <- paste0(var, "_mdc")
+
+          if (mdc_col %in% names(data_def$data) ||
+              mdc_col %in% data_def$dictionary$field_name) {
+            rd_abort(
+              "Cannot preserve Missing Data Codes of {.var {var}}: {.var {mdc_col}} already exists.",
+              class = "REDCapDM_error_data"
+            )
+          }
+
+          data_def$data[[mdc_col]] <- ifelse(
+            is_mdc_mask,
+            mdc_text(data_def$data[[var]]),
+            NA_character_
+          )
+
+          data_def$data <- dplyr::relocate(
+            data_def$data,
+            dplyr::all_of(mdc_col),
+            .after = dplyr::all_of(var)
+          )
+
+          mdc_fields <- unique(c(mdc_fields, var))
 
           suppressWarnings({
             numeric_codes <- as.numeric(orig_vals[!is_mdc_mask & !is.na(orig_vals)])
@@ -1375,4 +1435,31 @@ api_label_columns <- function(labels, data, meta = list()) {
   out <- if (length(out) > 0) as.data.frame(out, check.names = FALSE, stringsAsFactors = FALSE) else data.frame(row.names = seq_len(nrow(data)))
   attr(out, "unchecked") <- unchecked
   out
+}
+
+
+restore_choice_codes <- function(x) {
+  if (!is.character(x)) {
+    return(x)
+  }
+
+  value <- suppressWarnings(utils::type.convert(
+    x,
+    as.is = TRUE,
+    na.strings = character(0)
+  ))
+
+  observed <- !is.na(x)
+
+  if (!any(observed)) {
+    return(value)
+  }
+
+  if (is.numeric(value) &&
+      all(is.finite(value[observed])) &&
+      all(as.character(value[observed]) == x[observed])) {
+    return(value)
+  }
+
+  x
 }
