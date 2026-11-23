@@ -831,14 +831,37 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   mdc_fields <- character(0)
 
   if (rm_mdc) {
-    # Include .factor versions in "radio" & "yesno" field types
+    # Missing codes are identified in raw values, never in their labels.
     categorical_factor_fields <- paste0(categorical_fields, ".factor")
-    # Filter only the text validated columns
-    all_target_fields <- c(validated_text_fields, categorical_fields, categorical_factor_fields)
+    all_target_fields <- c(validated_text_fields, categorical_fields)
+
     target_columns <- setdiff(
       intersect(all_target_fields, colnames(data_def$data)),
       "record_id"
     )
+
+    for (factor_col in intersect(
+      categorical_factor_fields,
+      names(data_def$data)
+    )) {
+      field <- sub("\\.factor$", "", factor_col)
+
+      if (!field %in% names(data_def$data)) {
+        next
+      }
+
+      raw <- data_def$data[[field]]
+
+      missing <- is.na(raw) |
+        is_mdc_value(raw) |
+        (!is.numeric(raw) &
+           is_mdc_number(
+             stringr::str_trim(as.character(raw)),
+             field
+           ))
+
+      data_def$data[[factor_col]][missing] <- NA
+    }
 
     removed_checkbox_cols <- colnames(data_def$data)[stringr::str_detect(colnames(data_def$data), checkbox_mdc_pattern)]
     # (a checkbox option of a code is in the data when a record has it checked: REDCap exports these columns empty too)

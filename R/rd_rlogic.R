@@ -286,6 +286,45 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       next
     }
 
+    # Include the extra category created for retained Missing Data Codes.
+    mdc_labels <- character(0)
+    mdc_col <- paste0(field, "_mdc")
+
+    if (mdc_col %in% names(data) &&
+        !mdc_col %in% dic$field_name) {
+      mdc_value <- as.character(data[[mdc_col]])
+
+      mdc_rows <- !is.na(mdc_value) &
+        nzchar(trimws(mdc_value)) &
+        !is.na(data[[field]])
+
+      mdc_labels <- unique(
+        as.character(data[[field]])[mdc_rows]
+      )
+      mdc_labels <- setdiff(mdc_labels, names(mapping))
+
+      if (length(mdc_labels) > 0L) {
+        numeric_codes <- suppressWarnings(
+          as.numeric(unname(mapping))
+        )
+        numeric_codes <- numeric_codes[!is.na(numeric_codes)]
+
+        extra_code <- if (length(numeric_codes) > 0L) {
+          max(numeric_codes) + 1
+        } else {
+          1
+        }
+
+        mapping <- c(
+          mapping,
+          stats::setNames(
+            rep(as.character(extra_code), length(mdc_labels)),
+            mdc_labels
+          )
+        )
+      }
+    }
+
     # (labels between single or double quotes, e.g. [name] = "O'Brien")
     # (and labels with both quotes or backslashes, written with escaped characters, e.g. [name] = 'O\'Brien "A"')
     labels <- names(mapping)
@@ -307,6 +346,26 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     # A logic that also uses the variable as a number (e.g. `[score] = '2' or [score] + 1 >= 4`) is evaluated with the
     # codes: its comparisons are with codes, as in REDCap (a label that isn't a code is written as its code)
     if (uses_labels && factor_other_use(unmasked, field, labels)) {
+
+      # Several MDC labels share one additional numeric category.
+      if (length(mdc_labels) > 1L) {
+        comparisons <- logic_comparisons(unmasked)
+
+        label_use <- comparisons$field %in% field &
+          comparisons$complete &
+          !is.na(comparisons$value) &
+          grepl("^['\"]", comparisons$value)
+
+        if (any(
+          text_value(comparisons$value[label_use]) %in% mdc_labels
+        )) {
+          rd_abort(
+            "The logic mixes labels of different Missing Data Codes with numeric operations on {.var {field}}. Use its _mdc column to distinguish the missing codes.",
+            class = "REDCapDM_error_logic"
+          )
+        }
+      }
+
       not_codes <- labels[!labels %in% mapping]
       if (length(not_codes) > 0) {
         unmasked <- relabel_logic(unmasked, data.frame(ref = field, code = not_codes, name = field, label = unname(mapping[not_codes])))
@@ -321,7 +380,18 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       next
     }
 
-    data[[field]] <- if (all(grepl("^-?[0-9]+(\\.[0-9]+)?$", mapping))) as.numeric(codes) else codes
+    if (all(grepl("^-?[0-9]+(\\.[0-9]+)?$", mapping))) {
+      value <- restore_choice_codes(codes)
+
+      data[[field]] <- if (is.numeric(value) || is.logical(value)) {
+        as.numeric(value)
+      } else {
+        value
+      }
+    } else {
+      data[[field]] <- codes
+    }
+    
   }
 
   # Convert REDCap functions to equivalent R functions
@@ -827,7 +897,7 @@ datediff_arguments <- function(x) {
   read <- "(?<!lubridate::[a-z]{3}\\()(?<!lubridate::parse_date_time\\()"
   dates <- function(arg, format) {
     arg <- gsub("'today'", "Sys.Date()", arg, fixed = TRUE)
-    arg <- gsub("'now'", "lubridate::force_tz(Sys.time(), 'UTC')", arg, fixed = TRUE)
+    arg <- gsub("'now'", "lubridate::with_tz(Sys.time(), 'UTC')", arg, fixed = TRUE)
     if (!is.na(format)) {
       arg <- gsub(paste0(read, "'(", formats[[format]], ")'"), paste0("lubridate::", format, "('\\1')"), arg, perl = TRUE)
     }
@@ -922,7 +992,7 @@ date_comparisons <- function(x, dic) {
     if (text == "today") {
       "Sys.Date()"
     } else if (text == "now") {
-      "lubridate::force_tz(Sys.time(), 'UTC')"
+      "lubridate::with_tz(Sys.time(), 'UTC')"
     } else {
       paste0("lubridate::parse_date_time('", text, "', c('ymd HMS', 'ymd HM'))")
     }

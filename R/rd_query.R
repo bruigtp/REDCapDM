@@ -1014,8 +1014,39 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Handle the case where the 'by_dag' argument is TRUE
   if (by_dag %in% TRUE) {
+
+    # Keep missing DAGs and reserve the existing DAG names.
+    dag_values <- unique(c(
+      as.character(queries$DAG),
+      as.character(report$DAG)
+    ))
+
+    dag_names <- dag_values
+    missing_dag <- is.na(dag_values) | dag_values == ""
+
+    if (any(missing_dag)) {
+      fallback <- ifelse(
+        is.na(dag_values[missing_dag]),
+        "(Unassigned)",
+        "(Empty DAG)"
+      )
+
+      dag_names[missing_dag] <- utils::tail(
+        make.unique(
+          c(dag_values[!missing_dag], fallback),
+          sep = "_"
+        ),
+        length(fallback)
+      )
+    }
+
+    dag_group <- function(x) {
+      dag_names[match(as.character(x), dag_values)]
+    }
+
+    report_groups <- dag_group(report$DAG)
     report[is.na(report)] <- "-"
-    report_dag <- split(report, f = report$DAG)
+    report_dag <- split(report, f = report_groups)
 
     # Build individual reports for each DAG
     for (i in seq_along(report_dag)) {
@@ -1035,7 +1066,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
     # Prepare final output in the 'by_dag' format
     def <- list(
-      queries = split(queries, f = queries$DAG),
+      queries = split(queries, f = dag_group(queries$DAG)),
       results = report_dag
     )
   } else {
