@@ -798,7 +798,10 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     categorical_factor_fields <- paste0(categorical_fields, ".factor")
     # Filter only the text validated columns
     all_target_fields <- c(validated_text_fields, categorical_fields, categorical_factor_fields)
-    target_columns <- intersect(all_target_fields, colnames(data_def$data))
+    target_columns <- setdiff(
+      intersect(all_target_fields, colnames(data_def$data)),
+      "record_id"
+    )
 
     removed_checkbox_cols <- colnames(data_def$data)[stringr::str_detect(colnames(data_def$data), checkbox_mdc_pattern)]
     # (a checkbox option of a code is in the data when a record has it checked: REDCap exports these columns empty too)
@@ -849,7 +852,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
   } else {
 
     # Validated text fields (numbers, dates, ...): the codes are set to NA, so that the field keeps its type, and kept in a new `<field>_mdc` column next to it
-    text_targets <- intersect(validated_text_fields, colnames(data_def$data))
+    text_targets <- setdiff(
+      intersect(validated_text_fields, colnames(data_def$data)),
+      "record_id"
+    )
+    
     for (var in text_targets) {
       x <- data_def$data[[var]]
 

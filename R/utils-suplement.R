@@ -188,9 +188,9 @@ sort_by_identifier <- function(queries, by_code = FALSE, numeric = TRUE) {
   queries <- queries[do.call(order, keys), , drop = FALSE]
   rownames(queries) <- NULL
 
-  # Numbers only when they are written as numbers: identifiers with leading zeros (e.g. "007") are kept as text
+  # Convert only when every identifier survives the conversion unchanged.
   if (isTRUE(numeric) && ids_are_numbers(id)) {
-    queries$Identifier <- as.numeric(queries$Identifier)
+    queries$Identifier <- as.numeric(id_text(queries$Identifier))
   }
 
   queries
@@ -208,9 +208,37 @@ id_text <- function(x) {
   if (!is.numeric(x)) {
     return(as.character(x))
   }
-  out <- sprintf("%.15g", x)
-  out[is.na(x)] <- NA_character_
-  out
+
+  vapply(x, function(value) {
+    if (is.na(value)) {
+      return(NA_character_)
+    }
+
+    if (!is.finite(value)) {
+      return(as.character(value))
+    }
+
+    # Keep ordinary decimals readable, increasing precision when necessary.
+    for (digits in 15:17) {
+      text <- format(
+        value,
+        scientific = FALSE,
+        trim = TRUE,
+        digits = digits,
+        decimal.mark = ".",
+        big.mark = ""
+      )
+
+      if (isTRUE(as.numeric(text) == value)) {
+        return(text)
+      }
+    }
+
+    stop(
+      "Cannot format a record identifier without losing precision.",
+      call. = FALSE
+    )
+  }, character(1), USE.NAMES = FALSE)
 }
 
 #' Whether all the record identifiers are plain numbers (without leading zeros)
@@ -220,7 +248,15 @@ id_text <- function(x) {
 #' @noRd
 ids_are_numbers <- function(id) {
   id <- id_text(id)
-  all(grepl("^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", id[!is.na(id)]))
+  id <- id[!is.na(id)]
+
+  if (!all(grepl("^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", id))) {
+    return(FALSE)
+  }
+
+  number <- suppressWarnings(as.numeric(id))
+
+  all(is.finite(number) & id_text(number) == id)
 }
 
 natural_rank <- function(x) {

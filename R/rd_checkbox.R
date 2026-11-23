@@ -173,22 +173,25 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     var_check_factors <- var_check[grep("\\.factor$", var_check)]
   }
 
-  # Remove factor-type checkbox variables from the data
+  # Normalize checkbox codes before evaluating branching logic.
   if (length(var_check_factors) > 0) {
     var_check <- var_check[!grepl("\\.factor$", var_check)]
   } else {
-    if (any(purrr::map_lgl(var_check, ~ "Unchecked" %in% levels(data[[.x]])))) {
-      # Transform checkbox variables into binary values (0 or 1)
-      data <- data |>
-        dplyr::mutate(dplyr::across(
+    data <- data |>
+      dplyr::mutate(
+        dplyr::across(
           tidyselect::all_of(var_check),
-          ~ dplyr::case_when(
-            .x == "Unchecked" ~ 0,
-            .x == "Checked" ~ 1,
-            TRUE ~ NA
-          )
-        ))
-    }
+          ~ {
+            value <- as.character(.x)
+
+            dplyr::case_when(
+              value %in% c("0", "Unchecked") ~ 0,
+              value %in% c("1", "Checked") ~ 1,
+              TRUE ~ NA_real_
+            )
+          }
+        )
+      )
   }
 
   # Update results with the transformation
