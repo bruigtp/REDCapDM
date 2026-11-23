@@ -1247,12 +1247,9 @@ api_code_metadata <- function(x, code, name) {
 #' @noRd
 api_label_matches <- function(label, name, arm = NA, arm_name = NA) {
   clean <- function(x) {
-    x <- gsub("<[^>]*>", "", as.character(x))
-    entities <- c("&nbsp;" = " ", "&lt;" = "<", "&gt;" = ">", "&quot;" = "\"", "&#39;" = "'", "&#039;" = "'", "&amp;" = "&")
-    for (i in names(entities)) {
-      x <- gsub(i, entities[[i]], x, fixed = TRUE)
-    }
-    trimws(gsub("[[:space:]]+", " ", gsub("\u00a0", " ", x, fixed = TRUE)))
+    x <- gsub("&#039;", "&#39;", as.character(x), fixed = TRUE)
+    x <- gsub("\u00a0", " ", x, fixed = TRUE)
+    clean_label(x)
   }
   if (is.na(label) || is.na(name)) {
     return(FALSE)
@@ -1285,8 +1282,8 @@ api_label_matches <- function(label, name, arm = NA, arm_name = NA) {
 #'
 #' @param labels Data read with labels (`raw_or_label = "label"`), with `record_id` as its first column.
 #' @param data Data read with the raw values, with `record_id` as its first column.
-#' @param meta List with the metadata of the `event`, `instrument` and `dag` codes (see [api_event_metadata()] and
-#'   [api_code_metadata()]); `NULL` when it couldn't be read.
+#' @param meta List with the metadata of the `event`, `instrument` and `dag` codes (see `api_event_metadata()` and
+#'   `api_code_metadata()`); `NULL` when it couldn't be read.
 #' @return `NULL` if the rows of both requests are not the same ones or a label isn't the one of its code. Otherwise, a
 #'   data frame with the factor versions present (`redcap_event_name.factor`, `redcap_repeat_instrument.factor` and
 #'   `redcap_data_access_group.factor`), whose `unchecked` attribute has the columns with codes instead of labels (their
@@ -1351,9 +1348,9 @@ api_label_columns <- function(labels, data, meta = list()) {
         return(NULL)
       }
     }
-    # Without the metadata of a code, its label isn't used (a single code with a single label in all the rows can't be
-    # the label of another code)
-    if (!all(known) && !(length(codes) == 1 && length(unique(label[!is.na(label)])) == 1)) {
+    
+    # Without metadata for a code, keep the code and report that its label is unverified.
+    if (!all(known)) {
       code_labels[!known] <- codes[!known]
       unchecked <- c(unchecked, column[3])
     }

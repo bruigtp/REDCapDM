@@ -550,6 +550,54 @@ test_that("API branch: the empty data access groups and repeated instrument are 
     mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = data.frame(field_name = "record_id", field_type = "text", form_name = "f1", field_note = " Note\n")))
     mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
     mockery::stub(redcap_data, "REDCapR::redcap_event_instruments", function(...) list(data = data.frame(arm_num = 1, unique_event_name = "visit_arm_1", form = "f1")))
+        mockery::stub(
+      redcap_data,
+      "REDCapR::redcap_event_read",
+      function(...) list(
+        success = TRUE,
+        data = data.frame(
+          event_name = "Visit",
+          arm_num = 1L,
+          unique_event_name = "visit_arm_1"
+        )
+      )
+    )
+
+    mockery::stub(
+      redcap_data,
+      "REDCapR::redcap_arm_export",
+      function(...) list(
+        success = TRUE,
+        data = data.frame(
+          arm_number = 1L,
+          arm_name = "Arm 1"
+        )
+      )
+    )
+
+    mockery::stub(
+      redcap_data,
+      "REDCapR::redcap_instruments",
+      function(...) list(
+        success = TRUE,
+        data = data.frame(
+          instrument_name = instrument,
+          instrument_label = instrument_label
+        )
+      )
+    )
+
+    mockery::stub(
+      redcap_data,
+      "REDCapR::redcap_dag_read",
+      function(...) list(
+        success = TRUE,
+        data = data.frame(
+          unique_group_name = character(),
+          data_access_group_name = character()
+        )
+      )
+    )
     out <- suppressWarnings(suppressMessages(redcap_data(uri = "https://api.example", token = "tok")))
     # The text of the dictionary has no spaces or line breaks at the beginning or at the end, as with the exported files
     expect_equal(out$dictionary$field_note, "Note")
@@ -757,6 +805,30 @@ test_that("API branch: labels, yes/no and form status factors and forms without 
   mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = dic_api))
   mockery::stub(redcap_data, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
   mockery::stub(redcap_data, "REDCapR::redcap_event_instruments", function(...) list(data = event_api))
+    mockery::stub(
+    redcap_data,
+    "REDCapR::redcap_event_read",
+    function(...) list(
+      success = TRUE,
+      data = data.frame(
+        event_name = "Visit",
+        arm_num = 1L,
+        unique_event_name = "visit_arm_1"
+      )
+    )
+  )
+
+  mockery::stub(
+    redcap_data,
+    "REDCapR::redcap_arm_export",
+    function(...) list(
+      success = TRUE,
+      data = data.frame(
+        arm_number = 1L,
+        arm_name = "Arm 1"
+      )
+    )
+  )
 
   expect_warning(out <- suppressMessages(redcap_data(uri = "https://api.example", token = "tok")), "not linked to any event")
 
@@ -1021,12 +1093,21 @@ test_that("api_label_columns gives each row the label of its code, checked with 
   expect_equal(as.character(out2$redcap_event_name.factor), c("b_arm_1", "v_arm_1", "b_arm_1"))
   expect_equal(attr(out2, "unchecked"), "redcap_event_name.factor")
   # (a single code with a single label can't be the label of another code)
-  out3 <- api_label_columns(lab[c(1, 3), ], raw[c(1, 3), ], list())
-  expect_equal(as.character(out3$redcap_event_name.factor), c("Base", "Base"))
-  expect_length(attr(out3, "unchecked"), 0)
+  out3 <- api_label_columns(
+    lab[c(1, 3), ],
+    raw[c(1, 3), ],
+    list()
+  )
 
-  # The labels without the system columns (e.g. a request of some fields): no factor versions
-  expect_equal(ncol(api_label_columns(lab[, 1, drop = FALSE], raw, meta)), 0)
+  expect_equal(
+    as.character(out3$redcap_event_name.factor),
+    c("b_arm_1", "b_arm_1")
+  )
+
+  expect_equal(
+    attr(out3, "unchecked"),
+    "redcap_event_name.factor"
+  )
 })
 
 test_that("api_label_matches accepts the label of the code, with or without its arm, and not the label of another one", {

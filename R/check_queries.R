@@ -64,12 +64,13 @@
 #'   \item \strong{Identity of a query:} a query is the same in both reports when it has the same \code{Identifier},
 #'     \code{Event} and \code{Repetition} (when both reports have them), \code{Field} (when both reports have it;
 #'     otherwise \code{Description}) and \code{Query}. \code{Event} is the unique event name and \code{Field} the
-#'     name of the field: renaming an event, an arm or a field in REDCap doesn't solve its queries. Their labels
+#'     name of the field: changing the display labels of events, arms or fields doesn't solve their queries. Their labels
 #'     (\code{EventLabel} and \code{Description}) and the other columns (e.g. \code{Link} or \code{DAG}) are taken from
 #'     the new report, so a query whose label or link changed is still one pending query.
-#'   \item \strong{Reports created before \code{EventLabel} existed:} they have the label of the event in
-#'     \code{Event}. When a single event of the new report has that label, it is replaced by its unique event name;
-#'     a label of several events (e.g. the same visit in several arms) can't be told apart.
+#'   \item \strong{Reports created before \code{EventLabel} existed:} \code{rd_query()} could store event labels
+#'     in \code{Event} when factor labels were available. Reports from \code{rd_event()} already stored unique event
+#'     names there, but used labels in their default \code{Query} text. Recognised legacy labels and default
+#'     missing-event query texts are normalised to unique event names. Shared labels cannot be resolved automatically.
 #'   \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned to a query that would
 #'     otherwise be \code{New} when the old report has a query with the same \code{Identifier}, \code{Event},
 #'     \code{Repetition}, \code{Field} (each of them when both reports have it) and \code{Description} — this
