@@ -174,14 +174,17 @@ The function performs the following steps:
 
   - DAG (if present)
 
-  - Event and Instrument
+  - Event (the unique event name, e.g. `baseline_arm_1`), EventLabel
+    (its label, e.g. `Baseline (Arm 1: Drug A)`) and Instrument
 
   - Field, Repetition, Description, Query statement
 
   - Optional link to REDCap entry
 
 - Optionally combines results with previous query outputs using
-  `add_to`.
+  `add_to`. The event of a query is its unique event name: a label can
+  be renamed in REDCap or be the same in several arms. The previous
+  queries take the current label of their events.
 
 - Produces a summarized report, optionally including variables with zero
   queries.

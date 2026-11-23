@@ -16,9 +16,10 @@ classify each query into one of four statuses:
 
 - **Miscorrected** — a special case where a query in the new report is
   marked as `New` but the old report has a query with the same
-  `Identifier`, `Event`, `Repetition`, `Field` (each of them when both
-  reports have it) and `Description` (suggesting a re-issued or modified
-  query for the same record and field).
+  `Identifier`, `Event`, `Repetition` and `Field` (each of them when
+  both reports have it; `Description` when they don't have `Field`),
+  suggesting a re-issued or modified query for the same record and
+  field.
 
 The function returns a detailed comparison table of queries with a
 `Modification` factor (one of the four statuses) and an HTML summary
@@ -113,15 +114,26 @@ HTML summary viewer.
 
 - **Identity of a query:** a query is the same in both reports when it
   has the same `Identifier`, `Event` and `Repetition` (when both reports
-  have them), `Field` (when both reports have it), `Description` and
-  `Query`. The other columns (e.g. `Link` or `DAG`) are taken from the
-  new report, so a query whose link changed is still one pending query.
+  have them), `Field` (when both reports have it; otherwise
+  `Description`) and `Query`. `Event` is the unique event name and
+  `Field` the name of the field: renaming an event, an arm or a field in
+  REDCap doesn't solve its queries. Their labels (`EventLabel` and
+  `Description`) and the other columns (e.g. `Link` or `DAG`) are taken
+  from the new report, so a query whose label or link changed is still
+  one pending query.
+
+- **Reports created before `EventLabel` existed:** they have the label
+  of the event in `Event`. When a single event of the new report has
+  that label, it is replaced by its unique event name; a label of
+  several events (e.g. the same visit in several arms) can't be told
+  apart.
 
 - **Miscorrected detection:** A `Miscorrected` label is assigned to a
   query that would otherwise be `New` when the old report has a query
   with the same `Identifier`, `Event`, `Repetition`, `Field` (each of
   them when both reports have it) and `Description` — this signals a
-  likely re-issued or modified query. New queries without such a query
+  likely re-issued or modified query (`Description` is only compared
+  when the reports don't have `Field`). New queries without such a query
   in the old report are `New`, also when there are several of them for
   the same field.
 

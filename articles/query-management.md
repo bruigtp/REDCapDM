@@ -50,6 +50,16 @@ the Data Access Group (DAG), the event in which each query can be found,
 along with the name and the description of the analyzed variable and a
 brief description of the query.
 
+The event of each query is in two columns: `Event` has its unique event
+name (e.g. `baseline_visit_arm_1`), which identifies the event, and
+`EventLabel` its label (e.g. `Baseline visit`), which the summary tables
+show. The labels can be renamed in REDCap, and several arms can have
+events with the same label (e.g. `Baseline (Arm 1: Drug A)` and
+`Baseline (Arm 2: Placebo)`, or just `Baseline`), so `add_to`, the
+removal of duplicates and
+[`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+use the unique event name.
+
 Let’s see some examples of the usability of the function in generating
 different types of queries.
 
@@ -777,13 +787,23 @@ There are 7 queries pending resolution, 4 solved queries, 1 miscorrected
 query, and 1 new query between the previous and the new query dataset.
 
 > Note: A new query is “Miscorrected” when the old report had a query of
-> the same record (`Identifier`), variable (`Field` and `Description`),
-> event (`Event`) and repetition (`Repetition`), each of these columns
-> when both reports have it, but with another reason (`Query`). For
-> instance, if a variable had a missing value in the old report, but in
-> the new report it has a value outside the established range, the new
-> query is “Miscorrected” and the old one “Solved”. A query of another
-> event or repetition is “New”.
+> the same record (`Identifier`), variable (`Field`, or `Description`
+> when the reports don’t have `Field`), event (`Event`) and repetition
+> (`Repetition`), each of these columns when both reports have it, but
+> with another reason (`Query`). For instance, if a variable had a
+> missing value in the old report, but in the new report it has a value
+> outside the established range, the new query is “Miscorrected” and the
+> old one “Solved”. A query of another event or repetition is “New”.
+
+> Note: Renaming metadata doesn’t solve a query. The event of a query is
+> its unique event name and the variable its field name, so if an event,
+> an arm or a field is renamed in REDCap between both reports, its
+> queries are still “Pending”, with the new labels (`EventLabel` and
+> `Description`). The reports created with older versions of REDCapDM
+> have the label of the event in `Event`: when a single event has that
+> label,
+> [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+> uses its unique event name.
 
   
 

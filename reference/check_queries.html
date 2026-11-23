@@ -6,9 +6,9 @@ Pending — the same query is present in both reports (no change detected),
 Solved — the query was present in the old report but is absent from the new report,
 New — the query appears in the new report but was not present in the old report,
 Miscorrected — a special case where a query in the new report is marked as New
-but the old report has a query with the same Identifier, Event, Repetition,
-Field (each of them when both reports have it) and Description (suggesting a re-issued or
-modified query for the same record and field).
+but the old report has a query with the same Identifier, Event, Repetition and
+Field (each of them when both reports have it; Description when they don't have Field),
+suggesting a re-issued or modified query for the same record and field.
 
 
 The function returns a detailed comparison table of queries with a Modification factor (one of the four statuses) and an HTML summary table showing counts per status."><meta property="og:description" content="
@@ -18,9 +18,9 @@ Pending — the same query is present in both reports (no change detected),
 Solved — the query was present in the old report but is absent from the new report,
 New — the query appears in the new report but was not present in the old report,
 Miscorrected — a special case where a query in the new report is marked as New
-but the old report has a query with the same Identifier, Event, Repetition,
-Field (each of them when both reports have it) and Description (suggesting a re-issued or
-modified query for the same record and field).
+but the old report has a query with the same Identifier, Event, Repetition and
+Field (each of them when both reports have it; Description when they don't have Field),
+suggesting a re-issued or modified query for the same record and field.
 
 
 The function returns a detailed comparison table of queries with a Modification factor (one of the four statuses) and an HTML summary table showing counts per status."><meta property="og:image" content="https://bruigtp.github.io/REDCapDM/logo.png"></head><body>
@@ -76,9 +76,9 @@ query into one of four statuses:</p><ul><li><p><strong>Pending</strong> — the 
 <li><p><strong>Solved</strong> — the query was present in the old report but is absent from the new report,</p></li>
 <li><p><strong>New</strong> — the query appears in the new report but was not present in the old report,</p></li>
 <li><p><strong>Miscorrected</strong> — a special case where a query in the new report is marked as <code>New</code>
-but the old report has a query with the same <code>Identifier</code>, <code>Event</code>, <code>Repetition</code>,
-<code>Field</code> (each of them when both reports have it) and <code>Description</code> (suggesting a re-issued or
-modified query for the same record and field).</p></li>
+but the old report has a query with the same <code>Identifier</code>, <code>Event</code>, <code>Repetition</code> and
+<code>Field</code> (each of them when both reports have it; <code>Description</code> when they don't have <code>Field</code>),
+suggesting a re-issued or modified query for the same record and field.</p></li>
 </ul><p>The function returns a detailed comparison table of queries with a <code>Modification</code> factor (one of the four statuses) and an HTML summary table showing counts per status.</p>
     </div>
 
@@ -149,13 +149,19 @@ character prior to calling <code>check_queries()</code> to avoid factor-level mi
 before <code>"100-10"</code>). <code>Identifier</code> is returned as a number only when every identifier is a
 plain number without leading zeros (e.g. <code>"007"</code> is kept as text).</p></li>
 <li><p><strong>Identity of a query:</strong> a query is the same in both reports when it has the same <code>Identifier</code>,
-<code>Event</code> and <code>Repetition</code> (when both reports have them), <code>Field</code> (when both reports have it),
-<code>Description</code> and <code>Query</code>. The other columns (e.g. <code>Link</code> or <code>DAG</code>) are taken from the new report,
-so a query whose link changed is still one pending query.</p></li>
+<code>Event</code> and <code>Repetition</code> (when both reports have them), <code>Field</code> (when both reports have it;
+otherwise <code>Description</code>) and <code>Query</code>. <code>Event</code> is the unique event name and <code>Field</code> the
+name of the field: renaming an event, an arm or a field in REDCap doesn't solve its queries. Their labels
+(<code>EventLabel</code> and <code>Description</code>) and the other columns (e.g. <code>Link</code> or <code>DAG</code>) are taken from
+the new report, so a query whose label or link changed is still one pending query.</p></li>
+<li><p><strong>Reports created before <code>EventLabel</code> existed:</strong> they have the label of the event in
+<code>Event</code>. When a single event of the new report has that label, it is replaced by its unique event name;
+a label of several events (e.g. the same visit in several arms) can't be told apart.</p></li>
 <li><p><strong>Miscorrected detection:</strong> A <code>Miscorrected</code> label is assigned to a query that would
 otherwise be <code>New</code> when the old report has a query with the same <code>Identifier</code>, <code>Event</code>,
 <code>Repetition</code>, <code>Field</code> (each of them when both reports have it) and <code>Description</code> — this
-signals a likely re-issued or modified query. New queries without such a query in the old report are
+signals a likely re-issued or modified query (<code>Description</code> is only compared when the reports don't have
+<code>Field</code>). New queries without such a query in the old report are
 <code>New</code>, also when there are several of them for the same field.</p></li>
 </ul></div>
     <div class="section level2">

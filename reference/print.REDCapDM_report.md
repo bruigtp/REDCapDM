@@ -50,13 +50,14 @@ report
 #> Each query is in `$queries` and the summary table in `$results`.
 #> `rd_export()` saves the queries in an Excel file.
 head(report$queries)
-#> # A tibble: 6 × 9
-#>   Identifier DAG       Event Instrument Field Repetition Description Query Code 
-#>   <chr>      <chr>     <chr> <chr>      <chr> <chr>      <chr>       <chr> <chr>
-#> 1 100-31     Hospital… Base… Demograph… age   -          Age         The … 100-…
-#> 2 100-58     Hospital… Base… Comorbidi… copd  -          Chronic ob… The … 100-…
-#> 3 100-58     Hospital… Base… Demograph… age   -          Age         The … 100-…
-#> 4 100-65     Hospital… Base… Demograph… age   -          Age         The … 100-…
-#> 5 100-66     Hospital… Base… Demograph… age   -          Age         The … 100-…
-#> 6 100-72     Hospital… Base… Demograph… age   -          Age         The … 100-…
+#> # A tibble: 6 × 10
+#>   Identifier DAG        Event EventLabel Instrument Field Repetition Description
+#>   <chr>      <chr>      <chr> <chr>      <chr>      <chr> <chr>      <chr>      
+#> 1 100-31     Hospital … base… Baseline … Demograph… age   -          Age        
+#> 2 100-58     Hospital … base… Baseline … Comorbidi… copd  -          Chronic ob…
+#> 3 100-58     Hospital … base… Baseline … Demograph… age   -          Age        
+#> 4 100-65     Hospital … base… Baseline … Demograph… age   -          Age        
+#> 5 100-66     Hospital … base… Baseline … Demograph… age   -          Age        
+#> 6 100-72     Hospital … base… Baseline … Demograph… age   -          Age        
+#> # ℹ 2 more variables: Query <chr>, Code <chr>
 ```

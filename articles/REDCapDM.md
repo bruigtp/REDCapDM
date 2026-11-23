@@ -234,6 +234,20 @@ In this case, there is no need to specify the event-form file since the
 function will download it automatically using the API connection, if the
 project is longitudinal.
 
+With the API,
+[`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+makes two requests, one with the values and another one with their
+labels. The record identifiers are kept as text while they are read, so
+long identifiers (e.g. `9007199254740993`, beyond the precision of the
+numbers of R) or identifiers with zeros on the left (e.g. `007`) are not
+changed; as with the exported files, the identifier is a number only
+when its text is that number. The labels of the events, repeated
+instruments and Data Access Groups (the `.factor` columns) are given to
+each row by its code, such as the unique event name, and they are
+checked with the metadata of the project: if someone changes the records
+while they are read, the labels are read again, and the function stops
+with an error if they keep changing.
+
 > **Warning**: Please keep in mind that the API token gives you special
 > access to the REDCap project and that it should not be shared with
 > other people. Instead of writing it in your scripts, save it in your

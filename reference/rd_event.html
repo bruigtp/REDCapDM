@@ -99,7 +99,7 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
 
 
 <dt id="arg-query-name">query_name<a class="anchor" aria-label="anchor" href="#arg-query-name"></a></dt>
-<dd><p>Optional character vector describing each query. Defaults to a standard format: <code>The event (event_name) is missing</code>.</p></dd>
+<dd><p>Optional character vector describing each query. Defaults to a standard format with the unique event name: <code>The event 'event_name' is missing.</code></p></dd>
 
 
 <dt id="arg-add-to">add_to<a class="anchor" aria-label="anchor" href="#arg-add-to"></a></dt>
@@ -126,7 +126,7 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>REDCapDM_report</code>, which prints a short summary (see <code><a href="print.REDCapDM_report.html">print.REDCapDM_report()</a></code>), with two elements:</p><dl><dt><code>queries</code></dt>
 <dd><p>A data frame listing records missing the specified events.
-Columns: <code>Identifier</code> (the record identifier, <code>record_id</code> or else the first field of the dictionary, which <code>filter</code> can use by its name), <code>DAG</code>, <code>Event</code>, <code>Instrument</code>,
+Columns: <code>Identifier</code> (the record identifier, <code>record_id</code> or else the first field of the dictionary, which <code>filter</code> can use by its name), <code>DAG</code>, <code>Event</code> (the unique event name), <code>EventLabel</code> (its label), <code>Instrument</code>,
 <code>Field</code>, <code>Repetition</code>, <code>Description</code>, <code>Query</code>, <code>Code</code>,
 and optionally <code>Link</code>. If no queries are found this will be an empty
 data frame with the expected columns.</p></dd>
@@ -165,12 +165,12 @@ the number of missing records per event. Returned as <code><a href="https://rdrr
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Records missing the event:</span></span></span>
 <span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">queries</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Identifier DAG           Event Instrument Field Repetition Description</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      100-1   - follow_up_arm_1          -     -          -   Follow-up</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      100-2   - follow_up_arm_1          -     -          -   Follow-up</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                               Query    Code</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 The event 'Follow-up' is missing. 100-1-1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 The event 'Follow-up' is missing. 100-2-1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Identifier DAG           Event EventLabel Instrument Field Repetition</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      100-1   - follow_up_arm_1  Follow-up          -     -          -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      100-2   - follow_up_arm_1  Follow-up          -     -          -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Description                                   Query    Code</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   Follow-up The event 'follow_up_arm_1' is missing. 100-1-1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Follow-up The event 'follow_up_arm_1' is missing. 100-2-1</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># HTML summary (in RMarkdown or Viewer)</span></span></span>
 <span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">results</span></span></span>

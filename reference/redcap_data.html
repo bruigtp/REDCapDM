@@ -97,7 +97,8 @@ Import REDCap data into R either from REDCap's exported R file or directly via t
 
 
 <dt id="arg-filter-field">filter_field<a class="anchor" aria-label="anchor" href="#arg-filter-field"></a></dt>
-<dd><p>Optional character vector of field names to request from the API.</p></dd>
+<dd><p>Optional character vector of field names to request from the API. It must include the record
+identifier (the first field of the project, e.g. <code>record_id</code>).</p></dd>
 
 
 <dt id="arg-survey-fields">survey_fields<a class="anchor" aria-label="anchor" href="#arg-survey-fields"></a></dt>
@@ -131,6 +132,14 @@ that the fields can take (e.g. the code of an option).</p></dd>
 <li><p><strong>API</strong> — use <code>uri</code> and <code>token</code> to pull data and metadata directly from REDCap.</p></li>
 </ul><p>If the project is longitudinal, provide <code>event_path</code> (instrument–event mapping)
 or the function will attempt to fetch it from the API when using API mode.</p>
+<p>With the API, the values and their labels are read with two requests. The record identifiers are read as text in
+both of them (long identifiers such as <code>9007199254740993</code>, or <code>100000000000000</code>, are not changed), and the
+identifier is a number only when its text is that number, as with the exported files. The labels of the events
+(<code>redcap_event_name.factor</code>), repeated instruments and data access groups are given to each row by its code (the
+unique event name, instrument or data access group), and they are checked with the metadata of the project (its
+events, arms, instruments and data access groups): if the records changed between the two requests, the labels are
+read again, and the function stops if they keep changing. When that metadata can't be read, those columns have
+the codes instead of the labels, with a warning.</p>
 <p><strong>Steps for using exported data in REDCap:</strong></p><ol><li><p>Use the REDCap <em>Export Data</em> function and choose <em>R Statistical Software</em> format.</p></li>
 <li><p>REDCap generates:</p><ul><li><p>A CSV file with observations.</p></li>
 <li><p>An R script to format variables for import.</p></li>

@@ -170,11 +170,13 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 <li><p>Applies additional user-specified filters before identifying queries.</p></li>
 <li><p>Generates structured query results with metadata including:</p><ul><li><p>Identifier: the record identifier, <code>record_id</code> or else the first field of the dictionary (e.g. <code>subject_id</code>), whatever its position in the data. Filters and expressions can use it by its name.</p></li>
 <li><p>DAG (if present)</p></li>
-<li><p>Event and Instrument</p></li>
+<li><p>Event (the unique event name, e.g. <code>baseline_arm_1</code>), EventLabel (its label, e.g. <code>Baseline (Arm 1: Drug A)</code>) and Instrument</p></li>
 <li><p>Field, Repetition, Description, Query statement</p></li>
 <li><p>Optional link to REDCap entry</p></li>
 </ul></li>
-<li><p>Optionally combines results with previous query outputs using <code>add_to</code>.</p></li>
+<li><p>Optionally combines results with previous query outputs using <code>add_to</code>. The event of a query is its unique event
+name: a label can be renamed in REDCap or be the same in several arms. The previous queries take the current label
+of their events.</p></li>
 <li><p>Produces a summarized report, optionally including variables with zero queries.</p></li>
 <li><p>Provides warnings for variables with branching logic that could not be automatically evaluated.</p></li>
 </ul></div>

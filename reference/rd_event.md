@@ -64,7 +64,8 @@ rd_event(
 - query_name:
 
   Optional character vector describing each query. Defaults to a
-  standard format: `The event (event_name) is missing`.
+  standard format with the unique event name:
+  `The event 'event_name' is missing.`
 
 - add_to:
 
@@ -103,9 +104,10 @@ with two elements:
   A data frame listing records missing the specified events. Columns:
   `Identifier` (the record identifier, `record_id` or else the first
   field of the dictionary, which `filter` can use by its name), `DAG`,
-  `Event`, `Instrument`, `Field`, `Repetition`, `Description`, `Query`,
-  `Code`, and optionally `Link`. If no queries are found this will be an
-  empty data frame with the expected columns.
+  `Event` (the unique event name), `EventLabel` (its label),
+  `Instrument`, `Field`, `Repetition`, `Description`, `Query`, `Code`,
+  and optionally `Link`. If no queries are found this will be an empty
+  data frame with the expected columns.
 
 - `results`:
 
@@ -141,12 +143,12 @@ res <- rd_event(
 
 # Records missing the event:
 res$queries
-#>   Identifier DAG           Event Instrument Field Repetition Description
-#> 1      100-1   - follow_up_arm_1          -     -          -   Follow-up
-#> 2      100-2   - follow_up_arm_1          -     -          -   Follow-up
-#>                               Query    Code
-#> 1 The event 'Follow-up' is missing. 100-1-1
-#> 2 The event 'Follow-up' is missing. 100-2-1
+#>   Identifier DAG           Event EventLabel Instrument Field Repetition
+#> 1      100-1   - follow_up_arm_1  Follow-up          -     -          -
+#> 2      100-2   - follow_up_arm_1  Follow-up          -     -          -
+#>   Description                                   Query    Code
+#> 1   Follow-up The event 'follow_up_arm_1' is missing. 100-1-1
+#> 2   Follow-up The event 'follow_up_arm_1' is missing. 100-2-1
 
 # HTML summary (in RMarkdown or Viewer)
 res$results

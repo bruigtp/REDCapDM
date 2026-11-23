@@ -17,6 +17,24 @@
 - REDCapDM now requires dplyr 1.1.0 or later (released in January 2023).
 - Reading data from the REDCap API needs REDCapR 1.2.0 or later: older
   versions only return the events of the first arm of the project.
+- The query reports of
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  have the unique event name (e.g. `enrollment_arm_1`) in `Event`, and
+  its label (e.g. `Enrollment (Arm 1: Drug A)`) in a new `EventLabel`
+  column, after `Event`. `Event` had the label when the data had
+  `redcap_event_name.factor`, so two events with the same label
+  (e.g. the same visit in several arms) were one event for `add_to`, the
+  duplicates and
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md),
+  and renaming an event or an arm in REDCap solved its queries. The
+  default text of the queries of
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  also has the unique event name
+  (`The event 'follow_up_arm_1' is missing.`). The summary tables and
+  [`print()`](https://rdrr.io/r/base/print.html) show the labels (with
+  the unique event name when several events have the same label).
 
 ### New features
 
@@ -877,15 +895,45 @@
   (e.g. `rd_export(report$queries)`): before, it said that there were no
   queries to export.
 - [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
-  with the API checks that the two requests it makes (the values and
-  their labels) return the same rows, by the record identifier, the
-  repetition and the event, repeated instrument and data access group of
-  each row. The labels were joined by position, so if the records
-  changed between both requests (e.g. someone entered, deleted or
-  imported data), the labels of the events, repeated instruments and
-  data access groups went to other rows, or the rows were repeated,
-  without warning. The labels are read again (twice at most) and, if the
-  rows still differ, the function stops with an error.
+  with the API gives each row the label of its event, repeated
+  instrument and data access group by its code (the unique event name,
+  instrument or data access group), and checks each label with the
+  metadata of the project (its events, arms, instruments and data access
+  groups). The values and their labels are read with two requests, and
+  the labels were joined by position: if the records changed between
+  both requests (e.g. someone entered, deleted or imported data), the
+  labels went to other rows, or the rows were repeated, without warning,
+  also when the rows of both requests were consistent among themselves
+  (e.g. the labels of two events of a record swapped, or a record moved
+  to another data access group). If the rows of both requests or their
+  labels differ, the labels are read again (twice at most), and then the
+  function stops with an error. When the metadata can’t be read, these
+  columns have the codes instead of the labels, with a warning.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the API reads the record identifiers as text, also in the first
+  request of REDCapR, which reads the identifiers of the records: long
+  identifiers were read as numbers, so two of them could be the same one
+  (e.g. `9007199254740992` and `9007199254740993`), others were
+  requested as another text (e.g. `100000000000000` as `1e+14`) and the
+  reading failed, and identifiers with zeros on the left lost them. As
+  with the exported files, the identifier is a number only when its text
+  is that number.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  with the API said that `filter_field` didn’t have the record
+  identifier for any error of REDCapR about records without rows, also
+  when `filter_field` had it
+  (e.g. `filter_field = c("record_id", "value")`). It only says so when
+  the identifier of the project isn’t in `filter_field`; otherwise the
+  error of the API is kept as the parent of the error.
+- [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  identifies the event of a query by its unique event name, and the
+  field by its name: renaming an event, an arm or a field in REDCap no
+  longer solves its queries (they are pending, with the new labels), and
+  the queries of events with the same label are no longer merged (e.g. a
+  query solved in one arm and a new one in another arm were one pending
+  query). The reports created before `EventLabel` existed, with the
+  label in `Event`, take the unique event name when a single event has
+  that label.
 - [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md)
   plots grouped data (e.g. with
   [`dplyr::group_by()`](https://dplyr.tidyverse.org/reference/group_by.html))

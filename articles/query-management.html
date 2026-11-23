@@ -117,6 +117,9 @@ DAG
 Event
 </th>
 <th style="text-align:left;font-weight: bold;">
+EventLabel
+</th>
+<th style="text-align:left;font-weight: bold;">
 Instrument
 </th>
 <th style="text-align:left;font-weight: bold;">
@@ -142,6 +145,9 @@ Code
 </td>
 <td style="text-align:left;">
 Hospital 11
+</td>
+<td style="text-align:left;">
+baseline_visit_arm_1
 </td>
 <td style="text-align:left;">
 Baseline visit
@@ -173,6 +179,9 @@ The value is NA and it should not be missing
 Hospital 5
 </td>
 <td style="text-align:left;">
+baseline_visit_arm_1
+</td>
+<td style="text-align:left;">
 Baseline visit
 </td>
 <td style="text-align:left;">
@@ -200,6 +209,9 @@ The value is NA and it should not be missing
 </td>
 <td style="text-align:left;">
 Hospital 5
+</td>
+<td style="text-align:left;">
+baseline_visit_arm_1
 </td>
 <td style="text-align:left;">
 Baseline visit
@@ -231,6 +243,9 @@ The value is NA and it should not be missing
 Hospital 10
 </td>
 <td style="text-align:left;">
+baseline_visit_arm_1
+</td>
+<td style="text-align:left;">
 Baseline visit
 </td>
 <td style="text-align:left;">
@@ -260,6 +275,9 @@ The value is NA and it should not be missing
 Hospital 2
 </td>
 <td style="text-align:left;">
+baseline_visit_arm_1
+</td>
+<td style="text-align:left;">
 Baseline visit
 </td>
 <td style="text-align:left;">
@@ -287,6 +305,9 @@ The value is NA and it should not be missing
 </td>
 <td style="text-align:left;">
 Hospital 2
+</td>
+<td style="text-align:left;">
+baseline_visit_arm_1
 </td>
 <td style="text-align:left;">
 Baseline visit
@@ -356,6 +377,15 @@ their REDCap project. It includes information such as the record
 identifier, the Data Access Group (DAG), the event in which each query
 can be found, along with the name and the description of the analyzed
 variable and a brief description of the query.</p>
+<p>The event of each query is in two columns: <code>Event</code> has its
+unique event name (e.g. <code>baseline_visit_arm_1</code>), which
+identifies the event, and <code>EventLabel</code> its label
+(e.g. <code>Baseline visit</code>), which the summary tables show. The
+labels can be renamed in REDCap, and several arms can have events with
+the same label (e.g. <code>Baseline (Arm 1: Drug A)</code> and
+<code>Baseline (Arm 2: Placebo)</code>, or just <code>Baseline</code>),
+so <code>add_to</code>, the removal of duplicates and
+<code><a href="../reference/check_queries.html">check_queries()</a></code> use the unique event name.</p>
 <p>Let’s see some examples of the usability of the function in
 generating different types of queries.</p>
 </div>
@@ -1118,6 +1148,9 @@ DAG
 Event
 </th>
 <th style="text-align:left;font-weight: bold;">
+EventLabel
+</th>
+<th style="text-align:left;font-weight: bold;">
 Instrument
 </th>
 <th style="text-align:left;font-weight: bold;">
@@ -1142,6 +1175,9 @@ Code
 </td>
 <td style="text-align:left;">
 Hospital 11
+</td>
+<td style="text-align:left;">
+baseline_visit_arm_1
 </td>
 <td style="text-align:left;">
 Baseline visit
@@ -1783,13 +1819,24 @@ query dataset.</p>
 <blockquote>
 <p>Note: A new query is “Miscorrected” when the old report had a query
 of the same record (<code>Identifier</code>), variable
-(<code>Field</code> and <code>Description</code>), event
-(<code>Event</code>) and repetition (<code>Repetition</code>), each of
-these columns when both reports have it, but with another reason
-(<code>Query</code>). For instance, if a variable had a missing value in
-the old report, but in the new report it has a value outside the
-established range, the new query is “Miscorrected” and the old one
-“Solved”. A query of another event or repetition is “New”.</p>
+(<code>Field</code>, or <code>Description</code> when the reports don’t
+have <code>Field</code>), event (<code>Event</code>) and repetition
+(<code>Repetition</code>), each of these columns when both reports have
+it, but with another reason (<code>Query</code>). For instance, if a
+variable had a missing value in the old report, but in the new report it
+has a value outside the established range, the new query is
+“Miscorrected” and the old one “Solved”. A query of another event or
+repetition is “New”.</p>
+</blockquote>
+<blockquote>
+<p>Note: Renaming metadata doesn’t solve a query. The event of a query
+is its unique event name and the variable its field name, so if an
+event, an arm or a field is renamed in REDCap between both reports, its
+queries are still “Pending”, with the new labels
+(<code>EventLabel</code> and <code>Description</code>). The reports
+created with older versions of REDCapDM have the label of the event in
+<code>Event</code>: when a single event has that label,
+<code><a href="../reference/check_queries.html">check_queries()</a></code> uses its unique event name.</p>
 </blockquote>
 <p><br></p>
 <p>Query control output:</p>
@@ -1803,6 +1850,9 @@ DAG
 </th>
 <th style="text-align:left;font-weight: bold;">
 Event
+</th>
+<th style="text-align:left;font-weight: bold;">
+EventLabel
 </th>
 <th style="text-align:left;font-weight: bold;">
 Instrument
@@ -1833,6 +1883,9 @@ Modification
 </td>
 <td style="text-align:left;">
 Hospital 11
+</td>
+<td style="text-align:left;">
+baseline_visit_arm_1
 </td>
 <td style="text-align:left;">
 Baseline visit
@@ -1867,6 +1920,9 @@ Pending
 Hospital 11
 </td>
 <td style="text-align:left;">
+baseline_visit_arm_1
+</td>
+<td style="text-align:left;">
 Baseline visit
 </td>
 <td style="text-align:left;">
@@ -1897,6 +1953,9 @@ New
 </td>
 <td style="text-align:left;">
 Hospital 24
+</td>
+<td style="text-align:left;">
+baseline_visit_arm_1
 </td>
 <td style="text-align:left;">
 Baseline visit
@@ -1931,6 +1990,9 @@ Pending
 Hospital 5
 </td>
 <td style="text-align:left;">
+baseline_visit_arm_1
+</td>
+<td style="text-align:left;">
 Baseline visit
 </td>
 <td style="text-align:left;">
@@ -1961,6 +2023,9 @@ Pending
 </td>
 <td style="text-align:left;">
 Hospital 5
+</td>
+<td style="text-align:left;">
+baseline_visit_arm_1
 </td>
 <td style="text-align:left;">
 Baseline visit
