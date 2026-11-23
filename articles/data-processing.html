@@ -597,7 +597,7 @@ in the built-in dataset:</p>
 <span>            var <span class="op">=</span> <span class="st">"screening_fail_crit"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">logic_trans</span><span class="op">$</span><span class="va">rlogic</span></span></code></pre></div>
-<pre><code>[1] "ifelse(data$exc_1 == \"1\" | data$inc_1 == \"0\" | data$inc_2 == \"0\" | data$inc_3 == \"0\", 1, 0)"</code></pre>
+<pre><code>[1] "ifelse(data$exc_1=='1' | data$inc_1=='0' | data$inc_2=='0' | data$inc_3=='0',1,0)"</code></pre>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">logic_trans</span><span class="op">$</span><span class="va">eval_data</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  record_id        redcap_event_name eval

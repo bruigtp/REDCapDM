@@ -612,7 +612,7 @@ logic_trans <- covican |>
 logic_trans$rlogic
 ```
 
-    [1] "ifelse(data$exc_1 == \"1\" | data$inc_1 == \"0\" | data$inc_2 == \"0\" | data$inc_3 == \"0\", 1, 0)"
+    [1] "ifelse(data$exc_1=='1' | data$inc_1=='0' | data$inc_2=='0' | data$inc_3=='0',1,0)"
 
 ``` r
 

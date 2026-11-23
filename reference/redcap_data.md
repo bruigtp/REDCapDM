@@ -66,11 +66,11 @@ redcap_data(
 
 - rm_mdc:
 
-  Logical; Removes the Missing Data Codes from the data. Default `TRUE`.
-  With `FALSE`, the codes are kept: in multiple-choice fields as an
-  additional category (in the `.factor` version), and in validated text
-  fields (numbers, dates, ...) in a new `<field>_mdc` column, while the
-  field itself keeps its type and has `NA` in those rows.
+  Logical. Remove Missing Data Codes (default `TRUE`). With `FALSE`,
+  validated text and categorical fields keep their original missing
+  codes in `<field>_mdc` columns. Validated text fields contain `NA` in
+  those rows; categorical fields also retain an additional category in
+  their `.factor` version.
 
 - mdc:
 

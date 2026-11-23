@@ -116,17 +116,21 @@ HTML summary viewer.
   has the same `Identifier`, `Event` and `Repetition` (when both reports
   have them), `Field` (when both reports have it; otherwise
   `Description`) and `Query`. `Event` is the unique event name and
-  `Field` the name of the field: renaming an event, an arm or a field in
-  REDCap doesn't solve its queries. Their labels (`EventLabel` and
-  `Description`) and the other columns (e.g. `Link` or `DAG`) are taken
-  from the new report, so a query whose label or link changed is still
-  one pending query.
+  `Field` the name of the field: changing the display labels of events,
+  arms or fields doesn't solve their queries. Their labels (`EventLabel`
+  and `Description`) and the other columns (e.g. `Link` or `DAG`) are
+  taken from the new report, so a query whose label or link changed is
+  still one pending query.
 
-- **Reports created before `EventLabel` existed:** they have the label
-  of the event in `Event`. When a single event of the new report has
-  that label, it is replaced by its unique event name; a label of
-  several events (e.g. the same visit in several arms) can't be told
-  apart.
+- **Reports created before `EventLabel` existed:**
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  could store event labels in `Event` when factor labels were available.
+  Reports from
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  already stored unique event names there, but used labels in their
+  default `Query` text. Recognised legacy labels and default
+  missing-event query texts are normalised to unique event names. Shared
+  labels cannot be resolved automatically.
 
 - **Miscorrected detection:** A `Miscorrected` label is assigned to a
   query that would otherwise be `New` when the old report has a query
