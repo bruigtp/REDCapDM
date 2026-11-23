@@ -32,7 +32,7 @@ rd_event(
 
 \item{filter}{Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}. It can use objects created in your session or in your function.}
 
-\item{query_name}{Optional character vector describing each query. Defaults to a standard format: \verb{The event (event_name) is missing}.}
+\item{query_name}{Optional character vector describing each query. Defaults to a standard format with the unique event name: \verb{The event 'event_name' is missing.}}
 
 \item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended.}
 
@@ -48,7 +48,7 @@ rd_event(
 A list of class \code{REDCapDM_report}, which prints a short summary (see \code{\link[=print.REDCapDM_report]{print.REDCapDM_report()}}), with two elements:
 \describe{
 \item{\code{queries}}{A data frame listing records missing the specified events.
-Columns: \code{Identifier} (the record identifier, \code{record_id} or else the first field of the dictionary, which \code{filter} can use by its name), \code{DAG}, \code{Event}, \code{Instrument},
+Columns: \code{Identifier} (the record identifier, \code{record_id} or else the first field of the dictionary, which \code{filter} can use by its name), \code{DAG}, \code{Event} (the unique event name), \code{EventLabel} (its label), \code{Instrument},
 \code{Field}, \code{Repetition}, \code{Description}, \code{Query}, \code{Code},
 and optionally \code{Link}. If no queries are found this will be an empty
 data frame with the expected columns.}

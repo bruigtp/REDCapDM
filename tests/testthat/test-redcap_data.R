@@ -250,7 +250,7 @@ test_that("API branch: if labels retrieval returns zero rows a friendly error is
   skip_if_not_installed("REDCapR", "1.2.0")
   skip_if_not_installed("mockery")
   empty_labels <- data.frame()  # zero-row data.frame
-  fake_read_empty_labels <- function(redcap_uri = NULL, token = NULL, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = NULL, export_data_access_groups = NULL, export_survey_fields = NULL, fields = NULL) {
+  fake_read_empty_labels <- function(redcap_uri = NULL, token = NULL, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = NULL, export_data_access_groups = NULL, export_survey_fields = NULL, fields = NULL, ...) {
     return(list(data = empty_labels))
   }
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_read_empty_labels)
@@ -276,7 +276,7 @@ test_that("API branch: when event_path is provided it warns and attempts to read
     check.names = FALSE
   )
 
-  fake_redcap_read2 <- function(redcap_uri = NULL, token = NULL, verbose = FALSE, raw_or_label = "raw", raw_or_label_headers = NULL, export_data_access_groups = NULL, export_survey_fields = NULL, fields = NULL) {
+  fake_redcap_read2 <- function(redcap_uri = NULL, token = NULL, verbose = FALSE, raw_or_label = "raw", raw_or_label_headers = NULL, export_data_access_groups = NULL, export_survey_fields = NULL, fields = NULL, ...) {
     if (identical(raw_or_label, "label")) return(list(data = labels_df))
     if (identical(raw_or_label, "raw")) return(list(data = data_api))
     stop("unexpected")
@@ -386,11 +386,37 @@ test_that("API branch: filter_field missing record_id triggers helpful error", {
     stop("REDCap's PHP code is likely trying to process too much text in one bite", call. = FALSE)
   }
   mockery::stub(redcap_data, "REDCapR::redcap_read", fake_error)
+  mockery::stub(redcap_data, "REDCapR::redcap_metadata_read", function(...) list(data = data.frame(field_name = c("record_id", "fieldX"), field_type = "text")))
 
   expect_error(
     redcap_data(uri = "https://api.example", token = "tok", filter_field = "fieldX"),
-    "record_id"
+    "record_id",
+    class = "REDCapDM_error_argument"
   )
+})
+
+test_that("API branch: with the identifier in filter_field, the error of REDCapR is kept", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  fake_error <- function(...) {
+    stop("REDCap's PHP code is likely trying to process too much text in one bite. The missing ids are: 1e+14.", call. = FALSE)
+  }
+  f <- redcap_data
+  mockery::stub(f, "REDCapR::redcap_read", fake_error)
+  mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = data.frame(field_name = c("record_id", "value"), field_type = "text")))
+
+  err <- expect_error(f(uri = "https://api.example", token = "tok", filter_field = c("record_id", "value")), class = "REDCapDM_error_api")
+  expect_no_match(conditionMessage(err), "missing on the")
+  expect_match(conditionMessage(err$parent), "1e+14", fixed = TRUE)
+
+  # (the identifier of the project can have another name)
+  mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = data.frame(field_name = c("patient", "value"), field_type = "text")))
+  expect_error(f(uri = "https://api.example", token = "tok", filter_field = c("patient", "value")), class = "REDCapDM_error_api")
+  expect_error(f(uri = "https://api.example", token = "tok", filter_field = "value"), "missing on the", class = "REDCapDM_error_argument")
+
+  # (without the dictionary, the missing identifier is not given as the cause)
+  mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) stop("no access"))
+  expect_error(f(uri = "https://api.example", token = "tok", filter_field = "value"), class = "REDCapDM_error_api")
 })
 
 test_that("API branch: observational data retrieval with zero rows errors", {
@@ -831,7 +857,9 @@ api_rows_project <- function() {
                      check.names = FALSE, stringsAsFactors = FALSE),
     dic = data.frame(field_name = c("record_id", "age"), form_name = "f1", field_type = "text", field_label = c("Record ID", "Age"),
                      select_choices_or_calculations = "", text_validation_type_or_show_slider_number = c("", "integer"),
-                     branching_logic = "", stringsAsFactors = FALSE)
+                     branching_logic = "", question_number = "", stringsAsFactors = FALSE),
+    events = data.frame(event_name = "Baseline", arm_num = 1, unique_event_name = "base_arm_1"),
+    dags = data.frame(data_access_group_name = c("Hospital A", "Hospital B", "Hospital C"), unique_group_name = c("hosp_a", "hosp_b", "hosp_c"))
   )
 }
 
@@ -847,6 +875,9 @@ read_api_rows <- function(raw, label_reads) {
   mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = api_rows_project()$dic))
   mockery::stub(f, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
   mockery::stub(f, "REDCapR::redcap_event_instruments", function(...) list(data = data.frame(arm_num = 1, unique_event_name = "base_arm_1", form = "f1")))
+  mockery::stub(f, "REDCapR::redcap_event_read", function(...) list(success = TRUE, data = api_rows_project()$events))
+  mockery::stub(f, "REDCapR::redcap_arm_export", function(...) list(success = TRUE, data = data.frame(arm_number = 1, arm_name = "Arm 1")))
+  mockery::stub(f, "REDCapR::redcap_dag_read", function(...) list(success = TRUE, data = api_rows_project()$dags))
   out <- suppressWarnings(suppressMessages(f(uri = "https://api.example", token = "tok")))
   list(out = out, calls = calls)
 }
@@ -859,7 +890,8 @@ test_that("redcap_data doesn't give the labels of the API to other rows when the
   # The same rows: as before
   ok <- read_api_rows(pr$raw, list(pr$lab))$out
   expect_equal(as.character(ok$data$redcap_data_access_group.factor), c("Hospital A", "Hospital B", "Hospital C"))
-  expect_equal(ok$data$record_id, c("1", "2", "3"), ignore_attr = TRUE)
+  # (the identifiers are read as text: they are numbers when their text is that number, as with the exported files)
+  expect_equal(ok$data$record_id, c(1, 2, 3), ignore_attr = TRUE)
 
   # The same records in another order, fewer or more records: an error, instead of labels of other rows or repeated rows
   for (rows in list(c(3, 1, 2), 1)) {
@@ -873,16 +905,161 @@ test_that("redcap_data doesn't give the labels of the API to other rows when the
   expect_equal(as.character(res$out$data$redcap_data_access_group.factor), c("Hospital A", "Hospital B", "Hospital C"))
 })
 
-test_that("api_rows_match compares the record, the repetition and the labels of each row", {
+test_that("redcap_data doesn't accept the labels of other events or data access groups, even if they are consistent", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  pr <- api_rows_project()
+  pr$raw$redcap_event_name <- c("visita_1_arm_1", "visita_2_arm_1", "visita_1_arm_1")
+  pr$events <- data.frame(event_name = c("Visita 1", "Visita 2"), arm_num = 1, unique_event_name = c("visita_1_arm_1", "visita_2_arm_1"))
+  read <- function(raw, label_reads) {
+    api_rows_project <- function() pr
+    environment(read_api_rows) <- environment()
+    read_api_rows(raw, label_reads)
+  }
+
+  # The labels of the events read in the other order (a permutation: each event has a single label)
+  perm <- pr$lab
+  perm$`Event Name` <- c("Visita 2", "Visita 1", "Visita 2")
+  expect_error(read(pr$raw, list(perm)), "didn't return the same rows", class = "REDCapDM_error_api")
+  # (read again: when the labels are the ones of the events)
+  ok <- pr$lab
+  ok$`Event Name` <- c("Visita 1", "Visita 2", "Visita 1")
+  res <- read(pr$raw, list(perm, ok))
+  expect_equal(res$calls, 2)
+  expect_equal(as.character(res$out$data$redcap_event_name.factor), c("Visita 1", "Visita 2", "Visita 1"))
+
+  # The data access groups reassigned between the two requests (the labels of other groups)
+  dags <- ok
+  dags$`Data Access Group` <- c("Hospital B", "Hospital C", "Hospital A")
+  expect_error(read(pr$raw, list(dags)), "didn't return the same rows", class = "REDCapDM_error_api")
+
+  # The label with the arm, as REDCap writes it in projects with several arms
+  arm <- ok
+  arm$`Event Name` <- c("Visita 1 (Arm 1: Arm 1)", "Visita 2 (Arm 1: Arm 1)", "Visita 1 (Arm 1: Arm 1)")
+  expect_equal(as.character(read(pr$raw, list(arm))$out$data$redcap_event_name.factor), arm$`Event Name`)
+})
+
+test_that("redcap_data reads the identifiers as text: long identifiers are not changed or merged", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  pr <- api_rows_project()
+  ids <- c("9007199254740992", "9007199254740993", "100000000000000")
+  pr$raw$record_id <- ids
+  pr$lab$`Record ID` <- ids
+  guess <- list()
+  fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", guess_type = TRUE, ...) {
+    guess[[raw_or_label]] <<- guess_type
+    list(data = if (raw_or_label == "raw") pr$raw else pr$lab)
+  }
+  f <- redcap_data
+  mockery::stub(f, "REDCapR::redcap_read", fake_read)
+  mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = pr$dic))
+  mockery::stub(f, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
+  mockery::stub(f, "REDCapR::redcap_event_instruments", function(...) list(data = data.frame(arm_num = 1, unique_event_name = "base_arm_1", form = "f1")))
+  mockery::stub(f, "REDCapR::redcap_event_read", function(...) list(success = TRUE, data = pr$events))
+  mockery::stub(f, "REDCapR::redcap_arm_export", function(...) list(success = TRUE, data = data.frame(arm_number = 1, arm_name = "Arm 1")))
+  mockery::stub(f, "REDCapR::redcap_dag_read", function(...) list(success = TRUE, data = pr$dags))
+  out <- suppressWarnings(suppressMessages(f(uri = "https://api.example", token = "tok")))
+
+  # Both requests (also the first request of REDCapR, with the identifiers) read text
+  expect_identical(guess, list(label = FALSE, raw = FALSE))
+  expect_identical(as.vector(out$data$record_id), ids)
+  expect_equal(as.character(out$data$redcap_data_access_group.factor), c("Hospital A", "Hospital B", "Hospital C"))
+  # (the other fields are converted as before)
+  expect_type(out$data$age, "double")
+
+  # Identifiers with zeros on the left keep them
+  pr$raw$record_id <- pr$lab$`Record ID` <- c("001", "002", "010")
+  out <- suppressWarnings(suppressMessages(f(uri = "https://api.example", token = "tok")))
+  expect_identical(as.vector(out$data$record_id), c("001", "002", "010"))
+})
+
+test_that("redcap_data warns when the labels can't be checked with the metadata, and keeps the codes", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  pr <- api_rows_project()
+  f <- redcap_data
+  mockery::stub(f, "REDCapR::redcap_read", function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) list(data = if (raw_or_label == "raw") pr$raw else pr$lab))
+  mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = pr$dic))
+  mockery::stub(f, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
+  mockery::stub(f, "REDCapR::redcap_event_instruments", function(...) list(data = data.frame(arm_num = 1, unique_event_name = "base_arm_1", form = "f1")))
+  mockery::stub(f, "REDCapR::redcap_event_read", function(...) list(success = TRUE, data = pr$events))
+  mockery::stub(f, "REDCapR::redcap_arm_export", function(...) list(success = TRUE, data = data.frame(arm_number = 1, arm_name = "Arm 1")))
+  mockery::stub(f, "REDCapR::redcap_dag_read", function(...) stop("You do not have permission"))
+  expect_warning(out <- suppressMessages(f(uri = "https://api.example", token = "tok")), "redcap_data_access_group.factor")
+  expect_equal(as.character(out$data$redcap_data_access_group.factor), c("hosp_a", "hosp_b", "hosp_c"))
+  expect_equal(as.character(out$data$redcap_event_name.factor), rep("Baseline", 3))
+})
+
+test_that("api_label_columns gives each row the label of its code, checked with the metadata of the project", {
   raw <- data.frame(record_id = c("1", "1", "2"), redcap_event_name = c("b_arm_1", "v_arm_1", "b_arm_1"),
                     redcap_repeat_instrument = c(NA, "meds", NA), redcap_repeat_instance = c(NA, 1, NA))
   lab <- data.frame(record_id = c("1", "1", "2"), `Event Name` = c("Base", "Visit", "Base"),
-                    `Repeat Instrument` = c(NA, "Medication", NA), `Repeat Instance` = c(NA, 1, NA), check.names = FALSE)
-  expect_true(api_rows_match(lab, raw))
-  # another repetition, another event label for the same event, an event label of two events
-  l2 <- lab; l2$`Repeat Instance`[2] <- 2; expect_false(api_rows_match(l2, raw))
-  l3 <- lab; l3$`Event Name`[3] <- "Visit"; expect_false(api_rows_match(l3, raw))
-  r4 <- raw; r4$redcap_event_name[2] <- "b_arm_1"; expect_false(api_rows_match(lab, r4))
-  # the labels without the system columns (e.g. a request of some fields) only compare the records
-  expect_true(api_rows_match(lab[, 1, drop = FALSE], raw))
+                    `Repeat Instrument` = c(NA, "Medication", NA), `Repeat Instance` = c(NA, "1", NA), check.names = FALSE)
+  meta <- list(
+    event = api_event_metadata(data.frame(unique_event_name = c("b_arm_1", "v_arm_1"), event_name = c("Base", "Visit"), arm_num = 1), NULL),
+    instrument = api_code_metadata(data.frame(instrument_name = "meds", instrument_label = "Medication"), "instrument_name", "instrument_label")
+  )
+  out <- api_label_columns(lab, raw, meta)
+  expect_equal(as.character(out$redcap_event_name.factor), c("Base", "Visit", "Base"))
+  expect_equal(levels(out$redcap_event_name.factor), c("Base", "Visit"))
+  expect_equal(out$redcap_repeat_instrument.factor, c(NA, "Medication", NA))
+  expect_length(attr(out, "unchecked"), 0)
+
+  # Another repetition or another record in a row: the rows are not the same ones
+  l2 <- lab; l2$`Repeat Instance`[2] <- "2"; expect_null(api_label_columns(l2, raw, meta))
+  l3 <- lab; l3$record_id[3] <- "3"; expect_null(api_label_columns(l3, raw, meta))
+  expect_null(api_label_columns(lab[c(2, 1, 3), ], raw, meta))
+  # Two labels of an event, or the label of another event (a permutation of the events): not accepted
+  l4 <- lab; l4$`Event Name`[3] <- "Visit"; expect_null(api_label_columns(l4, raw, meta))
+  l5 <- lab; l5$`Event Name` <- c("Visit", "Base", "Visit"); expect_null(api_label_columns(l5, raw, meta))
+  # The label of another instrument
+  l6 <- lab; l6$`Repeat Instrument`[2] <- "Adverse events"; expect_null(api_label_columns(l6, raw, meta))
+
+  # Without the metadata of a column (or of some code), the codes, which are not labels of other rows
+  out2 <- api_label_columns(lab, raw, list(instrument = meta$instrument))
+  expect_equal(as.character(out2$redcap_event_name.factor), c("b_arm_1", "v_arm_1", "b_arm_1"))
+  expect_equal(attr(out2, "unchecked"), "redcap_event_name.factor")
+  # (a single code with a single label can't be the label of another code)
+  out3 <- api_label_columns(lab[c(1, 3), ], raw[c(1, 3), ], list())
+  expect_equal(as.character(out3$redcap_event_name.factor), c("Base", "Base"))
+  expect_length(attr(out3, "unchecked"), 0)
+
+  # The labels without the system columns (e.g. a request of some fields): no factor versions
+  expect_equal(ncol(api_label_columns(lab[, 1, drop = FALSE], raw, meta)), 0)
+})
+
+test_that("api_label_matches accepts the label of the code, with or without its arm, and not the label of another one", {
+  expect_true(api_label_matches("Visita 1", "Visita 1", "1", "Drug A"))
+  expect_true(api_label_matches("Visita 1 (Arm 1: Drug A)", "Visita 1", "1", "Drug A"))
+  expect_true(api_label_matches("Visita 1 (Brazo 1: Drug A)", "Visita 1", "1", "Drug A"))
+  expect_true(api_label_matches("Visita 1 (Arm 1: Drug A)", "Visita 1", "1", NA))
+  expect_false(api_label_matches("Visita 2 (Arm 1: Drug A)", "Visita 1", "1", "Drug A"))
+  expect_false(api_label_matches("Visita 1 (Arm 2: Placebo)", "Visita 1", "1", "Drug A"))
+  expect_false(api_label_matches("Visita 1 (Arm 2: Placebo)", "Visita 1", "1", NA))
+  expect_false(api_label_matches("Visita 2", "Visita 1", "1", "Drug A"))
+  # (HTML, entities and spaces)
+  expect_true(api_label_matches("Adverse events", "<b>Adverse</b>&nbsp;events", NA, NA))
+  expect_true(api_label_matches("Hospital A & C", "Hospital  A &amp; C", NA, NA))
+  expect_false(api_label_matches("Hospital B", "Hospital A", NA, NA))
+  expect_false(api_label_matches(NA, "Hospital A", NA, NA))
+})
+
+test_that("api_id_requested only gives the identifier as missing when it is known", {
+  dic <- data.frame(field_name = c("record_id", "value"))
+  expect_true(api_id_requested(dic, c("record_id", "value")))
+  expect_false(api_id_requested(dic, "value"))
+  expect_true(api_id_requested(NULL, "value"))
+  expect_true(api_id_requested(data.frame(), "value"))
+})
+
+test_that("the metadata of the API without rows (e.g. a project without data access groups) is metadata without codes", {
+  expect_equal(nrow(api_code_metadata(data.frame(unique_group_name = character(0), data_access_group_name = character(0)), "unique_group_name", "data_access_group_name")), 0)
+  expect_equal(nrow(api_event_metadata(data.frame(unique_event_name = character(0), event_name = character(0), arm_num = integer(0)), NULL)), 0)
+  expect_equal(api_event_metadata(data.frame(unique_event_name = "a_arm_1", event_name = "A", arm_num = 1), NULL)$arm_name, NA_character_)
+  # (empty data access groups in the data: an empty factor)
+  out <- api_label_columns(data.frame(record_id = "1", `Data Access Group` = NA, check.names = FALSE), data.frame(record_id = "1", redcap_data_access_group = NA),
+                           list(dag = api_code_metadata(data.frame(unique_group_name = character(0), data_access_group_name = character(0)), "unique_group_name", "data_access_group_name")))
+  expect_s3_class(out$redcap_data_access_group.factor, "factor")
+  expect_length(attr(out, "unchecked"), 0)
 })

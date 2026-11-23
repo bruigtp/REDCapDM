@@ -33,10 +33,12 @@
 #' * Generates structured query results with metadata including:
 #'   - Identifier: the record identifier, `record_id` or else the first field of the dictionary (e.g. `subject_id`), whatever its position in the data. Filters and expressions can use it by its name.
 #'   - DAG (if present)
-#'   - Event and Instrument
+#'   - Event (the unique event name, e.g. `baseline_arm_1`), EventLabel (its label, e.g. `Baseline (Arm 1: Drug A)`) and Instrument
 #'   - Field, Repetition, Description, Query statement
 #'   - Optional link to REDCap entry
-#' * Optionally combines results with previous query outputs using `add_to`.
+#' * Optionally combines results with previous query outputs using `add_to`. The event of a query is its unique event
+#'   name: a label can be renamed in REDCap or be the same in several arms. The previous queries take the current label
+#'   of their events.
 #' * Produces a summarized report, optionally including variables with zero queries.
 #' * Provides warnings for variables with branching logic that could not be automatically evaluated.
 #'
@@ -135,8 +137,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   variables <- as.character(variables)
 
   # Initialize the query structure
-  queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
-  colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
+  queries <- as.data.frame(matrix(ncol = 11, nrow = 0))
+  colnames(queries) <- c("Identifier", "DAG", "Event", "EventLabel", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
 
   # Initialize the zero-query structure
   excel_zero <- as.data.frame(matrix(ncol = 4, nrow = 0))
@@ -187,6 +189,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
   
   # Repeating instruments of the complete dataset (before any event or filter subsetting)
   rep_pairs <- repeat_info(data)$pairs
+
+  # Unique names and labels of the events: the event of a query is its unique name (a label can be renamed or be the
+  # same in several arms), and its label is shown in `EventLabel`
+  events <- event_labels(data)
 
   # The identifiers of the report are numbers only when all the record identifiers of the project are plain numbers
   numeric_ids <- ids_are_numbers(data[[id_var]])
@@ -536,6 +542,15 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
           "-"
         },
         Event = if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(x))) {
+          if ("redcap_event_name" %in% names(x)) {
+            as.character(x[, "redcap_event_name"])
+          } else {
+            as.character(x[, "redcap_event_name.factor"])
+          }
+        } else {
+          "-"
+        },
+        EventLabel = if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(x))) {
           if ("redcap_event_name.factor" %in% names(x)) {
             as.character(x[, "redcap_event_name.factor"])
           } else {
@@ -630,11 +645,11 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       # Handle cases with zero queries
       # One row for each combination of DAG and event present in the data
       dag_col <- intersect(c("redcap_data_access_group.factor", "redcap_data_access_group"), names(data))[1]
-      event_col <- intersect(c("redcap_event_name.factor", "redcap_event_name"), names(data))[1]
+      event_col <- intersect(c("redcap_event_name", "redcap_event_name.factor"), names(data))[1]
       zero_rows <- if (nrow(data) > 0) {
         unique(data.frame(
           dag = if (is.na(dag_col)) "-" else as.character(data[[dag_col]]),
-          event = if (is.na(event_col)) "-" else as.character(data[[event_col]]),
+          event = if (is.na(event_col)) "-" else event_display(data[[event_col]], events),
           stringsAsFactors = FALSE
         ))
       } else {
@@ -708,6 +723,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # If 'add_to' argument is specified, merge previous queries
   if (all(!is.na(add_to))) {
+    # (the events of the previous queries with their unique name and their current label)
+    add_to$queries <- query_events(add_to$queries, events)
+
     # Add 'Link' column if it exists in the add_to$queries data frame
     if ("Link" %in% names(add_to$queries)) {
       col_names <- c(names(queries), "Link")
@@ -766,10 +784,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       # If the project has events, convert them to factors
       if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
         report$event <- factor(report$event,
-          levels = if ("redcap_event_name.factor" %in% names(data)) {
-            unique(as.character(data$redcap_event_name.factor))
-          } else {
+          levels = if ("redcap_event_name" %in% names(data)) {
             unique(as.character(data$redcap_event_name))
+          } else {
+            unique(as.character(data$redcap_event_name.factor))
           }
         )
       }
@@ -787,10 +805,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       # If our project has events, we also convert them to factors
       if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
         report$event <- factor(report$event,
-          levels = if ("redcap_event_name.factor" %in% names(data)) {
-            unique(as.character(data$redcap_event_name.factor))
-          } else {
+          levels = if ("redcap_event_name" %in% names(data)) {
             unique(as.character(data$redcap_event_name))
+          } else {
+            unique(as.character(data$redcap_event_name.factor))
           }
         )
       }
@@ -853,7 +871,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     report <- report[order(as.numeric(report$total), decreasing = TRUE), ]
 
     # Reorder columns and prepare the final report for output
+    # (each event with its label: an event of the previous queries that isn't in the data takes its label from them)
     report <- report |> dplyr::select("dag", "var", "descr", "event", "query_descr", "total")
+    report$event <- event_display(report$event, rbind(events, data.frame(code = as.character(queries$Event), label = as.character(queries$EventLabel))))
     names(report) <- c("DAG", "Variables", "Description", "Event", "Query", "Total")
     # (not inside the texts between quotes of the expressions, e.g. `x == 'a|b'`)
     report[, "Query"] <- outside_quotes(report[, "Query"], function(s) gsub("&", " & ", gsub("\\|", " \\| ", s)), r_texts_pattern())

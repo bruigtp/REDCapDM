@@ -11,7 +11,7 @@
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param event Character vector with one or more REDCap event names to check for missing records.
 #' @param filter Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}. It can use objects created in your session or in your function.
-#' @param query_name Optional character vector describing each query. Defaults to a standard format: `The event (event_name) is missing`.
+#' @param query_name Optional character vector describing each query. Defaults to a standard format with the unique event name: `The event 'event_name' is missing.`
 #' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
 #' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
@@ -22,7 +22,7 @@
 #' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), with two elements:
 #' \describe{
 #'   \item{\code{queries}}{A data frame listing records missing the specified events.
-#'     Columns: \code{Identifier} (the record identifier, \code{record_id} or else the first field of the dictionary, which \code{filter} can use by its name), \code{DAG}, \code{Event}, \code{Instrument},
+#'     Columns: \code{Identifier} (the record identifier, \code{record_id} or else the first field of the dictionary, which \code{filter} can use by its name), \code{DAG}, \code{Event} (the unique event name), \code{EventLabel} (its label), \code{Instrument},
 #'     \code{Field}, \code{Repetition}, \code{Description}, \code{Query}, \code{Code},
 #'     and optionally \code{Link}. If no queries are found this will be an empty
 #'     data frame with the expected columns.}
@@ -133,8 +133,8 @@ rd_event <- function(project = NULL,
   link <- link[!vapply(link, is.null, logical(1))]
 
   # Create an empty data frame to store identified queries
-  queries <- as.data.frame(matrix(ncol = 10, nrow = 0))
-  colnames(queries) <- c("Identifier", "DAG", "Event", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
+  queries <- as.data.frame(matrix(ncol = 11, nrow = 0))
+  colnames(queries) <- c("Identifier", "DAG", "Event", "EventLabel", "Instrument", "Field", "Repetition", "Description", "Query", "Code", "Link")
 
   # Record identifier (record_id or else the first field of the dictionary, see id_field()): its column keeps its name, so that the filter can use it
   id_var <- id_field(data, dic)
@@ -250,6 +250,11 @@ rd_event <- function(project = NULL,
             "-"
           },
           Event = rep(event[k], length(event[k])),
+          EventLabel = if ("redcap_event_name.factor" %in% names(x)) {
+            as.character(x[, "redcap_event_name.factor"])
+          } else {
+            rep(event[k], length(event[k]))
+          },
           Instrument = "-",
           Field = "-",
           Repetition = "-",
@@ -265,14 +270,8 @@ rd_event <- function(project = NULL,
               query_name
             }
           } else {
-            paste0(
-              "The event '", if ("redcap_event_name.factor" %in% names(x)) {
-                as.character(x[, "redcap_event_name.factor"])
-              } else {
-                as.character(x[, "redcap_event_name"])
-              },
-              "' is missing."
-            )
+            # (with the unique event name, as `Event`: the label of the event, in `EventLabel`, can be renamed)
+            paste0("The event '", event[k], "' is missing.")
           },
           Code = "",
           stringsAsFactors = FALSE
@@ -293,6 +292,9 @@ rd_event <- function(project = NULL,
   if (is.list(add_to)) {
     # Save the column names of the existing queries
     col_names <- names(queries)
+
+    # (the events of the previous queries with their unique name and their current label)
+    add_to$queries <- query_events(add_to$queries, event_labels(data0))
 
     # Merge the existing queries with the new ones
     queries <- merge(queries,

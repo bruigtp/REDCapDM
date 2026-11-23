@@ -825,7 +825,8 @@ test_that("rd_query checks each variable only in the events of its form when sev
 
   expect_equal(nrow(together$queries), nrow(copd$queries) + nrow(potassium$queries))
   # copd is only collected at baseline
-  expect_equal(unique(together$queries$Event[together$queries$Field == "copd"]), "Baseline visit")
+  expect_equal(unique(together$queries$Event[together$queries$Field == "copd"]), "baseline_visit_arm_1")
+  expect_equal(unique(together$queries$EventLabel[together$queries$Field == "copd"]), "Baseline visit")
 })
 
 
@@ -1032,7 +1033,7 @@ test_that("rd_query checks the events with data when an event of the variable ha
   cov$data <- cov$data[cov$data$redcap_event_name == "baseline_visit_arm_1", ]
   full <- suppressWarnings(suppressMessages(rd_query(covican, variables = "potassium", expression = "is.na(x)")))$queries
   part <- suppressWarnings(suppressMessages(rd_query(cov, variables = "potassium", expression = "is.na(x)")))$queries
-  expect_equal(nrow(part), sum(full$Event == "Baseline visit"))
+  expect_equal(nrow(part), sum(full$Event == "baseline_visit_arm_1"))
   # An event given in `event` that is not in the data is still an error
   expect_error(rd_query(cov, variables = "potassium", expression = "is.na(x)", event = "follow_up_visit_da_arm_1"), class = "REDCapDM_error_argument")
 })
@@ -1218,4 +1219,47 @@ test_that("rd_query takes the identifier from the dictionary, whatever the order
     expect_equal(res$queries$Identifier, "003")
     expect_match(res$queries$Code, "^003-")
   }
+})
+
+test_that("rd_query keeps the unique event name of each query, also when several events have the same label", {
+  data <- data.frame(
+    record_id = c("1", "2", "3"),
+    redcap_event_name = c("enrollment_arm_1", "enrollment_arm_1", "enrollment_arm_2"),
+    age = c(NA, 40, NA)
+  )
+  data$redcap_event_name.factor <- factor(rep("Enrollment", 3))
+  dic <- data.frame(field_name = c("record_id", "age"), form_name = "enrollment", field_type = "text", field_label = c("Record ID", "Age"), branching_logic = "")
+  project <- list(data = data, dictionary = dic)
+  q <- function(...) suppressWarnings(suppressMessages(rd_query(project, variables = "age", expression = "is.na(x)", ...)))
+
+  res <- q()
+  expect_equal(res$queries$Event, c("enrollment_arm_1", "enrollment_arm_2"))
+  expect_equal(res$queries$EventLabel, c("Enrollment", "Enrollment"))
+  expect_equal(names(res$queries)[3:4], c("Event", "EventLabel"))
+  # (the summary doesn't merge them either)
+  expect_match(as.character(res$results), "Enrollment (enrollment_arm_1)", fixed = TRUE)
+  expect_match(as.character(res$results), "Enrollment (enrollment_arm_2)", fixed = TRUE)
+
+  # add_to keeps them apart
+  both <- q(event = "enrollment_arm_2", add_to = q(event = "enrollment_arm_1"))
+  expect_equal(both$queries$Event, c("enrollment_arm_1", "enrollment_arm_2"))
+  expect_equal(both$queries$Code, c("1-1", "3-1"))
+
+  # A previous report takes the current label of its events
+  project$data$redcap_event_name.factor <- factor(c("Enrollment A", "Enrollment A", "Enrollment B"))
+  old <- q(event = "enrollment_arm_1")
+  project$data$redcap_event_name.factor <- factor(c("Inclusion A", "Inclusion A", "Enrollment B"))
+  merged <- q(event = "enrollment_arm_1", add_to = old)
+  expect_equal(nrow(merged$queries), 1)
+  expect_equal(merged$queries$Event, "enrollment_arm_1")
+  expect_equal(merged$queries$EventLabel, "Inclusion A")
+
+  # A previous report with the label in Event (created before EventLabel existed) takes the unique name when a single
+  # event of the data has that label
+  old$queries$Event <- "Inclusion A"
+  old$queries$EventLabel <- NULL
+  merged <- q(event = "enrollment_arm_1", add_to = old)
+  expect_equal(nrow(merged$queries), 1)
+  expect_equal(merged$queries$Event, "enrollment_arm_1")
+  expect_equal(merged$queries$EventLabel, "Inclusion A")
 })

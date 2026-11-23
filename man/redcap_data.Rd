@@ -30,7 +30,8 @@ redcap_data(
 
 \item{sep}{Character string specifying the field separator for the exported dictionary CSV file. Default \code{","}.}
 
-\item{filter_field}{Optional character vector of field names to request from the API.}
+\item{filter_field}{Optional character vector of field names to request from the API. It must include the record
+identifier (the first field of the project, e.g. \code{record_id}).}
 
 \item{survey_fields}{Logical; include survey-related fields when pulling via API. Default \code{FALSE}.}
 
@@ -67,6 +68,15 @@ Two import modes are supported:
 
 If the project is longitudinal, provide \code{event_path} (instrument–event mapping)
 or the function will attempt to fetch it from the API when using API mode.
+
+With the API, the values and their labels are read with two requests. The record identifiers are read as text in
+both of them (long identifiers such as \code{9007199254740993}, or \code{100000000000000}, are not changed), and the
+identifier is a number only when its text is that number, as with the exported files. The labels of the events
+(\code{redcap_event_name.factor}), repeated instruments and data access groups are given to each row by its code (the
+unique event name, instrument or data access group), and they are checked with the metadata of the project (its
+events, arms, instruments and data access groups): if the records changed between the two requests, the labels are
+read again, and the function stops if they keep changing. When that metadata can't be read, those columns have
+the codes instead of the labels, with a warning.
 
 \strong{Steps for using exported data in REDCap:}
 \enumerate{

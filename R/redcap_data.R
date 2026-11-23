@@ -13,6 +13,15 @@
 #' If the project is longitudinal, provide `event_path` (instrument–event mapping)
 #' or the function will attempt to fetch it from the API when using API mode.
 #'
+#' With the API, the values and their labels are read with two requests. The record identifiers are read as text in
+#' both of them (long identifiers such as `9007199254740993`, or `100000000000000`, are not changed), and the
+#' identifier is a number only when its text is that number, as with the exported files. The labels of the events
+#' (`redcap_event_name.factor`), repeated instruments and data access groups are given to each row by its code (the
+#' unique event name, instrument or data access group), and they are checked with the metadata of the project (its
+#' events, arms, instruments and data access groups): if the records changed between the two requests, the labels are
+#' read again, and the function stops if they keep changing. When that metadata can't be read, those columns have
+#' the codes instead of the labels, with a warning.
+#'
 #' **Steps for using exported data in REDCap:**
 #' 1. Use the REDCap *Export Data* function and choose *R Statistical Software* format.
 #' 2. REDCap generates:
@@ -29,7 +38,8 @@
 #' @param uri REDCap API base URI (use with `token`).
 #' @param token REDCap API token (use with `uri`).
 #' @param sep Character string specifying the field separator for the exported dictionary CSV file. Default `","`.
-#' @param filter_field Optional character vector of field names to request from the API.
+#' @param filter_field Optional character vector of field names to request from the API. It must include the record
+#'   identifier (the first field of the project, e.g. `record_id`).
 #' @param survey_fields Logical; include survey-related fields when pulling via API. Default `FALSE`.
 #' @param rm_mdc Logical; Removes the Missing Data Codes from the data. Default `TRUE`. With `FALSE`, the codes are kept: in multiple-choice fields as an additional category (in the `.factor` version), and in validated text fields (numbers, dates, ...) in a new `<field>_mdc` column, while the field itself keeps its type and has `NA` in those rows.
 #' @param mdc Optional Missing Data Codes of the project, besides the default ones of REDCap (`NI`, `UNK`, `NASK`, ...), which are always
@@ -327,23 +337,30 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
 
     ## Error SSL peer certificate (GitHub issue #6)
 
+    # Errors of the requests of the records
+    api_error <- function(e) {
+      # (REDCapR gives this error when some records of its first request (their identifiers) are not in the data, e.g.
+      # without their identifier field: it is the cause only when filter_field doesn't have it)
+      if (grepl("REDCap's PHP code is likely trying to process too much text in one bite", conditionMessage(e)) && !is.null(filter_field) &&
+        !api_id_requested(tryCatch(REDCapR::redcap_metadata_read(redcap_uri = uri, token = token, verbose = FALSE)$data, error = function(e) NULL), filter_field)) {
+        rd_abort("The {.var record_id} or equivalent variable is missing on the {.arg filter_field} argument.", class = "REDCapDM_error_argument", call = NULL)
+      } else if (grepl("SSL peer certificate", conditionMessage(e))) {
+        rd_abort(
+          c("Unable to establish a secure connection.", "i" = "Consider bypassing SSL verification: {.code httr::with_config(httr::config(ssl_verifypeer = FALSE), redcap_data(...))}."),
+          class = "REDCapDM_error_api", call = NULL
+        )
+      } else {
+        rd_abort("The data couldn't be read from the REDCap API.", class = "REDCapDM_error_api", parent = e, call = NULL)
+      }
+    }
+
+    # The values are read as text (guess_type = FALSE), also in the first request of REDCapR, which reads the identifiers
+    # of the records: as numbers, two long identifiers (e.g. 9007199254740992 and 9007199254740993) would be the same one,
+    # and 100000000000000 would be requested as 1e+14
     # (a function, as the labels are read again if the data changed between the two requests, see below)
     read_labels <- function() tryCatch(
-      {
-        suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field)$data)
-      },
-      error = function(e) {
-        if (grepl("REDCap's PHP code is likely trying to process too much text in one bite", e$message) & !is.null(filter_field)) {
-          rd_abort("The {.var record_id} or equivalent variable is missing on the {.arg filter_field} argument.", class = "REDCapDM_error_argument", call = NULL)
-        } else if (grepl("SSL peer certificate", e$message)) {
-          rd_abort(
-            c("Unable to establish a secure connection.", "i" = "Consider bypassing SSL verification: {.code httr::with_config(httr::config(ssl_verifypeer = FALSE), redcap_data(...))}."),
-            class = "REDCapDM_error_api", call = NULL
-          )
-        } else {
-          rd_abort("The data couldn't be read from the REDCap API.", class = "REDCapDM_error_api", parent = e, call = NULL)
-        }
-      }
+      suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field, guess_type = FALSE)$data),
+      error = api_error
     )
     labels <- read_labels()
 
@@ -388,32 +405,29 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     if (!all(filter_field %in% NA)) {
       api_text_fields <- intersect(api_text_fields, filter_field)
     }
-    read_args <- list(
-      redcap_uri = uri,
-      token = token,
-      verbose = FALSE,
-      raw_or_label = "raw",
-      export_data_access_groups = TRUE,
-      export_survey_fields = survey_fields,
-      fields = filter_field
-    )
-    # (the data are read as text and their types are guessed afterwards over all the records, as REDCapR does, except
-    # for the text fields)
-    if (length(api_text_fields) > 0) {
-      read_args$guess_type <- FALSE
-    }
-
     # Fetch main data using the REDCap API
-    data_api <- do.call(REDCapR::redcap_read, read_args)$data
-    if (length(api_text_fields) > 0) {
-      text_cols <- intersect(api_text_fields, names(data_api))
+    # (the data are read as text and their types are guessed afterwards over all the records, as REDCapR does, except
+    # for the identifier and the text fields)
+    data_api <- tryCatch(
+      REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field, guess_type = FALSE)$data,
+      error = api_error
+    )
+    if (any(vapply(data_api, is.character, logical(1)))) {
+      text_cols <- unique(c(names(data_api)[1], intersect(api_text_fields, names(data_api))))
       data_api <- readr::type_convert(
         data_api,
         col_types = do.call(readr::cols, c(stats::setNames(rep(list(readr::col_character()), length(text_cols)), text_cols), list(.default = readr::col_guess())))
       )
-      for (field in text_cols) {
+      # The identifier is a number only when its text is that number (not with "007", 100000000000000, written as
+      # 1e+14, or 9007199254740993, beyond the precision of the numbers of R), as with the exported files
+      ids <- data_api[[1]]
+      as_number <- if (is.character(ids)) readr::parse_guess(ids, guess_integer = FALSE) else ids
+      if (is.character(ids) && is.numeric(as_number) && all(is.na(ids) | as.character(as_number) == ids)) {
+        data_api[[1]] <- as_number
+      }
+      for (field in setdiff(text_cols, names(data_api)[1])) {
         as_number <- utils::type.convert(data_api[[field]], as.is = TRUE)
-        if (!is.character(as_number) && all(is.na(data_api[[field]]) | as.character(as_number) == data_api[[field]])) {
+        if (is.character(data_api[[field]]) && !is.character(as_number) && all(is.na(data_api[[field]]) | as.character(as_number) == data_api[[field]])) {
           data_api[[field]] <- as_number
         }
       }
@@ -517,12 +531,48 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       data_api[[paste0(i, ".factor")]] <- factor(data_api[[i]], levels = c("0", "1", "2"), labels = c("Incomplete", "Unverified", "Complete"))
     }
 
-    # Merge the labels of the events, repeated instruments and data access groups with the imported data
+    # Labels of the events, repeated instruments and data access groups
     # The values and their labels are read with two requests: if the records changed in between (e.g. someone entered,
-    # deleted or imported data), their rows are not the same ones and the labels would go to other rows. The labels are
-    # read again (twice at most) until their rows are the rows of the data.
+    # deleted or imported data), the rows of both requests are not the same ones. So the labels are not taken by their
+    # position: each label is the one of its code (unique event name, instrument or data access group), and the label
+    # of each code is checked with the metadata of the project (its events and arms, instruments and data access groups).
+    # If a label isn't the one of its code, the labels are read again (twice at most).
+    api_meta <- list()
+    read_meta <- function(result) {
+      if (isTRUE(result$success) && is.data.frame(result$data)) as.data.frame(result$data) else NULL
+    }
+    # (metadata that can't be read is NULL)
+    if ("redcap_event_name" %in% names(data_api)) {
+      api_meta$event <- tryCatch(
+        api_event_metadata(
+          tryCatch(read_meta(REDCapR::redcap_event_read(redcap_uri = uri, token = token, verbose = FALSE)), error = function(e) NULL),
+          tryCatch(read_meta(REDCapR::redcap_arm_export(redcap_uri = uri, token = token, verbose = FALSE)), error = function(e) NULL)
+        ),
+        error = function(e) NULL
+      )
+    }
+    if ("redcap_repeat_instrument" %in% names(data_api)) {
+      api_meta$instrument <- tryCatch(
+        api_code_metadata(
+          tryCatch(read_meta(REDCapR::redcap_instruments(redcap_uri = uri, token = token, verbose = FALSE)), error = function(e) NULL),
+          "instrument_name", "instrument_label"
+        ),
+        error = function(e) NULL
+      )
+    }
+    if ("redcap_data_access_group" %in% names(data_api)) {
+      api_meta$dag <- tryCatch(
+        api_code_metadata(
+          tryCatch(read_meta(REDCapR::redcap_dag_read(redcap_uri = uri, token = token, verbose = FALSE)), error = function(e) NULL),
+          "unique_group_name", "data_access_group_name"
+        ),
+        error = function(e) NULL
+      )
+    }
+
     for (attempt in 1:3) {
-      if (api_rows_match(labels_data, data_api)) break
+      label_columns <- api_label_columns(labels_data, data_api, api_meta)
+      if (!is.null(label_columns)) break
       if (attempt == 3) {
         rd_abort(
           c("The records of the project changed while they were read from the REDCap API: the two requests of {.fn redcap_data} (the values and their labels) didn't return the same rows.",
@@ -534,8 +584,15 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       if (nrow(labels_data) > 0) names(labels_data)[1] <- "record_id"
     }
 
+    unchecked <- attr(label_columns, "unchecked")
+    if (length(unchecked) > 0) {
+      rd_warn(c("The labels of {.var {unchecked}} couldn't be checked with the metadata of the project (its events, instruments or data access groups): {?this column has/these columns have} the codes of REDCap instead of their labels.",
+        "i" = "Check that the API token can export the events, arms, instruments and data access groups of the project."))
+    }
+    attr(label_columns, "unchecked") <- NULL
+
     data_api <- data_api |>
-      dplyr::bind_cols(api_label_columns(labels_data) |> dplyr::select(-"record_id"))
+      dplyr::bind_cols(label_columns)
 
     # Determine if project is longitudinal
     longitudinal <- ifelse("redcap_event_name" %in% names(data_api), TRUE, FALSE)
@@ -1120,104 +1177,198 @@ option_codes <- function(dic, field) {
 }
 
 
-#' Factor versions of the event, repeated instrument and data access group read from the REDCap API
+#' Whether the identifier of the project is among the fields requested from the REDCap API
 #'
-#' @param labels Data read from the API with labels (`raw_or_label = "label"`), with `record_id` as its first column.
-#' @return A data frame with `record_id` and the factor versions present (`redcap_event_name.factor`,
-#'   `redcap_repeat_instrument.factor` and `redcap_data_access_group.factor`). An empty column (e.g. the data access groups
-#'   of a project without them in its records) is an empty factor, as with the exported files.
+#' @param dic Dictionary read from the API (its first field is the identifier), or `NULL` if it couldn't be read.
+#' @param filter_field Fields requested (`filter_field` of [redcap_data()]).
+#' @return `FALSE` only when the identifier is known and it isn't in `filter_field`.
 #' @noRd
-api_label_columns <- function(labels) {
-  redcap_names <- names(labels |>
-    dplyr::select(dplyr::any_of(c("Event Name", "Repeat Instrument", "Data Access Group"))))
-
-  default_names <- data.frame(fac = redcap_names) |>
-    dplyr::mutate(corres = dplyr::case_when(
-      fac %in% "Event Name" ~ "redcap_event_name.factor",
-      fac %in% "Repeat Instrument" ~ "redcap_repeat_instrument.factor",
-      fac %in% "Data Access Group" ~ "redcap_data_access_group.factor"
-    ))
-
-  rename_redcap <- default_names$fac
-  names(rename_redcap) <- default_names$corres
-
-  labels |>
-    dplyr::mutate_at(
-      redcap_names[!redcap_names %in% "Repeat Instrument"],
-      ~ if (all(is.na(.))) factor(as.character(.)) else forcats::fct_inorder(.)
-    ) |>
-    dplyr::mutate_at(
-      intersect("Repeat Instrument", redcap_names),
-      ~ if (all(is.na(.))) factor(as.character(.)) else .
-    ) |>
-    dplyr::rename(dplyr::all_of(rename_redcap)) |>
-    dplyr::select("record_id", default_names$corres)
+api_id_requested <- function(dic, filter_field) {
+  if (!is.data.frame(dic) || nrow(dic) == 0 || ncol(dic) == 0) {
+    return(TRUE)
+  }
+  id <- as.character(dic[[1]][1])
+  is.na(id) || id %in% filter_field
 }
 
 
-#' Whether the rows read with labels are the rows of the data read from the REDCap API
+#' Metadata of the events of a project read from the REDCap API
 #'
-#' The labels are read with another request, so the records can change in between. The rows are the same ones when, row
-#' by row, they have the same record identifier and repeated instance, and each event, repeated instrument and data
-#' access group has a single label in the same rows (and each label of an event or data access group is of a single one).
-#' The number of rows is not enough: the same records can come in another order.
+#' @param events Events read with `REDCapR::redcap_event_read()` (`NULL` if they couldn't be read).
+#' @param arms Arms read with `REDCapR::redcap_arm_export()` (`NULL` if they couldn't be read).
+#' @return A data frame with the `code` (unique event name), `name`, `arm` (number) and `arm_name` of each event, or
+#'   `NULL`.
+#' @noRd
+api_event_metadata <- function(events, arms) {
+  if (!is.data.frame(events) || !all(c("unique_event_name", "event_name", "arm_num") %in% names(events))) {
+    return(NULL)
+  }
+  arm_number <- intersect(c("arm_number", "arm_num"), names(arms))[1]
+  arm_name <- intersect(c("arm_name", "name"), names(arms))[1]
+  data.frame(
+    code = as.character(events$unique_event_name),
+    name = as.character(events$event_name),
+    arm = as.character(events$arm_num),
+    arm_name = if (is.data.frame(arms) && !is.na(arm_number) && !is.na(arm_name)) {
+      as.character(arms[[arm_name]])[match(as.character(events$arm_num), as.character(arms[[arm_number]]))]
+    } else {
+      rep(NA_character_, nrow(events))
+    },
+    stringsAsFactors = FALSE
+  )
+}
+
+
+#' Metadata of the instruments or data access groups of a project read from the REDCap API
 #'
-#' @param labels Data read with labels, with `record_id` as its first column.
-#' @param data Data read with the raw values, with `record_id` as its first column.
+#' @param x Instruments (`REDCapR::redcap_instruments()`) or data access groups (`REDCapR::redcap_dag_read()`), `NULL` if
+#'   they couldn't be read.
+#' @param code,name Columns of `x` with the code and the label.
+#' @return A data frame with `code` and `name`, or `NULL`.
+#' @noRd
+api_code_metadata <- function(x, code, name) {
+  if (!is.data.frame(x) || !all(c(code, name) %in% names(x))) {
+    return(NULL)
+  }
+  data.frame(code = as.character(x[[code]]), name = as.character(x[[name]]), arm = rep(NA_character_, nrow(x)), arm_name = rep(NA_character_, nrow(x)), stringsAsFactors = FALSE)
+}
+
+
+#' Whether a label read from the REDCap API is the label of a code, according to the metadata of the project
+#'
+#' The labels are compared without HTML tags or entities and with single spaces. The label of an event can have its
+#' arm, as REDCap writes it in projects with several arms: `Name (Arm 1: Name of the arm)` (the word "Arm" depends on
+#' the language of the server).
+#'
+#' @param label Label read with the records.
+#' @param name,arm,arm_name Name of the code in the metadata, and number and name of the arm of an event (`NA` for the
+#'   instruments and data access groups).
 #' @return `TRUE` or `FALSE`.
 #' @noRd
-api_rows_match <- function(labels, data) {
-  if (nrow(labels) != nrow(data)) {
+api_label_matches <- function(label, name, arm = NA, arm_name = NA) {
+  clean <- function(x) {
+    x <- gsub("<[^>]*>", "", as.character(x))
+    entities <- c("&nbsp;" = " ", "&lt;" = "<", "&gt;" = ">", "&quot;" = "\"", "&#39;" = "'", "&#039;" = "'", "&amp;" = "&")
+    for (i in names(entities)) {
+      x <- gsub(i, entities[[i]], x, fixed = TRUE)
+    }
+    trimws(gsub("[[:space:]]+", " ", gsub("\u00a0", " ", x, fixed = TRUE)))
+  }
+  if (is.na(label) || is.na(name)) {
     return(FALSE)
   }
+  label <- clean(label)
+  name <- clean(name)
+  if (identical(label, name)) {
+    return(TRUE)
+  }
+  if (is.na(arm) || !startsWith(label, paste0(name, " ("))) {
+    return(FALSE)
+  }
+  # (the rest of the label: "Arm 1: Name of the arm)")
+  rest <- substring(label, nchar(name) + 3)
+  arm_end <- paste0(" ", arm, ": ", if (is.na(arm_name)) "" else clean(arm_name), ")")
+  if (is.na(arm_name)) {
+    grepl(paste0("^[^()]+ ", arm, ": .*\\)$"), rest)
+  } else {
+    endsWith(rest, arm_end) && nchar(rest) > nchar(arm_end) && !grepl("[()]", substr(rest, 1, nchar(rest) - nchar(arm_end)))
+  }
+}
 
+
+#' Factor versions of the event, repeated instrument and data access group read from the REDCap API
+#'
+#' The labels are read with another request than the values, so its rows can be other ones (the records can change in
+#' between). They are not taken by their position: each row has the label of its code (unique event name, instrument or
+#' data access group). The label of each code is the one of the rows with that code in the request with labels, and it
+#' is checked with the metadata of the project.
+#'
+#' @param labels Data read with labels (`raw_or_label = "label"`), with `record_id` as its first column.
+#' @param data Data read with the raw values, with `record_id` as its first column.
+#' @param meta List with the metadata of the `event`, `instrument` and `dag` codes (see [api_event_metadata()] and
+#'   [api_code_metadata()]); `NULL` when it couldn't be read.
+#' @return `NULL` if the rows of both requests are not the same ones or a label isn't the one of its code. Otherwise, a
+#'   data frame with the factor versions present (`redcap_event_name.factor`, `redcap_repeat_instrument.factor` and
+#'   `redcap_data_access_group.factor`), whose `unchecked` attribute has the columns with codes instead of labels (their
+#'   metadata couldn't be read, or doesn't have some code). An empty column (e.g. the data access groups of a project
+#'   without them in its records) is an empty factor, as with the exported files.
+#' @noRd
+api_label_columns <- function(labels, data, meta = list()) {
   as_text <- function(x) {
     x <- as.character(x)
     x[x %in% ""] <- NA
     x
   }
-  same_values <- function(a, b) {
-    a <- as_text(a)
-    b <- as_text(b)
-    identical(is.na(a), is.na(b)) && all(a[!is.na(a)] == b[!is.na(b)])
-  }
   # (the number of a repeated instance can be read as text or as a number)
-  same_numbers <- function(a, b) {
-    a <- suppressWarnings(as.numeric(as_text(a)))
-    b <- suppressWarnings(as.numeric(as_text(b)))
-    identical(is.na(a), is.na(b)) && all(a[!is.na(a)] == b[!is.na(b)])
-  }
+  as_number <- function(x) suppressWarnings(as.numeric(as_text(x)))
+  same <- function(a, b) identical(is.na(a), is.na(b)) && all(a[!is.na(a)] == b[!is.na(b)])
 
-  if (!same_values(labels[[1]], data[[1]])) {
-    return(FALSE)
+  # The rows of both requests: the same records and repetitions
+  if (nrow(labels) != nrow(data) || !same(as_text(labels[[1]]), as_text(data[[1]]))) {
+    return(NULL)
   }
   if ("Repeat Instance" %in% names(labels) && "redcap_repeat_instance" %in% names(data) &&
-    !same_numbers(labels[["Repeat Instance"]], data$redcap_repeat_instance)) {
-    return(FALSE)
+    !same(as_number(labels[["Repeat Instance"]]), as_number(data$redcap_repeat_instance))) {
+    return(NULL)
   }
 
-  pairs <- list(
-    c("Event Name", "redcap_event_name", "both"),
-    c("Repeat Instrument", "redcap_repeat_instrument", "raw"),
-    c("Data Access Group", "redcap_data_access_group", "both")
+  columns <- list(
+    event = c("Event Name", "redcap_event_name", "redcap_event_name.factor"),
+    instrument = c("Repeat Instrument", "redcap_repeat_instrument", "redcap_repeat_instrument.factor"),
+    dag = c("Data Access Group", "redcap_data_access_group", "redcap_data_access_group.factor")
   )
-  for (pair in pairs) {
-    if (!pair[1] %in% names(labels) || !pair[2] %in% names(data)) next
-
-    label <- as_text(labels[[pair[1]]])
-    raw <- as_text(data[[pair[2]]])
-    if (!identical(is.na(label), is.na(raw))) {
-      return(FALSE)
+  out <- list()
+  unchecked <- character(0)
+  for (kind in names(columns)) {
+    column <- columns[[kind]]
+    if (!column[1] %in% names(labels)) next
+    if (!column[2] %in% names(data)) {
+      return(NULL)
     }
 
-    filled <- !is.na(raw)
-    if (any(tapply(label[filled], raw[filled], function(z) length(unique(z))) > 1)) {
-      return(FALSE)
+    label <- as_text(labels[[column[1]]])
+    code <- as_text(data[[column[2]]])
+    if (!identical(is.na(label), is.na(code))) {
+      return(NULL)
     }
-    if (pair[3] == "both" && any(tapply(raw[filled], label[filled], function(z) length(unique(z))) > 1)) {
-      return(FALSE)
+
+    # Label of each code
+    codes <- unique(code[!is.na(code)])
+    code_labels <- vapply(codes, function(x) {
+      y <- unique(label[code %in% x])
+      if (length(y) == 1) y else NA_character_
+    }, character(1), USE.NAMES = FALSE)
+    if (anyNA(code_labels)) {
+      return(NULL)
+    }
+
+    # Checked with the metadata of the project
+    m <- meta[[kind]]
+    known <- if (is.null(m)) rep(FALSE, length(codes)) else codes %in% m$code
+    for (i in which(known)) {
+      j <- match(codes[i], m$code)
+      if (!api_label_matches(code_labels[i], m$name[j], m$arm[j], m$arm_name[j])) {
+        return(NULL)
+      }
+    }
+    # Without the metadata of a code, its label isn't used (a single code with a single label in all the rows can't be
+    # the label of another code)
+    if (!all(known) && !(length(codes) == 1 && length(unique(label[!is.na(label)])) == 1)) {
+      code_labels[!known] <- codes[!known]
+      unchecked <- c(unchecked, column[3])
+    }
+
+    value <- code_labels[match(code, codes)]
+    out[[column[3]]] <- if (all(is.na(value))) {
+      factor(as.character(value))
+    } else if (kind == "instrument") {
+      value
+    } else {
+      forcats::fct_inorder(value)
     }
   }
 
-  TRUE
+  out <- if (length(out) > 0) as.data.frame(out, check.names = FALSE, stringsAsFactors = FALSE) else data.frame(row.names = seq_len(nrow(data)))
+  attr(out, "unchecked") <- unchecked
+  out
 }

@@ -38,9 +38,14 @@ print.REDCapDM_report <- function(x, ...) {
     return(invisible(x))
   }
 
-  columns <- c("Identifier", "Event", "Field", "Modification")
+  columns <- c("Identifier", "Event", "EventLabel", "Field", "Modification")
   queries <- lapply(queries, function(q) as.data.frame(q)[, intersect(columns, names(q)), drop = FALSE])
   queries <- if (length(queries) > 0) do.call(rbind, queries) else data.frame()
+  # (each event with its label, and with its unique name when several events have the same label)
+  if (all(c("Event", "EventLabel") %in% names(queries))) {
+    events <- unique(data.frame(code = as.character(queries$Event), label = as.character(queries$EventLabel), stringsAsFactors = FALSE))
+    queries$Event <- event_display(queries$Event, events[!duplicated(events$code), , drop = FALSE])
+  }
   control <- "Modification" %in% names(queries)
   title <- if (control) "REDCapDM query control" else "REDCapDM query report"
 

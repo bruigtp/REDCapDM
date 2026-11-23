@@ -16,8 +16,8 @@
     Output
       REDCapDM query report: 38 queries in 38 records
       
-       Event                    Queries
-       follow_up_visit_da_arm_1 38
+       Event                       Queries
+       Follow up visit day 14+/-5d 38
       
       Each query is in `$queries` and the summary table in `$results`.
       `rd_export()` saves the queries in an Excel file.

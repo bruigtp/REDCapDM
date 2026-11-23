@@ -193,6 +193,8 @@ test_that("check_queries keeps one pending query when the link or the DAG are fa
 
 test_that("check_queries tells apart queries whose texts have carriage returns", {
   base <- suppressWarnings(suppressMessages(rd_query(covican, variables = "age", expression = "x > 80")))$queries[1, ]
+  # (without Field, the description identifies the field of a query)
+  base$Field <- NULL
   old <- base
   old$Description <- "Age\rRule"
   old$Query <- "Check"
@@ -253,4 +255,93 @@ test_that("check_queries keeps the columns of the reports called like its intern
     expect_equal(out$comp[match(c("q1", "q2", "q3"), out$Query)], c("c3", "c2", "c4"))
     expect_equal(out$n[match(c("q1", "q2", "q3"), out$Query)], c(3, 2, 4))
   }
+})
+
+
+# ---- The event of a query is its unique name: renaming labels doesn't solve queries ----
+
+event_project <- function(label1 = "Enrollment (Arm 1: Drug A)", label2 = "Enrollment (Arm 2: Placebo)", age = c(NA, 40, NA, 50)) {
+  data <- data.frame(
+    record_id = c("1", "2", "3", "4"),
+    redcap_event_name = c("enrollment_arm_1", "enrollment_arm_1", "enrollment_arm_2", "enrollment_arm_2"),
+    age = age
+  )
+  data$redcap_event_name.factor <- factor(c(label1, label1, label2, label2))
+  list(
+    data = data,
+    dictionary = data.frame(field_name = c("record_id", "age"), form_name = "enrollment", field_type = "text", field_label = c("Record ID", "Age"), branching_logic = "")
+  )
+}
+event_queries <- function(project) suppressWarnings(suppressMessages(rd_query(project, variables = "age", expression = "is.na(x)")))$queries
+
+test_that("renaming an event, an arm or a field in REDCap doesn't solve its queries", {
+  old <- event_queries(event_project())
+  expect_equal(old$Event, c("enrollment_arm_1", "enrollment_arm_2"))
+  expect_equal(old$EventLabel, c("Enrollment (Arm 1: Drug A)", "Enrollment (Arm 2: Placebo)"))
+
+  # The event and the arm renamed: the same queries, with the new labels
+  new <- event_queries(event_project("Inclusion (Arm 1: Drug A)", "Enrollment (Arm 2: Active comparator)"))
+  out <- suppressMessages(check_queries(old, new, return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification), c("Pending", "Pending"))
+  expect_equal(out$EventLabel, c("Inclusion (Arm 1: Drug A)", "Enrollment (Arm 2: Active comparator)"))
+
+  # The label of the field renamed
+  renamed <- event_project()
+  renamed$dictionary$field_label[2] <- "Age (years)"
+  out <- suppressMessages(check_queries(old, event_queries(renamed), return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification), c("Pending", "Pending"))
+  expect_equal(out$Description, c("Age (years)", "Age (years)"))
+})
+
+test_that("check_queries doesn't merge the queries of events with the same label", {
+  shared <- function(age) {
+    p <- event_project("Enrollment", "Enrollment", age)
+    p$data$record_id <- c("1", "2", "1", "2")
+    p
+  }
+  # Record 1: the query of arm 1 is solved and there is a new one in arm 2
+  out <- suppressMessages(check_queries(event_queries(shared(c(NA, 40, 50, 60))), event_queries(shared(c(30, 40, NA, 60))), return_viewer = FALSE))$queries
+  expect_equal(out$Event[order(out$Event)], c("enrollment_arm_1", "enrollment_arm_2"))
+  expect_equal(as.character(out$Modification[order(out$Event)]), c("Solved", "New"))
+})
+
+test_that("check_queries compares the reports created before EventLabel existed (the label in Event)", {
+  new <- event_queries(event_project())
+  old <- new
+  old$Event <- old$EventLabel
+  old$EventLabel <- NULL
+  out <- suppressMessages(check_queries(old, new, return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification), c("Pending", "Pending"))
+  expect_equal(out$Event, c("enrollment_arm_1", "enrollment_arm_2"))
+
+  # A label of several events can't be told apart: its queries are compared with the label
+  shared <- event_queries(event_project("Enrollment", "Enrollment"))
+  old <- shared
+  old$Event <- old$EventLabel
+  old$EventLabel <- NULL
+  out <- suppressMessages(check_queries(old, shared, return_viewer = FALSE))$queries
+  expect_setequal(as.character(out$Modification), c("Solved", "New"))
+})
+
+test_that("renaming an event doesn't solve the queries of rd_event()", {
+  project <- function(label) {
+    data <- data.frame(record_id = c("1", "1", "2"), redcap_event_name = c("base_arm_1", "visit_arm_1", "base_arm_1"))
+    data$redcap_event_name.factor <- factor(c("Baseline", label, "Baseline"))
+    list(data = data, dictionary = data.frame(field_name = "record_id", form_name = "f1", field_type = "text", field_label = "ID"))
+  }
+  old <- suppressMessages(rd_event(project("Visit"), event = "visit_arm_1"))$queries
+  new <- suppressMessages(rd_event(project("Visita"), event = "visit_arm_1"))$queries
+  expect_equal(old$Query, "The event 'visit_arm_1' is missing.")
+  expect_equal(new$EventLabel, "Visita")
+  out <- suppressMessages(check_queries(old, new, return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification), "Pending")
+  expect_equal(out$EventLabel, "Visita")
+
+  # (a report created before EventLabel existed, with the label in its text)
+  older <- old
+  older$Event <- "Visit"
+  older$EventLabel <- NULL
+  older$Query <- "The event 'Visit' is missing."
+  out <- suppressMessages(check_queries(older, old, return_viewer = FALSE))$queries
+  expect_equal(as.character(out$Modification), "Pending")
 })

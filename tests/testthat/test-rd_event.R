@@ -16,6 +16,10 @@ test_that("rd_event finds missing events in covican", {
   q <- res$queries
   # all queries should correspond to missing follow-up
   expect_true(all(q$Event == "follow_up_visit_da_arm_1"))
+  # (its label, in EventLabel and Description; the text of the query has the unique name, which isn't renamed)
+  expect_true(all(q$EventLabel == "Follow up visit day 14+/-5d"))
+  expect_true(all(q$Description == "Follow up visit day 14+/-5d"))
+  expect_true(all(q$Query == "The event 'follow_up_visit_da_arm_1' is missing."))
 })
 
 test_that("filter argument works and returns messages for empty filters in covican", {

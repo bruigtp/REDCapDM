@@ -85,11 +85,13 @@ The function performs the following steps:
 \itemize{
 \item Identifier: the record identifier, \code{record_id} or else the first field of the dictionary (e.g. \code{subject_id}), whatever its position in the data. Filters and expressions can use it by its name.
 \item DAG (if present)
-\item Event and Instrument
+\item Event (the unique event name, e.g. \code{baseline_arm_1}), EventLabel (its label, e.g. \verb{Baseline (Arm 1: Drug A)}) and Instrument
 \item Field, Repetition, Description, Query statement
 \item Optional link to REDCap entry
 }
-\item Optionally combines results with previous query outputs using \code{add_to}.
+\item Optionally combines results with previous query outputs using \code{add_to}. The event of a query is its unique event
+name: a label can be renamed in REDCap or be the same in several arms. The previous queries take the current label
+of their events.
 \item Produces a summarized report, optionally including variables with zero queries.
 \item Provides warnings for variables with branching logic that could not be automatically evaluated.
 }

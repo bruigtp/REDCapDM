@@ -42,9 +42,9 @@ query into one of four statuses:
 \item \strong{Solved} — the query was present in the old report but is absent from the new report,
 \item \strong{New} — the query appears in the new report but was not present in the old report,
 \item \strong{Miscorrected} — a special case where a query in the new report is marked as \code{New}
-but the old report has a query with the same \code{Identifier}, \code{Event}, \code{Repetition},
-\code{Field} (each of them when both reports have it) and \code{Description} (suggesting a re-issued or
-modified query for the same record and field).
+but the old report has a query with the same \code{Identifier}, \code{Event}, \code{Repetition} and
+\code{Field} (each of them when both reports have it; \code{Description} when they don't have \code{Field}),
+suggesting a re-issued or modified query for the same record and field.
 }
 
 The function returns a detailed comparison table of queries with a \code{Modification} factor (one of the four statuses) and an HTML summary table showing counts per status.
@@ -73,13 +73,19 @@ character prior to calling \code{check_queries()} to avoid factor-level mismatch
 before \code{"100-10"}). \code{Identifier} is returned as a number only when every identifier is a
 plain number without leading zeros (e.g. \code{"007"} is kept as text).
 \item \strong{Identity of a query:} a query is the same in both reports when it has the same \code{Identifier},
-\code{Event} and \code{Repetition} (when both reports have them), \code{Field} (when both reports have it),
-\code{Description} and \code{Query}. The other columns (e.g. \code{Link} or \code{DAG}) are taken from the new report,
-so a query whose link changed is still one pending query.
+\code{Event} and \code{Repetition} (when both reports have them), \code{Field} (when both reports have it;
+otherwise \code{Description}) and \code{Query}. \code{Event} is the unique event name and \code{Field} the
+name of the field: renaming an event, an arm or a field in REDCap doesn't solve its queries. Their labels
+(\code{EventLabel} and \code{Description}) and the other columns (e.g. \code{Link} or \code{DAG}) are taken from
+the new report, so a query whose label or link changed is still one pending query.
+\item \strong{Reports created before \code{EventLabel} existed:} they have the label of the event in
+\code{Event}. When a single event of the new report has that label, it is replaced by its unique event name;
+a label of several events (e.g. the same visit in several arms) can't be told apart.
 \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned to a query that would
 otherwise be \code{New} when the old report has a query with the same \code{Identifier}, \code{Event},
 \code{Repetition}, \code{Field} (each of them when both reports have it) and \code{Description} — this
-signals a likely re-issued or modified query. New queries without such a query in the old report are
+signals a likely re-issued or modified query (\code{Description} is only compared when the reports don't have
+\code{Field}). New queries without such a query in the old report are
 \code{New}, also when there are several of them for the same field.
 }
 }

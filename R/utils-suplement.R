@@ -230,6 +230,95 @@ natural_rank <- function(x) {
 }
 
 
+## Events of the queries ----
+
+#' Unique name and label of the events of the data
+#'
+#' @param data REDCap dataset.
+#' @return A data frame with the `code` (unique event name, `redcap_event_name`) and the `label`
+#'   (`redcap_event_name.factor`) of each event of the data. Without one of the two columns, the other one is both.
+#' @noRd
+event_labels <- function(data) {
+  code <- if ("redcap_event_name" %in% names(data)) as.character(data$redcap_event_name) else NULL
+  label <- if ("redcap_event_name.factor" %in% names(data)) as.character(data$redcap_event_name.factor) else NULL
+  if (is.null(code)) code <- label
+  if (is.null(label)) label <- code
+  if (is.null(code)) {
+    return(data.frame(code = character(0), label = character(0), stringsAsFactors = FALSE))
+  }
+  events <- unique(data.frame(code = code, label = label, stringsAsFactors = FALSE))
+  events <- events[!is.na(events$code), , drop = FALSE]
+  events$label[is.na(events$label)] <- events$code[is.na(events$label)]
+  # (one label for each event)
+  events[!duplicated(events$code), , drop = FALSE]
+}
+
+#' Events of a query report: the unique event name in `Event` and its label in `EventLabel`
+#'
+#' The unique event name is the event of a query (the labels can be renamed, or be the same in several arms), and
+#' `EventLabel` shows its label. Each query takes the current label of its event. Reports created before
+#' `EventLabel` existed have the label in `Event`: when a single event has that label, it is replaced by the unique
+#' event name (also in the default text of the queries of [rd_event()], "The event '...' is missing.").
+#'
+#' @param queries Queries of a report (with an `Event` column).
+#' @param events Unique names and labels of the events (see [event_labels()]).
+#' @return `queries` with the unique event names in `Event` and their labels in `EventLabel`, after `Event`.
+#' @noRd
+query_events <- function(queries, events) {
+  if (!"Event" %in% names(queries) || nrow(queries) == 0 && "EventLabel" %in% names(queries)) {
+    return(queries)
+  }
+  event <- as.character(queries$Event)
+  previous <- if ("EventLabel" %in% names(queries)) as.character(queries$EventLabel) else rep(NA_character_, nrow(queries))
+
+  # Labels in `Event` (reports without `EventLabel`): their unique event name, if a single event has that label
+  shared <- events$label[duplicated(events$label)]
+  old <- is.na(previous) & !event %in% events$code & event %in% setdiff(events$label, shared)
+  previous[old] <- event[old]
+  event[old] <- events$code[match(event[old], events$label)]
+  if (any(old) && "Query" %in% names(queries)) {
+    query <- as.character(queries$Query)
+    default <- old & query == paste0("The event '", previous, "' is missing.")
+    query[default] <- paste0("The event '", event[default], "' is missing.")
+    queries$Query <- query
+  }
+
+  # The current label of each event (an event that isn't in the data keeps the label of the report)
+  label <- ifelse(is.na(previous), event, previous)
+  known <- event %in% events$code
+  label[known] <- events$label[match(event[known], events$code)]
+  # (the description of the queries of rd_event() is the label of the event)
+  if ("Description" %in% names(queries) && "Field" %in% names(queries)) {
+    description <- as.character(queries$Description)
+    renamed <- known & queries$Field %in% "-" & !is.na(previous) & !is.na(description) & description == previous
+    description[renamed] <- label[renamed]
+    queries$Description <- description
+  }
+
+  queries$Event <- event
+  queries$EventLabel <- label
+  dplyr::relocate(queries, "EventLabel", .after = "Event")
+}
+
+#' Labels of the events shown in the summary of the queries
+#'
+#' @param code Unique event names.
+#' @param events Unique names and labels of the events (see [event_labels()]).
+#' @return The label of each event; a label of several events has the unique event name after it, e.g.
+#'   `"Enrollment (enrollment_arm_2)"`, so that the summary doesn't merge them.
+#' @noRd
+event_display <- function(code, events) {
+  code <- as.character(code)
+  events <- events[!duplicated(events$code), , drop = FALSE]
+  label <- events$label[match(code, events$code)]
+  label[is.na(label)] <- code[is.na(label)]
+  shared <- events$label[duplicated(events$label)]
+  several <- label %in% shared & code %in% events$code
+  label[several] <- paste0(label[several], " (", code[several], ")")
+  label
+}
+
+
 
 #' Columns with the Missing Data Codes of a field
 #'
