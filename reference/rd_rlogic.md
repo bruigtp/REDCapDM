@@ -151,7 +151,7 @@ covican |>
     var = "screening_fail_crit"
   )
 #> $rlogic
-#> [1] "ifelse(data$exc_1=='1' | data$inc_1=='0' | data$inc_2=='0' | data$inc_3=='0', 1, 0)"
+#> [1] "ifelse(data$exc_1 == \"1\" | data$inc_1 == \"0\" | data$inc_2 == \"0\" | data$inc_3 == \"0\", 1, 0)"
 #> 
 #> $eval
 #>   [1]  0 NA  0 NA  0 NA  0 NA  0 NA  0 NA  0 NA  0 NA  0 NA  0 NA  0 NA  0 NA  0
