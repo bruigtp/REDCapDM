@@ -173,26 +173,26 @@ rd_checkbox <- function(project = NULL, data = NULL, dic = NULL, event_form = NU
     var_check_factors <- var_check[grep("\\.factor$", var_check)]
   }
 
-  # Normalize checkbox codes before evaluating branching logic.
-  if (length(var_check_factors) > 0) {
+  # Normalize all original checkbox columns.
+  if (length(var_check_factors) > 0L) {
     var_check <- var_check[!grepl("\\.factor$", var_check)]
-  } else {
-    data <- data |>
-      dplyr::mutate(
-        dplyr::across(
-          tidyselect::all_of(var_check),
-          ~ {
-            value <- as.character(.x)
-
-            dplyr::case_when(
-              value %in% c("0", "Unchecked") ~ 0,
-              value %in% c("1", "Checked") ~ 1,
-              TRUE ~ NA_real_
-            )
-          }
-        )
-      )
   }
+
+  data <- data |>
+    dplyr::mutate(
+      dplyr::across(
+        tidyselect::all_of(var_check),
+        ~ {
+          value <- as.character(.x)
+
+          dplyr::case_when(
+            value %in% c("0", "Unchecked") ~ 0,
+            value %in% c("1", "Checked") ~ 1,
+            TRUE ~ NA_real_
+          )
+        }
+      )
+    )
 
   # Update results with the transformation
   reason <- if (na_logic == "eval")

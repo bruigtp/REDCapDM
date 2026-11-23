@@ -206,56 +206,86 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     rd_warn(c("No event or event-form has been specified. Therefore, the function will automatically consider observations from all events in the dataset.", "i" = "Ensure that the selected variable(s) is(are) collected in all specified events. This will avoid overestimating the number of queries."))
   }
 
-  # Handle events automatically based on event_form and dictionary
+    # Select events using the original field or form of each variable.
   if (all(is.na(event)) && !is.null(event_form)) {
-    var_form <- dic |>
-      dplyr::filter(.data$field_name %in% variables) |>
-      dplyr::pull(.data$form_name)
+    forms <- unique(vapply(
+      variables,
+      var_form,
+      character(1),
+      dic = dic,
+      USE.NAMES = FALSE
+    ))
 
-    event <- event_form |>
-      dplyr::filter(.data$form %in% var_form) |>
-      dplyr::pull(.data$unique_event_name)
-
-    # Only the events with data: an event that no record has reached yet (e.g. a follow-up visit, or an arm without
-    # records) has nothing to check
-    event <- event[event %in% c(as.character(data$redcap_event_name), as.character(data$redcap_event_name.factor))]
+    if (anyNA(forms)) {
+      event <- events$code
+    } else {
+      event <- unique(as.character(
+        event_form$unique_event_name[event_form$form %in% forms]
+      ))
+      event <- event[event %in% events$code]
+    }
   }
 
-  # Apply event filtering if events are specified
+  if (anyNA(event) && !all(is.na(event))) {
+    rd_abort(
+      "{.arg event} cannot combine event names with NA.",
+      class = "REDCapDM_error_argument"
+    )
+  }
+
   if (all(!is.na(event))) {
-    # Saving initial dataset
     data0 <- data
 
-    # Error: event variable is missing in dataset
-    if (all(!c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      rd_abort(c("Event specified, but no event variable found in the dataset.", "i" = "Please review the {.arg event} argument."), class = "REDCapDM_error_argument")
+    event_column <- intersect(
+      c("redcap_event_name", "redcap_event_name.factor"),
+      names(data)
+    )[1]
+
+    if (is.na(event_column)) {
+      rd_abort(
+        "Event specified, but no event variable found in the dataset.",
+        class = "REDCapDM_error_argument"
+      )
     }
 
-    # Error: specified events are not in the dataset
-    if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      if (any(!event %in% data$redcap_event_name) && any(!event %in% data$redcap_event_name.factor)) {
-        rd_abort(c("One or more specified events are not found in the dataset.", "i" = "Please review the {.arg event} argument."), class = "REDCapDM_error_argument")
-      }
+    canonical <- unique(c(
+      events$code,
+      as.character(event_form$unique_event_name)
+    ))
+
+    event <- unique(resolve_query_event_codes(
+      event,
+      events,
+      canonical = canonical
+    ))
+
+    missing_events <- setdiff(event, events$code)
+
+    if (length(missing_events) > 0L) {
+      rd_abort(
+        "The following events have no observations: {.val {missing_events}}.",
+        class = "REDCapDM_error_argument"
+      )
     }
 
-    # Warning: multiple events are specified
-    if (length(event) > 1 && is.null(event_form)) {
-      rd_warn("Multiple events specified. Ensure variables are collected across all events to avoid overestimation.")
+    if (length(event) > 1L && is.null(event_form)) {
+      rd_warn(
+        "Multiple events specified. Ensure variables are collected across all events to avoid overestimation."
+      )
     }
 
-    # Filter data by events - factor version
-    if ("redcap_event_name.factor" %in% names(data) && all(event %in% data$redcap_event_name.factor)) {
-      data <- dplyr::filter(data, .data$redcap_event_name.factor %in% .env$event)
-    }
+    data <- dplyr::filter(
+      data,
+      as.character(.data[[event_column]]) %in% .env$event
+    )
 
-    # Filter data by events - raw version
-    if (all(event %in% data$redcap_event_name)) {
-      data <- dplyr::filter(data, .data$redcap_event_name %in% .env$event)
-    }
-
-    # Warning: identifiers are missing observations in any event (it only appears when checking for missings - %in%NA)
-    if (length(unique(data0[[id_var]])) != length(unique(data[[id_var]])) && any(grepl("%in%NA", gsub(" ", "", expression)))) {
-      rd_warn(c("Some identifiers are missing observations in specified events.", "i" = "Use {.fn rd_event} to check which identifiers are missing."))
+    if (length(unique(data0[[id_var]])) !=
+        length(unique(data[[id_var]])) &&
+        any(grepl("%in%NA", gsub(" ", "", expression)))) {
+      rd_warn(c(
+        "Some identifiers are missing observations in specified events.",
+        "i" = "Use {.fn rd_event} to check which identifiers are missing."
+      ))
     }
   }
 
@@ -275,52 +305,100 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     }
   }
 
-  # Handle event_id addition based on the link argument
+    # Assign event IDs without joining or deleting observations.
   if (!is.null(link[["event_id"]])) {
-    if (any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data))) {
-      # The event argument is specified and the event_id is specified using the events in the raw version
-      if (all(event %in% names(link[["event_id"]])) && all(event %in% data[, "redcap_event_name"])) {
-        event_link <- data.frame(
-          "name" = names(link[["event_id"]]),
-          "event_id" = as.numeric(link[["event_id"]])
+    supplied_ids <- link[["event_id"]]
+
+    if (!is.atomic(supplied_ids) ||
+        !is.null(dim(supplied_ids)) ||
+        length(supplied_ids) == 0L) {
+      rd_abort(
+        "{.field link$event_id} must be a vector of event IDs.",
+        class = "REDCapDM_error_argument"
+      )
+    }
+
+    id_values <- suppressWarnings(
+      as.numeric(as.character(supplied_ids))
+    )
+
+    if (anyNA(id_values) ||
+        any(!is.finite(id_values) |
+            id_values <= 0 |
+            id_values != trunc(id_values))) {
+      rd_abort(
+        "{.field link$event_id} must contain positive integer IDs.",
+        class = "REDCapDM_error_argument"
+      )
+    }
+
+    event_column <- intersect(
+      c("redcap_event_name", "redcap_event_name.factor"),
+      names(data)
+    )[1]
+
+    if (is.na(event_column)) {
+      if (length(id_values) != 1L) {
+        rd_abort(
+          "Non-longitudinal project. Please provide only one event ID.",
+          class = "REDCapDM_error_argument"
         )
-        data <- merge(data, event_link, by.x = "redcap_event_name", by.y = "name")
       }
 
-      # The event argument is specified and the event_id is specified using the events in the factor version
-      if (all(event %in% names(link[["event_id"]])) && all(event %in% data[, "redcap_event_name.factor"])) {
-        event_link <- data.frame(
-          "name" = names(link[["event_id"]]),
-          "event_id" = as.numeric(link[["event_id"]])
-        )
-        data <- merge(data, event_link, by.x = "redcap_event_name.factor", by.y = "name")
-      }
+      data[["event_id"]] <- rep(id_values, nrow(data))
 
-      # The event argument is not specified and the event_id is specified using the events in the raw version
-      if (all(is.na(event) & all(names(data[, "redcap_event_name"] %in% names(link[["event_id"]]))))) {
-        event_link <- data.frame(
-          "name" = names(link[["event_id"]]),
-          "event_id" = as.numeric(link[["event_id"]])
-        )
-        data <- merge(data, event_link, by.x = "redcap_event_name", by.y = "name")
-      }
+    } else if (
+      is.null(names(supplied_ids)) &&
+      length(id_values) == 1L &&
+      length(unique(data[[event_column]])) <= 1L
+    ) {
+      data[["event_id"]] <- rep(id_values, nrow(data))
 
-      # The event argument is not specified and the event_id is specified using the events in the factor version
-      if (all(is.na(event) & all(names(data[, "redcap_event_name.factor"] %in% names(link[["event_id"]]))))) {
-        event_link <- data.frame(
-          "name" = names(link[["event_id"]]),
-          "event_id" = as.numeric(link[["event_id"]])
-        )
-        data <- merge(data, event_link, by.x = "redcap_event_name.factor", by.y = "name")
-      }
     } else {
-      # There is not an event name variable in the dataset
-      if (length(link[["event_id"]]) == 1) {
-        data[, "event_id"] <- as.numeric(link[["event_id"]])
-      } else {
-        # Error: More than one event_id is specified and the project is non-longitudinal
-        rd_abort("Non-longitudinal project. Please provide only one event ID.", class = "REDCapDM_error_argument")
+      map_names <- names(supplied_ids)
+
+      if (is.null(map_names) ||
+          anyNA(map_names) ||
+          any(!nzchar(trimws(map_names))) ||
+          anyDuplicated(map_names) > 0L) {
+        rd_abort(
+          "{.field link$event_id} must have non-empty, unique event names.",
+          class = "REDCapDM_error_argument"
+        )
       }
+
+      canonical <- unique(c(
+        events$code,
+        as.character(event_form$unique_event_name)
+      ))
+
+      map_codes <- resolve_query_event_codes(
+        map_names,
+        events,
+        canonical = canonical,
+        allow_unknown = TRUE
+      )
+
+      if (anyDuplicated(map_codes[!is.na(map_codes)]) > 0L) {
+        rd_abort(
+          "Several entries of {.field link$event_id} refer to the same event.",
+          class = "REDCapDM_error_argument"
+        )
+      }
+
+      row_codes <- as.character(data[[event_column]])
+      index <- match(row_codes, map_codes)
+
+      if (anyNA(index)) {
+        missing_events <- unique(row_codes[is.na(index)])
+
+        rd_abort(
+          "Missing event IDs for {.val {missing_events}}.",
+          class = "REDCapDM_error_argument"
+        )
+      }
+
+      data[["event_id"]] <- id_values[index]
     }
   }
 
@@ -1000,4 +1078,52 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Return the final report output
   new_report(def)
+}
+
+resolve_query_event_codes <- function(
+    x, events, canonical = events$code, allow_unknown = FALSE) {
+
+  canonical <- as.character(canonical)
+
+  vapply(as.character(x), function(value) {
+    if (is.na(value) || !nzchar(value)) {
+      rd_abort(
+        "Event names must not be missing or empty.",
+        class = "REDCapDM_error_argument"
+      )
+    }
+
+    # Unique event codes take priority over labels.
+    if (value %in% canonical) {
+      return(value)
+    }
+
+    matches <- unique(as.character(
+      events$code[events$label %in% value]
+    ))
+    matches <- matches[!is.na(matches)]
+
+    if (length(matches) > 1L) {
+      rd_abort(
+        c(
+          "The label {.val {value}} belongs to several events.",
+          "i" = "Use their unique event names."
+        ),
+        class = "REDCapDM_error_argument"
+      )
+    }
+
+    if (length(matches) == 1L) {
+      return(matches[[1L]])
+    }
+
+    if (allow_unknown) {
+      return(NA_character_)
+    }
+
+    rd_abort(
+      "The event {.val {value}} was not found.",
+      class = "REDCapDM_error_argument"
+    )
+  }, character(1), USE.NAMES = FALSE)
 }

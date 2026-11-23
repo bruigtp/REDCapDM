@@ -125,15 +125,25 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # Modify event-name and current-instance occurrences
   rlogic <- gsub("\\[event\\-name\\]\\[", "[", rlogic)
-  rlogic <- gsub("\\]\\[current-instance\\]", "]", rlogic)
 
   # Update REDCap specific variable names
   rlogic <- gsub("\\[event\\-name\\]", "[redcap_event_name]", rlogic)
   rlogic <- gsub("\\[user\\-dag\\-name\\]", "[redcap_data_access_group]", rlogic)
   rlogic <- gsub("\\[record\\-dag\\-name\\]", "[redcap_data_access_group]", rlogic)
 
-  # Get the variables evaluated in the REDCap logic
-  rlogic_var <- unlist(stringr::str_extract_all(rlogic, "\\[[\\w,\\-]+\\]"))
+  # Keep instance references in the logic, but not in the field list.
+  logic_for_fields <- gsub(
+    "][current-instance]",
+    "]",
+    rlogic,
+    fixed = TRUE
+  )
+
+  rlogic_var <- unlist(stringr::str_extract_all(
+    logic_for_fields,
+    "\\[[\\w,\\-]+\\]"
+  ))
+
   rlogic_var <- gsub("^\\[|\\]$", "", rlogic_var)
 
   # Check if the variables are present in the data or events
@@ -212,8 +222,13 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     # (a label that is also a code, e.g. code 1 with label `2`, is read as a code, as in REDCap logic)
     only_labels <- labels[!labels %in% mapping]
     label_pattern <- paste0(
-      "\\[", field, "\\]\\s*(=|<>|!=)\\s*((['\"])(", paste(escape_regex(only_labels), collapse = "|"), ")\\3|",
-      paste(escape_regex(r_text(only_labels)), collapse = "|"), ")"
+      "\\[", field,
+      "\\](?:\\[current-instance\\])?\\s*(=|<>|!=)\\s*",
+      "((['\"])(",
+      paste(escape_regex(only_labels), collapse = "|"),
+      ")\\3|",
+      paste(escape_regex(r_text(only_labels)), collapse = "|"),
+      ")"
     )
     codes <- unmapped <- unname(mapping[as.character(data[[field]])])
     unmasked <- unmask_texts(rlogic, masked$texts)
@@ -253,7 +268,93 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   # Comparisons of a date field with 'today', 'now' or a date with time (e.g. `[visit] < 'today'`)
   rlogic <- date_comparisons(rlogic, dic)
 
-  # Change variables specification. If [][] we get the event with the first claudator. If not, the event will be the same as the one of the calculated variable.
+  # Resolve explicit event/field/current-instance references.
+  instance_refs <- stringr::str_match_all(
+    rlogic,
+    paste0(
+      "\\[([A-Za-z0-9_]+)\\]",
+      "\\[([A-Za-z0-9_]+)\\]",
+      "\\[current-instance\\]"
+    )
+  )[[1]]
+
+  if (nrow(instance_refs) > 0L) {
+    if (!"redcap_repeat_instance" %in% names(data)) {
+      rd_abort(
+        "[current-instance] requires redcap_repeat_instance.",
+        class = "REDCapDM_error_logic"
+      )
+    }
+
+    instance_refs <- instance_refs[
+      !duplicated(instance_refs[, 1]),
+      ,
+      drop = FALSE
+    ]
+
+    instance <- as.character(data$redcap_repeat_instance)
+    instance[instance %in% ""] <- NA_character_
+
+    # Encode identifiers as integer positions to avoid separator collisions.
+    record_key <- match(
+      data[[id_col]],
+      unique(data[[id_col]])
+    )
+    key <- paste(record_key, instance, sep = "\r")
+
+    for (k in seq_len(nrow(instance_refs))) {
+      event_i <- instance_refs[k, 2]
+      field_i <- instance_refs[k, 3]
+
+      source <- which(
+        as.character(data$redcap_event_name) %in% event_i &
+          repeat_home_rows(data, dic, field_i, rep_pairs) &
+          !is.na(instance)
+      )
+
+      if (length(source) == 0L) {
+        rd_abort(
+          "No repeating observations were found for {.var {field_i}} in {.val {event_i}}.",
+          class = "REDCapDM_error_logic"
+        )
+      }
+
+      if (anyDuplicated(key[source]) > 0L) {
+        rd_abort(
+          "Several source observations share the same record and instance for {.var {field_i}} in {.val {event_i}}.",
+          class = "REDCapDM_error_logic"
+        )
+      }
+
+      index <- source[match(key, key[source])]
+      index[is.na(instance)] <- NA_integer_
+
+      auxiliary <- utils::tail(
+        make.unique(
+          c(names(data), paste0("rd_current_instance_", k)),
+          sep = "_"
+        ),
+        1L
+      )
+
+      data[[auxiliary]] <- data[[field_i]][index]
+
+      rlogic <- gsub(
+        instance_refs[k, 1],
+        paste0("[", auxiliary, "]"),
+        rlogic,
+        fixed = TRUE
+      )
+    }
+  }
+
+  # References without an explicit event use the current row.
+  rlogic <- gsub(
+    "][current-instance]",
+    "]",
+    rlogic,
+    fixed = TRUE
+  )
 
   # Vector with all the [][] if found:
   var_event <- unique(unlist(stringr::str_extract_all(rlogic, "\\[[\\w,\\-]+\\]\\[[\\w,\\-]+\\]")))
@@ -336,7 +437,6 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   rlogic <- gsub("<-", "< -", rlogic, fixed = TRUE)
 
   # As in REDCap, a blank value is different from any value: [x] <> '1' is TRUE when x is blank
-  rlogic <- not_equal_blank(rlogic)
   rlogic <- logical_operators(rlogic)
   
   # REDCap functions (after the operators, so that the `=` of their translation is not changed)
@@ -356,6 +456,7 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
 
   # An operation compared with an empty text (e.g. `trim([text]) = ''`) is compared with a blank value
   rlogic <- blank_comparisons(rlogic)
+  rlogic <- not_equal_blank(rlogic)
 
   # A condition of if() that doesn't use any variable (e.g. `if(1 < 2, [a], 0)`) gives one value per row, as in REDCap
   rlogic <- recycle_constant_conditions(rlogic)
@@ -827,71 +928,52 @@ blank_comparisons <- function(x) {
 #' @return The logic.
 #' @noRd
 not_equal_blank <- function(x) {
-  pattern <- "(data\\$(?:\\w+|`\\w+`))\\s*!=\\s*('[^']*'|\"[^\"]*\"|-?[0-9.]+)"
-  out <- ""
-  rest <- x
-  repeat {
-    m <- regexpr(pattern, rest, perl = TRUE)
-    if (is.na(m) || m == -1) {
-      break
-    }
-    start <- as.integer(m)
-    len <- attr(m, "match.length")
-    before <- substr(rest, 1, start - 1)
-    found <- substr(rest, start, start + len - 1)
-    after <- substring(rest, start + len)
-    variable <- sub(pattern, "\\1", found, perl = TRUE)
-    value <- sub(pattern, "\\2", found, perl = TRUE)
+  parsed <- tryCatch(
+    parse(text = x, keep.source = FALSE),
+    error = function(e) NULL
+  )
 
-    if (grepl("[-+*/^%]\\s*$", before)) {
-      # (the variable is the end of an operation)
-      replacement <- found
-      used <- 0
-    } else if (!grepl("^\\s*[-+*/^%]", after)) {
-      replacement <- paste0("!(", variable, " %in% ", value, ")")
-      used <- 0
-    } else {
-      # The value is the start of an operation: it ends before a comparison, a logical operator, a comma or a closing
-      # parenthesis outside parentheses and quotes
-      chars <- strsplit(after, "")[[1]]
-      depth <- 0
-      quote <- ""
-      used <- length(chars)
-      k <- 1
-      while (k <= length(chars)) {
-        ch <- chars[k]
-        if (nzchar(quote)) {
-          if (ch == quote) quote <- ""
-        } else if (ch %in% c("'", "\"")) {
-          quote <- ch
-        } else if (ch == "(") {
-          depth <- depth + 1
-        } else if (ch == ")") {
-          if (depth == 0) {
-            used <- k - 1
-            break
-          }
-          depth <- depth - 1
-        } else if (depth == 0 && (ch %in% c(",", "&", "|", "<", ">", "=") || (ch == "!" && k < length(chars) && chars[k + 1] == "=") ||
-          grepl("^\\s(?i:and|or)\\b", paste(chars[k:min(length(chars), k + 4)], collapse = ""), perl = TRUE))) {
-          used <- k - 1
-          break
-        }
-        k <- k + 1
-      }
-      # (the comparisons inside the operation too, e.g. `0 + ifelse(data$b != 1, 1, 0)`)
-      operation_rest <- not_equal_blank(substr(after, 1, used))
-      operation <- trimws(paste0(value, operation_rest))
-      replacement <- if (grepl("data\\$", operation, fixed = FALSE)) {
-        paste0(found, operation_rest)
-      } else {
-        paste0("!(", variable, " %in% (", operation, "))", if (grepl("\\s$", substr(after, 1, used))) " " else "")
+  if (length(parsed) != 1L) {
+    return(x)
+  }
+
+  rewrite <- function(e) {
+    # Preserve the internal algorithms of translated helper functions.
+    if (!is.call(e) ||
+        identical(e[[1]], as.name("function"))) {
+      return(e)
+    }
+
+    for (k in seq_along(e)[-1L]) {
+      if (!identical(e[[k]], quote(expr = )) &&
+          !is.null(e[[k]])) {
+        e[[k]] <- rewrite(e[[k]])
       }
     }
-    out <- paste0(out, before, replacement)
-    rest <- substring(after, used + 1)
+
+    if (length(e) == 3L &&
+        identical(e[[1]], as.name("!="))) {
+      left <- e[[2]]
+      right <- e[[3]]
+
+      return(bquote(
+        (function(a, b) {
+          blank_a <- is.na(a) | as.character(a) %in% ""
+          blank_b <- is.na(b) | as.character(b) %in% ""
+
+          out <- a != b
+          blank <- blank_a | blank_b
+          out[blank] <- xor(blank_a, blank_b)[blank]
+
+          out
+        })(.(left), .(right))
+      ))
+    }
+
+    e
   }
-  paste0(out, rest)
+
+  one_line(rewrite(parsed[[1L]]))
 }
 
 #' Translate the datediff() of two time fields
@@ -1325,7 +1407,11 @@ logic_label <- function(x) {
 logic_comparisons <- function(logic) {
   quoted <- sub("^\\(\\?s\\)", "", quoted_pattern())
   number <- "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?![\\w.])"
-  comparison <- paste0("\\[([^\\[\\]]+)\\]\\s*(=|<>|!=)\\s*(", quoted, "|", number, ")")
+  comparison <- paste0(
+    "\\[([^\\[\\]]+)\\](?:\\[current-instance\\])?",
+    "\\s*(=|<>|!=)\\s*(",
+    quoted, "|", number, ")"
+  )
   matches <- gregexpr(paste0("(?s)(?:", quoted, ")|", comparison), logic, perl = TRUE)
   found <- regmatches(logic, matches)[[1]]
   parts <- regmatches(found, regexec(paste0("(?s)^", comparison, "$"), found, perl = TRUE))
@@ -1377,7 +1463,21 @@ relabel_logic <- function(logic, options) {
         which(suppressWarnings(as.numeric(rows$code)) == as.numeric(value))[1]
       }
       if (!is.na(hit)) {
-        new[k] <- paste0("[", rows$name[hit], "]", if (found$op[k] == "=") "=" else "<>", logic_label(rows$label[hit]))
+          suffix <- if (startsWith(
+          found$found[k],
+          paste0("[", found$field[k], "][current-instance]")
+        )) {
+          "[current-instance]"
+        } else {
+          ""
+        }
+
+        new[k] <- paste0(
+          "[", rows$name[hit], "]",
+          suffix,
+          if (found$op[k] == "=") "=" else "<>",
+          logic_label(rows$label[hit])
+        )
       }
     }
     regmatches(l, found$matches) <- list(new)

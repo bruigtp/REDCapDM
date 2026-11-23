@@ -170,6 +170,32 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
       ) |>
       dplyr::select(-"rlogic")
 
+    # Refresh previously generated columns even when the original is correct.
+    generated <- names(data)[recalc_generated(names(data), dic)]
+
+    for (name in generated) {
+      field <- sub("_recalc(_[0-9]+)?$", "", name)
+      pos <- match(field, calc$field_name)
+
+      # Excluded fields are absent from calc.
+      if (is.na(pos)) {
+        next
+      }
+
+      value <- calc$recalc[[pos]]
+
+      if (!is.na(calc$trans[pos]) && !is.null(value)) {
+        data[[name]] <- value
+      } else {
+        # An unsuccessful recalculation must not leave obsolete results.
+        data[[name]][] <- NA
+
+        rd_warn(
+          "The previously recalculated field {.var {name}} could not be updated. Its values have been set to NA."
+        )
+      }
+    }
+
 
     # Add recalculated fields to the dataset and dictionary
     calc_change <- calc |>
