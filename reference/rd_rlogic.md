@@ -52,6 +52,8 @@ rd_rlogic(
 - var:
 
   A single string specifying the target variable the logic applies to.
+  When `event_form` is supplied, it must be a field of the dictionary;
+  its form determines the target events.
 
 ## Value
 
@@ -59,12 +61,17 @@ A list with:
 
 - rlogic:
 
-  The translated R-compatible logic as a string.
+  The translated R expression. It can reference auxiliary columns or
+  internal helpers used during translation; it is not necessarily
+  reusable against the original dataset. Use `eval` or `eval_data` for
+  the evaluated result.
 
 - eval:
 
-  The evaluation of the translated logic on the provided dataset,
-  filtered by event if applicable.
+  The evaluated values in input row order, with `NA` outside the target
+  events and instrument rows. A constant expression can return a single
+  value for a non-longitudinal dataset without repeating instruments;
+  use `eval_data` for one value per input row.
 
 - eval_data:
 

@@ -185,11 +185,12 @@ The
 function allows users to easily import data from a REDCap project into
 R.
 
-In order to read exported data from REDCap, we first need to download
-the data and dictionary from the REDCap project in R format. We can then
-use the arguments `data_path` and `dic_path` to designate the local path
-where we have stored the R file and the dictionary from the REDCap
-project:
+In order to read exported data, please select *R Statistical Software*
+in REDCap and download both the generated R script and its associated
+CSV data. The dictionary can be downloaded separately in CSV or XLSX
+format. Then use the arguments `data_path` and `dic_path` to designate
+the local path where we have stored the R file and the dictionary from
+the REDCap project:
 
 ``` r
 

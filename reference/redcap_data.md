@@ -32,7 +32,7 @@ redcap_data(
 
 - dic_path:
 
-  Path to the dictionary file (CSV or XLSX; use with `data_path`)..
+  Path to the dictionary file (CSV or XLSX; use with `data_path`).
 
 - event_path:
 

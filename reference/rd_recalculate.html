@@ -112,6 +112,8 @@ Recalculates fields marked as calculated in the REDCap dictionary, compares them
 <li><p>The fields added by this function are recognised because they are calculated fields with the same calculation as the original field and, when the dictionary has the column <code>field_label</code>, its label followed by <code>(Recalculated)</code> (or by <code>(Recalculate)</code>, the label of previous versions of the package, which are also recognised). No other field or column is overwritten: if <code>[field_name]_recalc</code> is already one of them, the recalculated values are saved in <code>[field_name]_recalc_1</code> (or <code>_2</code>, ...) with a warning.</p></li>
 <li><p>Works for single-event projects; for longitudinal projects, <code>event_form</code> must be provided.</p></li>
 <li><p>Fields with incomplete branching logic or smart variables may fail to recalculate.</p></li>
+<li><p>Existing generated columns are refreshed even when the original values now agree with the calculation. If a formula cannot be translated or evaluated, its previously generated column is set to <code>NA</code> with a warning. Excluded fields and their generated columns are left unchanged.</p></li>
+<li><p>Unsupported formulas are reported as non-transcribed in <code>results</code>; they do not stop the recalculation of other fields. Restrictions on repeated-source references are those of <code><a href="rd_rlogic.html">rd_rlogic()</a></code>.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

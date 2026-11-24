@@ -89,16 +89,16 @@ Converts a REDCap logic expression into R-compatible logic. Processes one logic 
 
 
 <dt id="arg-var">var<a class="anchor" aria-label="anchor" href="#arg-var"></a></dt>
-<dd><p>A single string specifying the target variable the logic applies to.</p></dd>
+<dd><p>A single string specifying the target variable the logic applies to. When <code>event_form</code> is supplied, it must be a field of the dictionary; its form determines the target events.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with:</p><dl><dt>rlogic</dt>
-<dd><p>The translated R-compatible logic as a string.</p></dd>
+<dd><p>The translated R expression. It can reference auxiliary columns or internal helpers used during translation; it is not necessarily reusable against the original dataset. Use <code>eval</code> or <code>eval_data</code> for the evaluated result.</p></dd>
 
 <dt>eval</dt>
-<dd><p>The evaluation of the translated logic on the provided dataset, filtered by event if applicable.</p></dd>
+<dd><p>The evaluated values in input row order, with <code>NA</code> outside the target events and instrument rows. A constant expression can return a single value for a non-longitudinal dataset without repeating instruments; use <code>eval_data</code> for one value per input row.</p></dd>
 
 <dt>eval_data</dt>
 <dd><p>A <code>data.frame</code> with the record identifier, the event and repetition columns present in the dataset (<code>redcap_event_name</code>, <code>redcap_repeat_instrument</code>, <code>redcap_repeat_instance</code>) and <code>eval</code>, to identify the record of each evaluated value.</p></dd>

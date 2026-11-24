@@ -97,6 +97,17 @@ A list with:
 - Fields with incomplete branching logic or smart variables may fail to
   recalculate.
 
+- Existing generated columns are refreshed even when the original values
+  now agree with the calculation. If a formula cannot be translated or
+  evaluated, its previously generated column is set to `NA` with a
+  warning. Excluded fields and their generated columns are left
+  unchanged.
+
+- Unsupported formulas are reported as non-transcribed in `results`;
+  they do not stop the recalculation of other fields. Restrictions on
+  repeated-source references are those of
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md).
+
 ## See also
 
 Other process functions:

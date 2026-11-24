@@ -189,8 +189,11 @@ The function performs the following steps:
 - Produces a summarized report, optionally including variables with zero
   queries.
 
-- Provides warnings for variables with branching logic that could not be
-  automatically evaluated.
+- If branching logic cannot be translated by
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md),
+  the function warns and checks the variable without applying that
+  branching logic. Review these queries manually or provide an
+  appropriate `filter`.
 
 ## See also
 

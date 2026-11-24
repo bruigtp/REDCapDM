@@ -178,7 +178,7 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 name: a label can be renamed in REDCap or be the same in several arms. The previous queries take the current label
 of their events.</p></li>
 <li><p>Produces a summarized report, optionally including variables with zero queries.</p></li>
-<li><p>Provides warnings for variables with branching logic that could not be automatically evaluated.</p></li>
+<li><p>If branching logic cannot be translated by <code><a href="rd_rlogic.html">rd_rlogic()</a></code>, the function warns and checks the variable without applying that branching logic. Review these queries manually or provide an appropriate <code>filter</code>.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

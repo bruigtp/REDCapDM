@@ -454,11 +454,12 @@ built-in dataset as an example.</p>
 </h4>
 <p>The <code><a href="../reference/redcap_data.html">redcap_data()</a></code> function allows users to easily import
 data from a REDCap project into R.</p>
-<p>In order to read exported data from REDCap, we first need to download
-the data and dictionary from the REDCap project in R format. We can then
-use the arguments <code>data_path</code> and <code>dic_path</code> to
-designate the local path where we have stored the R file and the
-dictionary from the REDCap project:</p>
+<p>In order to read exported data, please select <em>R Statistical
+Software</em> in REDCap and download both the generated R script and its
+associated CSV data. The dictionary can be downloaded separately in CSV
+or XLSX format. Then use the arguments <code>data_path</code> and
+<code>dic_path</code> to designate the local path where we have stored
+the R file and the dictionary from the REDCap project:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
 <span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span><span class="op">)</span></span></code></pre></div>

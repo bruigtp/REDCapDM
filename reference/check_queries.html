@@ -92,25 +92,19 @@ suggesting a re-issued or modified query for the same record and field.</p></li>
 
 
 <dl><dt id="arg-old">old<a class="anchor" aria-label="anchor" href="#arg-old"></a></dt>
-<dd><p>Data frame containing the previous (older) query report. Must include
-<code>Identifier</code>, <code>Description</code> and <code>Query</code> columns (character or factor).</p></dd>
+<dd><p>Data frame containing the previous (older) query report. Must include <code>Identifier</code>, <code>Description</code> and <code>Query</code> columns (character or factor).</p></dd>
 
 
 <dt id="arg-new">new<a class="anchor" aria-label="anchor" href="#arg-new"></a></dt>
-<dd><p>Data frame containing the newer query report. Must include
-<code>Identifier</code>, <code>Description</code> and <code>Query</code> columns (character or factor).
-If <code>new</code> contains a <code>Code</code> column, it will be removed at the start of processing.</p></dd>
+<dd><p>Data frame containing the newer query report. Must include <code>Identifier</code>, <code>Description</code> and <code>Query</code> columns (character or factor). If <code>new</code> contains a <code>Code</code> column, it will be removed at the start of processing.</p></dd>
 
 
 <dt id="arg-report-title">report_title<a class="anchor" aria-label="anchor" href="#arg-report-title"></a></dt>
-<dd><p>Optional single string used as the caption for the HTML summary table.
-Defaults to <code>"Comparison report"</code> when not supplied or when <code>NA</code>.</p></dd>
+<dd><p>Optional single string used as the caption for the HTML summary table. Defaults to <code>"Comparison report"</code> when not supplied or when <code>NA</code>.</p></dd>
 
 
 <dt id="arg-return-viewer">return_viewer<a class="anchor" aria-label="anchor" href="#arg-return-viewer"></a></dt>
-<dd><p>Logical; if <code>TRUE</code> (default) an HTML table (knitr/kable + kableExtra)
-summarizing the counts per state is produced and returned in the <code>results</code> element of the
-returned list. If <code>FALSE</code>, no HTML viewer is produced (useful for non-interactive runs).</p></dd>
+<dd><p>Logical; if <code>TRUE</code> (default) an HTML table (knitr/kable + kableExtra) summarizing the counts per state is produced and returned in the <code>results</code> element of the returned list. If <code>FALSE</code>, no HTML viewer is produced (useful for non-interactive runs).</p></dd>
 
 </dl></div>
     <div class="section level2">
