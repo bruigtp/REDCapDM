@@ -1144,3 +1144,78 @@ test_that("the metadata of the API without rows (e.g. a project without data acc
   expect_s3_class(out$redcap_data_access_group.factor, "factor")
   expect_length(attr(out, "unchecked"), 0)
 })
+
+
+test_that("native CSV imports preserve categorical codes and factors", {
+  folder <- tempfile()
+  dir.create(folder)
+  on.exit(unlink(folder, recursive = TRUE), add = TRUE)
+
+  cases <- list(
+    c("T", "F"), c("01", "02"), c("1", "2"),
+    c("TRUE", "FALSE"), c("-2", "-1"),
+    c("1.0", "2.0"), c("1e2", "2e2"),
+    c("9007199254740992", "9007199254740993"),
+    c("A", "B"), c("0.10", "0.20"), c("+1", "+2"),
+    c("01", "1"), c("1e5", "100000"),
+    c("1.0", "1"), c("T", "TRUE")
+  )
+
+  for (type in c("radio", "dropdown")) {
+    for (codes in cases) {
+      data <- data.frame(
+        record_id = c("007", "008"),
+        s = codes
+      )
+      write.csv(
+        data, file.path(folder, "P_DATA.csv"),
+        row.names = FALSE, na = ""
+      )
+
+      dictionary <- audit_dic(
+        c("record_id", "s"),
+        c("text", type),
+        choices = c(
+          "",
+          paste(
+            paste(codes, c("First", "Second"), sep = ", "),
+            collapse = " | "
+          )
+        )
+      )
+      write.csv(
+        dictionary, file.path(folder, "DIC.csv"),
+        row.names = FALSE
+      )
+
+      script <- c(
+        "## REDCap R export",
+        "## begin data",
+        "data=read.csv('P_DATA.csv',stringsAsFactors=FALSE)",
+        paste0(
+          "data$s.factor=factor(data$s,levels=",
+          paste(deparse(codes), collapse = ""),
+          ",labels=c('First','Second'))"
+        ),
+        "attr(data$s,'label')='Choice'"
+      )
+      writeLines(script, file.path(folder, "P_R.r"))
+
+      out <- redcap_data(
+        data_path = file.path(folder, "P_R.r"),
+        dic_path = file.path(folder, "DIC.csv")
+      )
+
+      expect_equal(as.character(out$data$s), codes)
+      expect_equal(
+        as.character(out$data$s.factor),
+        c("First", "Second")
+      )
+      expect_equal(
+        as.character(out$data$record_id),
+        c("007", "008")
+      )
+      expect_identical(attr(out$data$s, "label"), "Choice")
+    }
+  }
+})

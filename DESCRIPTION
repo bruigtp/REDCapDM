@@ -43,7 +43,8 @@ Suggests:
     ggplot2,
     openxlsx,
     readr,
-    REDCapR (>= 1.2.0)
+    REDCapR (>= 1.2.0),
+    withr
 VignetteBuilder: knitr
 Depends: 
     R (>= 4.1)

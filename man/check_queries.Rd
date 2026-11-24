@@ -7,19 +7,13 @@
 check_queries(old, new, report_title = NULL, return_viewer = TRUE)
 }
 \arguments{
-\item{old}{Data frame containing the previous (older) query report. Must include
-\code{Identifier}, \code{Description} and \code{Query} columns (character or factor).}
+\item{old}{Data frame containing the previous (older) query report. Must include \code{Identifier}, \code{Description} and \code{Query} columns (character or factor).}
 
-\item{new}{Data frame containing the newer query report. Must include
-\code{Identifier}, \code{Description} and \code{Query} columns (character or factor).
-If \code{new} contains a \code{Code} column, it will be removed at the start of processing.}
+\item{new}{Data frame containing the newer query report. Must include \code{Identifier}, \code{Description} and \code{Query} columns (character or factor). If \code{new} contains a \code{Code} column, it will be removed at the start of processing.}
 
-\item{report_title}{Optional single string used as the caption for the HTML summary table.
-Defaults to \code{"Comparison report"} when not supplied or when \code{NA}.}
+\item{report_title}{Optional single string used as the caption for the HTML summary table. Defaults to \code{"Comparison report"} when not supplied or when \code{NA}.}
 
-\item{return_viewer}{Logical; if \code{TRUE} (default) an HTML table (knitr/kable + kableExtra)
-summarizing the counts per state is produced and returned in the \code{results} element of the
-returned list. If \code{FALSE}, no HTML viewer is produced (useful for non-interactive runs).}
+\item{return_viewer}{Logical; if \code{TRUE} (default) an HTML table (knitr/kable + kableExtra) summarizing the counts per state is produced and returned in the \code{results} element of the returned list. If \code{FALSE}, no HTML viewer is produced (useful for non-interactive runs).}
 }
 \value{
 A list of class \code{REDCapDM_report}, which prints a short summary (see \code{\link[=print.REDCapDM_report]{print.REDCapDM_report()}}), with two elements:

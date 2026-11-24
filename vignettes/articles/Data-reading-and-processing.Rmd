@@ -38,7 +38,7 @@ This vignette provides a summary of the straightforward and common use of [REDCa
 
 Ensure you have exported the following files from REDCap and placed them in the same directory:
 
-1. **R data file** – contains your REDCap dataset (`.rds` or `.RData`)
+1. **R data file** – reads and processes your REDCap dataset, obtained by choosing *R Statistical Software* (`.r` or `.R`). Please, keep the R script and its data CSV in the same directory.
 
 2. **Dictionary file** – CSV file containing variable metadata
 

@@ -164,7 +164,7 @@ The package structure can be divided into three main components: reading raw dat
 
 The `redcap_data()` function allows users to easily import data from a REDCap project into R.
 
-In order to read exported data from REDCap, we first need to download the data and dictionary from the REDCap project in R format. We can then use the arguments `data_path` and `dic_path` to designate the local path where we have stored the R file and the dictionary from the REDCap project:
+In order to read exported data, please select *R Statistical Software* in REDCap and download both the generated R script and its associated CSV data. The dictionary can be downloaded separately in CSV or XLSX format. Then use the arguments `data_path` and `dic_path` to designate the local path where we have stored the R file and the dictionary from the REDCap project:
 
 ```{r message=FALSE, warning=FALSE, comment=NA, eval=FALSE}
 dataset <- redcap_data(data_path = "C:/Users/username/example.r",
@@ -262,4 +262,3 @@ Each of these functions, and `rd_transform()`, which does all the steps at once,
 Queries are very important to ensure the accuracy and reliability of a REDCap dataset. The collected data may contain missing values, inconsistencies, or other potential errors that need to be identified in order to correct them later.
 
 The functions to identify queries, check missing events, follow up the corrections and export the reports are explained in detail in `vignette("query-management")`.
-

@@ -141,3 +141,23 @@ make_custom_id <- function(id = "subject_id", age_first = FALSE, external_first 
 
   list(data = data, dictionary = dic, event_form = event_form)
 }
+
+
+audit_dic <- function(fields, types = "text", forms = "f1",
+                      choices = "") {
+  n <- length(fields)
+
+  data.frame(
+    field_name = fields,
+    form_name = rep_len(forms, n),
+    field_type = rep_len(types, n),
+    field_label = fields,
+    choices_calculations_or_slider_labels = rep_len(choices, n),
+    text_validation_type_or_show_slider_number = "",
+    branching_logic_show_field_only_if = "",
+    field_note = "",
+    required_field = "",
+    field_annotation = "",
+    section_header = ""
+  )
+}

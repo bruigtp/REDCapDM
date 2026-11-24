@@ -45,6 +45,8 @@ Recalculates fields marked as calculated in the REDCap dictionary, compares them
 \item The fields added by this function are recognised because they are calculated fields with the same calculation as the original field and, when the dictionary has the column \code{field_label}, its label followed by \code{(Recalculated)} (or by \code{(Recalculate)}, the label of previous versions of the package, which are also recognised). No other field or column is overwritten: if \verb{[field_name]_recalc} is already one of them, the recalculated values are saved in \verb{[field_name]_recalc_1} (or \verb{_2}, ...) with a warning.
 \item Works for single-event projects; for longitudinal projects, \code{event_form} must be provided.
 \item Fields with incomplete branching logic or smart variables may fail to recalculate.
+\item Existing generated columns are refreshed even when the original values now agree with the calculation. If a formula cannot be translated or evaluated, its previously generated column is set to \code{NA} with a warning. Excluded fields and their generated columns are left unchanged.
+\item Unsupported formulas are reported as non-transcribed in \code{results}; they do not stop the recalculation of other fields. Restrictions on repeated-source references are those of \code{\link[=rd_rlogic]{rd_rlogic()}}.
 }
 }
 \examples{

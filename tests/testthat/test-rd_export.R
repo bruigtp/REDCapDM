@@ -147,3 +147,37 @@ test_that("rd_export writes the links of a factor column and keeps the format of
   rels <- paste(readLines(list.files(files, "sheet1.xml.rels", recursive = TRUE, full.names = TRUE), warn = FALSE), collapse = "")
   expect_true(all(vapply(as.character(queries$Link), grepl, logical(1), x = rels, fixed = TRUE)))
 })
+
+
+test_that("export defaults and precedence preserve the selected queries", {
+  skip_if_not_installed("mockery")
+  withr::local_options(REDCapDM.quiet = TRUE)
+
+  q <- data.frame(
+    Identifier = c("1", "2"),
+    Link = factor(c("https://example/a", "https://example/b"))
+  )
+  saved <- list()
+  export <- rd_export
+
+  mockery::stub(
+    export, "openxlsx::saveWorkbook",
+    function(wb, file, overwrite = FALSE, ...) {
+      saved$workbook <<- wb
+      saved$path <<- file
+      saved$overwrite <<- overwrite
+      invisible(TRUE)
+    }
+  )
+
+  expect_warning(
+    export(project = list(queries = q), queries = data.frame(wrong = 1)),
+    "provided twice"
+  )
+
+  out <- openxlsx::read.xlsx(saved$workbook)
+  expect_equal(out$Identifier, c("1", "2"), ignore_attr = TRUE)
+  expect_equal(out$Link, as.character(q$Link))
+  expect_match(saved$path, "example\\.xlsx$")
+  expect_true(saved$overwrite)
+})

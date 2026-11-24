@@ -1263,3 +1263,186 @@ test_that("rd_query keeps the unique event name of each query, also when several
   expect_equal(merged$queries$Event, "enrollment_arm_1")
   expect_equal(merged$queries$EventLabel, "Inclusion A")
 })
+
+local({
+  d <- data.frame(
+    record_id = c("1", "2"),
+    redcap_event_name = c("a_arm_1", "b_arm_1"),
+    redcap_event_name.factor = c("A", "B"),
+    x = NA_real_, y = NA_real_
+  )
+  dic <- data.frame(
+    field_name = c("record_id", "x", "y"),
+    form_name = "f1",
+    field_type = "text",
+    field_label = c("ID", "X", "Y"),
+    branching_logic_show_field_only_if = ""
+  )
+  q <- function(data = d, variables = "x",
+                expression = "is.na(x)", ...) {
+    suppressWarnings(suppressMessages(rd_query(
+      data = data, dic = dic, variables = variables,
+      expression = expression, ...
+    )))
+  }
+  link <- list(
+    domain = "redcap.example", redcap_version = "14",
+    proj_id = 1,
+    event_id = c(a_arm_1 = 101, b_arm_1 = 102)
+  )
+  ids <- function(value) {
+    out <- link
+    out$event_id <- value
+    out
+  }
+  err <- "REDCapDM_error_argument"
+
+  test_that("event scope rejects mixed missing events", {
+    expect_error(q(event = c("a_arm_1", NA_character_)), class = err)
+
+    expect_warning(
+      z <- suppressMessages(rd_query(
+        data = d, dic = dic, variables = "x",
+        expression = "x %in% NA", event = "a_arm_1"
+      )),
+      "missing observations"
+    )
+    expect_equal(z$queries$Identifier, 1)
+
+    expect_error(
+      q(
+        data = d[c("record_id", "x", "y")],
+        link = list(domain = "host")
+      ),
+      "Incomplete", class = err
+    )
+  })
+
+  test_that("link mappings require complete and exact event identity", {
+    for (value in list(list(a_arm_1 = 101), matrix(101), numeric(0))) {
+      expect_error(
+        q(link = ids(value)), "vector of event IDs", class = err
+      )
+    }
+    for (value in list(0, 1.5, Inf, NA_real_)) {
+      expect_error(
+        q(link = ids(value)), "positive integer IDs", class = err
+      )
+    }
+    invalid_names <- list(
+      c(101, 102),
+      setNames(c(101, 102), c("a_arm_1", "")),
+      setNames(c(101, 102), c("a_arm_1", "a_arm_1"))
+    )
+    for (value in invalid_names) {
+      expect_error(
+        q(link = ids(value)), "unique event names", class = err
+      )
+    }
+
+    expect_error(
+      q(link = ids(c(a_arm_1 = 101, A = 101, b_arm_1 = 102))),
+      "same event", class = err
+    )
+    expect_error(
+      q(link = ids(c(a_arm_1 = 101))), "b_arm_1", class = err
+    )
+
+    z <- q(event = "a_arm_1", link = ids(101))
+    expect_equal(nrow(z$queries), 1L)
+    expect_match(z$queries$Link, "&event_id=101&", fixed = TRUE)
+
+    z <- q(link = ids(c(link$event_id, future_arm_1 = 303)))
+    expect_equal(z$queries$Identifier, c(1, 2))
+    expect_equal(
+      sub(".*event_id=([0-9]+)&.*", "\\1", z$queries$Link),
+      c("101", "102")
+    )
+  })
+
+  test_that("event labels resolve without guessing", {
+    ambiguous <- d
+    ambiguous$redcap_event_name.factor <- "Shared"
+    expect_error(
+      q(data = ambiguous, event = "Shared"),
+      "several events", class = err
+    )
+
+    resolve <- get(
+      "resolve_query_event_codes",
+      envir = environment(rd_query)
+    )
+    events <- data.frame(code = "a_arm_1", label = "A")
+    for (value in list(NA_character_, "")) {
+      expect_error(
+        resolve(value, events), "missing or empty", class = err
+      )
+    }
+
+    labels_only <- d[setdiff(names(d), "redcap_event_name")]
+    expect_setequal(q(data = labels_only)$queries$Event, c("A", "B"))
+
+    z <- q(data = labels_only, variables_names = "Custom X")
+    expect_setequal(z$queries$Event, c("A", "B"))
+    expect_true(all(z$queries$Description == "Custom X"))
+  })
+
+  test_that("zero summaries preserve requested names and reasons", {
+    z <- q(
+      variables = c("x", "y"), expression = "x > 0",
+      variables_names = c("Custom X", "Custom Y"),
+      query_name = c("Positive X", "Positive Y")
+    )
+    expect_equal(nrow(z$queries), 0L)
+    for (text in c("Custom X", "Custom Y", "Positive X", "Positive Y")) {
+      expect_match(z$results, text, fixed = TRUE)
+    }
+
+    expect_error(
+      q(
+        variables = c("x", "y"), expression = "x > 0",
+        variables_names = c("X", "Y", "Z")
+      ),
+      "Multiple variable names", class = err
+    )
+    expect_error(
+      q(
+        variables = c("x", "y"), expression = "x > 0",
+        query_name = c("X", "Y", "Z")
+      ),
+      "Multiple query names", class = err
+    )
+
+    z <- q(negate = TRUE)
+    expect_equal(nrow(z$queries), 0L)
+    expect_match(z$results, "should be missing", fixed = TRUE)
+
+    system <- d
+    system$f1_complete <- 0
+    z <- q(data = system, variables = "f1_complete", expression = "x > 0")
+    expect_equal(nrow(z$queries), 0L)
+    expect_match(z$results, "f1_complete", fixed = TRUE)
+  })
+
+  test_that("DAG aliases reserve names and retain every record", {
+    g <- data.frame(
+      record_id = as.character(1:5),
+      x = NA_real_, y = NA_real_,
+      redcap_data_access_group =
+        c("(Unassigned)", NA, "", "-", "(Empty DAG)")
+    )
+    z <- q(data = g, by_dag = TRUE)
+
+    expect_equal(sum(vapply(z$queries, nrow, integer(1))), 5L)
+    expect_setequal(
+      names(z$queries),
+      c("(Unassigned)", "(Unassigned)_1",
+        "(Empty DAG)", "(Empty DAG)_1", "-")
+    )
+    expect_setequal(names(z$queries), names(z$results))
+    expect_equal(z$queries[["(Unassigned)"]]$Identifier, 1)
+    expect_equal(z$queries[["(Empty DAG)"]]$Identifier, 5)
+    expect_true(is.na(z$queries[["(Unassigned)_1"]]$DAG))
+    expect_identical(z$queries[["(Empty DAG)_1"]]$DAG, "")
+  })
+})

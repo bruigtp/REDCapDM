@@ -33,7 +33,7 @@
 #' @note To use other package functions effectively, include the `dic_path` argument to load the project dictionary.
 #'
 #' @param data_path Path to exported R file (use with `dic_path`).
-#' @param dic_path Path to the dictionary file (CSV or XLSX; use with `data_path`)..
+#' @param dic_path Path to the dictionary file (CSV or XLSX; use with `data_path`).
 #' @param event_path Path to the event-form mapping file (CSV or XLSX) for longitudinal projects (downloadable via the `Designate Instruments for My Events` tab within the `Project Setup` section of REDCap).
 #' @param uri REDCap API base URI (use with `token`).
 #' @param token REDCap API token (use with `uri`).

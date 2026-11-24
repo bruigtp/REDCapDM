@@ -40,7 +40,7 @@
 #'   name: a label can be renamed in REDCap or be the same in several arms. The previous queries take the current label
 #'   of their events.
 #' * Produces a summarized report, optionally including variables with zero queries.
-#' * Provides warnings for variables with branching logic that could not be automatically evaluated.
+#' * If branching logic cannot be translated by [rd_rlogic()], the function warns and checks the variable without applying that branching logic. Review these queries manually or provide an appropriate `filter`.
 #'
 #'
 #' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), containing:

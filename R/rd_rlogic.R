@@ -10,7 +10,7 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param logic A single REDCap logic string (e.g., `"if([exc_1]='1' or [inc_1]='0', 1, 0)"`).
-#' @param var A single string specifying the target variable the logic applies to.
+#' @param var A single string specifying the target variable the logic applies to. When `event_form` is supplied, it must be a field of the dictionary; its form determines the target events.
 #'
 #' @details
 #' * Translates REDCap operators and functions into R equivalents:
@@ -27,8 +27,8 @@
 #'
 #' @return A list with:
 #' \describe{
-#'   \item{rlogic}{The translated R-compatible logic as a string.}
-#'   \item{eval}{The evaluation of the translated logic on the provided dataset, filtered by event if applicable.}
+#'   \item{rlogic}{The translated R expression. It can reference auxiliary columns or internal helpers used during translation; it is not necessarily reusable against the original dataset. Use `eval` or `eval_data` for the evaluated result.}
+#'   \item{eval}{The evaluated values in input row order, with `NA` outside the target events and instrument rows. A constant expression can return a single value for a non-longitudinal dataset without repeating instruments; use `eval_data` for one value per input row.}
 #'   \item{eval_data}{A `data.frame` with the record identifier, the event and repetition columns present in the dataset (`redcap_event_name`, `redcap_repeat_instrument`, `redcap_repeat_instance`) and `eval`, to identify the record of each evaluated value.}
 #' }
 #'
@@ -530,12 +530,29 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       # An unindexed reference cannot select a repeating source instance.
       source_form <- var_form(var_i, dic)
 
-      if (!is.na(source_form) &&
-          any(rep_pairs$event %in% event_i &
-              rep_pairs$form %in% source_form)) {
+      repeating_instrument <- !is.na(source_form) &&
+        any(
+          rep_pairs$event %in% event_i &
+            rep_pairs$form %in% source_form
+        )
+
+      source_instance <- if ("redcap_repeat_instance" %in% names(data)) {
+        trimws(as.character(data$redcap_repeat_instance))
+      } else {
+        rep(NA_character_, nrow(data))
+      }
+
+      repeating_event <- any(
+        event_values(data) %in% event_i &
+          is.na(repeat_instrument_values(data)) &
+          !is.na(source_instance) &
+          nzchar(source_instance)
+      )
+
+      if (repeating_instrument || repeating_event) {
         rd_abort(
           c(
-            "The reference [{event_i}][{var_i}] points to a repeating instrument without specifying its source instance.",
+            "The reference [{event_i}][{var_i}] points to a repeating instrument or event without specifying its source instance.",
             "i" = "Use an explicit instance reference, such as [current-instance], only when the source and target instances correspond."
           ),
           class = "REDCapDM_error_logic"

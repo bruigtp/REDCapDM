@@ -578,26 +578,15 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   }
 
 
-  if(repeat_instrument)  {
-    form_check <- data |>
-    dplyr::distinct(dplyr::pick(dplyr::contains("redcap_repeat_instrument")))
-
+  if (repeat_instrument) {
     ndata <- ndata |>
-      dplyr::left_join(form_check, by = dplyr::join_by("form" == "redcap_repeat_instrument")) |>
-      dplyr::relocate("form_factor" = "redcap_repeat_instrument.factor", .after = form) |>
-      dplyr::mutate(df = purrr::map2(.data$form_factor, .data$df, ~ {
-        if (is.na(.x)) {
-          .y |>
-            dplyr::filter(is.na(.data$redcap_repeat_instrument.factor)) |>
-            dplyr::select(-dplyr::starts_with("redcap_repeat_instrument"))
-        } else {
-          .y |>
-            dplyr::filter(.data$redcap_repeat_instrument.factor == .x) |>
-            dplyr::mutate(redcap_repeat_instrument = redcap_repeat_instrument.factor) |>
-            dplyr::select(-redcap_repeat_instrument.factor)
-        }
-      })) |>
-      dplyr::select(-"form_factor")
+      dplyr::mutate(
+        vars = purrr::map2(
+          .data$vars,
+          .data$df,
+          ~ intersect(.x, names(.y))
+        )
+      )
   }
 
 

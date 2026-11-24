@@ -46,3 +46,77 @@ test_that("the main errors and warnings keep their format", {
   expect_snapshot(error = TRUE, rd_event(covican, event = "nope"))
   expect_snapshot(res <- rd_recalculate(covican, exclude = "copd"))
 })
+
+test_that("printing returns the same report invisibly", {
+  q <- data.frame(
+    Identifier = c("1", "2"),
+    Event = "base", EventLabel = "Baseline", Field = "age"
+  )
+  x <- new_report(list(queries = q, results = "summary"))
+
+  output <- utils::capture.output(
+    result <- withVisible(print.REDCapDM_report(x))
+  )
+
+  expect_identical(result$value, x)
+  expect_false(result$visible)
+  expect_match(
+    paste(output, collapse = "\n"),
+    "2 queries in 2 records", fixed = TRUE
+  )
+  expect_match(paste(output, collapse = "\n"), "age", fixed = TRUE)
+  expect_match(paste(output, collapse = "\n"), "Baseline", fixed = TRUE)
+})
+
+test_that("printing handles event, DAG, control and empty reports", {
+  event <- data.frame(Identifier = "1", Event = "visit", Field = "-")
+
+  text <- utils::capture.output(
+    print.REDCapDM_report(new_report(list(queries = event)))
+  )
+  expect_match(
+    paste(text, collapse = "\n"), "1 query in 1 record", fixed = TRUE
+  )
+
+  dag <- new_report(list(queries = list(A = event, B = event)))
+  text <- utils::capture.output(print.REDCapDM_report(dag))
+  expect_match(
+    paste(text, collapse = "\n"), "2 queries in 1 record", fixed = TRUE
+  )
+
+  control <- event
+  control$Modification <- "Pending"
+  text <- utils::capture.output(
+    print.REDCapDM_report(new_report(list(queries = control)))
+  )
+  expect_match(paste(text, collapse = "\n"), "query control", fixed = TRUE)
+  expect_match(paste(text, collapse = "\n"), "Pending", fixed = TRUE)
+
+  for (empty in list(event[FALSE, ], list())) {
+    text <- utils::capture.output(
+      print.REDCapDM_report(new_report(list(queries = empty)))
+    )
+    expect_match(paste(text, collapse = "\n"), "no queries", fixed = TRUE)
+  }
+
+  x <- new_report(list(queries = "invalid"))
+  text <- utils::capture.output(
+    result <- withVisible(print.REDCapDM_report(x))
+  )
+  expect_identical(result$value, x)
+  expect_false(result$visible)
+  expect_match(paste(text, collapse = "\n"), "invalid", fixed = TRUE)
+})
+
+test_that("printing distinguishes events sharing a label", {
+  q <- data.frame(
+    Identifier = "1",
+    Event = c("base_arm_1", "base_arm_2"),
+    EventLabel = "Baseline", Field = "age"
+  )
+  output <- utils::capture.output(
+    print.REDCapDM_report(new_report(list(queries = q)))
+  )
+  expect_match(paste(output, collapse = "\n"), "base_arm_1", fixed = TRUE)
+  expect_match(paste(output, collapse = "\n"), "base_arm_2", fixed = TRUE)
+})

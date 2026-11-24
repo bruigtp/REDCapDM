@@ -93,7 +93,7 @@ The function performs the following steps:
 name: a label can be renamed in REDCap or be the same in several arms. The previous queries take the current label
 of their events.
 \item Produces a summarized report, optionally including variables with zero queries.
-\item Provides warnings for variables with branching logic that could not be automatically evaluated.
+\item If branching logic cannot be translated by \code{\link[=rd_rlogic]{rd_rlogic()}}, the function warns and checks the variable without applying that branching logic. Review these queries manually or provide an appropriate \code{filter}.
 }
 }
 \examples{

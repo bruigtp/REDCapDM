@@ -24,13 +24,13 @@ rd_rlogic(
 
 \item{logic}{A single REDCap logic string (e.g., \code{"if([exc_1]='1' or [inc_1]='0', 1, 0)"}).}
 
-\item{var}{A single string specifying the target variable the logic applies to.}
+\item{var}{A single string specifying the target variable the logic applies to. When \code{event_form} is supplied, it must be a field of the dictionary; its form determines the target events.}
 }
 \value{
 A list with:
 \describe{
-\item{rlogic}{The translated R-compatible logic as a string.}
-\item{eval}{The evaluation of the translated logic on the provided dataset, filtered by event if applicable.}
+\item{rlogic}{The translated R expression. It can reference auxiliary columns or internal helpers used during translation; it is not necessarily reusable against the original dataset. Use \code{eval} or \code{eval_data} for the evaluated result.}
+\item{eval}{The evaluated values in input row order, with \code{NA} outside the target events and instrument rows. A constant expression can return a single value for a non-longitudinal dataset without repeating instruments; use \code{eval_data} for one value per input row.}
 \item{eval_data}{A \code{data.frame} with the record identifier, the event and repetition columns present in the dataset (\code{redcap_event_name}, \code{redcap_repeat_instrument}, \code{redcap_repeat_instance}) and \code{eval}, to identify the record of each evaluated value.}
 }
 }

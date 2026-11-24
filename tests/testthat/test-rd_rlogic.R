@@ -1336,3 +1336,283 @@ test_that("id_field is the first field of the dictionary", {
   expect_equal(id_field(data.frame(redcap_event_name = "a", age = 2, sid = 1), data.frame(field_name = c("sid", "age"))), "sid")
   expect_equal(id_field(data.frame(age.factor = "a", age = 2, sid = 1), data.frame(field_name = c("sid", "age"))), "sid")
 })
+
+
+test_that("repeating sources require an instance regardless of row order", {
+  dic <- audit_dic(
+    c("record_id", "x", "q"),
+    c("text", "text", "calc")
+  )
+  ef <- data.frame(
+    arm_num = 1,
+    unique_event_name = c("a_arm_1", "b_arm_1"),
+    form = "f1"
+  )
+
+  for (instrument in list(NA_character_, "f1", "")) {
+    data <- data.frame(
+      record_id = "1",
+      redcap_event_name = c("a_arm_1", "a_arm_1", "b_arm_1"),
+      redcap_repeat_instrument = c(instrument, instrument, NA),
+      redcap_repeat_instance = c(1, 2, NA),
+      x = c(10, 20, NA),
+      q = NA_real_
+    )
+
+    for (rows in list(1:3, c(2, 1, 3))) {
+      expect_error(
+        rd_rlogic(
+          data = data[rows, ], dic = dic, event_form = ef,
+          logic = "[a_arm_1][x]", var = "q"
+        ),
+        class = "REDCapDM_error_logic"
+      )
+    }
+
+    expect_error(
+      rd_rlogic(
+        data = data[c(1, 3), ], dic = dic, event_form = ef,
+        logic = "[a_arm_1][x]", var = "q"
+      ),
+      class = "REDCapDM_error_logic"
+    )
+  }
+
+  ordinary <- data[c(1, 3), ]
+  ordinary$redcap_repeat_instance <- NA_real_
+  ordinary$x <- c(7, NA)
+
+  out <- rd_rlogic(
+    data = ordinary, dic = dic, event_form = ef,
+    logic = "[a_arm_1][x]", var = "q"
+  )
+  expect_equal(
+    out$eval_data$eval[
+      out$eval_data$redcap_event_name == "b_arm_1"
+    ],
+    7
+  )
+})
+
+test_that("current-instance matches both record and instance", {
+  withr::local_seed(649)
+
+  dic <- audit_dic(
+    c("record_id", "x", "q"),
+    c("text", "text", "calc")
+  )
+  ef <- data.frame(
+    arm_num = 1,
+    unique_event_name = c("a_arm_1", "b_arm_1"),
+    form = "f1"
+  )
+  base <- data.frame(
+    record_id = "1",
+    redcap_event_name = rep(c("a_arm_1", "b_arm_1"), each = 2),
+    redcap_repeat_instrument = NA_character_,
+    redcap_repeat_instance = rep(1:2, 2),
+    x = c(10, 20, NA, NA),
+    q = NA_real_
+  )
+  second <- base
+  second$record_id <- "2"
+  second$x[1:2] <- c(100, 200)
+
+  for (instrument in list(NA_character_, "f1")) {
+    data <- rbind(base, second)
+    data$redcap_repeat_instrument <- instrument
+
+    for (i in 1:5) {
+      out <- rd_rlogic(
+        data = data[sample(8), ], dic = dic, event_form = ef,
+        logic = "[a_arm_1][x][current-instance]", var = "q"
+      )$eval_data
+
+      target <- out[out$redcap_event_name == "b_arm_1", ]
+      expect_equal(
+        as.numeric(target$eval[
+          order(target$record_id, target$redcap_repeat_instance)
+        ]),
+        c(10, 20, 100, 200)
+      )
+    }
+  }
+
+  invalid <- list(
+    base[setdiff(names(base), "redcap_repeat_instance")],
+    transform(base, redcap_repeat_instance = NA),
+    rbind(base, base[1, ])
+  )
+
+  for (data in invalid) {
+    expect_error(
+      rd_rlogic(
+        data = data, dic = dic, event_form = ef,
+        logic = "[a_arm_1][x][current-instance]", var = "q"
+      ),
+      class = "REDCapDM_error_logic"
+    )
+  }
+})
+
+test_that("unsupported source logic clears stale calculations and warns", {
+  dic <- audit_dic(
+    c("record_id", "x", "q"),
+    c("text", "text", "calc"),
+    choices = c("", "", "[a_arm_1][x]")
+  )
+  dic$branching_logic_show_field_only_if[3] <-
+    "[a_arm_1][x] = 20"
+
+  ef <- data.frame(
+    arm_num = 1,
+    unique_event_name = c("a_arm_1", "b_arm_1"),
+    form = "f1"
+  )
+  data <- data.frame(
+    record_id = "1",
+    redcap_event_name = c("a_arm_1", "a_arm_1", "b_arm_1"),
+    redcap_repeat_instrument = NA_character_,
+    redcap_repeat_instance = c(1, 2, NA),
+    x = c(10, 20, NA),
+    q = NA_real_,
+    q_recalc = 999
+  )
+  generated <- dic[3, , drop = FALSE]
+  generated$field_name <- "q_recalc"
+  generated$field_label <- "q (Recalculated)"
+
+  project <- list(
+    data = data,
+    dictionary = rbind(dic, generated),
+    event_form = ef
+  )
+
+  expect_warning(out <- rd_recalculate(project), "set to NA")
+  expect_true(all(is.na(out$data$q_recalc)))
+
+  expect_warning(
+    report <- rd_query(
+      project, variables = "q",
+      expression = "is.na(x)", event = "b_arm_1"
+    ),
+    "branching logic"
+  )
+  expect_equal(nrow(report$queries), 1L)
+})
+
+test_that("retained MDCs preserve their meaning after factor conversion", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+
+  raw <- data.frame(
+    record_id = as.character(1:4),
+    s = c("1", "2", "UNK", "NASK")
+  )
+  labels <- data.frame(
+    "Record ID" = raw$record_id,
+    Choice = c("Yes", "No", "UNK", "NASK"),
+    check.names = FALSE
+  )
+  dic <- data.frame(
+    field_name = c("record_id", "s"),
+    form_name = "f1",
+    field_type = c("text", "radio"),
+    field_label = c("Record ID", "Choice"),
+    select_choices_or_calculations = c("", "1, Yes | 2, No"),
+    text_validation_type_or_show_slider_number = "",
+    branching_logic = "",
+    question_number = ""
+  )
+
+  read <- redcap_data
+  mockery::stub(
+    read, "REDCapR::redcap_read",
+    function(raw_or_label = "raw", ...) {
+      list(data = if (raw_or_label == "raw") raw else labels)
+    }
+  )
+  mockery::stub(
+    read, "REDCapR::redcap_metadata_read",
+    function(...) list(data = dic)
+  )
+  mockery::stub(
+    read, "REDCapR::redcap_project_info_read",
+    function(...) {
+      list(data = data.frame(missing_data_codes = NA_character_))
+    }
+  )
+
+  original <- suppressMessages(read(
+    uri = "https://example.invalid/api/",
+    token = "fake-token",
+    rm_mdc = FALSE
+  ))
+  factored <- suppressMessages(rd_factor(original))
+
+  expect_true(is.factor(factored$data$s))
+  expect_equal(
+    as.character(factored$data$s),
+    c("Yes", "No", "UNK", "NASK")
+  )
+  expect_equal(
+    as.character(factored$data$s_mdc),
+    c(NA, NA, "UNK", "NASK")
+  )
+
+  evaluate <- function(logic, project = factored) {
+    rd_rlogic(project, logic = logic, var = "s")$eval
+  }
+
+  expect_identical(
+    evaluate("[s] = '1'"),
+    c(TRUE, FALSE, FALSE, FALSE)
+  )
+  expect_identical(
+    evaluate("[s] = 'UNK'"),
+    c(FALSE, FALSE, TRUE, FALSE)
+  )
+  expect_identical(
+    evaluate("[s] = 'NASK'"),
+    c(FALSE, FALSE, FALSE, TRUE)
+  )
+  expect_identical(
+    evaluate("isblankormissingcode([s])"),
+    c(FALSE, FALSE, TRUE, TRUE)
+  )
+  expect_identical(
+    evaluate("isblankormissingcode([s])", original),
+    evaluate("isblankormissingcode([s])")
+  )
+  expect_identical(
+    evaluate("[s] >= 2"),
+    c(FALSE, TRUE, TRUE, TRUE)
+  )
+  expect_identical(
+    evaluate("[s] >= 2", original),
+    evaluate("[s] >= 2")
+  )
+  expect_identical(
+    evaluate("[s] = 'Yes' or [s] + 1 > 3"),
+    c(TRUE, FALSE, TRUE, TRUE)
+  )
+
+  for (code in c("UNK", "NASK")) {
+    expect_error(
+      evaluate(paste0("[s] = '", code, "' or [s] + 1 > 3")),
+      "mixes labels of different Missing Data Codes",
+      class = "REDCapDM_error_logic"
+    )
+  }
+
+  expect_error(
+    evaluate("isblankormissingcode([s], [s])"),
+    "requires one argument",
+    class = "REDCapDM_error_logic"
+  )
+  expect_error(
+    evaluate("isblankormissingcode(concat([s], ''))"),
+    "Compound",
+    class = "REDCapDM_error_logic"
+  )
+})

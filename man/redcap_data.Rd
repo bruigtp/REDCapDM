@@ -20,7 +20,7 @@ redcap_data(
 \arguments{
 \item{data_path}{Path to exported R file (use with \code{dic_path}).}
 
-\item{dic_path}{Path to the dictionary file (CSV or XLSX; use with \code{data_path})..}
+\item{dic_path}{Path to the dictionary file (CSV or XLSX; use with \code{data_path}).}
 
 \item{event_path}{Path to the event-form mapping file (CSV or XLSX) for longitudinal projects (downloadable via the \verb{Designate Instruments for My Events} tab within the \verb{Project Setup} section of REDCap).}
 
