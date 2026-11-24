@@ -1149,46 +1149,110 @@ dictionary_option_labels <- function(data, dic) {
   data
 }
 
-#' Keep the text of the text fields that read.csv() turned into numbers
+#' Restore text and categorical codes changed by read.csv()
 #'
-#' The R script exported by REDCap reads the data with `read.csv()`, which turns
-#' the text fields that look like numbers into numbers and changes their value
-#' (e.g. `"0034"` is read as `34`, `"1.50"` as `1.5` and `"T"` as `TRUE`). The
-#' text fields (and the record identifier) whose value changed take the text of
-#' the csv file again. The fields that kept their value are not changed.
+#' Recover changed text fields and identifiers from the original CSV.
+#' Preserve categorical codes and rebuild affected factor columns.
 #'
-#' @param data Data read by the R script, with the record identifier named `record_id`.
+#' @param data Data read by the R script, with its identifier named `record_id`.
 #' @param dic Dictionary of the project.
-#' @param csv_path Path of the csv file read by the R script.
-#' @return `data`, with the text of the changed text fields.
+#' @param csv_path Path of the CSV file read by the R script.
+#' @return `data`, with restored values and affected factor columns.
 #' @noRd
 keep_text_fields <- function(data, dic, csv_path) {
-  if (is.na(csv_path) || !file.exists(csv_path) || !all(c("field_name", "field_type") %in% names(dic))) {
+  if (length(csv_path) != 1L || is.na(csv_path) ||
+      !file.exists(csv_path) ||
+      !all(c("field_name", "field_type") %in% names(dic))) {
     return(data)
   }
 
-  validation <- if ("text_validation_type_or_show_slider_number" %in% names(dic)) dic$text_validation_type_or_show_slider_number else rep(NA_character_, nrow(dic))
-  text_fields <- dic$field_name[dic$field_type %in% c("text", "notes") & !grepl("^(number|integer|date|time)", validation)]
+  validation <- if ("text_validation_type_or_show_slider_number" %in% names(dic)) {
+    dic$text_validation_type_or_show_slider_number
+  } else {
+    rep(NA_character_, nrow(dic))
+  }
+
+  text_fields <- dic$field_name[
+    dic$field_type %in% c("text", "notes") &
+      !grepl("^(number|integer|date|time)", validation)
+  ]
   text_fields <- intersect(c("record_id", text_fields), names(data))
-  text_fields <- text_fields[vapply(data[text_fields], function(x) is.numeric(x) || is.logical(x), logical(1))]
-  if (length(text_fields) == 0) {
+  text_fields <- text_fields[vapply(
+    data[text_fields],
+    function(x) is.numeric(x) || is.logical(x),
+    logical(1)
+  )]
+
+  choice_fields <- intersect(
+    as.character(dic$field_name[
+      dic$field_type %in% c("radio", "dropdown")
+    ]),
+    names(data)
+  )
+
+  if (length(text_fields) == 0L && length(choice_fields) == 0L) {
     return(data)
   }
 
-  csv <- utils::read.csv(csv_path, colClasses = "character", na.strings = c("", "NA"), encoding = "UTF-8")
+  csv <- utils::read.csv(
+    csv_path,
+    colClasses = "character",
+    na.strings = c("", "NA"),
+    encoding = "UTF-8"
+  )
   names(csv)[1] <- "record_id"
+
   if (nrow(csv) != nrow(data)) {
     return(data)
   }
 
   for (field in intersect(text_fields, names(csv))) {
     text <- csv[[field]]
-    changed <- !is.na(text) & (is.na(data[[field]]) | as.character(data[[field]]) != text)
+    changed <- !is.na(text) &
+      (is.na(data[[field]]) | as.character(data[[field]]) != text)
+
     if (any(changed)) {
       label <- attr(data[[field]], "label")
       data[[field]] <- text
       attr(data[[field]], "label") <- label
     }
+  }
+
+  for (field in intersect(choice_fields, names(csv))) {
+    text <- csv[[field]]
+    changed <- !is.na(text) &
+      (is.na(data[[field]]) | as.character(data[[field]]) != text)
+
+    label <- attr(data[[field]], "label")
+    data[[field]] <- restore_choice_codes(text)
+    attr(data[[field]], "label") <- label
+
+    factor_column <- paste0(field, ".factor")
+    if (!any(changed) || !factor_column %in% names(data) ||
+        !"choices_calculations_or_slider_labels" %in% names(dic)) {
+      next
+    }
+
+    choices <- as.character(
+      dic$choices_calculations_or_slider_labels[
+        match(field, dic$field_name)
+      ]
+    )
+    if (is.na(choices) || !nzchar(trimws(choices))) {
+      next
+    }
+
+    options <- trimws(strsplit(choices, "|", fixed = TRUE)[[1]])
+    codes <- trimws(sub(",.*$", "", options))
+    option_labels <- sub("^[^,]*,\\s*", "", options)
+
+    label <- attr(data[[factor_column]], "label")
+    data[[factor_column]] <- factor(
+      text,
+      levels = codes,
+      labels = option_labels
+    )
+    attr(data[[factor_column]], "label") <- label
   }
 
   data

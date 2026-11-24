@@ -527,6 +527,21 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
       event_i <- list_var_event[[i]][1]
       var_i <- list_var_event[[i]][2]
 
+      # An unindexed reference cannot select a repeating source instance.
+      source_form <- var_form(var_i, dic)
+
+      if (!is.na(source_form) &&
+          any(rep_pairs$event %in% event_i &
+              rep_pairs$form %in% source_form)) {
+        rd_abort(
+          c(
+            "The reference [{event_i}][{var_i}] points to a repeating instrument without specifying its source instance.",
+            "i" = "Use an explicit instance reference, such as [current-instance], only when the source and target instances correspond."
+          ),
+          class = "REDCapDM_error_logic"
+        )
+      }
+
       if (var_i %in% multi_event_vars) {
         # One column per event: `<variable>__<event>` (with another name if the data already has it, e.g. a field called
         # `value__base_arm_1`)
