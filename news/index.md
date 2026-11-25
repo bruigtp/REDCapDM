@@ -55,7 +55,12 @@
   given in `mdc`.
 - With `redcap_data(rm_mdc = FALSE)`, the Missing Data Codes of
   validated text fields (numbers, dates, …) are kept in a new
-  `<field>_mdc` column, so that the field keeps its type.
+  `<field>_mdc` column, so that the field keeps its type. The
+  multiple-choice fields (radio, dropdown, yes/no and true/false) also
+  have the code in a `<field>_mdc` column, besides the additional
+  category of their `.factor` version, and
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  uses it in `isblankormissingcode()`.
   [`rd_missplot()`](https://bruigtp.github.io/REDCapDM/reference/rd_missplot.md),
   [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)
   and
@@ -155,6 +160,17 @@
   the dictionary translation in projects with repeated instruments.
 - `rd_missplot(by = "record")` shows each repetition as a row and tells
   apart the cells of variables not collected in that row.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md),
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md))
+  understands `[current-instance]`
+  (e.g. `[visit_arm_1][weight][current-instance]` takes the value of the
+  same instance). A field of a repeating instrument or a repeating event
+  of another event without its instance (e.g. `[visit_arm_1][weight]`)
+  stops with an error, as the instance to use isn’t known.
 
 ### Bug fixes
 
@@ -908,7 +924,10 @@
   to another data access group). If the rows of both requests or their
   labels differ, the labels are read again (twice at most), and then the
   function stops with an error. When the metadata can’t be read, these
-  columns have the codes instead of the labels, with a warning.
+  columns have the codes instead of the labels, with a warning, except a
+  single code with a single label in all the rows, which can’t be the
+  label of another code (e.g. the data access group of a user assigned
+  to a group, who can’t read the data access groups of the project).
 - [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
   with the API reads the record identifiers as text, also in the first
   request of REDCapR, which reads the identifiers of the records: long
@@ -938,6 +957,57 @@
   plots grouped data (e.g. with
   [`dplyr::group_by()`](https://dplyr.tidyverse.org/reference/group_by.html))
   as the whole data: the grouping columns were plotted as variables.
+- [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  also compares the reports of
+  [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  created before `EventLabel` existed: they have the unique event name
+  in `Event`, but the label of the event in their default text
+  (`The event 'Follow-up' is missing.`), which is changed to the unique
+  event name.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  compares two fields or an operation with `<>` (or `!=`) as REDCap: a
+  blank value is different from a value that isn’t blank, and two blank
+  values are equal (the result was blank). A field compared with a
+  written value is still written `!(data$x %in% 1)` in the translated
+  logic and in the dictionary of
+  [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md)
+  and
+  [`rd_transform()`](https://bruigtp.github.io/REDCapDM/reference/rd_transform.md).
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md):
+  the codes of the multiple-choice fields that aren’t written as plain
+  numbers (e.g. `01` or `1.0`) are kept as they are in REDCap, with the
+  exported files and with the API: they were read as numbers (`1`), and
+  their `.factor` version lost the label. The record identifier is never
+  taken as a Missing Data Code.
+- The record identifiers of the query reports (`Identifier`, `Code` and
+  `Link`) are written without scientific notation and without losing
+  decimals: e.g. the record `1000000000000000` was written `1e+15`.
+- [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  takes the events given by their label in `event` and in the names of
+  `link$event_id` as their unique event name (a label of several events
+  stops with an error), and checks `link$event_id`: an event without an
+  ID, or a field of the project called `event_id`, stopped with an
+  internal error (`undefined columns selected`). It now says which
+  events have no ID.
+- `rd_query(by_dag = TRUE)` keeps the queries of the records without a
+  data access group, in `(Unassigned)`: they were lost.
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  updates the columns that it added before (`_recalc`), also when the
+  field is now correct, and leaves them empty, with a warning, when the
+  calculation can’t be evaluated: they kept the old values.
+- [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  keeps the codes and the `.factor` version of a field when a label is
+  of several codes, with a warning, instead of converting the field into
+  a factor that loses which code each value had.
+- [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
+  reads the options of the checkboxes given as codes (`0`/`1`, also as
+  text) or as labels (`Unchecked`/`Checked`) also when the data has
+  their `.factor` version: the options written as labels were left empty
+  (`NA`).
+- [`split_form()`](https://bruigtp.github.io/REDCapDM/reference/split_form.md)
+  (deprecated, see
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md))
+  failed in projects with repeated instruments.
 - [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   and
