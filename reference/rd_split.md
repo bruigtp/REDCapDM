@@ -103,12 +103,16 @@ Depending on `which` and `wide`:
   map variables to events.
 
 - Wide format expands repeated instances into multiple columns per
+  record. A form with only the record identifier gives one row per
   record.
 
 - Filtering by `which` allows extracting a single form or event.
 
 - Projects with repeated instruments are handled by filtering on the
-  `redcap_repeat_instrument` variable.
+  `redcap_repeat_instrument` variable (its codes). The column shows the
+  label of each instrument (its factor version, from
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)),
+  or its code when the label is missing.
 
 ## See also
 

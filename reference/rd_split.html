@@ -119,9 +119,9 @@ Splits a REDCap dataset into separate datasets by form or event using the data d
 <ul><li><p>Handles checkbox variables and REDCap default variables (<code>_complete</code>, <code>_timestamp</code>) appropriately.</p></li>
 <li><p>Columns of the data that aren't fields of the dictionary, nor the <code>.factor</code> or <code>_mdc</code> versions of its fields or the options of its checkbox fields (or the <code>.factor</code> version of the <code>_complete</code> field of a form), stop the function with an error that names them.</p></li>
 <li><p>For form-based splits in longitudinal projects, uses <code>event_form</code> to map variables to events.</p></li>
-<li><p>Wide format expands repeated instances into multiple columns per record.</p></li>
+<li><p>Wide format expands repeated instances into multiple columns per record. A form with only the record identifier gives one row per record.</p></li>
 <li><p>Filtering by <code>which</code> allows extracting a single form or event.</p></li>
-<li><p>Projects with repeated instruments are handled by filtering on the <code>redcap_repeat_instrument</code> variable.</p></li>
+<li><p>Projects with repeated instruments are handled by filtering on the <code>redcap_repeat_instrument</code> variable (its codes). The column shows the label of each instrument (its factor version, from <code><a href="redcap_data.html">redcap_data()</a></code>), or its code when the label is missing.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

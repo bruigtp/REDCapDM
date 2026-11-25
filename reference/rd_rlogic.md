@@ -120,10 +120,12 @@ A list with:
   instrument the variables of the other forms take the value of the base
   row of the same record and event. A variable of another repeating
   instrument or repeating event can be used with its instance
-  (`[event][field][current-instance]`, the instance of the same number);
-  without it (e.g. `[field]` of another repeating instrument, or
-  `[event][field]`), the instance to use isn't known and the logic can't
-  be translated.
+  (`[event][field][current-instance]`, the instance of the same number).
+  Without it, the logic can't be translated when the instance to use
+  isn't known: `[field]` of another instrument that repeats in the
+  events of `var`, or `[event][field]` when its form repeats in that
+  event or the event repeats. `[event][field]` of a form collected once
+  in that event is valid, although the form repeats in other events.
 
 - As in REDCap, `datediff()` returns the absolute difference unless its
   last argument is `true`, its units are `"y"` (years of 365.2425 days),

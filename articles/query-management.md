@@ -654,8 +654,9 @@ into the web browser of your choice.
 ## **rd_event**
 
 When working with a longitudinal REDCap project (presence of events),
-the exported data has a structure where each row represents one event
-per record. However, by default, REDCap will not export the
+the exported data has a structure where each row represents one event of
+a record (with repeated instruments or repeating events, one repetition
+of that event). However, by default, REDCap will not export the
 corresponding rows of the events that have no collected data. So, if we
 try to identify missing values in variables that are inside a missing
 event for some records using the

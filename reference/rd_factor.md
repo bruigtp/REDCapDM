@@ -80,7 +80,10 @@ suffix); if any `.factor` names are passed to `exclude` the function
 will throw an informative error. The columns `redcap_event_name`,
 `redcap_repeat_instrument` and `redcap_data_access_group` (and their
 `.factor` counterparts) are handled specially to avoid altering event or
-access-group data.
+access-group data. A `.factor` column whose original variable no longer
+exists (e.g. removed with
+[`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)),
+also of these columns, is removed with a warning.
 
 Use `rd_factor()` before
 [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md):

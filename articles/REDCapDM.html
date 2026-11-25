@@ -526,7 +526,8 @@ longitudinal projects when it is available (given in
 <p>If the project uses REDCap’s Missing Data Codes
 (e.g. <code>NI</code>, <code>UNK</code>, <code>ASKU</code>), by default
 (<code>rm_mdc = TRUE</code>) they are replaced by missing values
-(<code>NA</code>) and a warning is shown. With
+(<code>NA</code>), with a warning when the data has them and the codes
+of the project weren’t given in <code>mdc</code>. With
 <code>rm_mdc = FALSE</code>, they are kept in a new
 <code>&lt;field&gt;_mdc</code> column next to the field, with the
 original code of each row: in the validated text fields (numbers, dates,
@@ -534,9 +535,9 @@ original code of each row: in the validated text fields (numbers, dates,
 the multiple-choice variables also have the code as an additional
 category of their <code>.factor</code> version. Use the
 <code>_mdc</code> column to know which code each row had. A warning
-lists the fields with codes, only when the data has them (with
-<code>rm_mdc = TRUE</code>, only when the codes of the project weren’t
-given in <code>mdc</code>):</p>
+lists the validated text fields with codes, only when the data has them
+(the codes of the multiple-choice variables are kept without a
+warning):</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
 <span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span>,</span>

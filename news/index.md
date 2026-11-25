@@ -168,9 +168,10 @@
   [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md))
   understands `[current-instance]`
   (e.g. `[visit_arm_1][weight][current-instance]` takes the value of the
-  same instance). A field of a repeating instrument or a repeating event
-  of another event without its instance (e.g. `[visit_arm_1][weight]`)
-  stops with an error, as the instance to use isn’t known.
+  same instance). A field of another event without its instance
+  (e.g. `[visit_arm_1][weight]`) stops with an error when its form
+  repeats in that event or the event repeats, as the instance to use
+  isn’t known.
 
 ### Bug fixes
 
@@ -404,9 +405,10 @@
   kept as `Pending` a query whose value had changed.
 - [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
   marks as `Miscorrected` only the new queries of a record and field
-  (with the same `Identifier`, `Event`, `Repetition`, `Field` and
-  `Description`) that had a query in the old report: several new queries
-  of the same field were `Miscorrected` without any query in the old
+  (with the same `Identifier`, `Event` and `Repetition`, and the same
+  `Field`, or the same `Description` when the reports don’t share
+  `Field`) that had a query in the old report: several new queries of
+  the same field were `Miscorrected` without any query in the old
   report. It also keeps the columns of the reports called `comp`,
   `comp2`, `n` or `cod`, which were replaced by its internal columns or
   removed.
@@ -1046,6 +1048,69 @@
   always different from its 1/0. A calculated field of the dictionary
   that isn’t in the data is no longer reported as equal: it warns, and
   its comparison is `NA`.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  keeps the text of `redcap_survey_identifier` (with the API and with
+  the exported files): identifiers such as `1.50`, `+12` or two long
+  numbers were converted to numbers, so `1.50` became `1.5`, `+12`
+  became `12` and the two long numbers became the same. It also reads
+  the text `NA` in a text field whose other values look like numbers or
+  logical values (e.g. `NA`, `1` and `2`, or `NA`, `TRUE` and `FALSE`)
+  and in the record identifier of the exported files: it stopped with
+  “missing value where TRUE/FALSE needed”.
+- The record identifiers are written as text in the same way on every
+  platform: on macOS with Apple silicon, the long numeric identifiers
+  stopped functions such as
+  [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
+  with “Cannot format a record identifier without losing precision”.
+- [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  also checks the events of the columns chosen with `[` in the filter
+  (e.g. `data[, 'age'] > 30` or `data[, 3] > 30`), as with `$` and `[[`:
+  the filter was applied without checking that it shares the events of
+  the variable.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md))
+  accepts `[event][field]` when the form of the field is collected once
+  in that event, although it repeats in the events of the variable
+  (e.g. `[baseline_arm_1][weight]`, with the form of `weight` repeated
+  in another event): it stopped saying that the field belonged to
+  another repeated instrument. The same with
+  `[event][field][current-instance]`. A field without its event of
+  another instrument that repeats in the events of the variable still
+  stops with an error, as the instance to use isn’t known.
+- The `results` of
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  keep apart the variables whose long names begin in the same way: the
+  names were shortened to 26 characters before grouping, so two
+  variables with the same description and query were a single row with
+  the sum of their totals, and the branching logic of each one was added
+  to the rows of both. The names and descriptions are now only shortened
+  in the table.
+- `rd_split(wide = TRUE)` returns one row per record for a form with
+  only the record identifier (e.g. when it is collected in several
+  events): it stopped with “Must select at least one item”.
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  and
+  [`split_form()`](https://bruigtp.github.io/REDCapDM/reference/split_form.md)
+  take an instrument written with spaces (e.g. `" "`) as the base row
+  (its rows were left out of every form), and show the code of the
+  instruments without label in their `.factor` version (they were `NA`).
+- [`split_form()`](https://bruigtp.github.io/REDCapDM/reference/split_form.md)
+  keeps the rows of a form in the events where it doesn’t repeat
+  (e.g. the baseline value of a form that repeats in the follow-up), as
+  [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md),
+  and its `wide = TRUE` keeps the fields called `id` (they were replaced
+  by the number of each row) and works with a form with only the record
+  identifier.
+- [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+  removes with a warning the `.factor` version of `redcap_event_name`,
+  `redcap_repeat_instrument` or `redcap_data_access_group` when its
+  column no longer exists (e.g. after
+  [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)),
+  as the other `.factor` columns without their variable: it stopped with
+  “Can’t subset columns that don’t exist”.
 - [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   and
@@ -1099,12 +1164,12 @@
   in the dictionary.
 - [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
   stops with an error when the checkboxes were already transformed with
-  `checkbox_names = FALSE` (their options keep their names, but their
-  values are the labels and each option is a field of the dictionary):
-  running it again on its result turned all their values into `NA`
-  without notice (also the labels of their `.factor` versions), or
-  inverted the answers with labels that look like codes
-  (e.g. `checkbox_labels = c("1", "0")`).
+  `checkbox_names = FALSE` (their options keep their names and their
+  codes, their `.factor` versions have the labels, and each option is a
+  field of the dictionary): running it again on its result turned all
+  their values into `NA` without notice (also the labels of their
+  `.factor` versions), or inverted the answers with labels that look
+  like codes (e.g. `checkbox_labels = c("1", "0")`).
 - [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
   takes the `.factor` versions of the checkbox options that
   `rd_checkbox(checkbox_names = FALSE)` keeps as fields of the

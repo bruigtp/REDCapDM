@@ -99,12 +99,13 @@ missingness heatmap or a record-level missingness map.
 
 ## Details
 
-The function automatically detects whether the input dataset contains
-longitudinal event information. If `redcap_event_name` is detected in
-the data columns, a missingness heatmap grouped by event is produced.
-When the event-form mapping is available (`event_form` element of the
-list), each variable is only evaluated in the events where its form is
-collected; the other cells of the heatmap are left blank.
+With `by = "vars"`, the function automatically detects whether the input
+dataset contains longitudinal event information. If `redcap_event_name`
+is detected in the data columns, a missingness heatmap grouped by event
+is produced (with `by = "record"`, see below). When the event-form
+mapping is available (`event_form` element of the list), each variable
+is only evaluated in the events where its form is collected; the other
+cells of the heatmap are left blank.
 
 With `by = "record"`, longitudinal projects get one panel per event,
 each with the variables collected in that event. By default only the

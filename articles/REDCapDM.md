@@ -268,15 +268,16 @@ available (given in `event_path`, or read from the API).
 
 If the project uses REDCap’s Missing Data Codes (e.g. `NI`, `UNK`,
 `ASKU`), by default (`rm_mdc = TRUE`) they are replaced by missing
-values (`NA`) and a warning is shown. With `rm_mdc = FALSE`, they are
-kept in a new `<field>_mdc` column next to the field, with the original
-code of each row: in the validated text fields (numbers, dates, …), the
-field keeps its type and has `NA` in those rows, and the multiple-choice
+values (`NA`), with a warning when the data has them and the codes of
+the project weren’t given in `mdc`. With `rm_mdc = FALSE`, they are kept
+in a new `<field>_mdc` column next to the field, with the original code
+of each row: in the validated text fields (numbers, dates, …), the field
+keeps its type and has `NA` in those rows, and the multiple-choice
 variables also have the code as an additional category of their
 `.factor` version. Use the `_mdc` column to know which code each row
-had. A warning lists the fields with codes, only when the data has them
-(with `rm_mdc = TRUE`, only when the codes of the project weren’t given
-in `mdc`):
+had. A warning lists the validated text fields with codes, only when the
+data has them (the codes of the multiple-choice variables are kept
+without a warning):
 
 ``` r
 
