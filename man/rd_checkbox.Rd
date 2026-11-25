@@ -25,14 +25,18 @@ rd_checkbox(
 
 \item{checkbox_labels}{Character vector of length 2 for labels of unchecked/checked values. Default: \code{c("No", "Yes")}.}
 
-\item{checkbox_names}{Logical. If \code{TRUE} (default), checkbox columns are renamed using choice labels. With \code{FALSE}, the columns keep their names, but their values are already the labels and each option is a field of the dictionary: running the function again on its result stops with an error instead of converting them again.}
+\item{checkbox_names}{Logical. If \code{TRUE} (default), checkbox columns are renamed using choice labels. With \code{FALSE}, the columns keep their names and each option is a field of the dictionary: running the function again on its result stops with an error instead of converting them again.
+Without the \code{.factor} versions of the options, the values of the columns become the labels; with them (as in the
+data of \code{redcap_data()}), the columns keep their codes 0/1 and their \code{.factor} versions take the labels.}
 
 \item{na_logic}{Controls how missing values are set based on branching logic. Must be one of \code{"none"} (do nothing), \code{"missing"} (set to \code{NA} only when the logic evaluation is \code{NA}), or \code{"eval"} (set to \code{NA} when the logic evaluates to \code{FALSE} or \code{NA}). Defaults to \code{"missing"}.}
 }
 \value{
 A list with:
 \describe{
-\item{data}{Transformed dataset with checkbox fields as factors and optionally renamed.}
+\item{data}{Transformed dataset with the checkbox options optionally renamed. When the data has the \code{.factor}
+versions of the options, the original columns keep their codes 0/1 and the \code{.factor} versions take the labels of
+\code{checkbox_labels}; otherwise the original columns are replaced by factors with these labels.}
 \item{dictionary}{Updated dictionary with checkbox fields expanded and optionally renamed.}
 \item{event_form}{The \code{event_form} passed in (if applicable).}
 \item{results}{Summary of transformations and any fields needing review.}

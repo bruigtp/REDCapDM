@@ -23,7 +23,7 @@
 #'
 #' @return Depending on `which` and `wide`:
 #' \describe{
-#'   \item{data}{Without `which`, a tibble with one row per form (columns `form`, `events` in longitudinal projects, and `df`) or per event (columns `events` and `df`): the dataset of each form or event is in the list-column `df` (e.g. `result$data$df[[1]]`, or `result$data$df[result$data$form == "demographics"][[1]]`). With `wide = TRUE`, the tibble of the forms also has the column `max_repeated_instance`, the highest repetition of each form. With `which`, the `data.frame` of that form or event.}
+#'   \item{data}{Without `which`, a tibble with one row per form (columns `form`, `events` in longitudinal projects, and `df`) or per event (columns `events` and `df`): the dataset of each form or event is in the list-column `df` (e.g. `result$data$df[[1]]`, or `result$data$df[result$data$form == "demographics"][[1]]`). With `wide = TRUE`, the tibble of the forms also has the column `max_repeated_instance`, the largest number of rows of a record in each form (its events and repetitions): the wide columns are numbered by the position of each row of the record, not by its instance (e.g. the instances 2 and 5 of a record are the columns `_1` and `_2`, and the maximum is 2). With `which`, the `data.frame` of that form or event.}
 #'   \item{dictionary}{The original REDCap dictionary.}
 #'   \item{event_form}{The original event-form mapping (if applicable).}
 #'   \item{results}{A summary message of the splitting operation.}
@@ -278,15 +278,15 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     }
 
     if (repeat_instrument) {
-      # The name of each repeating instrument in the data: its factor version (redcap_data()), or else its name
-      instrument <- if ("redcap_repeat_instrument.factor" %in% names(data)) "redcap_repeat_instrument.factor" else "redcap_repeat_instrument"
-      form_check <- data |>
-        dplyr::distinct(dplyr::pick(dplyr::any_of(c("redcap_repeat_instrument", "redcap_repeat_instrument.factor"))))
-      form_check$form_factor <- form_check[[instrument]]
+      # The rows of each form are chosen by the code of its repeating instrument (`redcap_repeat_instrument`): several
+      # instruments can have the same label, and an instrument can have different labels. The label (the factor version,
+      # from redcap_data()) is only shown in the rows of the form, when the data has it
+      repeating_rows <- !as.character(data$redcap_repeat_instrument) %in% c(NA, "")
+      repeating_forms <- unique(as.character(data$redcap_repeat_instrument)[repeating_rows])
+      has_label <- "redcap_repeat_instrument.factor" %in% names(data)
 
       # Events where each form repeats: in the other events, its rows are the normal rows of the record (a form can repeat
       # only in some events)
-      repeating_rows <- !as.character(data$redcap_repeat_instrument) %in% c(NA, "")
       repeat_events <- function(form) {
         if (!"redcap_event_name" %in% names(data)) {
           return(NULL)
@@ -295,26 +295,29 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       }
 
       ndata <- ndata |>
-        dplyr::left_join(form_check[c("redcap_repeat_instrument", "form_factor")], by = dplyr::join_by("form" == "redcap_repeat_instrument")) |>
-        dplyr::relocate("form_factor", .after = form) |>
-        dplyr::mutate(df = purrr::pmap(list(.data$form, .data$form_factor, .data$df), function(form, form_factor, df) {
-          no_instrument <- as.character(df[[instrument]]) %in% c(NA, "")
-          # (dplyr::slice() keeps the labels of the variables)
-          if (is.na(form_factor)) {
+        dplyr::mutate(df = purrr::map2(.data$form, .data$df, function(form, df) {
+          code <- as.character(df$redcap_repeat_instrument)
+          no_instrument <- code %in% c(NA, "")
+          # (dplyr::slice() keeps the labels of the variables; only the columns of REDCap are removed, not other
+          # columns whose name starts in the same way, e.g. a field `redcap_repeat_instrument_note`)
+          if (!form %in% repeating_forms) {
             df |>
               dplyr::slice(which(.env$no_instrument)) |>
-              dplyr::select(-dplyr::starts_with("redcap_repeat_instrument"))
+              dplyr::select(-dplyr::any_of(c("redcap_repeat_instrument", "redcap_repeat_instrument.factor")))
           } else {
             events <- repeat_events(form)
             normal <- if (is.null(events)) rep(FALSE, nrow(df)) else no_instrument & !df$redcap_event_name %in% events
-            rows_kept <- normal | (!no_instrument & as.character(df[[instrument]]) %in% as.character(form_factor))
+            rows_kept <- normal | (!no_instrument & code %in% form)
+            df <- df |>
+              dplyr::slice(which(.env$rows_kept))
+            if (has_label) {
+              df <- df |>
+                dplyr::mutate(redcap_repeat_instrument = .data$redcap_repeat_instrument.factor)
+            }
             df |>
-              dplyr::slice(which(.env$rows_kept)) |>
-              dplyr::mutate(redcap_repeat_instrument = .data[[instrument]]) |>
               dplyr::select(-dplyr::any_of("redcap_repeat_instrument.factor"))
           }
-        })) |>
-        dplyr::select(-"form_factor")
+        }))
     }
 
     if (wide) {

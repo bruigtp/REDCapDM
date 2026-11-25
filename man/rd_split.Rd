@@ -32,7 +32,7 @@ rd_split(
 \value{
 Depending on \code{which} and \code{wide}:
 \describe{
-\item{data}{Without \code{which}, a tibble with one row per form (columns \code{form}, \code{events} in longitudinal projects, and \code{df}) or per event (columns \code{events} and \code{df}): the dataset of each form or event is in the list-column \code{df} (e.g. \code{result$data$df[[1]]}, or \code{result$data$df[result$data$form == "demographics"][[1]]}). With \code{wide = TRUE}, the tibble of the forms also has the column \code{max_repeated_instance}, the highest repetition of each form. With \code{which}, the \code{data.frame} of that form or event.}
+\item{data}{Without \code{which}, a tibble with one row per form (columns \code{form}, \code{events} in longitudinal projects, and \code{df}) or per event (columns \code{events} and \code{df}): the dataset of each form or event is in the list-column \code{df} (e.g. \code{result$data$df[[1]]}, or \code{result$data$df[result$data$form == "demographics"][[1]]}). With \code{wide = TRUE}, the tibble of the forms also has the column \code{max_repeated_instance}, the largest number of rows of a record in each form (its events and repetitions): the wide columns are numbered by the position of each row of the record, not by its instance (e.g. the instances 2 and 5 of a record are the columns \verb{_1} and \verb{_2}, and the maximum is 2). With \code{which}, the \code{data.frame} of that form or event.}
 \item{dictionary}{The original REDCap dictionary.}
 \item{event_form}{The original event-form mapping (if applicable).}
 \item{results}{A summary message of the splitting operation.}

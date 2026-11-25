@@ -30,17 +30,17 @@ rd_event(
 
 \item{event}{Character vector with one or more REDCap event names to check for missing records.}
 
-\item{filter}{Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}. It can use objects created in your session or in your function.}
+\item{filter}{Optional. A single character string containing a filter expression that selects the records to check. Example: \code{"age >= 18"}. It can use objects created in your session or in your function. Whether each selected record has the event is checked with all its data (also the rows that the filter doesn't select).}
 
 \item{query_name}{Optional character vector describing each query. Defaults to a standard format with the unique event name: \verb{The event 'event_name' is missing.}}
 
-\item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended.}
+\item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended. Its queries must be a data frame: the output of \code{rd_query(by_dag = TRUE)}, whose queries are a list of data frames, can't be used.}
 
 \item{report_title}{Optional string specifying the title of the final report. Defaults to \code{"Report of queries"}.}
 
 \item{report_zeros}{Logical, include events with zero queries in the report. Default is \code{FALSE}.}
 
-\item{link}{Optional list containing project information (\code{domain}, \code{redcap_version}, \code{proj_id}, \code{event_id}) to generate clickable links for each query.}
+\item{link}{Optional list containing project information (\code{domain}, \code{redcap_version}, \code{proj_id}) to generate a link for each query, which opens the home page of the record in REDCap (unlike \code{rd_query()}, it doesn't use \code{event_id}).}
 
 \item{addTo}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} Use \code{add_to} instead.}
 }
@@ -59,7 +59,7 @@ the number of missing records per event. Returned as \code{knitr::kable} (HTML).
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
-Helps identify records in a REDCap longitudinal project that are missing one or more specified events. Because REDCap typically omits empty events from exports, an event that contains no data for a record will not appear. This function finds those absent events and returns a per-record query table and a summarized HTML report.
+Helps identify records in a REDCap longitudinal project that are missing one or more specified events. Because REDCap typically omits empty events from exports, an event that contains no data for a record will not appear. This function finds those absent events (not whether the events are complete) and returns a per-record query table and a summarized HTML report.
 }
 \examples{
 # Minimal reproducible example

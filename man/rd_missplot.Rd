@@ -44,7 +44,7 @@ A \code{ggplot2} object representing a missingness barplot, a longitudinal missi
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Generates a visual summary of missing data for variables in a REDCap dataset or list structure. With \code{by = "vars"} (default), cross-sectional (single-event) studies get a barplot showing the proportion or count of missing values per variable, and longitudinal (multi-event) studies get a heatmap illustrating missingness across events and variables. With \code{by = "record"}, the plot shows one row per record and one column per variable, with the missing values painted.
+Generates a visual summary of missing data for variables in a REDCap dataset or list structure. With \code{by = "vars"} (default), cross-sectional (single-event) studies get a barplot showing the proportion or count of missing values per variable, and longitudinal studies (with the column \code{redcap_event_name}, also with a single event) get a heatmap illustrating missingness across events and variables. With \code{by = "record"}, the plot shows one row per record and one column per variable, with the missing values painted.
 }
 \details{
 The function automatically detects whether the input dataset contains longitudinal event information. If \code{redcap_event_name} is detected in the data columns, a missingness heatmap grouped by event is produced.

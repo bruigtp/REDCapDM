@@ -20,7 +20,7 @@
 #' * Handles date transformations and empty strings (`''`) → `NA`.
 #' * Adjusts logic for longitudinal data using `event_form` if provided.
 #' * Evaluates the translated R logic against the dataset and returns the results.
-#' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. Logic that uses variables of another repeating instrument can't be translated.
+#' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. A variable of another repeating instrument or repeating event can be used with its instance (`[event][field][current-instance]`, the instance of the same number); without it (e.g. `[field]` of another repeating instrument, or `[event][field]`), the instance to use isn't known and the logic can't be translated.
 #' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"` (years of 365.2425 days), `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, `"today"` is the current date and `"now"` the current date and time. With two time fields (e.g. `HH:MM`), it is the difference between the two times of the same day, and its date format (e.g. `'hhmm'`) is not used.
 #' * The same variable can be used in several events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
 #' * Logic with smart variables or other REDCap functions may require manual inspection.
@@ -246,8 +246,11 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     }
 
     # `var` belongs to a repeating instrument: as in REDCap, the variables of the other forms take the value of the base row of the same record and event
+    # (only the rows of the instrument of `var` in its events: the rows of other repeating instruments keep their values,
+    # e.g. the source of `[a_arm_1][x][current-instance]`)
     if (!is.na(target_form) && any(rep_pairs$form == target_form & rep_pairs$event %in% target_events)) {
-      data <- fill_from_base(data, logic_fields[is.na(logic_forms) | logic_forms != target_form], id_col)
+      target_rows <- which(repeat_instrument_values(data) %in% target_form & event_values(data) %in% target_events)
+      data <- fill_from_base(data, logic_fields[is.na(logic_forms) | logic_forms != target_form], id_col, rows = target_rows)
     }
   }
 
@@ -801,20 +804,41 @@ escape_regex <- function(x) {
 #' @param data REDCap dataset.
 #' @param fields Variables to fill.
 #' @param id_col Name of the column of the record identifier (see `id_field()`).
-#' @return `data` with `fields` filled in the rows of the repeating instruments.
+#' @param rows Rows to fill: by default, the rows of all the repeating instruments. Only these rows change (e.g. the
+#'   rows of another repeating instrument keep their values).
+#' @return `data` with `fields` filled in `rows`. The columns of the record, event, repetition and data access group are
+#'   never filled. The base row of a record and event is the row without repeated instrument and with an empty instance
+#'   (`NA`, `""` or `" "`); two base rows of the same record and event stop with an error.
 #' @noRd
-fill_from_base <- function(data, fields, id_col = id_field(data)) {
+fill_from_base <- function(data, fields, id_col = id_field(data), rows = NULL) {
   instrument <- repeat_instrument_values(data)
-  rows <- which(!is.na(instrument))
+  if (is.null(rows)) {
+    rows <- which(!is.na(instrument))
+  }
+  fields <- setdiff(fields, c(
+    id_col, "redcap_event_name", "redcap_event_name.factor", "redcap_repeat_instrument", "redcap_repeat_instrument.factor",
+    "redcap_repeat_instance", "redcap_data_access_group", "redcap_data_access_group.factor"
+  ))
 
   if (length(fields) == 0 || length(rows) == 0) {
     return(data)
   }
 
-  id <- data[[id_col]]
-  instance <- if ("redcap_repeat_instance" %in% names(data)) data$redcap_repeat_instance else rep(NA, nrow(data))
-  key <- paste(id, event_values(data), sep = "\r")
+  instance <- if ("redcap_repeat_instance" %in% names(data)) trimws(as.character(data$redcap_repeat_instance)) else rep(NA_character_, nrow(data))
+  instance[instance %in% ""] <- NA_character_
+  # (the record by its position among the identifiers, so that no identifier can be confused with another one)
+  key <- paste(match(data[[id_col]], unique(data[[id_col]])), event_values(data), sep = "\r")
   base <- which(is.na(instrument) & is.na(instance))
+
+  ambiguous <- unique(key[base][duplicated(key[base])])
+  if (any(key[rows] %in% ambiguous)) {
+    records <- unique(data[[id_col]][rows][key[rows] %in% ambiguous])
+    rd_abort(
+      c("Several rows without repetition of the same record and event: the value of the other forms for its repeated instruments can't be chosen.",
+        "i" = "Review the records {.val {records}}."),
+      class = "REDCapDM_error_logic"
+    )
+  }
   source <- base[match(key[rows], key[base])]
 
   for (f in fields) {

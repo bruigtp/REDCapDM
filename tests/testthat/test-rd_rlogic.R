@@ -1646,3 +1646,46 @@ test_that("rd_rlogic writes a field different from a written value in a readable
   data$b <- c(NA, 2, NA, 5)
   expect_equal(as.vector(rd_rlogic(data = data, dic = dic, logic = "[a] <> [b]", var = "b")$eval), c(TRUE, FALSE, FALSE, TRUE))
 })
+
+test_that("a reference to the same instance of another repeating instrument keeps its source values", {
+  data <- data.frame(
+    record_id = "1",
+    redcap_event_name = c("a_arm_1", "a_arm_1", "a_arm_1", "b_arm_1", "b_arm_1", "b_arm_1"),
+    redcap_repeat_instrument = c(NA, "fa", "fa", NA, "fb", "fb"),
+    redcap_repeat_instance = c(NA, 1, 2, NA, 1, 2),
+    x = c(NA, 10, 20, NA, NA, NA), y = NA, calc = c(NA, NA, NA, NA, 10, 20)
+  )
+  dic <- data.frame(field_name = c("record_id", "x", "y", "calc"), form_name = c("base", "fa", "fb", "fb"), field_type = c("text", "text", "text", "calc"),
+                    field_label = c("ID", "X", "Y", "Calc"), choices_calculations_or_slider_labels = c("", "", "", "[a_arm_1][x][current-instance]"),
+                    branching_logic_show_field_only_if = c("", "", "[a_arm_1][x][current-instance] <> ''", ""), text_validation_type_or_show_slider_number = "")
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "a_arm_1", "b_arm_1", "b_arm_1"), form = c("base", "fa", "base", "fb"))
+
+  out <- rd_rlogic(data = data, dic = dic, event_form = ef, logic = "[a_arm_1][x][current-instance]", var = "y")
+  expect_equal(as.vector(out$eval[5:6]), c(10, 20))
+  # rd_query applies the branching logic with the source values: both values of y are missing
+  q <- suppressWarnings(suppressMessages(rd_query(data = data, dic = dic, event_form = ef, variables = "y", expression = "is.na(x)")))
+  expect_equal(nrow(q$queries), 2)
+  # rd_recalculate: the original values are right
+  rc <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic, event_form = ef)))
+  expect_false("calc_recalc" %in% names(rc$data))
+})
+
+test_that("fill_from_base only fills the given rows, never the structural columns, and needs a single base row", {
+  data <- data.frame(
+    record_id = c("1", "1", "1", "2", "2"),
+    redcap_event_name = "e_arm_1",
+    redcap_repeat_instrument = c(NA, "r1", "r2", "", "r1"),
+    redcap_repeat_instance = c("", "1", "1", " ", "1"),
+    redcap_data_access_group = c("g1", "g2", "g2", "g1", "g1"),
+    base_field = c("a", NA, "keep", "b", NA)
+  )
+  out <- fill_from_base(data, c("base_field", "redcap_data_access_group", "record_id"), "record_id", rows = c(2, 5))
+  # (base rows with instance "" and " ")
+  expect_equal(out$base_field, c("a", "a", "keep", "b", "b"))
+  expect_equal(out$redcap_data_access_group, data$redcap_data_access_group)
+  expect_equal(out$record_id, data$record_id)
+  # Two base rows of the same record and event
+  twice <- rbind(data, data[1, ])
+  expect_error(fill_from_base(twice, "base_field", "record_id", rows = 2), class = "REDCapDM_error_logic")
+  expect_equal(fill_from_base(twice, "base_field", "record_id", rows = 5)$base_field[5], "b")
+})

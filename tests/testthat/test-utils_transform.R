@@ -339,3 +339,36 @@ test_that("legacy repeating forms retain base rows and instances", {
   expect_equal(wide$a_1, 10)
   expect_equal(wide$a_2, 20)
 })
+
+
+# ---- Forms of repeating instruments chosen by their code, not by their label ----
+
+split_label_data <- function() {
+  data <- data.frame(
+    record_id = c("1", "1", "1", "1", "1", "2"),
+    redcap_repeat_instrument = c(NA, "labs", "labs", "meds", "meds", NA),
+    redcap_repeat_instance = c(NA, 1, 2, 1, 2, NA),
+    b = c(5, NA, NA, NA, NA, 6), redcap_repeat_instrument_note = c("n1", NA, NA, NA, NA, "n2"),
+    l = c(NA, 1, 2, NA, NA, NA), m = c(NA, NA, NA, 3, 4, NA)
+  )
+  data$redcap_repeat_instrument.factor <- factor(c(NA, "Repeated", "Repeated", "Repeated", "Repeated", NA))
+  data
+}
+split_label_dic <- function() {
+  data.frame(field_name = c("record_id", "b", "redcap_repeat_instrument_note", "l", "m"), form_name = c("base", "base", "base", "labs", "meds"),
+             field_type = "text", field_label = c("ID", "B", "Note", "L", "M"))
+}
+
+test_that("split_form chooses the rows of each repeating instrument by its code, also without its factor version", {
+  withr::local_options(lifecycle_verbosity = "quiet")
+  out <- split_form(split_label_data(), split_label_dic())
+  expect_equal(out$form, c("base", "labs", "meds"))
+  expect_equal(vapply(out$df, nrow, integer(1)), c(2L, 2L, 2L))
+  expect_equal(out$df[[1]]$redcap_repeat_instrument_note, c("n1", "n2"))
+
+  data <- split_label_data()
+  data$redcap_repeat_instrument.factor <- NULL
+  out <- split_form(data, split_label_dic())
+  expect_equal(vapply(out$df, nrow, integer(1)), c(2L, 2L, 2L))
+  expect_equal(out$df[[2]]$redcap_repeat_instrument, c("labs", "labs"))
+})

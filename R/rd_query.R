@@ -17,7 +17,7 @@
 #' @param event REDCap event(s) to analyze in longitudinal projects. If it isn't given, the events where the form of each variable is collected are taken from `event_form`; without `event_form`, all the events are analyzed (with a warning), which can overestimate the number of queries.
 #' @param instrument Optional REDCap instrument(s) for each variable. Defaults to the instrument reported in the dictionary.
 #' @param filter Optional filter of the rows to check, written as text (e.g. `"age > 18"`), such as the branching logic of a variable translated by `rd_dictionary()`. Give one filter, or one per variable. Several conditions separated by commas must all be met, and the filter can use objects created in your session or in your function.
-#' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
+#' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended. Its queries must be a data frame: the output of `by_dag = TRUE`, whose queries are a list of data frames, can't be used.
 #' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
 #' @param report_zeros Logical, include variables with zero queries in the report. Default is `FALSE`.
@@ -45,8 +45,8 @@
 #'
 #' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), containing:
 #' \describe{
-#'   \item{queries}{A data frame or a list of data frames (if `by_dag = TRUE`) with detailed query information for each record.}
-#'   \item{results}{A formatted report (HTML table) summarizing total queries per variable, event, and DAG if applicable.}
+#'   \item{queries}{A data frame or a list of data frames (if `by_dag = TRUE`, one per DAG) with detailed query information for each record.}
+#'   \item{results}{A formatted report (HTML table) summarizing total queries per variable and event; with `by_dag = TRUE`, a list with one table per DAG.}
 #' }
 #'
 #' @examples

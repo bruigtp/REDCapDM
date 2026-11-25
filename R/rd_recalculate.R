@@ -17,7 +17,9 @@
 #' * If differences exist, new fields `[field_name]_recalc` are added to the dataset and dictionary, with the label of the original field followed by `(Recalculated)`. Running the function again on its output updates these fields instead of duplicating them.
 #' * The fields added by this function are recognised because they are calculated fields with the same calculation as the original field and, when the dictionary has the column `field_label`, its label followed by `(Recalculated)` (or by `(Recalculate)`, the label of previous versions of the package, which are also recognised). No other field or column is overwritten: if `[field_name]_recalc` is already one of them, the recalculated values are saved in `[field_name]_recalc_1` (or `_2`, ...) with a warning.
 #' * Works for single-event projects; for longitudinal projects, `event_form` must be provided.
-#' * Fields with incomplete branching logic or smart variables may fail to recalculate.
+#' * The calculation of each field is translated to R with [rd_rlogic()]: calculations that can't be translated (e.g. with smart variables or functions that it doesn't know) are not recalculated, and `Transcribed?` is `No`.
+#' * The original and recalculated values are compared as numbers when both are numbers, also written as text (e.g. `'100000'`, the result of `if()` with texts) or as `TRUE`/`FALSE` (the 1/0 of a condition), rounded to 3 decimals: the comparison doesn't depend on how R writes the numbers.
+#' * A calculated field of the dictionary that isn't in the data can't be compared: a warning is shown, and its `Is equal?` and `Different values` are `NA`.
 #' * Existing generated columns are refreshed even when the original values now agree with the calculation. If a formula cannot be translated or evaluated, its previously generated column is set to `NA` with a warning. Excluded fields and their generated columns are left unchanged.
 #' * Unsupported formulas are reported as non-transcribed in `results`; they do not stop the recalculation of other fields. Restrictions on repeated-source references are those of [rd_rlogic()].
 #'
@@ -128,6 +130,13 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
       rd_warn("The following variables of {.arg exclude} are not calculated fields of the dictionary: {.var {not_calc}}.")
     }
 
+    # Warning: calculated fields of the dictionary that are not in the data: there is no original value to compare with
+    # (their recalculation is not compared: `Is equal?` and `Different values` are unknown)
+    no_original <- setdiff(dic$field_name[dic$field_type %in% "calc" & !dic$field_name %in% exclude & !recalc_generated(dic$field_name, dic)], names(data))
+    if (length(no_original) > 0) {
+      rd_warn("The following calculated fields of the dictionary are not in the data, so their recalculation can't be compared: {.var {no_original}}.")
+    }
+
     # Process calculated fields: evaluate, transcribe logic, and compare results
     calc <- tibble::tibble(dic) |>
       # The `_recalc` fields added by a previous rd_recalculate() are not recalculated again (the fields of the project whose names end in `_recalc` are)
@@ -167,6 +176,7 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
           }
         }),
         n_diff = purrr::map2_int(.data$calc, .data$recalc, count_differences),
+        n_diff = ifelse(.data$field_name %in% no_original, NA_integer_, .data$n_diff),
         # Equal when no value differs (identical() would also compare attributes such as the variable label)
         is_equal = ifelse(is.na(.data$n_diff), NA, .data$n_diff == 0)
       ) |>
@@ -315,6 +325,9 @@ rd_recalculate <- function(project = NULL, data = NULL, dic = NULL, event_form =
 #' Number of values that differ between a calculated field and its recalculation
 #'
 #' Uses the same criteria as the `Is equal?` column: numbers are compared rounded to 3 decimals, and a value that is missing in only one of the two versions counts as different.
+#' The values are compared as numbers when both versions are numbers, also written as text (e.g. `'100000'`, a result of
+#' `if()` with texts) or logical (`TRUE`/`FALSE`, the 1/0 of a condition, e.g. `isblankormissingcode([x])`): the result
+#' doesn't depend on how R writes the numbers (e.g. `1e+05` with `options(scipen = 0)`).
 #'
 #' @param x Values of the calculated field in the data.
 #' @param y Recalculated values (`NULL` if the field couldn't be transcribed).
@@ -329,12 +342,30 @@ count_differences <- function(x, y) {
     x <- x[[1]]
   }
 
-  if (is.numeric(x) && is.numeric(y)) {
-    x <- round(x, 3)
-    y <- round(y, 3)
+  # Values as numbers (NULL when some value isn't a number)
+  as_number <- function(v) {
+    if (is.logical(v) || is.numeric(v)) {
+      return(as.numeric(v))
+    }
+    text <- trimws(as.character(v))
+    text[text %in% ""] <- NA
+    number <- suppressWarnings(as.numeric(text))
+    if (any(!is.na(text) & is.na(number))) NULL else number
+  }
+  # (numbers written without scientific notation, whatever the options of the session)
+  as_text <- function(v) {
+    if (is.logical(v)) v <- as.numeric(v)
+    if (is.numeric(v)) id_text(v) else as.character(v)
+  }
+
+  x_number <- as_number(x)
+  y_number <- as_number(y)
+  if (!is.null(x_number) && !is.null(y_number)) {
+    x <- round(x_number, 3)
+    y <- round(y_number, 3)
   } else {
-    x <- as.character(x)
-    y <- as.character(y)
+    x <- as_text(x)
+    y <- as_text(y)
   }
 
   as.integer(sum(xor(is.na(x), is.na(y)) | (!is.na(x) & !is.na(y) & x != y)))

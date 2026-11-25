@@ -25,9 +25,10 @@ test_that("recalculate returns updated data and dictionary", {
   expect_type(res, "list")
   expect_named(res, c("data", "dictionary", "event_form", "results"))
 
-  # Recalculated fields should exist if transcription works
-  expect_true(any(grepl("_recalc$", names(res$data)) | sapply(res$data, function(x) !is.null(x))))
-  expect_true(any(grepl("_recalc$", res$dictionary$field_name)))
+  # The recalculated fields are in the dictionary and in the data
+  recalc <- grep("_recalc$", res$dictionary$field_name, value = TRUE)
+  expect_gt(length(recalc), 0)
+  expect_true(all(recalc %in% names(res$data)))
 
   # Results should contain a summary table
   expect_true("glue" %in% class(res$results))
@@ -46,12 +47,15 @@ test_that("recalculate fails if data or dictionary is missing", {
 })
 
 test_that("recalculate works with project list input", {
-  project <- list(data = cov_data, dic = cov_dic_test, event_form = cov_event_form)
+  # (the list of redcap_data(): `dictionary`)
+  project <- list(data = cov_data, dictionary = cov_dic_test, event_form = cov_event_form)
 
-  # Pass project fields individually
-  res <- rd_recalculate(data = project$data, dic = project$dic, event_form = project$event_form)
+  res <- rd_recalculate(project)
+  separate <- rd_recalculate(data = cov_data, dic = cov_dic_test, event_form = cov_event_form)
 
-  expect_true(any(grepl("_recalc$", names(res$data)) | sapply(res$data, function(x) !is.null(x))))
+  expect_gt(length(grep("_recalc$", names(res$data))), 0)
+  expect_equal(res$data, separate$data)
+  expect_equal(res$dictionary, separate$dictionary)
 })
 
 test_that("recalculate warns for character datetime fields", {
@@ -345,4 +349,33 @@ test_that("rd_recalculate updates its fields with a dictionary without field_lab
   expect_equal(names(thrice$data), names(once$data))
   expect_equal(thrice$dictionary, once$dictionary)
   expect_equal(thrice$data$q_recalc, c(2, 3, 4), ignore_attr = TRUE)
+})
+
+test_that("rd_recalculate compares the numbers written in another way (text, TRUE/FALSE) as numbers", {
+  data <- data.frame(record_id = 1:4, flag = c(1, 0, 0, 1), other = c(1, NA, 3, NA), big = c(100000, 200000, 200000, 100000), is1 = c(1, 0, 0, 1), blank = c(0, 1, 0, 1))
+  dic <- data.frame(field_name = c("record_id", "flag", "other", "big", "is1", "blank"), form_name = "f", field_type = c("text", "text", "text", "calc", "calc", "calc"),
+                    field_label = c("ID", "Flag", "Other", "Big", "Is 1", "Blank"),
+                    choices_calculations_or_slider_labels = c("", "", "", "if([flag] = 1, '100000', '200000')", "[flag] = 1", "isblankormissingcode([other])"),
+                    branching_logic_show_field_only_if = "", text_validation_type_or_show_slider_number = "")
+  for (scipen in c(0, 999)) {
+    withr::local_options(scipen = scipen)
+    res <- suppressWarnings(suppressMessages(rd_recalculate(data = data, dic = dic)))
+    expect_false(any(grepl("_recalc$", names(res$data))))
+  }
+  expect_equal(count_differences(c(100000, 1, 0), c("100000", "1", "0")), 0L)
+  expect_equal(count_differences(c(1, 0, NA), c(TRUE, FALSE, NA)), 0L)
+  expect_equal(count_differences(c(1, 0), c(FALSE, FALSE)), 1L)
+  # (texts that are not numbers are compared as texts)
+  expect_equal(count_differences(c("a", "b"), c("a", "c")), 1L)
+})
+
+test_that("rd_recalculate doesn't take a calculated field that isn't in the data as equal", {
+  data <- data.frame(record_id = 1:2, a = c(1, 2))
+  dic <- data.frame(field_name = c("record_id", "a", "q"), form_name = "f", field_type = c("text", "text", "calc"), field_label = c("ID", "A", "Q"),
+                    choices_calculations_or_slider_labels = c("", "", "[a] * 2"), branching_logic_show_field_only_if = "",
+                    text_validation_type_or_show_slider_number = "")
+  expect_warning(res <- suppressMessages(rd_recalculate(data = data, dic = dic)), "not in the data")
+  expect_false("q_recalc" %in% names(res$data))
+  report <- paste(res$results, collapse = "\n")
+  expect_match(report, "\\|\\s*q\\s*\\|\\s*Yes\\s*\\|\\s*NA\\s*\\|\\s*NA\\s*\\|")
 })

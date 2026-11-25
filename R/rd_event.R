@@ -3,20 +3,20 @@
 #' @description
 #' `r lifecycle::badge('stable')`
 #'
-#' Helps identify records in a REDCap longitudinal project that are missing one or more specified events. Because REDCap typically omits empty events from exports, an event that contains no data for a record will not appear. This function finds those absent events and returns a per-record query table and a summarized HTML report.
+#' Helps identify records in a REDCap longitudinal project that are missing one or more specified events. Because REDCap typically omits empty events from exports, an event that contains no data for a record will not appear. This function finds those absent events (not whether the events are complete) and returns a per-record query table and a summarized HTML report.
 #'
 #' @param project A list containing the REDCap data, dictionary, and event mapping (expected `redcap_data()` output). Overrides `data`, `dic`, and `event_form`.
 #' @param data A `data.frame` or `tibble` with the REDCap dataset.
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param event Character vector with one or more REDCap event names to check for missing records.
-#' @param filter Optional. A single character string containing a filter expression to subset the dataset before checking for missing events. Example: \code{"age >= 18"}. It can use objects created in your session or in your function.
+#' @param filter Optional. A single character string containing a filter expression that selects the records to check. Example: \code{"age >= 18"}. It can use objects created in your session or in your function. Whether each selected record has the event is checked with all its data (also the rows that the filter doesn't select).
 #' @param query_name Optional character vector describing each query. Defaults to a standard format with the unique event name: `The event 'event_name' is missing.`
-#' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended.
+#' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended. Its queries must be a data frame: the output of `rd_query(by_dag = TRUE)`, whose queries are a list of data frames, can't be used.
 #' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
 #' @param report_zeros Logical, include events with zero queries in the report. Default is `FALSE`.
-#' @param link Optional list containing project information (`domain`, `redcap_version`, `proj_id`, `event_id`) to generate clickable links for each query.
+#' @param link Optional list containing project information (`domain`, `redcap_version`, `proj_id`) to generate a link for each query, which opens the home page of the record in REDCap (unlike `rd_query()`, it doesn't use `event_id`).
 #'
 #'
 #' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), with two elements:
@@ -127,7 +127,7 @@ rd_event <- function(project = NULL,
     rd_abort("{.arg add_to} must be the output of a previous {.fn rd_query} or {.fn rd_event}.", class = "REDCapDM_error_argument")
   }
   if (!is.list(link)) {
-    rd_abort("{.arg link} must be a list with {.code domain}, {.code redcap_version}, {.code proj_id} and {.code event_id}.")
+    rd_abort("{.arg link} must be a list with {.code domain}, {.code redcap_version} and {.code proj_id}.")
   }
   # Elements given as NULL are not given
   link <- link[!vapply(link, is.null, logical(1))]

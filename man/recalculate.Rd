@@ -16,7 +16,7 @@ recalculate(data, dic, event_form = NULL, exclude_recalc = NULL)
 \item{exclude_recalc}{Character vector with the names of the variables that should not be recalculated. Useful for projects with time-consuming recalculations for certain calculated fields.}
 }
 \description{
-This function recalculates each calculated field if the logic can be transcribed to R. Note that calculated fields containing smart-variables or variables from other events cannot be transcribed.
+This function recalculates each calculated field if the logic can be transcribed to R. Note that calculated fields containing smart variables, or variables of another repeating instrument or repeating event without their instance, cannot be transcribed (the variables of other events, e.g. \verb{[visit_2_arm_1][weight]}, and \verb{[event][field][current-instance]} can).
 
 The function returns the dataset and dictionary with the recalculated variables appended (named as the original field plus \verb{_recalc}), along with a summary table of the recalculation results.
 }

@@ -48,7 +48,7 @@ rd_transform(
 
 \item{which_form}{Character. If \code{final_format = "by_form"}, return only this form.}
 
-\item{wide}{Logical. If \code{TRUE} (for form-based splits), repeated instances are returned in wide format. Defaults to \code{FALSE}.}
+\item{wide}{Logical. If \code{TRUE} (for form-based splits), repeated instances are returned in wide format. Default \code{NULL}, which is \code{FALSE} when the data is split by form.}
 }
 \value{
 A list with elements:

@@ -166,7 +166,7 @@ cb <- covican |>
 str(cb$data$underlying_disease_hemato___1)
 ```
 
-In this case, each option becomes a field of the dictionary of its own and its values are already the labels, so running `rd_checkbox()` again on the result stops with an error instead of converting them again.
+In this case, each option becomes a field of the dictionary of its own, so running `rd_checkbox()` again on the result stops with an error instead of converting them again. As the data of `redcap_data()` has the `.factor` versions of the options, the columns keep their codes 0/1 (as above) and their `.factor` versions take the labels; without the `.factor` versions, the values of the columns become the labels.
 
 If a checkbox field has a branching logic, the `na_logic` argument controls how missing values are set, with the following options:
 
@@ -218,7 +218,7 @@ str(factored$data$available_analytics.factor)
 
 > Note: the function automatically excludes these system variables from conversion: `redcap_event_name`, `redcap_repeat_instrument`, `redcap_data_access_group`. These variables are retained as-is to avoid interfering with longitudinal event mappings or user access groups.
 
-After conversion only the cleaned factor variables remain in the dataset, the original numeric version of those variables is dropped.
+After conversion, the converted variables are factors and their `.factor` versions are removed. The variables in `exclude`, the system variables above and the variables whose labels are of several codes (e.g. two options with the same label, which `rd_factor()` reports with a warning) keep both columns.
 
 > Note: use `rd_factor()` before `rd_dictionary()`. The branching logic and calculations translated to R by `rd_dictionary()` compare the variables with their original codes, so they stop working once the variables are factors. If `rd_factor()` detects this situation, it shows a warning.
 
@@ -274,7 +274,7 @@ forms_data <- covican |>
   rd_split(by = "form", wide = TRUE)
 ```
 
-With `wide = TRUE`, the result also has the column `max_repeated_instance`, the highest repetition of each form.
+With `wide = TRUE`, the result also has the column `max_repeated_instance`: the largest number of rows of a record in each form (its events and repetitions), which is the number of the last set of columns. It is not the number of the instance: the columns are numbered by the position of each row of the record (e.g. a record with the instances 2 and 5 has the columns `_1` and `_2`, and its maximum is 2).
 
 > Note: For longitudinal projects, the column `events` has the events where each form is collected.
 
@@ -334,9 +334,9 @@ If the variable has a `.factor` version, it is also set to missing, so that a la
 
 This is also an auxiliary function that transforms the REDCap logic into logic that can be evaluated in R. This function is used internally in multiple functions, for example, `rd_dictionary()`. It returns a list with:
 
-- `rlogic`: the transformed logic.
+- `rlogic`: the transformed logic. It can use auxiliary columns (e.g. the values of other events of the record) and internal functions of the package, so it can't always be evaluated directly on the original dataset: use `eval` or `eval_data`.
 
-- `eval`: the result of the evaluation of the logic in R, one value per row of the dataset.
+- `eval`: the result of the evaluation of the logic in R, one value per row of the dataset, with `NA` outside the events and rows where the variable is collected. A logic without variables (e.g. `1 + 1`) can give a single value in a dataset without events or repetitions.
 
 - `eval_data`: a data frame with the record identifier, the event (and repetition, if any) and `eval`, to identify the record of each evaluated value.
 

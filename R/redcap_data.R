@@ -13,12 +13,14 @@
 #' If the project is longitudinal, provide `event_path` (instrument–event mapping)
 #' or the function will attempt to fetch it from the API when using API mode.
 #'
-#' With the API, the values and their labels are read with two requests. The record identifiers are read as text in
-#' both of them (long identifiers such as `9007199254740993`, or `100000000000000`, are not changed), and the
+#' With the API, the metadata of the project (dictionary, project information, events, instruments, ...) and the
+#' records are read with several requests: the values and their labels are read separately (in batches of records,
+#' and the labels again if the records changed). The record identifiers are read as text in
+#' all of them (long identifiers such as `9007199254740993`, or `100000000000000`, are not changed), and the
 #' identifier is a number only when its text is that number, as with the exported files. The labels of the events
 #' (`redcap_event_name.factor`), repeated instruments and data access groups are given to each row by its code (the
 #' unique event name, instrument or data access group), and they are checked with the metadata of the project (its
-#' events, arms, instruments and data access groups): if the records changed between the two requests, the labels are
+#' events, arms, instruments and data access groups): if the records changed between the values and the labels, the labels are
 #' read again, and the function stops if they keep changing. When that metadata can't be read, those columns have
 #' the codes instead of the labels, with a warning (except a single code with a single label in all the rows, e.g. the
 #' data access group of a user assigned to a group).
@@ -28,13 +30,15 @@
 #' 2. REDCap generates:
 #'    - A CSV file with observations.
 #'    - An R script to format variables for import.
-#' 3. Ensure the exported files, dictionary, and event mapping (if any) are in the same directory.
+#' 3. Keep the R script and its CSV file in the same directory (the script reads the CSV from its folder). The
+#'    dictionary and the event mapping can be in other folders.
 #'
 #'
-#' @note To use other package functions effectively, include the `dic_path` argument to load the project dictionary.
+#' @note With the exported files, `dic_path` is required to load the project dictionary (with the API, the dictionary is
+#'   read from REDCap).
 #'
 #' @param data_path Path to exported R file (use with `dic_path`).
-#' @param dic_path Path to the dictionary file (CSV or XLSX; use with `data_path`).
+#' @param dic_path Path to the dictionary file (CSV or XLSX; use with `data_path`). Not used with the API.
 #' @param event_path Path to the event-form mapping file (CSV or XLSX) for longitudinal projects (downloadable via the `Designate Instruments for My Events` tab within the `Project Setup` section of REDCap).
 #' @param uri REDCap API base URI (use with `token`).
 #' @param token REDCap API token (use with `uri`).
@@ -358,9 +362,11 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # The values are read as text (guess_type = FALSE), also in the first request of REDCapR, which reads the identifiers
     # of the records: as numbers, two long identifiers (e.g. 9007199254740992 and 9007199254740993) would be the same one,
     # and 100000000000000 would be requested as 1e+14
+    # Only the empty values are missing values (na = ""): the text "NA" can be a value of a text field or the Missing Data
+    # Code NA, which is handled below with the other codes
     # (a function, as the labels are read again if the data changed between the two requests, see below)
     read_labels <- function() tryCatch(
-      suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field, guess_type = FALSE)$data),
+      suppressMessages(REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "label", raw_or_label_headers = "label", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field, guess_type = FALSE, na = "")$data),
       error = api_error
     )
     labels <- read_labels()
@@ -416,7 +422,7 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     # (the data are read as text and their types are guessed afterwards over all the records, as REDCapR does, except
     # for the identifier and the text fields)
     data_api <- tryCatch(
-      REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field, guess_type = FALSE)$data,
+      REDCapR::redcap_read(redcap_uri = uri, token = token, verbose = FALSE, raw_or_label = "raw", export_data_access_groups = TRUE, export_survey_fields = survey_fields, fields = filter_field, guess_type = FALSE, na = "")$data,
       error = api_error
     )
     if (any(vapply(data_api, is.character, logical(1)))) {
@@ -429,7 +435,8 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       ))
       data_api <- readr::type_convert(
         data_api,
-        col_types = do.call(readr::cols, c(stats::setNames(rep(list(readr::col_character()), length(text_cols)), text_cols), list(.default = readr::col_guess())))
+        col_types = do.call(readr::cols, c(stats::setNames(rep(list(readr::col_character()), length(text_cols)), text_cols), list(.default = readr::col_guess()))),
+        na = ""
       )
       # The identifier is a number only when its text is that number (not with "007", 100000000000000, written as
       # 1e+14, or 9007199254740993, beyond the precision of the numbers of R), as with the exported files
@@ -1191,14 +1198,22 @@ keep_text_fields <- function(data, dic, csv_path) {
     names(data)
   )
 
-  if (length(text_fields) == 0L && length(choice_fields) == 0L) {
+  # Fields where the text "NA" is a value (text fields) or the Missing Data Code NA (validated text fields and yes/no and
+  # true/false fields): the R script reads it with read.csv(), which takes it as a missing value
+  na_fields <- intersect(
+    as.character(dic$field_name[dic$field_type %in% c("text", "notes", "yesno", "truefalse")]),
+    names(data)
+  )
+
+  if (length(text_fields) == 0L && length(choice_fields) == 0L && length(na_fields) == 0L) {
     return(data)
   }
 
+  # (only the empty values are missing values: "NA" is a text)
   csv <- utils::read.csv(
     csv_path,
     colClasses = "character",
-    na.strings = c("", "NA"),
+    na.strings = "",
     encoding = "UTF-8"
   )
   names(csv)[1] <- "record_id"
@@ -1254,6 +1269,22 @@ keep_text_fields <- function(data, dic, csv_path) {
       labels = option_labels
     )
     attr(data[[factor_column]], "label") <- label
+  }
+
+  # The text "NA" that the R script read as a missing value (the other values of the field are not changed)
+  for (field in intersect(na_fields, names(csv))) {
+    literal <- csv[[field]] %in% "NA" & is.na(data[[field]])
+    if (!any(literal)) {
+      next
+    }
+    label <- attr(data[[field]], "label")
+    if (is.character(data[[field]])) {
+      data[[field]][literal] <- "NA"
+    } else {
+      # (a number, as a column with a Missing Data Code: its type is restored when the codes are removed)
+      data[[field]] <- csv[[field]]
+    }
+    attr(data[[field]], "label") <- label
   }
 
   data

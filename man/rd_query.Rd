@@ -38,7 +38,7 @@ rd_query(
 
 \item{filter}{Optional filter of the rows to check, written as text (e.g. \code{"age > 18"}), such as the branching logic of a variable translated by \code{rd_dictionary()}. Give one filter, or one per variable. Several conditions separated by commas must all be met, and the filter can use objects created in your session or in your function.}
 
-\item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended.}
+\item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended. Its queries must be a data frame: the output of \code{by_dag = TRUE}, whose queries are a list of data frames, can't be used.}
 
 \item{variables_names}{Optional character vector of descriptions for each variable. Defaults to the variables labels in the dictionary.}
 
@@ -65,8 +65,8 @@ rd_query(
 \value{
 A list of class \code{REDCapDM_report}, which prints a short summary (see \code{\link[=print.REDCapDM_report]{print.REDCapDM_report()}}), containing:
 \describe{
-\item{queries}{A data frame or a list of data frames (if \code{by_dag = TRUE}) with detailed query information for each record.}
-\item{results}{A formatted report (HTML table) summarizing total queries per variable, event, and DAG if applicable.}
+\item{queries}{A data frame or a list of data frames (if \code{by_dag = TRUE}, one per DAG) with detailed query information for each record.}
+\item{results}{A formatted report (HTML table) summarizing total queries per variable and event; with \code{by_dag = TRUE}, a list with one table per DAG.}
 }
 }
 \description{

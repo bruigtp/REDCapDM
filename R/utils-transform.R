@@ -2,7 +2,7 @@
 #'
 #' Recalculate REDCap Calculated Fields
 #' @description
-#' This function recalculates each calculated field if the logic can be transcribed to R. Note that calculated fields containing smart-variables or variables from other events cannot be transcribed.
+#' This function recalculates each calculated field if the logic can be transcribed to R. Note that calculated fields containing smart variables, or variables of another repeating instrument or repeating event without their instance, cannot be transcribed (the variables of other events, e.g. `[visit_2_arm_1][weight]`, and `[event][field][current-instance]` can).
 #'
 #' The function returns the dataset and dictionary with the recalculated variables appended (named as the original field plus `_recalc`), along with a summary table of the recalculation results.
 #' @param data Data frame containing data from REDCap.
@@ -556,25 +556,27 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   }
 
   if(repeat_instrument)  {
-    form_check <- data %>%
-    dplyr::distinct(.data$redcap_repeat_instrument, .data$redcap_repeat_instrument.factor)
+    # The rows of each form are chosen by the code of its repeating instrument; its label (factor version) is only shown,
+    # when the data has it. Only the columns of REDCap are removed (not e.g. a field `redcap_repeat_instrument_note`)
+    repeating_forms <- unique(as.character(data$redcap_repeat_instrument)[!as.character(data$redcap_repeat_instrument) %in% c(NA, "")])
 
     ndata <- ndata %>%
-      dplyr::left_join(form_check, by = dplyr::join_by("form" == "redcap_repeat_instrument")) %>%
-      dplyr::relocate("form_factor" = "redcap_repeat_instrument.factor", .after = form) %>%
-      dplyr::mutate(df = purrr::map2(.data$form_factor, .data$df, ~ {
-        if (is.na(.x)) {
+      dplyr::mutate(df = purrr::map2(.data$form, .data$df, ~ {
+        code <- as.character(.y$redcap_repeat_instrument)
+        if (!.x %in% repeating_forms) {
           .y %>%
-            dplyr::filter(is.na(.data$redcap_repeat_instrument.factor)) %>%
-            dplyr::select(-dplyr::starts_with("redcap_repeat_instrument"))
+            dplyr::slice(which(code %in% c(NA, ""))) %>%
+            dplyr::select(-dplyr::any_of(c("redcap_repeat_instrument", "redcap_repeat_instrument.factor")))
         } else {
-          .y %>%
-            dplyr::filter(.data$redcap_repeat_instrument.factor == .x) %>%
-            dplyr::mutate(redcap_repeat_instrument = redcap_repeat_instrument.factor) %>%
-            dplyr::select(-redcap_repeat_instrument.factor)
+          out <- .y %>%
+            dplyr::slice(which(code %in% .x))
+          if ("redcap_repeat_instrument.factor" %in% names(out)) {
+            out$redcap_repeat_instrument <- out$redcap_repeat_instrument.factor
+          }
+          out %>%
+            dplyr::select(-dplyr::any_of("redcap_repeat_instrument.factor"))
         }
-      })) %>%
-      dplyr::select(-"form_factor")
+      }))
   }
 
 

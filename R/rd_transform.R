@@ -18,7 +18,7 @@
 #' @param final_format Character string indicating the final format of the data. Options are `raw`, `by_event` or `by_form`. `raw` (default) returns the transformed data in its original structure, `by_event` returns it as a nested data frame by event, and `by_form` returns it as a nested data frame by form.
 #' @param which_event Character. If `final_format = "by_event"`, return only this event.
 #' @param which_form Character. If `final_format = "by_form"`, return only this form.
-#' @param wide Logical. If `TRUE` (for form-based splits), repeated instances are returned in wide format. Defaults to `FALSE`.
+#' @param wide Logical. If `TRUE` (for form-based splits), repeated instances are returned in wide format. Default `NULL`, which is `FALSE` when the data is split by form.
 #'
 #' @return A list with elements:
 #' \describe{

@@ -10,12 +10,16 @@
 #' @param dic A `data.frame` with the REDCap dictionary.
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param checkbox_labels Character vector of length 2 for labels of unchecked/checked values. Default: `c("No", "Yes")`.
-#' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels. With `FALSE`, the columns keep their names, but their values are already the labels and each option is a field of the dictionary: running the function again on its result stops with an error instead of converting them again.
+#' @param checkbox_names Logical. If `TRUE` (default), checkbox columns are renamed using choice labels. With `FALSE`, the columns keep their names and each option is a field of the dictionary: running the function again on its result stops with an error instead of converting them again.
+#'   Without the `.factor` versions of the options, the values of the columns become the labels; with them (as in the
+#'   data of `redcap_data()`), the columns keep their codes 0/1 and their `.factor` versions take the labels.
 #' @param na_logic Controls how missing values are set based on branching logic. Must be one of `"none"` (do nothing), `"missing"` (set to `NA` only when the logic evaluation is `NA`), or `"eval"` (set to `NA` when the logic evaluates to `FALSE` or `NA`). Defaults to `"missing"`.
 #'
 #' @return A list with:
 #' \describe{
-#'   \item{data}{Transformed dataset with checkbox fields as factors and optionally renamed.}
+#'   \item{data}{Transformed dataset with the checkbox options optionally renamed. When the data has the `.factor`
+#'     versions of the options, the original columns keep their codes 0/1 and the `.factor` versions take the labels of
+#'     `checkbox_labels`; otherwise the original columns are replaced by factors with these labels.}
 #'   \item{dictionary}{Updated dictionary with checkbox fields expanded and optionally renamed.}
 #'   \item{event_form}{The `event_form` passed in (if applicable).}
 #'   \item{results}{Summary of transformations and any fields needing review.}

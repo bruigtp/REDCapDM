@@ -18,9 +18,9 @@
 #'
 #' The function returns a detailed comparison table of queries with a \code{Modification} factor (one of the four statuses) and an HTML summary table showing counts per status.
 #'
-#' @param old Data frame containing the previous (older) query report. Must include \code{Identifier}, \code{Description} and \code{Query} columns (character or factor).
-#' @param new Data frame containing the newer query report. Must include \code{Identifier}, \code{Description} and \code{Query} columns (character or factor). If \code{new} contains a \code{Code} column, it will be removed at the start of processing.
-#' @param report_title Optional single string used as the caption for the HTML summary table. Defaults to \code{"Comparison report"} when not supplied or when \code{NA}.
+#' @param old Data frame containing the previous (older) query report. Must include \code{Identifier} (text, factor or number), \code{Description} and \code{Query} columns (character or factor).
+#' @param new Data frame containing the newer query report. Must include \code{Identifier} (text, factor or number), \code{Description} and \code{Query} columns (character or factor). If \code{new} contains a \code{Code} column, it will be removed at the start of processing.
+#' @param report_title Optional single string used as the caption for the HTML summary table. With \code{NULL} (the default), the caption is \code{"Comparison report"}; \code{NA} is not accepted.
 #' @param return_viewer Logical; if \code{TRUE} (default) an HTML table (knitr/kable + kableExtra) summarizing the counts per state is produced and returned in the \code{results} element of the returned list. If \code{FALSE}, no HTML viewer is produced (useful for non-interactive runs).
 #'
 #' @return A list of class `REDCapDM_report`, which prints a short summary (see [print.REDCapDM_report()]), with two elements:
@@ -28,7 +28,8 @@
 #'   \item{\code{queries}}{A data frame containing all queries present in either \code{old} or \code{new}.
 #'     A factor column \code{Modification} indicates the state for each row (levels: \code{Pending},
 #'     \code{Solved}, \code{Miscorrected}, \code{New}). The function also reassigns \code{Code}
-#'     values so codes are consistent per \code{Identifier}.}
+#'     values so codes are consistent per \code{Identifier}: a code is the number of each query of its record in this
+#'     result, not a permanent identifier of the query (the same query can have another code in another comparison).}
 #'   \item{\code{results}}{If \code{return_viewer = TRUE}, an HTML \code{knitr::kable} (styled with
 #'     \code{kableExtra}) summarising totals per state. If \code{return_viewer = FALSE}, this is \code{NULL}.}
 #' }
@@ -37,12 +38,12 @@
 #' Requirements:
 #' \itemize{
 #'   \item Both \code{old} and \code{new} must be data frames.
-#'   \item Both data frames must contain at least the following character columns:
-#'     \code{Identifier}, \code{Description}, and \code{Query}.
+#'   \item Both data frames must contain at least the following columns:
+#'     \code{Identifier} (text, factor or number), \code{Description}, and \code{Query}.
 #'   \item Every query must have an \code{Identifier} (the record identifier of the data).
-#'   \item A \code{Code} column is optional; if present it will be preserved and considered
-#'     for sorting and output. If \code{Code} exists in \code{new}, it is removed at the
-#'     beginning of the routine to avoid conflicts with re-assigned codes.
+#'   \item A \code{Code} column is optional; the codes of \code{old} are used to sort the queries, and the
+#'     codes of the result are assigned again (see the value). If \code{Code} exists in \code{new}, it is removed at
+#'     the beginning of the routine to avoid conflicts with re-assigned codes.
 #' }
 #'
 #' The function merges the two reports, constructs composite keys used for comparison, classifies each row into a modification state, detects and re-labels \code{Miscorrected} cases, reassigns a \code{Code} per \code{Identifier} to keep codes consistent, and returns a detailed dataset plus an optional HTML summary viewer.
@@ -66,10 +67,10 @@
 #'     names there, but used labels in their default \code{Query} text. Recognised legacy labels and default
 #'     missing-event query texts are normalised to unique event names. Shared labels cannot be resolved automatically.
 #'   \item \strong{Miscorrected detection:} A \code{Miscorrected} label is assigned to a query that would
-#'     otherwise be \code{New} when the old report has a query with the same \code{Identifier}, \code{Event},
-#'     \code{Repetition}, \code{Field} (each of them when both reports have it) and \code{Description} — this
-#'     signals a likely re-issued or modified query (\code{Description} is only compared when the reports don't have
-#'     \code{Field}). New queries without such a query in the old report are
+#'     otherwise be \code{New} when the old report has a query of the same record (\code{Identifier}), event
+#'     (\code{Event}) and repetition (\code{Repetition}), when both reports have these columns, and of the same
+#'     variable: the same \code{Field} when both reports have it, or else the same \code{Description}. This signals a
+#'     likely re-issued or modified query. New queries without such a query in the old report are
 #'     \code{New}, also when there are several of them for the same field.
 #' }
 #'

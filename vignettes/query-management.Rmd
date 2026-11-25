@@ -76,7 +76,7 @@ In this case, we can observe that there are 6 missing values in the _copd_ varia
 
 Another example is when we try to identify missing values in variables where a branching logic is employed. In this scenario, when the conditions of the branching logic are not satisfied, by definition, all of the values should be missing and thus queries for this specific missing values (conditions not met) should not be reported. To address this, the function, when working with raw data, follows a two-step process. Firstly, it transforms the branching logic associated with the specified variable. Then, it applies this transformed logic during the query generation process. However, if the dataset has already been transformed using the `rd_transform()` function beforehand, the function will automatically apply the previously transformed branching logic.
 
-In both scenarios, if a variable contains branching logic that cannot be converted from REDCap logic to R logic, the function will issue a warning. The warning message will advise the user to review the `results` element of the output for more information. This is to indicate that there might be potential issues or limitations with the conversion process for that specific variable's branching logic:
+In both scenarios, if a variable contains branching logic that cannot be converted from REDCap logic to R logic, the function will issue a warning. The warning message will advise the user to review the `results` element of the output for more information. The variable is then checked in all its rows, without that branching logic, so the queries can include values that are hidden in REDCap: review them manually, or give the condition in the `filter` argument:
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 covican_transformed$dictionary$branching_logic_show_field_only_if[covican_transformed$dictionary$field_name %in% "potassium"] <- "[available_analytics]='1' and [user-name]='admin'"
@@ -309,7 +309,7 @@ The default title of the summary is "Report of queries" but we have changed it t
 
 <u>report_zeros</u>
 
-By default, the function will only report, in the summary of queries, variables with at least one query and will omit those with zero queries. To include these omitted variables in the summary, we can use the `report_zeros` argument:
+By default, the function will only report, in the summary of queries, variables with at least one query and will omit those with zero queries (when no variable has any query, the summary shows all of them with 0, also without `report_zeros`). To include these omitted variables in the summary, we can use the `report_zeros` argument. Also, a single `expression` is applied to all the `variables` without a warning, and several expressions, but fewer than `variables`, apply the first one to all the variables, with a warning:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_query(covican_transformed,
@@ -392,7 +392,7 @@ We can go straight to the specific query by copying and pasting the link into th
 
 # **rd_event**
 
-When working with a longitudinal REDCap project (presence of events), the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export the corresponding rows of the events that have no collected data. So, if we try to identify missing values in variables that are inside a missing event for some records using the `rd_query()` function, these missing values will not be identified because they do not exist in the exported data. The `rd_event()` function can be used to point out in how many records an event does not exist:
+When working with a longitudinal REDCap project (presence of events), the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export the corresponding rows of the events that have no collected data. So, if we try to identify missing values in variables that are inside a missing event for some records using the `rd_query()` function, these missing values will not be identified because they do not exist in the exported data. The `rd_event()` function can be used to point out in how many records an event does not exist (it checks whether the event is present, not whether its data is complete):
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_event(covican_transformed,
@@ -402,11 +402,11 @@ example <- rd_event(covican_transformed,
 example$results
 ```
 
-There are a total of 38 records without any row corresponding to the event _Follow up visit day 14+/-5d_. Thus, when searching for missing values of variables in the _Follow up visit day 14+/-5d_ event, we need to consider that there will be 38 additional missing values which will not be accounted for by `rd_query()`.
+There are a total of 38 records without any row corresponding to the event _Follow up visit day 14+/-5d_. Thus, when searching for missing values of variables in the _Follow up visit day 14+/-5d_ event, we need to consider that these 38 records have no row of this event, so `rd_query()` can't report the missing values of its variables in them. 38 missing events are not 38 missing values: each absent event hides all the values of its forms (and a record can have several rows in an event, e.g. repetitions).
 
 <br>
 
-It might happen that an event is not mandatory for all records so we only want to check if the event is missing in a subgroup of records. For example, in the _COVICAN_ study only patients satisfying the inclusion and exclusion criteria would have to perform the follow up visit. Therefore, to check if the follow up event is missing only in the records that fulfill the inclusion and exclusion criteria, we can use the `filter` argument of the `rd_event()` function:
+It might happen that an event is not mandatory for all records so we only want to check if the event is missing in a subgroup of records. For example, in the _COVICAN_ study only patients satisfying the inclusion and exclusion criteria would have to perform the follow up visit. Therefore, to check if the follow up event is missing only in the records that fulfill the inclusion and exclusion criteria, we can use the `filter` argument of the `rd_event()` function. The filter selects the records to check, and whether each of them has the event is checked with all its data:
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_event(covican_transformed,
@@ -433,7 +433,7 @@ example$results
 
 <br>
 
-> Note: This function also has the arguments `query_name`, `add_to`, `report_title`, `report_zeros` and `link` that work in the same way as in the examples of the `rd_query()` section (*Additional arguments*).
+> Note: This function also has the arguments `query_name`, `add_to`, `report_title`, `report_zeros` and `link` that work in the same way as in the examples of the `rd_query()` section (*Additional arguments*), except `link`: it only uses `domain`, `redcap_version` and `proj_id`, and its links open the home page of the record (not `event_id`).
 
 # **check_queries**
 
@@ -466,7 +466,7 @@ There are 7 queries pending resolution, 4 solved queries, 1 miscorrected query, 
 
 > Note: A new query is "Miscorrected" when the old report had a query of the same record (`Identifier`), variable (`Field`, or `Description` when the reports don't have `Field`), event (`Event`) and repetition (`Repetition`), each of these columns when both reports have it, but with another reason (`Query`). For instance, if a variable had a missing value in the old report, but in the new report it has a value outside the established range, the new query is "Miscorrected" and the old one "Solved". A query of another event or repetition is "New".
 
-> Note: Renaming metadata doesn't solve a query. The event of a query is its unique event name and the variable its field name, so if an event, an arm or a field is renamed in REDCap between both reports, its queries are still "Pending", with the new labels (`EventLabel` and `Description`). The reports created with older versions of REDCapDM have the label of the event in `Event`: when a single event has that label, `check_queries()` uses its unique event name.
+> Note: Renaming metadata doesn't solve a query. The event of a query is its unique event name and the variable its field name, so if an event, an arm or a field is renamed in REDCap between both reports, its queries are still "Pending", with the new labels (`EventLabel` and `Description`). In the reports created with older versions of REDCapDM, the queries of `rd_query()` can have the label of the event in `Event`: when a single event has that label, `check_queries()` uses its unique event name. The queries of `rd_event()` already had the unique event name in `Event`, but the label in the default text of `Query`, which is also changed to the unique event name.
 
 <br>
 
@@ -518,6 +518,6 @@ rd_export(queries = example$queries,
 
 The `column` argument names the column with the links to REDCap (the reports created with the `link` argument of `rd_query()` or `rd_event()` have it), so that they can be clicked in Excel. We specify the sheet name with the `sheet_name` argument and the path to the file to be exported with the `path` argument. We can also add a password that protects the worksheet against edits (the file can still be opened and copied without it).
 
-The `column` argument refers to the column of the report that contains the link to each query. The function converts this column into hyperlink format in the exported file, so that we can simply click on the link to go to the specific query in the REDCap project. This column only exists when the queries were identified with the `link` argument of `rd_query()`.
+The `column` argument refers to the column of the report that contains the link to each query. The function converts this column into hyperlink format in the exported file, so that we can simply click on the link to go to the specific query in the REDCap project. This column only exists when the queries were identified with the `link` argument of `rd_query()` or `rd_event()`.
 
 In both cases, a message will be generated in the console informing you that the file has been created and where it is located.

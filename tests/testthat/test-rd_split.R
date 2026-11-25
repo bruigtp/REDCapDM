@@ -462,3 +462,40 @@ test_that("rd_split takes the factor versions of the options kept by rd_checkbox
   res <- rd_split(rd_dictionary(kept), by = "form")
   expect_true("cb___1.factor" %in% names(res$data$df[[1]]))
 })
+
+
+# ---- Forms of repeating instruments chosen by their code, not by their label ----
+
+split_label_data <- function() {
+  data <- data.frame(
+    record_id = c("1", "1", "1", "1", "1", "2"),
+    redcap_repeat_instrument = c(NA, "labs", "labs", "meds", "meds", NA),
+    redcap_repeat_instance = c(NA, 1, 2, 1, 2, NA),
+    b = c(5, NA, NA, NA, NA, 6), redcap_repeat_instrument_note = c("n1", NA, NA, NA, NA, "n2"),
+    l = c(NA, 1, 2, NA, NA, NA), m = c(NA, NA, NA, 3, 4, NA)
+  )
+  data$redcap_repeat_instrument.factor <- factor(c(NA, "Repeated", "Repeated", "Repeated", "Repeated", NA))
+  data
+}
+split_label_dic <- function() {
+  data.frame(field_name = c("record_id", "b", "redcap_repeat_instrument_note", "l", "m"), form_name = c("base", "base", "base", "labs", "meds"),
+             field_type = "text", field_label = c("ID", "B", "Note", "L", "M"))
+}
+
+test_that("rd_split chooses the rows of each repeating instrument by its code: two instruments can have the same label", {
+  out <- suppressWarnings(suppressMessages(rd_split(data = split_label_data(), dic = split_label_dic(), by = "form")))$data
+  expect_equal(out$form, c("base", "labs", "meds"))
+  expect_equal(out$df[[2]]$l, c(1, 2))
+  expect_equal(out$df[[3]]$m, c(3, 4))
+  # (the label is shown)
+  expect_equal(as.character(out$df[[2]]$redcap_repeat_instrument), c("Repeated", "Repeated"))
+  # A field whose name starts as a column of REDCap is kept
+  expect_equal(out$df[[1]]$redcap_repeat_instrument_note, c("n1", "n2"))
+
+  # An instrument with different labels in different records is a single form
+  data <- split_label_data()
+  data$redcap_repeat_instrument.factor <- factor(c(NA, "Labs", "Labs (v2)", "Meds", "Meds", NA))
+  out <- suppressWarnings(suppressMessages(rd_split(data = data, dic = split_label_dic(), by = "form")))$data
+  expect_equal(out$form, c("base", "labs", "meds"))
+  expect_equal(nrow(out$df[[2]]), 2)
+})

@@ -17,7 +17,7 @@
 #' * If the variable has a `.factor` version, it is updated too.
 #' * For longitudinal projects, `event_form` must be provided for proper event-level filtering.
 #' * Only one filter expression is allowed.
-#' * Variables and filter columns must exist in both `data` and `dictionary`.
+#' * Variables and filter columns must exist in both `data` and `dictionary`: their `.factor` and `_mdc` versions and the options of a checkbox (e.g. `cb___1`) are checked with their field. The objects of your session used in the filter don't need to be in them.
 #'
 #' @return A list with:
 #' \describe{

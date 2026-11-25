@@ -406,3 +406,68 @@ test_that("redcap_data only warns that the Missing Data Codes were removed when 
   fx$data$chk___NI <- c(0, 1, 0)
   expect_true(warnings_of(fx))
 })
+
+
+# ---- The text "NA" is a value of a text field or the Missing Data Code NA ----
+
+na_literal_dic <- function() {
+  dic <- audit_dic(c("record_id", "notes", "n", "s"), c("text", "notes", "text", "radio"), choices = c("", "", "", "1, A | 2, B"))
+  dic$text_validation_type_or_show_slider_number[3] <- "integer"
+  dic
+}
+na_literal_rows <- function() {
+  data.frame(record_id = c("1", "2", "3"), notes = c("NA", "hello", NA), n = c("5", "NA", "7"), s = c("1", "NA", "2"))
+}
+expect_na_literal <- function(out, rm_mdc) {
+  expect_identical(as.vector(out$data$notes), c("NA", "hello", NA))
+  expect_equal(as.vector(out$data$n), c(5, NA, 7))
+  if (rm_mdc) {
+    expect_false(any(c("n_mdc", "s_mdc") %in% names(out$data)))
+    expect_equal(as.vector(out$data$s), c(1, NA, 2))
+  } else {
+    expect_identical(as.vector(out$data$n_mdc), c(NA, "NA", NA))
+    expect_identical(as.vector(out$data$s_mdc), c(NA, "NA", NA))
+    expect_identical(as.character(out$data$s.factor), c("A", "NA", "B"))
+  }
+}
+
+test_that("redcap_data keeps the text 'NA' of the exported files (read.csv() reads it as a missing value)", {
+  folder <- tempfile()
+  dir.create(folder)
+  on.exit(unlink(folder, recursive = TRUE), add = TRUE)
+  write.csv(na_literal_rows(), file.path(folder, "P_DATA.csv"), row.names = FALSE, na = "")
+  write.csv(na_literal_dic(), file.path(folder, "DIC.csv"), row.names = FALSE)
+  writeLines(c("## REDCap R export", "## begin data", "data=read.csv('P_DATA.csv',stringsAsFactors=FALSE)",
+               "data$s.factor=factor(data$s,levels=c('1','2'),labels=c('A','B'))"), file.path(folder, "P_R.r"))
+  for (rm in c(TRUE, FALSE)) {
+    out <- suppressWarnings(redcap_data(data_path = file.path(folder, "P_R.r"), dic_path = file.path(folder, "DIC.csv"), rm_mdc = rm))
+    expect_na_literal(out, rm)
+  }
+})
+
+test_that("redcap_data asks the API for the text 'NA' as a value (only the empty values are missing values)", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  dic <- na_literal_dic()
+  na_args <- list()
+  fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", na = c("", "NA"), ...) {
+    na_args[[raw_or_label]] <<- na
+    rows <- na_literal_rows()
+    # (as readr::read_csv() with `na`)
+    rows[] <- lapply(rows, function(x) replace(x, x %in% na, NA))
+    if (raw_or_label == "label") {
+      names(rows) <- c("Record ID", "notes", "n", "s")
+      rows$s <- c("A", "NA", "B")[match(rows$s, c("1", "NA", "2"))]
+    }
+    list(data = rows)
+  }
+  f <- redcap_data
+  mockery::stub(f, "REDCapR::redcap_read", fake_read)
+  mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = dic))
+  mockery::stub(f, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
+  for (rm in c(TRUE, FALSE)) {
+    out <- suppressWarnings(suppressMessages(f(uri = "https://api.example", token = "tok", rm_mdc = rm)))
+    expect_identical(na_args, list(label = "", raw = ""))
+    expect_na_literal(out, rm)
+  }
+})
