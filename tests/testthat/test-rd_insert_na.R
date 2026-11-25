@@ -293,3 +293,17 @@ test_that("rd_insert_na takes the identifier as present in every event", {
   # The other variables of the filter still choose the events
   expect_error(rd_insert_na(make_custom_id(), vars = "value", filter = "subject_id == '003' & age > 50"), "do not overlap")
 })
+
+test_that("rd_insert_na checks the events of the columns chosen with [ in the filter, as with $ and [[", {
+  data <- data.frame(record_id = c("1", "1", "2", "2"), redcap_event_name = c("a_arm_1", "b_arm_1", "a_arm_1", "b_arm_1"),
+                     age = NA, x = c(NA, 5, NA, 6))
+  dic <- data.frame(field_name = c("record_id", "age", "x"), form_name = c("fa", "fa", "fb"), field_type = "text", field_label = c("ID", "Age", "X"))
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "a_arm_1", "b_arm_1"), form = c("fa", "base", "fb"))
+  run <- function(filter) suppressWarnings(suppressMessages(rd_insert_na(data = data, dic = dic, event_form = ef, vars = "x", filter = filter)))
+  # `age` is only in the event a, and `x` only in b: the values 5 and 6 of x are kept
+  for (filter in c("is.na(age)", "is.na(data$age)", "is.na(data[['age']])", "is.na(data[, 'age'])", "is.na(data[, 3])", "is.na(data[, c('age')])")) {
+    expect_error(run(filter), "do not overlap")
+  }
+  # (a column of the events of x)
+  expect_equal(run("data[, 'x'] %in% 5")$data$x, c(NA, NA, NA, 6))
+})

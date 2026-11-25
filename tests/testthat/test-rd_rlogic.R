@@ -1689,3 +1689,45 @@ test_that("fill_from_base only fills the given rows, never the structural column
   expect_error(fill_from_base(twice, "base_field", "record_id", rows = 2), class = "REDCapDM_error_logic")
   expect_equal(fill_from_base(twice, "base_field", "record_id", rows = 5)$base_field[5], "b")
 })
+
+test_that("[event][field] of a form collected once in that event is valid although the form repeats in the events of var", {
+  # x is collected once in a_arm_1, its form also repeats in b_arm_1, and y belongs to another form that repeats in b_arm_1
+  dic <- data.frame(field_name = c("record_id", "x", "y"), form_name = c("demo", "f1", "f2"), field_type = "text",
+                    field_label = c("ID", "X", "Y"), choices_calculations_or_slider_labels = "", branching_logic_show_field_only_if = "",
+                    text_validation_type_or_show_slider_number = "")
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "a_arm_1", "b_arm_1", "b_arm_1"), form = c("demo", "f1", "f1", "f2"))
+  one <- data.frame(
+    record_id = "1",
+    redcap_event_name = c("a_arm_1", "b_arm_1", "b_arm_1", "b_arm_1", "b_arm_1"),
+    redcap_repeat_instrument = c(NA, "f1", "f1", "f2", "f2"),
+    redcap_repeat_instance = c(NA, 1, 2, 1, 2),
+    x = c(50, 10, 20, NA, NA), y = NA
+  )
+  data <- rbind(
+    one,
+    transform(one, record_id = "2", x = c(70, 1, 2, NA, NA)),
+    data.frame(record_id = "3", redcap_event_name = "b_arm_1", redcap_repeat_instrument = "f2", redcap_repeat_instance = 1:2, x = NA, y = NA),
+    data.frame(record_id = c("1", "2"), redcap_event_name = "b_arm_1", redcap_repeat_instrument = NA, redcap_repeat_instance = NA, x = NA, y = NA)
+  )
+  data <- data[c(12, 3, 7, 1, 10, 5, 9, 2, 11, 4, 8, 6), ]
+  target_values <- function(logic) {
+    out <- rd_rlogic(data = data, dic = dic, event_form = ef, logic = logic, var = "y")$eval_data
+    out <- out[out$redcap_repeat_instrument %in% "f2", ]
+    as.numeric(out$eval[order(out$record_id, out$redcap_repeat_instance)])
+  }
+
+  expect_equal(target_values("[a_arm_1][x]"), c(50, 50, 70, 70, NA, NA))
+  expect_equal(target_values("[b_arm_1][x][current-instance]"), c(10, 20, 1, 2, NA, NA))
+  expect_equal(target_values("[a_arm_1][x] + [b_arm_1][x][current-instance]"), c(60, 70, 71, 72, NA, NA))
+
+  # The references whose instance isn't known are still rejected
+  for (logic in c("[b_arm_1][x]", "[x]", "[x][current-instance]", "[a_arm_1][x] + [x]")) {
+    expect_error(rd_rlogic(data = data, dic = dic, event_form = ef, logic = logic, var = "y"), class = "REDCapDM_error_logic")
+  }
+  # ... also [a_arm_1][x] when the form of x repeats in a_arm_1
+  rep_a <- one
+  rep_a$redcap_repeat_instrument[1] <- "f1"
+  rep_a$redcap_repeat_instance[1] <- 1
+  expect_error(rd_rlogic(data = rep_a, dic = dic, event_form = ef, logic = "[a_arm_1][x]", var = "y"), class = "REDCapDM_error_logic")
+  expect_equal(as.numeric(rd_rlogic(data = rep_a, dic = dic, event_form = ef, logic = "[a_arm_1][x][current-instance]", var = "y")$eval[4:5]), c(50, NA))
+})

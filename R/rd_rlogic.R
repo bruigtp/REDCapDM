@@ -20,7 +20,7 @@
 #' * Handles date transformations and empty strings (`''`) → `NA`.
 #' * Adjusts logic for longitudinal data using `event_form` if provided.
 #' * Evaluates the translated R logic against the dataset and returns the results.
-#' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. A variable of another repeating instrument or repeating event can be used with its instance (`[event][field][current-instance]`, the instance of the same number); without it (e.g. `[field]` of another repeating instrument, or `[event][field]`), the instance to use isn't known and the logic can't be translated.
+#' * With repeated instruments and repeating events, the logic is evaluated in the rows where `var` is collected. As in REDCap, in a repeating instrument the variables of the other forms take the value of the base row of the same record and event. A variable of another repeating instrument or repeating event can be used with its instance (`[event][field][current-instance]`, the instance of the same number). Without it, the logic can't be translated when the instance to use isn't known: `[field]` of another instrument that repeats in the events of `var`, or `[event][field]` when its form repeats in that event or the event repeats. `[event][field]` of a form collected once in that event is valid, although the form repeats in other events.
 #' * As in REDCap, `datediff()` returns the absolute difference unless its last argument is `true`, its units are `"y"` (years of 365.2425 days), `"M"` (months of 30.44 days), `"d"`, `"h"`, `"m"` (minutes) and `"s"`, `"today"` is the current date and `"now"` the current date and time. With two time fields (e.g. `HH:MM`), it is the difference between the two times of the same day, and its date format (e.g. `'hhmm'`) is not used.
 #' * The same variable can be used in several events (e.g. `[visit_2_arm_1][weight] - [visit_1_arm_1][weight]`).
 #' * Logic with smart variables or other REDCap functions may require manual inspection.
@@ -234,8 +234,22 @@ rd_rlogic <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
     logic_fields <- intersect(rlogic_var, names(data))
     logic_forms <- vapply(logic_fields, var_form, character(1), dic = dic)
 
-    # Error: a variable of another repeating instrument (its instance can't be linked to the rows of `var`)
-    other_rep <- !is.na(logic_forms) & logic_forms != ifelse(is.na(target_form), "", target_form) &
+    # The references with an event (`[event][x]` or `[event][x][current-instance]`) are read in that event and checked
+    # below with its own repetitions: e.g. `[a_arm_1][x]` is valid when the form of `x` is collected once in that event,
+    # although it repeats in the events of `var`. The references without an event (`[x]` or `[x][current-instance]`) are
+    # read in the rows of `var`
+    known_events <- unique(c(event_values(data), if (!is.null(event_form)) as.character(event_form$unique_event_name)))
+    event_refs <- stringr::str_match_all(logic_for_fields, "\\[([\\w,\\-]+)\\]\\[([\\w,\\-]+)\\]")[[1]]
+    logic_no_events <- logic_for_fields
+    for (ref in unique(event_refs[event_refs[, 2] %in% known_events, 1])) {
+      logic_no_events <- gsub(ref, "", logic_no_events, fixed = TRUE)
+    }
+    fields_no_events <- gsub("^\\[|\\]$", "", unlist(stringr::str_extract_all(logic_no_events, "\\[[\\w,\\-]+\\]")))
+
+    # Error: a variable of another repeating instrument used without its event (its instance can't be linked to the rows
+    # of `var`)
+    other_rep <- logic_fields %in% fields_no_events &
+      !is.na(logic_forms) & logic_forms != ifelse(is.na(target_form), "", target_form) &
       logic_forms %in% rep_pairs$form[rep_pairs$event %in% target_events]
     if (any(other_rep)) {
       other_rep_fields <- paste0(logic_fields[other_rep], " (form: ", logic_forms[other_rep], ")")

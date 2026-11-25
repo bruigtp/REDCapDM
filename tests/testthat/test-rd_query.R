@@ -1446,3 +1446,32 @@ local({
     expect_identical(z$queries[["(Empty DAG)_1"]]$DAG, "")
   })
 })
+
+test_that("rd_query keeps apart in results the variables whose long names begin in the same way", {
+  v1 <- "laboratory_measurement_value_first"
+  v2 <- "laboratory_measurement_value_second"
+  lab <- "Laboratory measurement value obtained at the visit of the study protocol"
+  data <- data.frame(record_id = c("1", "2"), redcap_event_name = "e_arm_1", a = c(NA, 1), b = c(1, NA), f = c(1, 1))
+  names(data)[3:4] <- c(v1, v2)
+  dic <- data.frame(field_name = c("record_id", v1, v2, "f"), form_name = "f", field_type = "text", field_label = c("ID", lab, lab, "F"),
+                    choices_calculations_or_slider_labels = "", branching_logic_show_field_only_if = c("", "[f] = '1'", "[f] <> '2'", ""),
+                    text_validation_type_or_show_slider_number = "")
+  # The cells of the rows of a table of `results`
+  table_rows <- function(html) {
+    html <- gsub("\n", " ", html)
+    rows <- regmatches(html, gregexpr("<tr>.*?</tr>", html))[[1]][-1]
+    lapply(rows, function(r) trimws(gsub("<[^>]+>", "", regmatches(r, gregexpr("<td[^>]*>.*?</td>", r))[[1]])))
+  }
+
+  for (dag in c(FALSE, TRUE)) {
+    d <- data
+    if (dag) d$redcap_data_access_group <- "g1"
+    res <- suppressWarnings(suppressMessages(rd_query(data = d, dic = dic, variables = c(v1, v2), expression = c("is.na(x)", "is.na(x)"), by_dag = dag)))
+    expect_equal(nrow(if (dag) res$queries[[1]] else res$queries), 2)
+    rows <- table_rows(as.character(if (dag) res$results[[1]] else res$results))
+    # One row for each variable, with its own total and branching logic (the names are only shortened to show them)
+    expect_length(rows, 2)
+    expect_true(all(vapply(rows, function(r) any(r == "laboratory_measurement_...") && any(r == "1"), logical(1))))
+    expect_setequal(vapply(rows, function(r) r[length(r)], character(1)), c("[f] = '1'", "[f] &lt;&gt; '2'"))
+  }
+})

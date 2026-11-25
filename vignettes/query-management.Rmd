@@ -392,7 +392,7 @@ We can go straight to the specific query by copying and pasting the link into th
 
 # **rd_event**
 
-When working with a longitudinal REDCap project (presence of events), the exported data has a structure where each row represents one event per record. However, by default, REDCap will not export the corresponding rows of the events that have no collected data. So, if we try to identify missing values in variables that are inside a missing event for some records using the `rd_query()` function, these missing values will not be identified because they do not exist in the exported data. The `rd_event()` function can be used to point out in how many records an event does not exist (it checks whether the event is present, not whether its data is complete):
+When working with a longitudinal REDCap project (presence of events), the exported data has a structure where each row represents one event of a record (with repeated instruments or repeating events, one repetition of that event). However, by default, REDCap will not export the corresponding rows of the events that have no collected data. So, if we try to identify missing values in variables that are inside a missing event for some records using the `rd_query()` function, these missing values will not be identified because they do not exist in the exported data. The `rd_event()` function can be used to point out in how many records an event does not exist (it checks whether the event is present, not whether its data is complete):
 
 ```{r message=FALSE, warning=FALSE, comment=NA}
 example <- rd_event(covican_transformed,

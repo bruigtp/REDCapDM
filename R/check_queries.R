@@ -178,8 +178,8 @@ check_queries <- function(old, new, report_title = NULL, return_viewer = TRUE) {
   comp2 <- internal_name("comp2")
   old[[comp]] <- query_key(old, c(key_cols, "Query"))
   new[[comp]] <- query_key(new, c(key_cols, "Query"))
-  # (the identity of the queries of the old report, without the query: Identifier, Event, Repetition, Field and
-  # Description)
+  # (the identity of the queries of the old report, without the query: Identifier, Event, Repetition and Field, or
+  # Description without Field)
   old_keys <- query_key(old, key_cols)
 
   # The queries of both reports take the other columns of the new report (e.g. Link or DAG): otherwise a query whose

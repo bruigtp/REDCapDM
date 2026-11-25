@@ -372,3 +372,26 @@ test_that("split_form chooses the rows of each repeating instrument by its code,
   expect_equal(vapply(out$df, nrow, integer(1)), c(2L, 2L, 2L))
   expect_equal(out$df[[2]]$redcap_repeat_instrument, c("labs", "labs"))
 })
+
+test_that("split_form keeps the rows of a form in the events where it doesn't repeat, and the fields called `id`", {
+  withr::local_options(lifecycle_verbosity = "quiet")
+  dic <- legacy_dictionary(c("record_id", "hb", "id"), forms = c("demo", "lab", "lab"))
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "a_arm_1", "b_arm_1"), form = c("demo", "lab", "lab"))
+  data <- data.frame(record_id = "1", redcap_event_name = c("a_arm_1", "b_arm_1", "b_arm_1"), redcap_repeat_instrument = c(NA, "lab", "lab"),
+                     redcap_repeat_instance = c(NA, 1, 2), hb = c(12, 11, NA), id = c("C-7", "C-8", "C-9"))
+
+  expect_equal(split_form(data, dic, ef, which = "lab")$hb, c(12, 11, NA))
+  wide <- split_form(data, dic, ef, wide = TRUE)
+  lab <- wide$df[[match("lab", wide$form)]]
+  expect_equal(unlist(lab[c("hb_1", "hb_2", "hb_3")], use.names = FALSE), c(12, 11, NA))
+  expect_equal(unlist(lab[c("id_1", "id_2", "id_3")], use.names = FALSE), c("C-7", "C-8", "C-9"))
+  # A form with only the record identifier: one row per record
+  expect_equal(wide$df[[match("demo", wide$form)]]$record_id, "1")
+
+  # An instrument written with spaces is the base row; an instrument without label shows its code
+  data$redcap_repeat_instrument[1] <- " "
+  data$redcap_repeat_instrument.factor <- factor(c(NA, NA, "Labs"))
+  out <- split_form(data, dic, ef)
+  expect_equal(nrow(out$df[[match("demo", out$form)]]), 1)
+  expect_equal(as.character(out$df[[match("lab", out$form)]]$redcap_repeat_instrument), c(NA, "lab", "Labs"))
+})

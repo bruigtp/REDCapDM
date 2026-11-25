@@ -17,9 +17,9 @@
 #' * Handles checkbox variables and REDCap default variables (`_complete`, `_timestamp`) appropriately.
 #' * Columns of the data that aren't fields of the dictionary, nor the `.factor` or `_mdc` versions of its fields or the options of its checkbox fields (or the `.factor` version of the `_complete` field of a form), stop the function with an error that names them.
 #' * For form-based splits in longitudinal projects, uses `event_form` to map variables to events.
-#' * Wide format expands repeated instances into multiple columns per record.
+#' * Wide format expands repeated instances into multiple columns per record. A form with only the record identifier gives one row per record.
 #' * Filtering by `which` allows extracting a single form or event.
-#' * Projects with repeated instruments are handled by filtering on the `redcap_repeat_instrument` variable.
+#' * Projects with repeated instruments are handled by filtering on the `redcap_repeat_instrument` variable (its codes). The column shows the label of each instrument (its factor version, from `redcap_data()`), or its code when the label is missing.
 #'
 #' @return Depending on `which` and `wide`:
 #' \describe{
@@ -92,9 +92,10 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
     }
   })
 
-  # Check if the project has repeated instruments (an empty text, e.g. read from a CSV file, is no instrument)
+  # Check if the project has repeated instruments (an empty text, e.g. read from a CSV file, or with spaces is no
+  # instrument)
   if ("redcap_repeat_instrument" %in% names(data)) {
-    repeat_instrument <- any(!as.character(data$redcap_repeat_instrument) %in% c(NA, ""))
+    repeat_instrument <- any(!is.na(repeat_instrument_values(data)))
   } else {
     repeat_instrument <- FALSE
   }
@@ -281,8 +282,9 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
       # The rows of each form are chosen by the code of its repeating instrument (`redcap_repeat_instrument`): several
       # instruments can have the same label, and an instrument can have different labels. The label (the factor version,
       # from redcap_data()) is only shown in the rows of the form, when the data has it
-      repeating_rows <- !as.character(data$redcap_repeat_instrument) %in% c(NA, "")
-      repeating_forms <- unique(as.character(data$redcap_repeat_instrument)[repeating_rows])
+      instrument <- repeat_instrument_values(data)
+      repeating_rows <- !is.na(instrument)
+      repeating_forms <- unique(instrument[repeating_rows])
       has_label <- "redcap_repeat_instrument.factor" %in% names(data)
 
       # Events where each form repeats: in the other events, its rows are the normal rows of the record (a form can repeat
@@ -296,8 +298,8 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
       ndata <- ndata |>
         dplyr::mutate(df = purrr::map2(.data$form, .data$df, function(form, df) {
-          code <- as.character(df$redcap_repeat_instrument)
-          no_instrument <- code %in% c(NA, "")
+          code <- repeat_instrument_values(df)
+          no_instrument <- is.na(code)
           # (dplyr::slice() keeps the labels of the variables; only the columns of REDCap are removed, not other
           # columns whose name starts in the same way, e.g. a field `redcap_repeat_instrument_note`)
           if (!form %in% repeating_forms) {
@@ -311,8 +313,8 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
             df <- df |>
               dplyr::slice(which(.env$rows_kept))
             if (has_label) {
-              df <- df |>
-                dplyr::mutate(redcap_repeat_instrument = .data$redcap_repeat_instrument.factor)
+              # (the code of the instrument where its label is missing or empty)
+              df$redcap_repeat_instrument <- instrument_labels(df)
             }
             df |>
               dplyr::select(-dplyr::any_of("redcap_repeat_instrument.factor"))
@@ -340,6 +342,12 @@ rd_split <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL,
 
             y <- y |>
               dplyr::select(dplyr::any_of(c(id_var, setdiff(x, basic_redcap_vars))))
+
+            # A form with only the record identifier (e.g. the identifier alone in its form, collected in several events):
+            # one row per record, without columns to number
+            if (identical(names(y), id_var)) {
+              return(y |> dplyr::slice(which(!duplicated(y[[id_var]]))))
+            }
 
             # One row per record: the rows of a record (events, instances of a repeated instrument or event) become numbered columns
             if (dplyr::n_distinct(z) > 1 || any(duplicated(y[[id_var]]))) {

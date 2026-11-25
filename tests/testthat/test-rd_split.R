@@ -499,3 +499,35 @@ test_that("rd_split chooses the rows of each repeating instrument by its code: t
   expect_equal(out$form, c("base", "labs", "meds"))
   expect_equal(nrow(out$df[[2]]), 2)
 })
+
+test_that("rd_split(wide = TRUE) gives one row per record for a form with only the record identifier", {
+  dic <- data.frame(field_name = c("record_id", "x"), form_name = c("demo", "visit"), field_type = "text", field_label = c("ID", "X"),
+                    choices_calculations_or_slider_labels = "", branching_logic_show_field_only_if = "", text_validation_type_or_show_slider_number = "")
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "b_arm_1", "a_arm_1", "b_arm_1"), form = c("demo", "demo", "visit", "visit"))
+  data <- data.frame(record_id = c("1", "1", "2", "2"), redcap_event_name = c("a_arm_1", "b_arm_1", "a_arm_1", "b_arm_1"), x = 1:4)
+
+  out <- suppressMessages(rd_split(data = data, dic = dic, event_form = ef, wide = TRUE))$data
+  expect_equal(names(out$df[[1]]), "record_id")
+  expect_equal(out$df[[1]]$record_id, c("1", "2"))
+  expect_equal(out$df[[2]]$x_2, c(2L, 4L))
+  expect_equal(suppressMessages(rd_split(data = data, dic = dic, event_form = ef, wide = TRUE, which = "demo"))$data$record_id, c("1", "2"))
+})
+
+test_that("rd_split takes an instrument written with spaces as the base row and shows the code of an instrument without label", {
+  dic <- data.frame(field_name = c("record_id", "age", "hb"), form_name = c("demo", "demo", "lab"), field_type = "text", field_label = c("ID", "Age", "Hb"),
+                    choices_calculations_or_slider_labels = "", branching_logic_show_field_only_if = "", text_validation_type_or_show_slider_number = "")
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "a_arm_1", "b_arm_1"), form = c("demo", "lab", "lab"))
+  data <- data.frame(record_id = "1", redcap_event_name = c("a_arm_1", "b_arm_1", "b_arm_1"), redcap_repeat_instrument = c(" ", "lab", "lab"),
+                     redcap_repeat_instance = c(NA, 1, 2), age = c(50, NA, NA), hb = c(12, 11, NA))
+
+  out <- suppressMessages(rd_split(data = data, dic = dic, event_form = ef))$data
+  expect_equal(out$df[[1]]$age, 50)
+  expect_equal(out$df[[2]]$hb, c(12, 11, NA))
+
+  # Labels missing or empty: the code of the instrument
+  for (label in list(factor(c(NA, NA, "Labs")), c(NA, "", "Labs"))) {
+    data$redcap_repeat_instrument.factor <- label
+    lab <- suppressMessages(rd_split(data = data, dic = dic, event_form = ef, which = "lab"))$data
+    expect_equal(as.character(lab$redcap_repeat_instrument), c(NA, "lab", "Labs"))
+  }
+})

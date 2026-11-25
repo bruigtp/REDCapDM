@@ -122,6 +122,25 @@ repetition_label <- function(x) {
   )
 }
 
+#' Labels of the repeating instruments of the rows
+#'
+#' @param data REDCap dataset with `redcap_repeat_instrument.factor` (the labels of redcap_data()).
+#' @return The labels, with the code of the instrument where the label is missing or empty (e.g. an instrument without
+#'   label in the metadata).
+#' @noRd
+instrument_labels <- function(data) {
+  label <- data$redcap_repeat_instrument.factor
+  code <- repeat_instrument_values(data)
+  no_label <- !is.na(code) & (is.na(label) | !nzchar(trimws(as.character(label))))
+  if (any(no_label)) {
+    if (is.factor(label)) {
+      levels(label) <- union(levels(label), unique(code[no_label]))
+    }
+    label[no_label] <- code[no_label]
+  }
+  label
+}
+
 repeat_instrument_values <- function(data) {
   if (!"redcap_repeat_instrument" %in% names(data)) {
     return(rep(NA_character_, nrow(data)))

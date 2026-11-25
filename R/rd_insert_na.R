@@ -304,6 +304,41 @@ filter_names <- function(expr, env = emptyenv(), columns = character(0)) {
       if (object == ".env") {
         return(invisible())
       }
+      # Columns of the data chosen with `[` (`data[, "x"]`, `data[, 3]`, `data[rows, c("x", "y")]` or `data["x"]`): the
+      # same columns as with `$` or `[[` (the index of the rows is walked, as it can use other columns)
+      if (object %in% c("data", ".data") && identical(head, as.name("["))) {
+        index <- as.list(e)[-(1:2)]
+        # (named arguments, e.g. `drop = FALSE`, aren't indices)
+        if (!is.null(names(index))) {
+          index <- index[names(index) %in% ""]
+        }
+        empty <- function(x) identical(x, quote(expr = ))
+        if (length(index) >= 2) {
+          if (!empty(index[[1]])) walk(index[[1]])
+          index <- index[[2]]
+        } else if (length(index) == 1) {
+          index <- index[[1]]
+        } else {
+          index <- quote(expr = )
+        }
+        # (all the columns, e.g. `data[rows, ]`)
+        if (empty(index)) {
+          out_columns <<- c(out_columns, columns)
+          return(invisible())
+        }
+        value <- tryCatch(eval(index, env), error = function(e) NULL)
+        if (is.numeric(value) && length(value) > 0 && all(abs(value) %in% seq_along(columns))) {
+          value <- columns[value]
+        } else if (is.logical(value) && length(value) == length(columns) && !anyNA(value)) {
+          value <- columns[value]
+        }
+        if (is.character(value) && length(value) > 0 && !anyNA(value)) {
+          out_columns <<- c(out_columns, value)
+        } else {
+          walk(index)
+        }
+        return(invisible())
+      }
       # Columns of the data (`data$x`, `.data[["x"]]`, `.data[[field]]`)
       if (object %in% c("data", ".data") && !identical(head, as.name("[")) && !identical(head, as.name("@"))) {
         index <- e[[3]]

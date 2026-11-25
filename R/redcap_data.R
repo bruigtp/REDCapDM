@@ -426,10 +426,12 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       error = api_error
     )
     if (any(vapply(data_api, is.character, logical(1)))) {
+      # (the identifier of the survey of a record, as the identifier of the record, is a text: e.g. "1.50" or
+      # "9007199254740993")
       text_cols <- unique(c(
         names(data_api)[1],
         intersect(
-          c(api_text_fields, api_categorical_fields),
+          c(api_text_fields, "redcap_survey_identifier", api_categorical_fields),
           names(data_api)
         )
       ))
@@ -440,25 +442,28 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
       )
       # The identifier is a number only when its text is that number (not with "007", 100000000000000, written as
       # 1e+14, or 9007199254740993, beyond the precision of the numbers of R), as with the exported files
+      # (the text "NA" is an identifier, not a missing value)
       ids <- data_api[[1]]
-      as_number <- if (is.character(ids)) readr::parse_guess(ids, guess_integer = FALSE) else ids
-      if (is.character(ids) && is.numeric(as_number) && all(is.na(ids) | as.character(as_number) == ids)) {
+      as_number <- if (is.character(ids)) readr::parse_guess(ids, guess_integer = FALSE, na = "") else ids
+      if (is.character(ids) && is.numeric(as_number) && all(is.na(ids) | (!is.na(as_number) & as.character(as_number) == ids))) {
         data_api[[1]] <- as_number
       }
       for (field in setdiff(text_cols, names(data_api)[1])) {
         if (field %in% api_categorical_fields) {
           data_api[[field]] <- restore_choice_codes(data_api[[field]])
         } else {
+          # (the text "NA" is a value: it is not read as a missing value)
           as_number <- utils::type.convert(
             data_api[[field]],
-            as.is = TRUE
+            as.is = TRUE,
+            na.strings = character(0)
           )
 
           if (is.character(data_api[[field]]) &&
               !is.character(as_number) &&
               all(
                 is.na(data_api[[field]]) |
-                  as.character(as_number) == data_api[[field]]
+                  (!is.na(as_number) & as.character(as_number) == data_api[[field]])
               )) {
             data_api[[field]] <- as_number
           }
@@ -1184,7 +1189,7 @@ keep_text_fields <- function(data, dic, csv_path) {
     dic$field_type %in% c("text", "notes") &
       !grepl("^(number|integer|date|time)", validation)
   ]
-  text_fields <- intersect(c("record_id", text_fields), names(data))
+  text_fields <- intersect(c("record_id", "redcap_survey_identifier", text_fields), names(data))
   text_fields <- text_fields[vapply(
     data[text_fields],
     function(x) is.numeric(x) || is.logical(x),
@@ -1201,7 +1206,7 @@ keep_text_fields <- function(data, dic, csv_path) {
   # Fields where the text "NA" is a value (text fields) or the Missing Data Code NA (validated text fields and yes/no and
   # true/false fields): the R script reads it with read.csv(), which takes it as a missing value
   na_fields <- intersect(
-    as.character(dic$field_name[dic$field_type %in% c("text", "notes", "yesno", "truefalse")]),
+    c(as.character(dic$field_name[dic$field_type %in% c("text", "notes", "yesno", "truefalse")]), "redcap_survey_identifier"),
     names(data)
   )
 

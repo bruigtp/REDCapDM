@@ -558,20 +558,29 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
   if(repeat_instrument)  {
     # The rows of each form are chosen by the code of its repeating instrument; its label (factor version) is only shown,
     # when the data has it. Only the columns of REDCap are removed (not e.g. a field `redcap_repeat_instrument_note`)
-    repeating_forms <- unique(as.character(data$redcap_repeat_instrument)[!as.character(data$redcap_repeat_instrument) %in% c(NA, "")])
+    # (an instrument written with spaces, e.g. " ", is no instrument: the base row)
+    instrument <- repeat_instrument_values(data)
+    repeating_forms <- unique(instrument[!is.na(instrument)])
 
     ndata <- ndata %>%
       dplyr::mutate(df = purrr::map2(.data$form, .data$df, ~ {
-        code <- as.character(.y$redcap_repeat_instrument)
+        code <- repeat_instrument_values(.y)
         if (!.x %in% repeating_forms) {
           .y %>%
-            dplyr::slice(which(code %in% c(NA, ""))) %>%
+            dplyr::slice(which(is.na(code))) %>%
             dplyr::select(-dplyr::any_of(c("redcap_repeat_instrument", "redcap_repeat_instrument.factor")))
         } else {
+          # In the events where the form doesn't repeat, its rows are the base rows of the record (a form can repeat only
+          # in some events)
+          normal <- if ("redcap_event_name" %in% names(.y)) {
+            is.na(code) & !.y$redcap_event_name %in% unique(data$redcap_event_name[instrument %in% .x])
+          } else {
+            rep(FALSE, nrow(.y))
+          }
           out <- .y %>%
-            dplyr::slice(which(code %in% .x))
+            dplyr::slice(which(normal | code %in% .x))
           if ("redcap_repeat_instrument.factor" %in% names(out)) {
-            out$redcap_repeat_instrument <- out$redcap_repeat_instrument.factor
+            out$redcap_repeat_instrument <- instrument_labels(out)
           }
           out %>%
             dplyr::select(-dplyr::any_of("redcap_repeat_instrument.factor"))
@@ -599,13 +608,18 @@ split_form <- function(data, dic, event_form = NULL, which = NULL, wide=FALSE){
 
     ndata <- ndata |>
       dplyr::mutate(
-        df = purrr::map2(.data$vars, .data$df, ~ .y |>
-                         dplyr::select(tidyselect::all_of(c("record_id", .x))) |>
-                         dplyr::group_by(.data$record_id) |>
-                         dplyr::mutate(id = 1:length(.data$record_id)) |>
-                         dplyr::ungroup() |>
-                         tidyr::pivot_wider(names_from = "id", values_from = -c("record_id", "id"))
-             )
+        df = purrr::map2(.data$vars, .data$df, ~ {
+          y <- .y |>
+            dplyr::select(tidyselect::all_of(unique(c("record_id", .x))))
+          # A form with only the record identifier: one row per record
+          if (identical(names(y), "record_id")) {
+            return(y |> dplyr::slice(which(!duplicated(y$record_id))))
+          }
+          # (the number of each row of a record, in a column whose name isn't one of the data, e.g. a field `id`)
+          number <- utils::tail(make.unique(c(names(y), "id")), 1)
+          y[[number]] <- stats::ave(seq_len(nrow(y)), match(y$record_id, unique(y$record_id)), FUN = seq_along)
+          tidyr::pivot_wider(y, names_from = dplyr::all_of(number), values_from = -dplyr::all_of(c("record_id", number)))
+        })
       )
 
   }

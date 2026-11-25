@@ -209,48 +209,30 @@ id_text <- function(x) {
     return(as.character(x))
   }
 
-  # Whole numbers (the usual identifiers) are written at once, without decimals or scientific notation; the other
-  # numbers one by one
+  # Written with sprintf() (the C library, which rounds in the same way in every platform: format() depends on the
+  # long double of the platform, e.g. in macOS with Apple silicon). Whole numbers are written without decimals; the other
+  # numbers with the fewest decimals (from 15 to 17 significant digits) that give the same number again
   out <- rep(NA_character_, length(x))
-  whole <- !is.na(x) & is.finite(x) & x == trunc(x) & abs(x) < 1e15
+  finite <- !is.na(x) & is.finite(x)
+  out[!is.na(x) & !finite] <- as.character(x[!is.na(x) & !finite])
+  whole <- finite & x == trunc(x)
   # (`+ 0` writes -0 as 0)
   out[whole] <- sprintf("%.0f", x[whole] + 0)
-  other <- !is.na(x) & !whole
-  if (!any(other)) {
-    return(out)
-  }
-
-  out[other] <- vapply(x[other], function(value) {
-    if (is.na(value)) {
-      return(NA_character_)
-    }
-
-    if (!is.finite(value)) {
-      return(as.character(value))
-    }
-
-    # Keep ordinary decimals readable, increasing precision when necessary.
+  for (i in which(finite & !whole)) {
+    value <- x[i]
     for (digits in 15:17) {
-      text <- format(
-        value,
-        scientific = FALSE,
-        trim = TRUE,
-        digits = digits,
-        decimal.mark = ".",
-        big.mark = ""
-      )
-
-      if (isTRUE(as.numeric(text) == value)) {
-        return(text)
+      decimals <- max(0, digits - 1 - floor(log10(abs(value))))
+      text <- sprintf("%.*f", as.integer(decimals), value)
+      # (the zeros at the end of the decimals)
+      if (grepl(".", text, fixed = TRUE)) {
+        text <- sub("\\.?0+$", "", text)
+      }
+      if (as.numeric(text) == value) {
+        break
       }
     }
-
-    stop(
-      "Cannot format a record identifier without losing precision.",
-      call. = FALSE
-    )
-  }, character(1), USE.NAMES = FALSE)
-
+    out[i] <- text
+  }
   out
 }
 

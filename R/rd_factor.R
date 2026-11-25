@@ -20,7 +20,7 @@
 #' }
 #'
 #' @details
-#' The function looks for columns ending in `.factor` and replaces the original variable values with those `.factor` values (converted to factors). The variables in `exclude`, the system columns below and the variables whose labels are of several codes (with a warning) keep both columns. A `.factor` column that isn't a factor (e.g. text, after modifying the data) is converted to a factor, with the levels in the order of the options of the dictionary. It preserves variable labels. The `exclude` argument must contain base variable names (no `.factor` suffix); if any `.factor` names are passed to `exclude` the function will throw an informative error. The columns `redcap_event_name`, `redcap_repeat_instrument` and `redcap_data_access_group` (and their `.factor` counterparts) are handled specially to avoid altering event or access-group data.
+#' The function looks for columns ending in `.factor` and replaces the original variable values with those `.factor` values (converted to factors). The variables in `exclude`, the system columns below and the variables whose labels are of several codes (with a warning) keep both columns. A `.factor` column that isn't a factor (e.g. text, after modifying the data) is converted to a factor, with the levels in the order of the options of the dictionary. It preserves variable labels. The `exclude` argument must contain base variable names (no `.factor` suffix); if any `.factor` names are passed to `exclude` the function will throw an informative error. The columns `redcap_event_name`, `redcap_repeat_instrument` and `redcap_data_access_group` (and their `.factor` counterparts) are handled specially to avoid altering event or access-group data. A `.factor` column whose original variable no longer exists (e.g. removed with `rd_delete_vars()`), also of these columns, is removed with a warning.
 #'
 #' Use `rd_factor()` before `rd_dictionary()`: the branching logic and calculations that `rd_dictionary()` translates to R compare the variables with their original codes, so they stop working once the variables are factors. If the dictionary already has logic translated to R that uses any of the converted variables, a warning is shown.
 #'
@@ -76,18 +76,23 @@ rd_factor <- function(project = NULL, data = NULL, dic = NULL, event_form = NULL
   data <- data |>
     dplyr::select(-dplyr::any_of(keep))
 
+  # A factor version of these columns whose original column no longer exists (e.g. removed with rd_delete_vars()) is an
+  # orphan, as the ones below: it can't be put next to its column
+  system_orphan <- names(keep_factors)[!sub("\\.factor$", "", names(keep_factors)) %in% names(data)]
+  keep_factors <- keep_factors[setdiff(names(keep_factors), system_orphan)]
+
   # Identify factor columns and remove orphans
   factor_cols <- grep("\\.factor$", names(data), value = TRUE)
   factors <- sub("\\.factor$", "", factor_cols)
   factors <- setdiff(factors, sub("\\.factor$", "", keep))
 
   # Detect orphan .factor columns (base column missing)
-  orphan <- factor_cols[!factors %in% names(data)]
+  orphan <- c(system_orphan, factor_cols[!factors %in% names(data)])
 
   if (length(orphan) > 0) {
     rd_warn(c("Removed {length(orphan)} '.factor' column{?s} whose original variables no longer exist.", "i" = "This usually happens if the original variables were deleted earlier using {.fn rd_delete_vars} and the '.factor' version was kept."))
     # Remove orphan columns
-    data <- data[, setdiff(names(data), orphan)]
+    data <- data[, setdiff(names(data), orphan), drop = FALSE]
     # Update factors vector after removal
     factors <- setdiff(factors, sub("\\.factor$", "", orphan))
   }

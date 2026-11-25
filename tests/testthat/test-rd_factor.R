@@ -127,3 +127,17 @@ test_that("rd_factor converts to factors the .factor columns that are text", {
   data$choice.factor[3] <- "Unknown"
   expect_equal(levels(rd_factor(data = data, dic = dic)$data$choice), c("Yes", "No", "Unknown"))
 })
+
+test_that("rd_factor removes the factor version of a system column whose column no longer exists", {
+  dic <- data.frame(field_name = c("record_id", "sex"), form_name = "demo", field_type = c("text", "radio"), field_label = c("ID", "Sex"),
+                    choices_calculations_or_slider_labels = c("", "1, M | 2, F"), branching_logic_show_field_only_if = "",
+                    text_validation_type_or_show_slider_number = "")
+  data <- data.frame(record_id = c("1", "2"), redcap_event_name = "e_arm_1", sex = c(1, 2))
+  data$redcap_event_name.factor <- factor("Event")
+  data$redcap_data_access_group.factor <- factor(c("G 1", "G 2"))
+  data$sex.factor <- factor(c("M", "F"), levels = c("M", "F"))
+
+  expect_warning(res <- rd_factor(data = data, dic = dic), "no longer exist")
+  expect_equal(names(res$data), c("record_id", "redcap_event_name", "redcap_event_name.factor", "sex"))
+  expect_equal(as.character(res$data$sex), c("M", "F"))
+})

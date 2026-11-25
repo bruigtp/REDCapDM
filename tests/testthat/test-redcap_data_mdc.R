@@ -471,3 +471,46 @@ test_that("redcap_data asks the API for the text 'NA' as a value (only the empty
     expect_na_literal(out, rm)
   }
 })
+
+test_that("redcap_data keeps the texts 'NA' of the API also in text fields that look like numbers or logical values", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  dic <- audit_dic(c("record_id", "notes"), c("text", "notes"))
+  read <- function(ids, notes, sid = NULL, ...) {
+    fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", na = c("", "NA"), ...) {
+      rows <- data.frame(record_id = ids, notes = notes)
+      if (!is.null(sid)) rows$redcap_survey_identifier <- sid
+      rows[] <- lapply(rows, function(x) replace(x, x %in% na, NA))
+      if (raw_or_label == "label") names(rows)[1] <- "Record ID"
+      list(data = rows)
+    }
+    f <- redcap_data
+    mockery::stub(f, "REDCapR::redcap_read", fake_read)
+    mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = dic))
+    mockery::stub(f, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
+    suppressWarnings(suppressMessages(f(uri = "https://api.example", token = "tok", ...)))$data
+  }
+  for (notes in list(c("NA", "1", "2"), rep("NA", 3), c("NA", "TRUE", "FALSE"))) {
+    expect_identical(as.vector(read(c("1", "2", "3"), notes)$notes), notes)
+  }
+  expect_identical(as.vector(read(c("NA", "1", "2"), c("a", "b", "c"))$record_id), c("NA", "1", "2"))
+
+  # The identifier of the survey is a text, as the identifier of the record
+  out <- read(c("1", "2", "3"), c("a", "b", "c"), c("1.50", "+12", "9007199254740993"), survey_fields = TRUE)
+  expect_identical(as.vector(out$redcap_survey_identifier), c("1.50", "+12", "9007199254740993"))
+  out <- read(c("1", "2"), c("a", "b"), c("9007199254740992", "9007199254740993"), survey_fields = TRUE)
+  expect_identical(as.vector(out$redcap_survey_identifier), c("9007199254740992", "9007199254740993"))
+})
+
+test_that("redcap_data keeps the text of the identifier of the survey of the exported files", {
+  folder <- tempfile()
+  dir.create(folder)
+  on.exit(unlink(folder, recursive = TRUE), add = TRUE)
+  write.csv(data.frame(record_id = c("1", "2", "3"), redcap_survey_identifier = c("1.50", "+12", "9007199254740993"), notes = c("a", "NA", "c")),
+            file.path(folder, "P_DATA.csv"), row.names = FALSE, na = "")
+  write.csv(audit_dic(c("record_id", "notes"), c("text", "notes")), file.path(folder, "DIC.csv"), row.names = FALSE)
+  writeLines(c("## REDCap R export", "## begin data", "data=read.csv('P_DATA.csv',stringsAsFactors=FALSE)"), file.path(folder, "P_R.r"))
+  out <- suppressWarnings(redcap_data(data_path = file.path(folder, "P_R.r"), dic_path = file.path(folder, "DIC.csv")))
+  expect_identical(as.vector(out$data$redcap_survey_identifier), c("1.50", "+12", "9007199254740993"))
+  expect_identical(as.vector(out$data$notes), c("a", "NA", "c"))
+})

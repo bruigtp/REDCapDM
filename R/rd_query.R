@@ -939,9 +939,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
       # Add the variables description (dropped by the grouping above)
       report$descr <- purrr::map_chr(gsub("___.*$", "", report$var), function(x) {
         if (x %in% dic$field_name) {
-          # Truncate description name if it exceeds 50 characters
-          name <- clean_label(dic$field_label[dic$field_name %in% x])
-          stringr::str_trunc(name, 50)
+          clean_label(dic$field_label[dic$field_name %in% x])
         } else {
           "-"
         }
@@ -954,12 +952,10 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
         dplyr::filter(.data$total != 0)
     }
 
-    # Truncate descriptions and variable names if too long
+    # The complete names identify the variables in the groupings and unions below (two variables whose names begin in the
+    # same way are different rows): they are only shortened in the tables of `results` (see report_display())
     report$descr <- as.character(report$descr)
-    report$descr <- stringr::str_trunc(report$descr, 50)
-
     report$var <- as.character(report$var)
-    report$var <- stringr::str_trunc(report$var, 26)
 
     # Sort the report by the total number of queries
     report <- as.data.frame(report)
@@ -995,10 +991,7 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Add branching logic information to the report if applicable
   if (length(var_logic) > 0 && (!is.null(logics) || is.null(event_form)) && (!is.null(br_eval) || any(c("redcap_event_name", "redcap_event_name.factor") %in% names(data)))) {
-    # Truncate variable names to ensure they don't exceed 26 characters
-    branch0$Variable <- stringr::str_trunc(branch0$Variable, 26)
-
-    # Merge branching logic into the report
+    # Merge branching logic into the report (by the complete names of the variables)
     report <- merge(report,
       branch0 |> dplyr::select("Variable", "Branching logic"),
       by.x = "Variables", by.y = "Variable", all.x = TRUE
@@ -1051,7 +1044,8 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     # Build individual reports for each DAG
     for (i in seq_along(report_dag)) {
       report_dag[[i]] <- report_dag[[i]] |>
-        dplyr::select("DAG", names(report))
+        dplyr::select("DAG", names(report)) |>
+        report_display()
 
       # Create HTML table for each DAG with proper styling and caption
       report_dag[[i]] <- knitr::kable(report_dag[[i]],
@@ -1103,6 +1097,9 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
     # Replace NAs with "-" in the report
     report[is.na(report)] <- "-"
 
+    # Long names and descriptions are shortened for the table
+    report <- report_display(dplyr::ungroup(report))
+
     # Generate and style the HTML table for the report
     result <- knitr::kable(report, "pipe",
       align = "ccccc",
@@ -1126,6 +1123,20 @@ rd_query <- function(project = NULL, variables = NA, expression = NA, negate = F
 
   # Return the final report output
   new_report(def)
+}
+
+#' Report table of rd_query() for display
+#'
+#' The names of the variables and their descriptions are shortened (26 and 50 characters) only to show them: the
+#' summary is grouped and joined before by the complete names.
+#'
+#' @param report Summary of the queries with the columns `Variables` and `Description`.
+#' @return `report` with the shortened texts.
+#' @noRd
+report_display <- function(report) {
+  report$Variables <- stringr::str_trunc(as.character(report$Variables), 26)
+  report$Description <- stringr::str_trunc(as.character(report$Description), 50)
+  report
 }
 
 resolve_query_event_codes <- function(x, events, canonical = events$code, allow_unknown = FALSE) {
