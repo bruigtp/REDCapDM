@@ -209,7 +209,18 @@ id_text <- function(x) {
     return(as.character(x))
   }
 
-  vapply(x, function(value) {
+  # Whole numbers (the usual identifiers) are written at once, without decimals or scientific notation; the other
+  # numbers one by one
+  out <- rep(NA_character_, length(x))
+  whole <- !is.na(x) & is.finite(x) & x == trunc(x) & abs(x) < 1e15
+  # (`+ 0` writes -0 as 0)
+  out[whole] <- sprintf("%.0f", x[whole] + 0)
+  other <- !is.na(x) & !whole
+  if (!any(other)) {
+    return(out)
+  }
+
+  out[other] <- vapply(x[other], function(value) {
     if (is.na(value)) {
       return(NA_character_)
     }
@@ -239,6 +250,8 @@ id_text <- function(x) {
       call. = FALSE
     )
   }, character(1), USE.NAMES = FALSE)
+
+  out
 }
 
 #' Whether all the record identifiers are plain numbers (without leading zeros)

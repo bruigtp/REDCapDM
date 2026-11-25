@@ -929,7 +929,8 @@ datediff_arguments <- function(x) {
   read <- "(?<!lubridate::[a-z]{3}\\()(?<!lubridate::parse_date_time\\()"
   dates <- function(arg, format) {
     arg <- gsub("'today'", "Sys.Date()", arg, fixed = TRUE)
-    arg <- gsub("'now'", "lubridate::with_tz(Sys.time(), 'UTC')", arg, fixed = TRUE)
+    # (the time of the clock of the session, written in UTC as rd_dates() reads the datetimes of REDCap)
+    arg <- gsub("'now'", "lubridate::force_tz(Sys.time(), 'UTC')", arg, fixed = TRUE)
     if (!is.na(format)) {
       arg <- gsub(paste0(read, "'(", formats[[format]], ")'"), paste0("lubridate::", format, "('\\1')"), arg, perl = TRUE)
     }
@@ -1024,7 +1025,7 @@ date_comparisons <- function(x, dic) {
     if (text == "today") {
       "Sys.Date()"
     } else if (text == "now") {
-      "lubridate::with_tz(Sys.time(), 'UTC')"
+      "lubridate::force_tz(Sys.time(), 'UTC')"
     } else {
       paste0("lubridate::parse_date_time('", text, "', c('ymd HMS', 'ymd HM'))")
     }
@@ -1091,10 +1092,10 @@ blank_comparisons <- function(x) {
 
 #' Different values, also when one of them is blank
 #'
-#' As in REDCap, a blank value is different from any value: `data$x != 1` is written `!(data$x %in% 1)`. When the value
-#' is the start of an operation (e.g. `data$x != 0 + 1`), the whole operation is compared (`!(data$x %in% (0 + 1))`), or
-#' the comparison is left as it is if the operation uses variables of the data (its value can change in each row) or the
-#' variable is the end of an operation (e.g. `1 + data$x != 2`).
+#' As in REDCap, a blank value is different from any value that isn't blank, and two blank values are equal. A field
+#' compared with a value written in the logic (a number or a text that isn't empty) is written `!(data$x %in% 1)`, which
+#' is easy to read; the other comparisons (e.g. two fields, or operations) use a function that compares the blank
+#' values in the same way.
 #'
 #' @param x A logic translated to R.
 #' @return The logic.
@@ -1110,6 +1111,18 @@ not_equal_blank <- function(x) {
   }
 
   changed <- FALSE
+
+  # A value written in the logic that isn't blank (a number, also negative, or a text that isn't empty)
+  is_value <- function(e) {
+    if (is.call(e) && length(e) == 2L && identical(e[[1]], as.name("-"))) {
+      e <- e[[2]]
+    }
+    (is.numeric(e) || is.character(e)) && length(e) == 1L && !is.na(e) && !(is.character(e) && !nzchar(e))
+  }
+  # A field of the data (`data$x`)
+  is_field <- function(e) {
+    is.call(e) && length(e) == 3L && identical(e[[1]], as.name("$")) && identical(e[[2]], as.name("data"))
+  }
 
   rewrite <- function(e) {
     if (!is.call(e) ||
@@ -1130,6 +1143,14 @@ not_equal_blank <- function(x) {
 
       left <- e[[2]]
       right <- e[[3]]
+
+      # (a blank field is different from the value)
+      if (is_field(left) && is_value(right)) {
+        return(bquote(!(.(left) %in% .(right))))
+      }
+      if (is_value(left) && is_field(right)) {
+        return(bquote(!(.(right) %in% .(left))))
+      }
 
       return(bquote(
         (function(a, b) {

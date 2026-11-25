@@ -1099,15 +1099,21 @@ test_that("api_label_columns gives each row the label of its code, checked with 
     list()
   )
 
-  expect_equal(
-    as.character(out3$redcap_event_name.factor),
-    c("b_arm_1", "b_arm_1")
-  )
+  expect_equal(as.character(out3$redcap_event_name.factor), c("Base", "Base"))
+  expect_length(attr(out3, "unchecked"), 0)
+  # (with several codes, their labels are not used)
+  out4 <- api_label_columns(lab, raw, list())
+  expect_equal(as.character(out4$redcap_event_name.factor), c("b_arm_1", "v_arm_1", "b_arm_1"))
+  expect_equal(attr(out4, "unchecked"), "redcap_event_name.factor")
+  expect_equal(out4$redcap_repeat_instrument.factor, c(NA, "Medication", NA))
+})
 
-  expect_equal(
-    attr(out3, "unchecked"),
-    "redcap_event_name.factor"
-  )
+test_that("a user of a data access group, who can't read the data access groups of the project, gets the label of their group", {
+  raw <- data.frame(record_id = c("1", "2"), redcap_data_access_group = "hospital_b")
+  lab <- data.frame(record_id = c("1", "2"), `Data Access Group` = "Hospital B", check.names = FALSE)
+  out <- api_label_columns(lab, raw, list(dag = NULL))
+  expect_equal(as.character(out$redcap_data_access_group.factor), c("Hospital B", "Hospital B"))
+  expect_length(attr(out, "unchecked"), 0)
 })
 
 test_that("api_label_matches accepts the label of the code, with or without its arm, and not the label of another one", {

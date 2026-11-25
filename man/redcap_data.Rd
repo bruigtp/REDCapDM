@@ -76,7 +76,8 @@ identifier is a number only when its text is that number, as with the exported f
 unique event name, instrument or data access group), and they are checked with the metadata of the project (its
 events, arms, instruments and data access groups): if the records changed between the two requests, the labels are
 read again, and the function stops if they keep changing. When that metadata can't be read, those columns have
-the codes instead of the labels, with a warning.
+the codes instead of the labels, with a warning (except a single code with a single label in all the rows, e.g. the
+data access group of a user assigned to a group).
 
 \strong{Steps for using exported data in REDCap:}
 \enumerate{

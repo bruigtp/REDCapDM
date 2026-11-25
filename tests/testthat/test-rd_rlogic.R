@@ -1616,3 +1616,33 @@ test_that("retained MDCs preserve their meaning after factor conversion", {
     class = "REDCapDM_error_logic"
   )
 })
+
+
+test_that("'now' is the time of the clock of the session, as rd_dates() reads the datetimes of REDCap (in UTC)", {
+  skip_if_not_installed("withr")
+  withr::local_timezone("Europe/Madrid")
+  now <- format(Sys.time(), "%Y-%m-%d %H:%M")
+  data <- data.frame(record_id = 1, dt = as.POSIXct(now, tz = "UTC"))
+  dic <- data.frame(field_name = c("record_id", "dt", "h"), form_name = "f", field_type = c("text", "text", "calc"),
+                    field_label = c("ID", "DT", "H"), choices_calculations_or_slider_labels = "",
+                    text_validation_type_or_show_slider_number = c("", "datetime_ymd", ""))
+  # A datetime entered now is 0 hours before now (not the difference between the time zone and UTC)
+  expect_lt(abs(rd_rlogic(data = data, dic = dic, logic = "datediff([dt], 'now', 'h')", var = "h")$eval), 0.1)
+  expect_false(rd_rlogic(data = data, dic = dic, logic = "[dt] > 'now'", var = "h")$eval)
+})
+
+test_that("rd_rlogic writes a field different from a written value in a readable way, and a blank value is different", {
+  data <- data.frame(record_id = 1:4, a = c(1, 2, NA, 1), b = c(NA, 3, 4, 5))
+  dic <- data.frame(field_name = c("record_id", "a", "b"), form_name = "f", field_type = "text", field_label = c("ID", "A", "B"),
+                    choices_calculations_or_slider_labels = "", text_validation_type_or_show_slider_number = "")
+  out <- rd_rlogic(data = data, dic = dic, logic = "[a] <> 1", var = "b")
+  expect_equal(out$rlogic, "!(data$a %in% 1)")
+  expect_equal(as.vector(out$eval), c(FALSE, TRUE, TRUE, FALSE))
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "1 <> [a]", var = "b")$rlogic, "!(data$a %in% 1)")
+  expect_equal(rd_rlogic(data = data, dic = dic, logic = "[a] <> -1", var = "b")$rlogic, "!(data$a %in% -1)")
+  # Two fields or an operation: blank values compared as in REDCap
+  expect_equal(as.vector(rd_rlogic(data = data, dic = dic, logic = "[a] <> [b]", var = "b")$eval), c(TRUE, TRUE, TRUE, TRUE))
+  expect_equal(as.vector(rd_rlogic(data = data, dic = dic, logic = "[a] + 1 <> 3", var = "b")$eval), c(TRUE, FALSE, TRUE, TRUE))
+  data$b <- c(NA, 2, NA, 5)
+  expect_equal(as.vector(rd_rlogic(data = data, dic = dic, logic = "[a] <> [b]", var = "b")$eval), c(TRUE, FALSE, FALSE, TRUE))
+})

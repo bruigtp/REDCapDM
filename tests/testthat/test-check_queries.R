@@ -345,3 +345,14 @@ test_that("renaming an event doesn't solve the queries of rd_event()", {
   out <- suppressMessages(check_queries(older, old, return_viewer = FALSE))$queries
   expect_equal(as.character(out$Modification), "Pending")
 })
+
+
+test_that("the record identifiers are written as text without scientific notation or lost decimals", {
+  expect_equal(id_text(c(1, -5, 0, -0, 123456789012, 1e15, 1e20, NA)),
+               c("1", "-5", "0", "0", "123456789012", "1000000000000000", "100000000000000000000", NA))
+  expect_equal(id_text(c(0.1 + 0.2, 2.5, Inf)), c("0.30000000000000004", "2.5", "Inf"))
+  expect_equal(id_text(c("007", NA)), c("007", NA))
+  # (each number is the identifier again)
+  x <- c(sample(1:1e6, 50), runif(50) * 1e6, rnorm(50) * 1e17)
+  expect_equal(as.numeric(id_text(x)), x)
+})
