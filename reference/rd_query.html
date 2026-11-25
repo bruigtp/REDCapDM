@@ -105,7 +105,7 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
 
 
 <dt id="arg-add-to">add_to<a class="anchor" aria-label="anchor" href="#arg-add-to"></a></dt>
-<dd><p>Optional output of a previous <code>rd_query()</code> or <code><a href="rd_event.html">rd_event()</a></code> to which the new queries are appended.</p></dd>
+<dd><p>Optional output of a previous <code>rd_query()</code> or <code><a href="rd_event.html">rd_event()</a></code> to which the new queries are appended. Its queries must be a data frame: the output of <code>by_dag = TRUE</code>, whose queries are a list of data frames, can't be used.</p></dd>
 
 
 <dt id="arg-variables-names">variables_names<a class="anchor" aria-label="anchor" href="#arg-variables-names"></a></dt>
@@ -155,10 +155,10 @@ Detects and summarizes queries in a REDCap dataset based on specified expression
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>REDCapDM_report</code>, which prints a short summary (see <code><a href="print.REDCapDM_report.html">print.REDCapDM_report()</a></code>), containing:</p><dl><dt>queries</dt>
-<dd><p>A data frame or a list of data frames (if <code>by_dag = TRUE</code>) with detailed query information for each record.</p></dd>
+<dd><p>A data frame or a list of data frames (if <code>by_dag = TRUE</code>, one per DAG) with detailed query information for each record.</p></dd>
 
 <dt>results</dt>
-<dd><p>A formatted report (HTML table) summarizing total queries per variable, event, and DAG if applicable.</p></dd>
+<dd><p>A formatted report (HTML table) summarizing total queries per variable and event; with <code>by_dag = TRUE</code>, a list with one table per DAG.</p></dd>
 
 
 </dl></div>

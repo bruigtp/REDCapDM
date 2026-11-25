@@ -103,9 +103,12 @@ would be ‘is.na(x)’, where ‘x’ represents the variable itself:</p>
 <span>                    variables <span class="op">=</span> <span class="st">"copd"</span>,</span>
 <span>                    expression <span class="op">=</span> <span class="st">"is.na(x)"</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
-<p>Note: For variables with branching logic, the function will
-automatically apply the associated branching logic or at least report
-it.</p>
+<p>Note: For variables with branching logic, the function automatically
+applies the associated branching logic. When the branching logic can’t
+be translated to R, the function warns and checks the variable in all
+its rows, without that logic: the queries can include values that are
+hidden in REDCap, so review them manually or give a <code>filter</code>
+with the condition.</p>
 </blockquote>
 <p><br></p>
 </div>
@@ -121,9 +124,10 @@ certain condition (for example, range):</p>
 <span>                    expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x &gt; 80"</span>, <span class="st">"x &gt; 4.2 &amp; x &lt; 4.3"</span><span class="op">)</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"baseline_visit_arm_1"</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
-<p>Note: if you supply fewer <code>expression</code> entries than
-<code>variables</code>, the first expression is repeated for all
-variables (the function warns you).</p>
+<p>Note: a single <code>expression</code> is applied to all the
+<code>variables</code> (without a warning). If you supply several
+expressions, but fewer than <code>variables</code>, the first expression
+is applied to all the variables, with a warning.</p>
 </blockquote>
 <p><br></p>
 <p>In both cases, the function returns a list containing a data frame
@@ -401,10 +405,14 @@ repetition is “New”.</p>
 is its unique event name and the variable its field name, so if an
 event, an arm or a field is renamed in REDCap between both reports, its
 queries are still “Pending”, with the new labels
-(<code>EventLabel</code> and <code>Description</code>). The reports
-created with older versions of REDCapDM have the label of the event in
+(<code>EventLabel</code> and <code>Description</code>). In the reports
+created with older versions of REDCapDM, the queries of
+<code><a href="../reference/rd_query.html">rd_query()</a></code> can have the label of the event in
 <code>Event</code>: when a single event has that label,
-<code><a href="../reference/check_queries.html">check_queries()</a></code> uses its unique event name.</p>
+<code><a href="../reference/check_queries.html">check_queries()</a></code> uses its unique event name. The queries of
+<code><a href="../reference/rd_event.html">rd_event()</a></code> already had the unique event name in
+<code>Event</code>, but the label in the default text of
+<code>Query</code>, which is also changed to the unique event name.</p>
 </blockquote>
 <p><br><br></p>
 </div>
@@ -439,7 +447,7 @@ customise this exported file:</p>
 <p>The <code>column</code> argument turns the web addresses of a column
 into links that open the query in REDCap: the <code>Link</code> column
 only exists when the queries were identified with the <code>link</code>
-argument of <code><a href="../reference/rd_query.html">rd_query()</a></code>.</p>
+argument of <code><a href="../reference/rd_query.html">rd_query()</a></code> or <code><a href="../reference/rd_event.html">rd_event()</a></code>.</p>
 <p>In both cases, a message will be generated in the console informing
 you that the file has been created and where it is located.</p>
 <p><br><br></p>

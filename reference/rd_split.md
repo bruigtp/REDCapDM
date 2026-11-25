@@ -70,8 +70,12 @@ Depending on `which` and `wide`:
   list-column `df` (e.g. `result$data$df[[1]]`, or
   `result$data$df[result$data$form == "demographics"][[1]]`). With
   `wide = TRUE`, the tibble of the forms also has the column
-  `max_repeated_instance`, the highest repetition of each form. With
-  `which`, the `data.frame` of that form or event.
+  `max_repeated_instance`, the largest number of rows of a record in
+  each form (its events and repetitions): the wide columns are numbered
+  by the position of each row of the record, not by its instance (e.g.
+  the instances 2 and 5 of a record are the columns `_1` and `_2`, and
+  the maximum is 2). With `which`, the `data.frame` of that form or
+  event.
 
 - dictionary:
 

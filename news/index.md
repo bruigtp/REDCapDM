@@ -1008,6 +1008,44 @@
   (deprecated, see
   [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md))
   failed in projects with repeated instruments.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  keeps the text `NA`, with the API and with the exported files: it was
+  read as a missing value before the Missing Data Codes were handled, so
+  the text `NA` of a text field was lost, and the Missing Data Code `NA`
+  of a validated or multiple-choice field was not kept in its `_mdc`
+  column with `rm_mdc = FALSE`.
+- [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md)
+  (and so
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+  and
+  [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md))
+  keeps the values of the other repeating instruments when it evaluates
+  a logic in a repeating instrument: the values used with
+  `[event][field][current-instance]` were replaced by the empty value of
+  the base row, so the branching logic hid queries and the recalculation
+  reported false differences. Only the rows of the instrument of the
+  variable take the values of the base row, never in the columns of the
+  record, event, repetition and data access group; a base row with an
+  empty instance (`""` or `" "`) is recognised, and two base rows of the
+  same record and event stop with an error.
+- [`rd_split()`](https://bruigtp.github.io/REDCapDM/reference/rd_split.md)
+  and
+  [`split_form()`](https://bruigtp.github.io/REDCapDM/reference/split_form.md)
+  choose the rows of each repeating instrument by its code: two
+  instruments with the same label were mixed in both forms, and an
+  instrument with different labels in different records was split into
+  several forms. They also keep the columns whose name starts as a
+  column of REDCap (e.g. a field `redcap_repeat_instrument_note`), and
+  [`split_form()`](https://bruigtp.github.io/REDCapDM/reference/split_form.md)
+  works without the `.factor` version of `redcap_repeat_instrument`.
+- [`rd_recalculate()`](https://bruigtp.github.io/REDCapDM/reference/rd_recalculate.md)
+  compares the numbers written in another way as numbers: a calculation
+  that gives texts (e.g. `if([flag] = 1, '100000', '200000')`) had
+  different values or not depending on `options(scipen)`, and a
+  condition (`TRUE`/`FALSE`, e.g. `isblankormissingcode([x])`) was
+  always different from its 1/0. A calculated field of the dictionary
+  that isn’t in the data is no longer reported as equal: it warns, and
+  its comparison is `NA`.
 - [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   and

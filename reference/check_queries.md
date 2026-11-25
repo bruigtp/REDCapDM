@@ -36,19 +36,21 @@ check_queries(old, new, report_title = NULL, return_viewer = TRUE)
 - old:
 
   Data frame containing the previous (older) query report. Must include
-  `Identifier`, `Description` and `Query` columns (character or factor).
+  `Identifier` (text, factor or number), `Description` and `Query`
+  columns (character or factor).
 
 - new:
 
   Data frame containing the newer query report. Must include
-  `Identifier`, `Description` and `Query` columns (character or factor).
-  If `new` contains a `Code` column, it will be removed at the start of
-  processing.
+  `Identifier` (text, factor or number), `Description` and `Query`
+  columns (character or factor). If `new` contains a `Code` column, it
+  will be removed at the start of processing.
 
 - report_title:
 
   Optional single string used as the caption for the HTML summary table.
-  Defaults to `"Comparison report"` when not supplied or when `NA`.
+  With `NULL` (the default), the caption is `"Comparison report"`; `NA`
+  is not accepted.
 
 - return_viewer:
 
@@ -68,7 +70,10 @@ with two elements:
   A data frame containing all queries present in either `old` or `new`.
   A factor column `Modification` indicates the state for each row
   (levels: `Pending`, `Solved`, `Miscorrected`, `New`). The function
-  also reassigns `Code` values so codes are consistent per `Identifier`.
+  also reassigns `Code` values so codes are consistent per `Identifier`:
+  a code is the number of each query of its record in this result, not a
+  permanent identifier of the query (the same query can have another
+  code in another comparison).
 
 - `results`:
 
@@ -83,16 +88,16 @@ Requirements:
 
 - Both `old` and `new` must be data frames.
 
-- Both data frames must contain at least the following character
-  columns: `Identifier`, `Description`, and `Query`.
+- Both data frames must contain at least the following columns:
+  `Identifier` (text, factor or number), `Description`, and `Query`.
 
 - Every query must have an `Identifier` (the record identifier of the
   data).
 
-- A `Code` column is optional; if present it will be preserved and
-  considered for sorting and output. If `Code` exists in `new`, it is
-  removed at the beginning of the routine to avoid conflicts with
-  re-assigned codes.
+- A `Code` column is optional; the codes of `old` are used to sort the
+  queries, and the codes of the result are assigned again (see the
+  value). If `Code` exists in `new`, it is removed at the beginning of
+  the routine to avoid conflicts with re-assigned codes.
 
 The function merges the two reports, constructs composite keys used for
 comparison, classifies each row into a modification state, detects and
@@ -133,13 +138,13 @@ HTML summary viewer.
   labels cannot be resolved automatically.
 
 - **Miscorrected detection:** A `Miscorrected` label is assigned to a
-  query that would otherwise be `New` when the old report has a query
-  with the same `Identifier`, `Event`, `Repetition`, `Field` (each of
-  them when both reports have it) and `Description` — this signals a
-  likely re-issued or modified query (`Description` is only compared
-  when the reports don't have `Field`). New queries without such a query
-  in the old report are `New`, also when there are several of them for
-  the same field.
+  query that would otherwise be `New` when the old report has a query of
+  the same record (`Identifier`), event (`Event`) and repetition
+  (`Repetition`), when both reports have these columns, and of the same
+  variable: the same `Field` when both reports have it, or else the same
+  `Description`. This signals a likely re-issued or modified query. New
+  queries without such a query in the old report are `New`, also when
+  there are several of them for the same field.
 
 ## See also
 

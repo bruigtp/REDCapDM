@@ -5,8 +5,9 @@
 Generates a visual summary of missing data for variables in a REDCap
 dataset or list structure. With `by = "vars"` (default), cross-sectional
 (single-event) studies get a barplot showing the proportion or count of
-missing values per variable, and longitudinal (multi-event) studies get
-a heatmap illustrating missingness across events and variables. With
+missing values per variable, and longitudinal studies (with the column
+`redcap_event_name`, also with a single event) get a heatmap
+illustrating missingness across events and variables. With
 `by = "record"`, the plot shows one row per record and one column per
 variable, with the missing values painted.
 

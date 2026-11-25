@@ -114,7 +114,8 @@ rd_transform(
 - wide:
 
   Logical. If `TRUE` (for form-based splits), repeated instances are
-  returned in wide format. Defaults to `FALSE`.
+  returned in wide format. Default `NULL`, which is `FALSE` when the
+  data is split by form.
 
 ## Value
 

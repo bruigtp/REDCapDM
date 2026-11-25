@@ -32,9 +32,12 @@ example <- rd_query(covican_transformed,
                     expression = "is.na(x)")
 ```
 
-> Note: For variables with branching logic, the function will
-> automatically apply the associated branching logic or at least report
-> it.
+> Note: For variables with branching logic, the function automatically
+> applies the associated branching logic. When the branching logic can’t
+> be translated to R, the function warns and checks the variable in all
+> its rows, without that logic: the queries can include values that are
+> hidden in REDCap, so review them manually or give a `filter` with the
+> condition.
 
   
 
@@ -51,9 +54,10 @@ example <- rd_query(covican_transformed,
                     event = "baseline_visit_arm_1")
 ```
 
-> Note: if you supply fewer `expression` entries than `variables`, the
-> first expression is repeated for all variables (the function warns
-> you).
+> Note: a single `expression` is applied to all the `variables` (without
+> a warning). If you supply several expressions, but fewer than
+> `variables`, the first expression is applied to all the variables,
+> with a warning.
 
   
 
@@ -160,11 +164,17 @@ style="width: auto !important; margin-left: auto; margin-right: auto;"}
 > its unique event name and the variable its field name, so if an event,
 > an arm or a field is renamed in REDCap between both reports, its
 > queries are still “Pending”, with the new labels (`EventLabel` and
-> `Description`). The reports created with older versions of REDCapDM
-> have the label of the event in `Event`: when a single event has that
-> label,
+> `Description`). In the reports created with older versions of
+> REDCapDM, the queries of
+> [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+> can have the label of the event in `Event`: when a single event has
+> that label,
 > [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
-> uses its unique event name.
+> uses its unique event name. The queries of
+> [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+> already had the unique event name in `Event`, but the label in the
+> default text of `Query`, which is also changed to the unique event
+> name.
 
   
   
@@ -207,7 +217,9 @@ rd_export(queries = example$queries,
 The `column` argument turns the web addresses of a column into links
 that open the query in REDCap: the `Link` column only exists when the
 queries were identified with the `link` argument of
-[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md).
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+or
+[`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md).
 
 In both cases, a message will be generated in the console informing you
 that the file has been created and where it is located.

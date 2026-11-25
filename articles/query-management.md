@@ -121,9 +121,10 @@ previously transformed branching logic.
 In both scenarios, if a variable contains branching logic that cannot be
 converted from REDCap logic to R logic, the function will issue a
 warning. The warning message will advise the user to review the
-`results` element of the output for more information. This is to
-indicate that there might be potential issues or limitations with the
-conversion process for that specific variable’s branching logic:
+`results` element of the output for more information. The variable is
+then checked in all its rows, without that branching logic, so the
+queries can include values that are hidden in REDCap: review them
+manually, or give the condition in the `filter` argument:
 
 ``` r
 
@@ -526,9 +527,13 @@ changed it to “Missing COPD values in the baseline event”.
 *report_zeros*
 
 By default, the function will only report, in the summary of queries,
-variables with at least one query and will omit those with zero queries.
-To include these omitted variables in the summary, we can use the
-`report_zeros` argument:
+variables with at least one query and will omit those with zero queries
+(when no variable has any query, the summary shows all of them with 0,
+also without `report_zeros`). To include these omitted variables in the
+summary, we can use the `report_zeros` argument. Also, a single
+`expression` is applied to all the `variables` without a warning, and
+several expressions, but fewer than `variables`, apply the first one to
+all the variables, with a warning:
 
 ``` r
 
@@ -659,7 +664,8 @@ function, these missing values will not be identified because they do
 not exist in the exported data. The
 [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
 function can be used to point out in how many records an event does not
-exist:
+exist (it checks whether the event is present, not whether its data is
+complete):
 
 ``` r
 
@@ -680,9 +686,12 @@ style="width: auto !important; margin-left: auto; margin-right: auto;"}
 There are a total of 38 records without any row corresponding to the
 event *Follow up visit day 14+/-5d*. Thus, when searching for missing
 values of variables in the *Follow up visit day 14+/-5d* event, we need
-to consider that there will be 38 additional missing values which will
-not be accounted for by
-[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md).
+to consider that these 38 records have no row of this event, so
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+can’t report the missing values of its variables in them. 38 missing
+events are not 38 missing values: each absent event hides all the values
+of its forms (and a record can have several rows in an event,
+e.g. repetitions).
 
   
 
@@ -694,7 +703,8 @@ Therefore, to check if the follow up event is missing only in the
 records that fulfill the inclusion and exclusion criteria, we can use
 the `filter` argument of the
 [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
-function:
+function. The filter selects the records to check, and whether each of
+them has the event is checked with all its data:
 
 ``` r
 
@@ -745,7 +755,9 @@ style="width: auto !important; margin-left: auto; margin-right: auto;"}
 > `report_title`, `report_zeros` and `link` that work in the same way as
 > in the examples of the
 > [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
-> section (*Additional arguments*).
+> section (*Additional arguments*), except `link`: it only uses
+> `domain`, `redcap_version` and `proj_id`, and its links open the home
+> page of the record (not `event_id`).
 
 ## **check_queries**
 
@@ -799,11 +811,17 @@ query, and 1 new query between the previous and the new query dataset.
 > its unique event name and the variable its field name, so if an event,
 > an arm or a field is renamed in REDCap between both reports, its
 > queries are still “Pending”, with the new labels (`EventLabel` and
-> `Description`). The reports created with older versions of REDCapDM
-> have the label of the event in `Event`: when a single event has that
-> label,
+> `Description`). In the reports created with older versions of
+> REDCapDM, the queries of
+> [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+> can have the label of the event in `Event`: when a single event has
+> that label,
 > [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md)
-> uses its unique event name.
+> uses its unique event name. The queries of
+> [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+> already had the unique event name in `Event`, but the label in the
+> default text of `Query`, which is also changed to the unique event
+> name.
 
   
 
@@ -864,7 +882,9 @@ the link to each query. The function converts this column into hyperlink
 format in the exported file, so that we can simply click on the link to
 go to the specific query in the REDCap project. This column only exists
 when the queries were identified with the `link` argument of
-[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md).
+[`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
+or
+[`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md).
 
 In both cases, a message will be generated in the console informing you
 that the file has been created and where it is located.

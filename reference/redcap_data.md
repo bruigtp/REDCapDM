@@ -32,7 +32,8 @@ redcap_data(
 
 - dic_path:
 
-  Path to the dictionary file (CSV or XLSX; use with `data_path`).
+  Path to the dictionary file (CSV or XLSX; use with `data_path`). Not
+  used with the API.
 
 - event_path:
 
@@ -113,20 +114,23 @@ If the project is longitudinal, provide `event_path` (instrument–event
 mapping) or the function will attempt to fetch it from the API when
 using API mode.
 
-With the API, the values and their labels are read with two requests.
-The record identifiers are read as text in both of them (long
-identifiers such as `9007199254740993`, or `100000000000000`, are not
-changed), and the identifier is a number only when its text is that
-number, as with the exported files. The labels of the events
+With the API, the metadata of the project (dictionary, project
+information, events, instruments, ...) and the records are read with
+several requests: the values and their labels are read separately (in
+batches of records, and the labels again if the records changed). The
+record identifiers are read as text in all of them (long identifiers
+such as `9007199254740993`, or `100000000000000`, are not changed), and
+the identifier is a number only when its text is that number, as with
+the exported files. The labels of the events
 (`redcap_event_name.factor`), repeated instruments and data access
 groups are given to each row by its code (the unique event name,
 instrument or data access group), and they are checked with the metadata
 of the project (its events, arms, instruments and data access groups):
-if the records changed between the two requests, the labels are read
-again, and the function stops if they keep changing. When that metadata
-can't be read, those columns have the codes instead of the labels, with
-a warning (except a single code with a single label in all the rows,
-e.g. the data access group of a user assigned to a group).
+if the records changed between the values and the labels, the labels are
+read again, and the function stops if they keep changing. When that
+metadata can't be read, those columns have the codes instead of the
+labels, with a warning (except a single code with a single label in all
+the rows, e.g. the data access group of a user assigned to a group).
 
 **Steps for using exported data in REDCap:**
 
@@ -139,13 +143,14 @@ e.g. the data access group of a user assigned to a group).
 
     - An R script to format variables for import.
 
-3.  Ensure the exported files, dictionary, and event mapping (if any)
-    are in the same directory.
+3.  Keep the R script and its CSV file in the same directory (the script
+    reads the CSV from its folder). The dictionary and the event mapping
+    can be in other folders.
 
 ## Note
 
-To use other package functions effectively, include the `dic_path`
-argument to load the project dictionary.
+With the exported files, `dic_path` is required to load the project
+dictionary (with the API, the dictionary is read from REDCap).
 
 - Use either exported-files mode (`data_path` + `dic_path`) **or** API
   mode (`uri` + `token`) — not both.

@@ -70,7 +70,9 @@ A list with the following elements:
 
 The function looks for columns ending in `.factor` and replaces the
 original variable values with those `.factor` values (converted to
-factors). A `.factor` column that isn't a factor (e.g. text, after
+factors). The variables in `exclude`, the system columns below and the
+variables whose labels are of several codes (with a warning) keep both
+columns. A `.factor` column that isn't a factor (e.g. text, after
 modifying the data) is converted to a factor, with the levels in the
 order of the options of the dictionary. It preserves variable labels.
 The `exclude` argument must contain base variable names (no `.factor`

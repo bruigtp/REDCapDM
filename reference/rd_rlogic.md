@@ -118,8 +118,12 @@ A list with:
 - With repeated instruments and repeating events, the logic is evaluated
   in the rows where `var` is collected. As in REDCap, in a repeating
   instrument the variables of the other forms take the value of the base
-  row of the same record and event. Logic that uses variables of another
-  repeating instrument can't be translated.
+  row of the same record and event. A variable of another repeating
+  instrument or repeating event can be used with its instance
+  (`[event][field][current-instance]`, the instance of the same number);
+  without it (e.g. `[field]` of another repeating instrument, or
+  `[event][field]`), the instance to use isn't known and the logic can't
+  be translated.
 
 - As in REDCap, `datediff()` returns the absolute difference unless its
   last argument is `true`, its units are `"y"` (years of 365.2425 days),

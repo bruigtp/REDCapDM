@@ -95,13 +95,15 @@ longitudinal projects).</p>
 <h3 id="using-local-files">
 <strong>1. Using local files</strong><a class="anchor" aria-label="anchor" href="#using-local-files"></a>
 </h3>
-<p>Ensure you have exported the following files from REDCap and placed
-them in the same directory:</p>
+<p>Ensure you have exported the following files from REDCap (only the R
+script and its data CSV must be in the same directory; the dictionary
+and the event-form mapping can be in other folders):</p>
 <ol style="list-style-type: decimal">
 <li><p><strong>R data file</strong> – reads and processes your REDCap
 dataset, obtained by choosing <em>R Statistical Software</em>
 (<code>.r</code> or <code>.R</code>). Please, keep the R script and its
-data CSV in the same directory.</p></li>
+data CSV in the same directory: the script reads the CSV from its
+folder.</p></li>
 <li><p><strong>Dictionary file</strong> – CSV file containing variable
 metadata</p></li>
 <li><p><strong>Event-form mapping file</strong> (only for longitudinal
@@ -131,9 +133,11 @@ projects) – CSV describing which forms belong to each event</p></li>
 <span><span class="op">)</span></span></code></pre></div>
 <p>This method automatically retrieves the event-form mapping for
 longitudinal projects.</p>
-<p>With the API, <code><a href="../reference/redcap_data.html">redcap_data()</a></code> makes two requests, one with
-the values and another one with their labels. The record identifiers are
-kept as text while they are read, so long identifiers
+<p>With the API, <code><a href="../reference/redcap_data.html">redcap_data()</a></code> makes several requests: the
+metadata of the project (dictionary, events, instruments, …) and the
+records, whose values and labels are read separately (in batches of
+records, and the labels again if the records changed). The record
+identifiers are kept as text while they are read, so long identifiers
 (e.g. <code>9007199254740993</code>, beyond the precision of the numbers
 of R) or identifiers with zeros on the left (e.g. <code>007</code>) are
 not changed; as with the exported files, the identifier is a number only
@@ -150,7 +154,8 @@ function stops with an error if they keep changing.</p>
 <strong>3. Understanding the output</strong><a class="anchor" aria-label="anchor" href="#understanding-the-output"></a>
 </h3>
 <p><a href="https://bruigtp.github.io/REDCapDM/reference/redcap_data.html"><code>redcap_data()</code></a>
-returns a list with three elements:</p>
+returns a list with these elements (<code>event_form</code> only in
+longitudinal projects, when it is available):</p>
 <table class="table">
 <colgroup>
 <col width="14%">
@@ -209,7 +214,9 @@ which performs multiple operations in one step.</p>
 </tr>
 <tr class="even">
 <td>Recalculate fields</td>
-<td>Update REDCap calculated fields</td>
+<td>Recalculate the calculated fields in R and compare them with the
+values of REDCap (the different ones are added as <code>_recalc</code>
+columns; REDCap isn’t modified)</td>
 </tr>
 <tr class="odd">
 <td>Checkbox transformation</td>

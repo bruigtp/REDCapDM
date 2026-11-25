@@ -92,15 +92,15 @@ suggesting a re-issued or modified query for the same record and field.</p></li>
 
 
 <dl><dt id="arg-old">old<a class="anchor" aria-label="anchor" href="#arg-old"></a></dt>
-<dd><p>Data frame containing the previous (older) query report. Must include <code>Identifier</code>, <code>Description</code> and <code>Query</code> columns (character or factor).</p></dd>
+<dd><p>Data frame containing the previous (older) query report. Must include <code>Identifier</code> (text, factor or number), <code>Description</code> and <code>Query</code> columns (character or factor).</p></dd>
 
 
 <dt id="arg-new">new<a class="anchor" aria-label="anchor" href="#arg-new"></a></dt>
-<dd><p>Data frame containing the newer query report. Must include <code>Identifier</code>, <code>Description</code> and <code>Query</code> columns (character or factor). If <code>new</code> contains a <code>Code</code> column, it will be removed at the start of processing.</p></dd>
+<dd><p>Data frame containing the newer query report. Must include <code>Identifier</code> (text, factor or number), <code>Description</code> and <code>Query</code> columns (character or factor). If <code>new</code> contains a <code>Code</code> column, it will be removed at the start of processing.</p></dd>
 
 
 <dt id="arg-report-title">report_title<a class="anchor" aria-label="anchor" href="#arg-report-title"></a></dt>
-<dd><p>Optional single string used as the caption for the HTML summary table. Defaults to <code>"Comparison report"</code> when not supplied or when <code>NA</code>.</p></dd>
+<dd><p>Optional single string used as the caption for the HTML summary table. With <code>NULL</code> (the default), the caption is <code>"Comparison report"</code>; <code>NA</code> is not accepted.</p></dd>
 
 
 <dt id="arg-return-viewer">return_viewer<a class="anchor" aria-label="anchor" href="#arg-return-viewer"></a></dt>
@@ -113,7 +113,8 @@ suggesting a re-issued or modified query for the same record and field.</p></li>
 <dd><p>A data frame containing all queries present in either <code>old</code> or <code>new</code>.
 A factor column <code>Modification</code> indicates the state for each row (levels: <code>Pending</code>,
 <code>Solved</code>, <code>Miscorrected</code>, <code>New</code>). The function also reassigns <code>Code</code>
-values so codes are consistent per <code>Identifier</code>.</p></dd>
+values so codes are consistent per <code>Identifier</code>: a code is the number of each query of its record in this
+result, not a permanent identifier of the query (the same query can have another code in another comparison).</p></dd>
 
 <dt><code>results</code></dt>
 <dd><p>If <code>return_viewer = TRUE</code>, an HTML <code><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">knitr::kable</a></code> (styled with
@@ -124,12 +125,12 @@ values so codes are consistent per <code>Identifier</code>.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Requirements:</p><ul><li><p>Both <code>old</code> and <code>new</code> must be data frames.</p></li>
-<li><p>Both data frames must contain at least the following character columns:
-<code>Identifier</code>, <code>Description</code>, and <code>Query</code>.</p></li>
+<li><p>Both data frames must contain at least the following columns:
+<code>Identifier</code> (text, factor or number), <code>Description</code>, and <code>Query</code>.</p></li>
 <li><p>Every query must have an <code>Identifier</code> (the record identifier of the data).</p></li>
-<li><p>A <code>Code</code> column is optional; if present it will be preserved and considered
-for sorting and output. If <code>Code</code> exists in <code>new</code>, it is removed at the
-beginning of the routine to avoid conflicts with re-assigned codes.</p></li>
+<li><p>A <code>Code</code> column is optional; the codes of <code>old</code> are used to sort the queries, and the
+codes of the result are assigned again (see the value). If <code>Code</code> exists in <code>new</code>, it is removed at
+the beginning of the routine to avoid conflicts with re-assigned codes.</p></li>
 </ul><p>The function merges the two reports, constructs composite keys used for comparison, classifies each row into a modification state, detects and re-labels <code>Miscorrected</code> cases, reassigns a <code>Code</code> per <code>Identifier</code> to keep codes consistent, and returns a detailed dataset plus an optional HTML summary viewer.</p>
     </div>
     <div class="section level2">
@@ -153,10 +154,10 @@ in <code>Event</code> when factor labels were available. Reports from <code><a h
 names there, but used labels in their default <code>Query</code> text. Recognised legacy labels and default
 missing-event query texts are normalised to unique event names. Shared labels cannot be resolved automatically.</p></li>
 <li><p><strong>Miscorrected detection:</strong> A <code>Miscorrected</code> label is assigned to a query that would
-otherwise be <code>New</code> when the old report has a query with the same <code>Identifier</code>, <code>Event</code>,
-<code>Repetition</code>, <code>Field</code> (each of them when both reports have it) and <code>Description</code> — this
-signals a likely re-issued or modified query (<code>Description</code> is only compared when the reports don't have
-<code>Field</code>). New queries without such a query in the old report are
+otherwise be <code>New</code> when the old report has a query of the same record (<code>Identifier</code>), event
+(<code>Event</code>) and repetition (<code>Repetition</code>), when both reports have these columns, and of the same
+variable: the same <code>Field</code> when both reports have it, or else the same <code>Description</code>. This signals a
+likely re-issued or modified query. New queries without such a query in the old report are
 <code>New</code>, also when there are several of them for the same field.</p></li>
 </ul></div>
     <div class="section level2">

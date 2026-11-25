@@ -1,8 +1,11 @@
 # Recalculate REDCap Calculated Fields
 
 This function recalculates each calculated field if the logic can be
-transcribed to R. Note that calculated fields containing smart-variables
-or variables from other events cannot be transcribed.
+transcribed to R. Note that calculated fields containing smart
+variables, or variables of another repeating instrument or repeating
+event without their instance, cannot be transcribed (the variables of
+other events, e.g. `[visit_2_arm_1][weight]`, and
+`[event][field][current-instance]` can).
 
 The function returns the dataset and dictionary with the recalculated
 variables appended (named as the original field plus `_recalc`), along

@@ -52,10 +52,14 @@ rd_checkbox(
 - checkbox_names:
 
   Logical. If `TRUE` (default), checkbox columns are renamed using
-  choice labels. With `FALSE`, the columns keep their names, but their
-  values are already the labels and each option is a field of the
-  dictionary: running the function again on its result stops with an
-  error instead of converting them again.
+  choice labels. With `FALSE`, the columns keep their names and each
+  option is a field of the dictionary: running the function again on its
+  result stops with an error instead of converting them again. Without
+  the `.factor` versions of the options, the values of the columns
+  become the labels; with them (as in the data of
+  [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)),
+  the columns keep their codes 0/1 and their `.factor` versions take the
+  labels.
 
 - na_logic:
 
@@ -70,8 +74,11 @@ A list with:
 
 - data:
 
-  Transformed dataset with checkbox fields as factors and optionally
-  renamed.
+  Transformed dataset with the checkbox options optionally renamed. When
+  the data has the `.factor` versions of the options, the original
+  columns keep their codes 0/1 and the `.factor` versions take the
+  labels of `checkbox_labels`; otherwise the original columns are
+  replaced by factors with these labels.
 
 - dictionary:
 

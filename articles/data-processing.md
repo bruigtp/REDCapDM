@@ -248,11 +248,15 @@ str(cb$data$underlying_disease_hemato___1)
     ##  num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...
     ##  - attr(*, "label")= chr "Specify underlying disease (choice=Acute myeloid leukemia)"
 
-In this case, each option becomes a field of the dictionary of its own
-and its values are already the labels, so running
+In this case, each option becomes a field of the dictionary of its own,
+so running
 [`rd_checkbox()`](https://bruigtp.github.io/REDCapDM/reference/rd_checkbox.md)
 again on the result stops with an error instead of converting them
-again.
+again. As the data of
+[`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+has the `.factor` versions of the options, the columns keep their codes
+0/1 (as above) and their `.factor` versions take the labels; without the
+`.factor` versions, the values of the columns become the labels.
 
 If a checkbox field has a branching logic, the `na_logic` argument
 controls how missing values are set, with the following options:
@@ -339,8 +343,12 @@ str(factored$data$available_analytics.factor)
 > avoid interfering with longitudinal event mappings or user access
 > groups.
 
-After conversion only the cleaned factor variables remain in the
-dataset, the original numeric version of those variables is dropped.
+After conversion, the converted variables are factors and their
+`.factor` versions are removed. The variables in `exclude`, the system
+variables above and the variables whose labels are of several codes
+(e.g. two options with the same label, which
+[`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
+reports with a warning) keep both columns.
 
 > Note: use
 > [`rd_factor()`](https://bruigtp.github.io/REDCapDM/reference/rd_factor.md)
@@ -458,7 +466,12 @@ forms_data <- covican |>
 ```
 
 With `wide = TRUE`, the result also has the column
-`max_repeated_instance`, the highest repetition of each form.
+`max_repeated_instance`: the largest number of rows of a record in each
+form (its events and repetitions), which is the number of the last set
+of columns. It is not the number of the instance: the columns are
+numbered by the position of each row of the record (e.g. a record with
+the instances 2 and 5 has the columns `_1` and `_2`, and its maximum is
+2).
 
 > Note: For longitudinal projects, the column `events` has the events
 > where each form is collected.
@@ -588,10 +601,15 @@ multiple functions, for example,
 [`rd_dictionary()`](https://bruigtp.github.io/REDCapDM/reference/rd_dictionary.md).
 It returns a list with:
 
-- `rlogic`: the transformed logic.
+- `rlogic`: the transformed logic. It can use auxiliary columns
+  (e.g. the values of other events of the record) and internal functions
+  of the package, so it can’t always be evaluated directly on the
+  original dataset: use `eval` or `eval_data`.
 
 - `eval`: the result of the evaluation of the logic in R, one value per
-  row of the dataset.
+  row of the dataset, with `NA` outside the events and rows where the
+  variable is collected. A logic without variables (e.g. `1 + 1`) can
+  give a single value in a dataset without events or repetitions.
 
 - `eval_data`: a data frame with the record identifier, the event (and
   repetition, if any) and `eval`, to identify the record of each

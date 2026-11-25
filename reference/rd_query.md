@@ -80,7 +80,9 @@ rd_query(
 
   Optional output of a previous `rd_query()` or
   [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
-  to which the new queries are appended.
+  to which the new queries are appended. Its queries must be a data
+  frame: the output of `by_dag = TRUE`, whose queries are a list of data
+  frames, can't be used.
 
 - variables_names:
 
@@ -143,13 +145,13 @@ containing:
 
 - queries:
 
-  A data frame or a list of data frames (if `by_dag = TRUE`) with
-  detailed query information for each record.
+  A data frame or a list of data frames (if `by_dag = TRUE`, one per
+  DAG) with detailed query information for each record.
 
 - results:
 
-  A formatted report (HTML table) summarizing total queries per
-  variable, event, and DAG if applicable.
+  A formatted report (HTML table) summarizing total queries per variable
+  and event; with `by_dag = TRUE`, a list with one table per DAG.
 
 ## Details
 

@@ -5,8 +5,9 @@
 Helps identify records in a REDCap longitudinal project that are missing
 one or more specified events. Because REDCap typically omits empty
 events from exports, an event that contains no data for a record will
-not appear. This function finds those absent events and returns a
-per-record query table and a summarized HTML report.
+not appear. This function finds those absent events (not whether the
+events are complete) and returns a per-record query table and a
+summarized HTML report.
 
 ## Usage
 
@@ -56,10 +57,11 @@ rd_event(
 
 - filter:
 
-  Optional. A single character string containing a filter expression to
-  subset the dataset before checking for missing events. Example:
-  `"age >= 18"`. It can use objects created in your session or in your
-  function.
+  Optional. A single character string containing a filter expression
+  that selects the records to check. Example: `"age >= 18"`. It can use
+  objects created in your session or in your function. Whether each
+  selected record has the event is checked with all its data (also the
+  rows that the filter doesn't select).
 
 - query_name:
 
@@ -71,7 +73,9 @@ rd_event(
 
   Optional output of a previous
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
-  or `rd_event()` to which the new queries are appended.
+  or `rd_event()` to which the new queries are appended. Its queries
+  must be a data frame: the output of `rd_query(by_dag = TRUE)`, whose
+  queries are a list of data frames, can't be used.
 
 - report_title:
 
@@ -86,8 +90,10 @@ rd_event(
 - link:
 
   Optional list containing project information (`domain`,
-  `redcap_version`, `proj_id`, `event_id`) to generate clickable links
-  for each query.
+  `redcap_version`, `proj_id`) to generate a link for each query, which
+  opens the home page of the record in REDCap (unlike
+  [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md),
+  it doesn't use `event_id`).
 
 - addTo:
 

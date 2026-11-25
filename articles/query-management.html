@@ -496,9 +496,10 @@ branching logic.</p>
 <p>In both scenarios, if a variable contains branching logic that cannot
 be converted from REDCap logic to R logic, the function will issue a
 warning. The warning message will advise the user to review the
-<code>results</code> element of the output for more information. This is
-to indicate that there might be potential issues or limitations with the
-conversion process for that specific variable’s branching logic:</p>
+<code>results</code> element of the output for more information. The
+variable is then checked in all its rows, without that branching logic,
+so the queries can include values that are hidden in REDCap: review them
+manually, or give the condition in the <code>filter</code> argument:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"copd"</span>, <span class="st">"potassium"</span><span class="op">)</span>,</span>
@@ -1392,9 +1393,14 @@ changed it to “Missing COPD values in the baseline event”.</p>
 <p><br></p>
 <p><u>report_zeros</u></p>
 <p>By default, the function will only report, in the summary of queries,
-variables with at least one query and will omit those with zero queries.
-To include these omitted variables in the summary, we can use the
-<code>report_zeros</code> argument:</p>
+variables with at least one query and will omit those with zero queries
+(when no variable has any query, the summary shows all of them with 0,
+also without <code>report_zeros</code>). To include these omitted
+variables in the summary, we can use the <code>report_zeros</code>
+argument. Also, a single <code>expression</code> is applied to all the
+<code>variables</code> without a warning, and several expressions, but
+fewer than <code>variables</code>, apply the first one to all the
+variables, with a warning:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_query.html">rd_query</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"copd"</span>, <span class="st">"age"</span><span class="op">)</span>,</span>
@@ -1601,7 +1607,8 @@ try to identify missing values in variables that are inside a missing
 event for some records using the <code><a href="../reference/rd_query.html">rd_query()</a></code> function, these
 missing values will not be identified because they do not exist in the
 exported data. The <code><a href="../reference/rd_event.html">rd_event()</a></code> function can be used to point
-out in how many records an event does not exist:</p>
+out in how many records an event does not exist (it checks whether the
+event is present, not whether its data is complete):</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"follow_up_visit_da_arm_1"</span><span class="op">)</span></span>
@@ -1638,8 +1645,11 @@ Follow up visit day 14+/-5d
 <p>There are a total of 38 records without any row corresponding to the
 event <em>Follow up visit day 14+/-5d</em>. Thus, when searching for
 missing values of variables in the <em>Follow up visit day 14+/-5d</em>
-event, we need to consider that there will be 38 additional missing
-values which will not be accounted for by <code><a href="../reference/rd_query.html">rd_query()</a></code>.</p>
+event, we need to consider that these 38 records have no row of this
+event, so <code><a href="../reference/rd_query.html">rd_query()</a></code> can’t report the missing values of its
+variables in them. 38 missing events are not 38 missing values: each
+absent event hides all the values of its forms (and a record can have
+several rows in an event, e.g. repetitions).</p>
 <p><br></p>
 <p>It might happen that an event is not mandatory for all records so we
 only want to check if the event is missing in a subgroup of records. For
@@ -1648,7 +1658,8 @@ inclusion and exclusion criteria would have to perform the follow up
 visit. Therefore, to check if the follow up event is missing only in the
 records that fulfill the inclusion and exclusion criteria, we can use
 the <code>filter</code> argument of the <code><a href="../reference/rd_event.html">rd_event()</a></code>
-function:</p>
+function. The filter selects the records to check, and whether each of
+them has the event is checked with all its data:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rd_event.html">rd_event</a></span><span class="op">(</span><span class="va">covican_transformed</span>,</span>
 <span>                    event <span class="op">=</span> <span class="st">"follow_up_visit_da_arm_1"</span>,</span>
@@ -1741,7 +1752,10 @@ Baseline visit
 <code>add_to</code>, <code>report_title</code>,
 <code>report_zeros</code> and <code>link</code> that work in the same
 way as in the examples of the <code><a href="../reference/rd_query.html">rd_query()</a></code> section
-(<em>Additional arguments</em>).</p>
+(<em>Additional arguments</em>), except <code>link</code>: it only uses
+<code>domain</code>, <code>redcap_version</code> and
+<code>proj_id</code>, and its links open the home page of the record
+(not <code>event_id</code>).</p>
 </blockquote>
 </div>
 <div class="section level2">
@@ -1833,10 +1847,14 @@ repetition is “New”.</p>
 is its unique event name and the variable its field name, so if an
 event, an arm or a field is renamed in REDCap between both reports, its
 queries are still “Pending”, with the new labels
-(<code>EventLabel</code> and <code>Description</code>). The reports
-created with older versions of REDCapDM have the label of the event in
+(<code>EventLabel</code> and <code>Description</code>). In the reports
+created with older versions of REDCapDM, the queries of
+<code><a href="../reference/rd_query.html">rd_query()</a></code> can have the label of the event in
 <code>Event</code>: when a single event has that label,
-<code><a href="../reference/check_queries.html">check_queries()</a></code> uses its unique event name.</p>
+<code><a href="../reference/check_queries.html">check_queries()</a></code> uses its unique event name. The queries of
+<code><a href="../reference/rd_event.html">rd_event()</a></code> already had the unique event name in
+<code>Event</code>, but the label in the default text of
+<code>Query</code>, which is also changed to the unique event name.</p>
 </blockquote>
 <p><br></p>
 <p>Query control output:</p>
@@ -2096,7 +2114,8 @@ that contains the link to each query. The function converts this column
 into hyperlink format in the exported file, so that we can simply click
 on the link to go to the specific query in the REDCap project. This
 column only exists when the queries were identified with the
-<code>link</code> argument of <code><a href="../reference/rd_query.html">rd_query()</a></code>.</p>
+<code>link</code> argument of <code><a href="../reference/rd_query.html">rd_query()</a></code> or
+<code><a href="../reference/rd_event.html">rd_event()</a></code>.</p>
 <p>In both cases, a message will be generated in the console informing
 you that the file has been created and where it is located.</p>
 </div>

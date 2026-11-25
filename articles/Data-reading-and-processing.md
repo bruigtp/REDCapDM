@@ -17,12 +17,14 @@ projects).
 
 ### **1. Using local files**
 
-Ensure you have exported the following files from REDCap and placed them
-in the same directory:
+Ensure you have exported the following files from REDCap (only the R
+script and its data CSV must be in the same directory; the dictionary
+and the event-form mapping can be in other folders):
 
 1.  **R data file** – reads and processes your REDCap dataset, obtained
     by choosing *R Statistical Software* (`.r` or `.R`). Please, keep
-    the R script and its data CSV in the same directory.
+    the R script and its data CSV in the same directory: the script
+    reads the CSV from its folder.
 
 2.  **Dictionary file** – CSV file containing variable metadata
 
@@ -62,11 +64,13 @@ longitudinal projects.
 
 With the API,
 [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
-makes two requests, one with the values and another one with their
-labels. The record identifiers are kept as text while they are read, so
-long identifiers (e.g. `9007199254740993`, beyond the precision of the
-numbers of R) or identifiers with zeros on the left (e.g. `007`) are not
-changed; as with the exported files, the identifier is a number only
+makes several requests: the metadata of the project (dictionary, events,
+instruments, …) and the records, whose values and labels are read
+separately (in batches of records, and the labels again if the records
+changed). The record identifiers are kept as text while they are read,
+so long identifiers (e.g. `9007199254740993`, beyond the precision of
+the numbers of R) or identifiers with zeros on the left (e.g. `007`) are
+not changed; as with the exported files, the identifier is a number only
 when its text is that number. The labels of the events, repeated
 instruments and Data Access Groups (the `.factor` columns) are given to
 each row by its code, such as the unique event name, and they are
@@ -79,7 +83,8 @@ with an error if they keep changing.
 ### **3. Understanding the output**
 
 [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.html)
-returns a list with three elements:
+returns a list with these elements (`event_form` only in longitudinal
+projects, when it is available):
 
 | Element | Description |
 |----|----|
@@ -106,7 +111,7 @@ performs the following actions:
 | Transformation | Description |
 |----|----|
 | Variable deletion | Remove specific variables or patterns |
-| Recalculate fields | Update REDCap calculated fields |
+| Recalculate fields | Recalculate the calculated fields in R and compare them with the values of REDCap (the different ones are added as `_recalc` columns; REDCap isn’t modified) |
 | Checkbox transformation | Convert checkbox variables into separate variables with option names |
 | Factor conversion | Replace original variables with their factor version |
 | Branching logic conversion | Translate REDCap logic into R logic for easier processing |

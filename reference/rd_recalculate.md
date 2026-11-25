@@ -94,8 +94,21 @@ A list with:
 - Works for single-event projects; for longitudinal projects,
   `event_form` must be provided.
 
-- Fields with incomplete branching logic or smart variables may fail to
-  recalculate.
+- The calculation of each field is translated to R with
+  [`rd_rlogic()`](https://bruigtp.github.io/REDCapDM/reference/rd_rlogic.md):
+  calculations that can't be translated (e.g. with smart variables or
+  functions that it doesn't know) are not recalculated, and
+  `Transcribed?` is `No`.
+
+- The original and recalculated values are compared as numbers when both
+  are numbers, also written as text (e.g. `'100000'`, the result of
+  `if()` with texts) or as `TRUE`/`FALSE` (the 1/0 of a condition),
+  rounded to 3 decimals: the comparison doesn't depend on how R writes
+  the numbers.
+
+- A calculated field of the dictionary that isn't in the data can't be
+  compared: a warning is shown, and its `Is equal?` and
+  `Different values` are `NA`.
 
 - Existing generated columns are refreshed even when the original values
   now agree with the calculation. If a formula cannot be translated or

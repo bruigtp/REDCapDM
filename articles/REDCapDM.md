@@ -74,7 +74,8 @@ Or we can use these functions at once, except
   Apply expressions to identify data queries/issues.
 
 - [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md):
-  Report missing/incomplete events per record (longitudinal).
+  Report the events that are missing in each record (longitudinal):
+  whether the event is present, not whether it is complete.
 
 - [`check_queries()`](https://bruigtp.github.io/REDCapDM/reference/check_queries.md):
   Compare two query reports to track changes made.
@@ -201,10 +202,11 @@ dataset <- redcap_data(data_path = "C:/Users/username/example.r",
 > Note: The R and data CSV file exported from REDCap must be located in
 > the same directory.
 
-If the REDCap project is longitudinal (contains more than one event)
-then a third element should be specified with the correspondence of each
-event with each form of the project. This csv file can be downloaded in
-the REDCap of the project following these steps: *Project Setup* \<
+If the REDCap project is longitudinal (its data has the column
+`redcap_event_name`, also when the export has a single event) then a
+third element should be specified with the correspondence of each event
+with each form of the project. This csv file can be downloaded in the
+REDCap of the project following these steps: *Project Setup* \<
 *Designate Instruments for My Events* \< *Download instrument-event
 mappings (CSV)*. Then, it has to be specified using the argument
 `event_path`:
@@ -237,11 +239,13 @@ project is longitudinal.
 
 With the API,
 [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
-makes two requests, one with the values and another one with their
-labels. The record identifiers are kept as text while they are read, so
-long identifiers (e.g. `9007199254740993`, beyond the precision of the
-numbers of R) or identifiers with zeros on the left (e.g. `007`) are not
-changed; as with the exported files, the identifier is a number only
+makes several requests: the metadata of the project (dictionary, events,
+instruments, …) and the records, whose values and labels are read
+separately (in batches of records, and the labels again if the records
+changed). The record identifiers are kept as text while they are read,
+so long identifiers (e.g. `9007199254740993`, beyond the precision of
+the numbers of R) or identifiers with zeros on the left (e.g. `007`) are
+not changed; as with the exported files, the identifier is a number only
 when its text is that number. The labels of the events, repeated
 instruments and Data Access Groups (the `.factor` columns) are given to
 each row by its code, such as the unique event name, and they are
@@ -258,16 +262,21 @@ with an error if they keep changing.
 
 The
 [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
-function returns a list with three elements: imported data, dictionary
-and event-form mapping (if included).
+function returns a list with the imported data and the dictionary, and
+also the event-form mapping in longitudinal projects when it is
+available (given in `event_path`, or read from the API).
 
 If the project uses REDCap’s Missing Data Codes (e.g. `NI`, `UNK`,
 `ASKU`), by default (`rm_mdc = TRUE`) they are replaced by missing
 values (`NA`) and a warning is shown. With `rm_mdc = FALSE`, they are
-kept: in the multiple-choice variables as an additional category, and in
-the validated text fields (numbers, dates, …) in a new `<field>_mdc`
-column next to the field, which keeps its type and has `NA` in those
-rows. A warning lists the fields with codes:
+kept in a new `<field>_mdc` column next to the field, with the original
+code of each row: in the validated text fields (numbers, dates, …), the
+field keeps its type and has `NA` in those rows, and the multiple-choice
+variables also have the code as an additional category of their
+`.factor` version. Use the `_mdc` column to know which code each row
+had. A warning lists the fields with codes, only when the data has them
+(with `rm_mdc = TRUE`, only when the codes of the project weren’t given
+in `mdc`):
 
 ``` r
 

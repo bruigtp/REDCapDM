@@ -90,7 +90,9 @@ This function is used to process checkbox variables in a REDCap dataset. By defa
 
 
 <dt id="arg-checkbox-names">checkbox_names<a class="anchor" aria-label="anchor" href="#arg-checkbox-names"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default), checkbox columns are renamed using choice labels. With <code>FALSE</code>, the columns keep their names, but their values are already the labels and each option is a field of the dictionary: running the function again on its result stops with an error instead of converting them again.</p></dd>
+<dd><p>Logical. If <code>TRUE</code> (default), checkbox columns are renamed using choice labels. With <code>FALSE</code>, the columns keep their names and each option is a field of the dictionary: running the function again on its result stops with an error instead of converting them again.
+Without the <code>.factor</code> versions of the options, the values of the columns become the labels; with them (as in the
+data of <code><a href="redcap_data.html">redcap_data()</a></code>), the columns keep their codes 0/1 and their <code>.factor</code> versions take the labels.</p></dd>
 
 
 <dt id="arg-na-logic">na_logic<a class="anchor" aria-label="anchor" href="#arg-na-logic"></a></dt>
@@ -100,7 +102,9 @@ This function is used to process checkbox variables in a REDCap dataset. By defa
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with:</p><dl><dt>data</dt>
-<dd><p>Transformed dataset with checkbox fields as factors and optionally renamed.</p></dd>
+<dd><p>Transformed dataset with the checkbox options optionally renamed. When the data has the <code>.factor</code>
+versions of the options, the original columns keep their codes 0/1 and the <code>.factor</code> versions take the labels of
+<code>checkbox_labels</code>; otherwise the original columns are replaced by factors with these labels.</p></dd>
 
 <dt>dictionary</dt>
 <dd><p>Updated dictionary with checkbox fields expanded and optionally renamed.</p></dd>

@@ -291,9 +291,13 @@ variables based on option text:</p>
 <pre><code><span><span class="co">##  num [1:342] 0 NA 0 NA 0 NA 0 NA 0 NA ...</span></span>
 <span><span class="co">##  - attr(*, "label")= chr "Specify underlying disease (choice=Acute myeloid leukemia)"</span></span></code></pre>
 <p>In this case, each option becomes a field of the dictionary of its
-own and its values are already the labels, so running
-<code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> again on the result stops with an error
-instead of converting them again.</p>
+own, so running <code><a href="../reference/rd_checkbox.html">rd_checkbox()</a></code> again on the result stops
+with an error instead of converting them again. As the data of
+<code><a href="../reference/redcap_data.html">redcap_data()</a></code> has the <code>.factor</code> versions of the
+options, the columns keep their codes 0/1 (as above) and their
+<code>.factor</code> versions take the labels; without the
+<code>.factor</code> versions, the values of the columns become the
+labels.</p>
 <p>If a checkbox field has a branching logic, the <code>na_logic</code>
 argument controls how missing values are set, with the following
 options:</p>
@@ -362,8 +366,11 @@ conversion: <code>redcap_event_name</code>,
 as-is to avoid interfering with longitudinal event mappings or user
 access groups.</p>
 </blockquote>
-<p>After conversion only the cleaned factor variables remain in the
-dataset, the original numeric version of those variables is dropped.</p>
+<p>After conversion, the converted variables are factors and their
+<code>.factor</code> versions are removed. The variables in
+<code>exclude</code>, the system variables above and the variables whose
+labels are of several codes (e.g. two options with the same label, which
+<code><a href="../reference/rd_factor.html">rd_factor()</a></code> reports with a warning) keep both columns.</p>
 <blockquote>
 <p>Note: use <code><a href="../reference/rd_factor.html">rd_factor()</a></code> before
 <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>. The branching logic and calculations
@@ -461,8 +468,12 @@ format:</p>
 <code class="sourceCode R"><span><span class="va">forms_data</span> <span class="op">&lt;-</span> <span class="va">covican</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/rd_split.html">rd_split</a></span><span class="op">(</span>by <span class="op">=</span> <span class="st">"form"</span>, wide <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>With <code>wide = TRUE</code>, the result also has the column
-<code>max_repeated_instance</code>, the highest repetition of each
-form.</p>
+<code>max_repeated_instance</code>: the largest number of rows of a
+record in each form (its events and repetitions), which is the number of
+the last set of columns. It is not the number of the instance: the
+columns are numbered by the position of each row of the record (e.g. a
+record with the instances 2 and 5 has the columns <code>_1</code> and
+<code>_2</code>, and its maximum is 2).</p>
 <blockquote>
 <p>Note: For longitudinal projects, the column <code>events</code> has
 the events where each form is collected.</p>
@@ -578,9 +589,16 @@ into logic that can be evaluated in R. This function is used internally
 in multiple functions, for example, <code><a href="../reference/rd_dictionary.html">rd_dictionary()</a></code>. It
 returns a list with:</p>
 <ul>
-<li><p><code>rlogic</code>: the transformed logic.</p></li>
+<li><p><code>rlogic</code>: the transformed logic. It can use auxiliary
+columns (e.g. the values of other events of the record) and internal
+functions of the package, so it can’t always be evaluated directly on
+the original dataset: use <code>eval</code> or
+<code>eval_data</code>.</p></li>
 <li><p><code>eval</code>: the result of the evaluation of the logic in
-R, one value per row of the dataset.</p></li>
+R, one value per row of the dataset, with <code>NA</code> outside the
+events and rows where the variable is collected. A logic without
+variables (e.g. <code>1 + 1</code>) can give a single value in a dataset
+without events or repetitions.</p></li>
 <li><p><code>eval_data</code>: a data frame with the record identifier,
 the event (and repetition, if any) and <code>eval</code>, to identify
 the record of each evaluated value.</p></li>

@@ -152,8 +152,9 @@ preprocess the raw REDCap data.</li>
 <ul>
 <li><p><code><a href="../reference/rd_query.html">rd_query()</a></code>: Apply expressions to identify data
 queries/issues.</p></li>
-<li><p><code><a href="../reference/rd_event.html">rd_event()</a></code>: Report missing/incomplete events per
-record (longitudinal).</p></li>
+<li><p><code><a href="../reference/rd_event.html">rd_event()</a></code>: Report the events that are missing in
+each record (longitudinal): whether the event is present, not whether it
+is complete.</p></li>
 <li><p><code><a href="../reference/check_queries.html">check_queries()</a></code>: Compare two query reports to track
 changes made.</p></li>
 <li><p><code><a href="../reference/rd_export.html">rd_export()</a></code>: Export query/report tables to an Excel
@@ -467,7 +468,8 @@ the R file and the dictionary from the REDCap project:</p>
 <p>Note: The R and data CSV file exported from REDCap must be located in
 the same directory.</p>
 </blockquote>
-<p>If the REDCap project is longitudinal (contains more than one event)
+<p>If the REDCap project is longitudinal (its data has the column
+<code>redcap_event_name</code>, also when the export has a single event)
 then a third element should be specified with the correspondence of each
 event with each form of the project. This csv file can be downloaded in
 the REDCap of the project following these steps: <em>Project Setup</em>
@@ -494,9 +496,11 @@ serves as the password:</p>
 <p>In this case, there is no need to specify the event-form file since
 the function will download it automatically using the API connection, if
 the project is longitudinal.</p>
-<p>With the API, <code><a href="../reference/redcap_data.html">redcap_data()</a></code> makes two requests, one with
-the values and another one with their labels. The record identifiers are
-kept as text while they are read, so long identifiers
+<p>With the API, <code><a href="../reference/redcap_data.html">redcap_data()</a></code> makes several requests: the
+metadata of the project (dictionary, events, instruments, …) and the
+records, whose values and labels are read separately (in batches of
+records, and the labels again if the records changed). The record
+identifiers are kept as text while they are read, so long identifiers
 (e.g. <code>9007199254740993</code>, beyond the precision of the numbers
 of R) or identifiers with zeros on the left (e.g. <code>007</code>) are
 not changed; as with the exported files, the identifier is a number only
@@ -515,18 +519,24 @@ in your <code>.Renviron</code> file (e.g. with
 <code>REDCAP_TOKEN=...</code>) and read it with
 <code>Sys.getenv("REDCAP_TOKEN")</code>, as in the example above.</p>
 </blockquote>
-<p>The <code><a href="../reference/redcap_data.html">redcap_data()</a></code> function returns a list with three
-elements: imported data, dictionary and event-form mapping (if
-included).</p>
+<p>The <code><a href="../reference/redcap_data.html">redcap_data()</a></code> function returns a list with the
+imported data and the dictionary, and also the event-form mapping in
+longitudinal projects when it is available (given in
+<code>event_path</code>, or read from the API).</p>
 <p>If the project uses REDCap’s Missing Data Codes
 (e.g. <code>NI</code>, <code>UNK</code>, <code>ASKU</code>), by default
 (<code>rm_mdc = TRUE</code>) they are replaced by missing values
 (<code>NA</code>) and a warning is shown. With
-<code>rm_mdc = FALSE</code>, they are kept: in the multiple-choice
-variables as an additional category, and in the validated text fields
-(numbers, dates, …) in a new <code>&lt;field&gt;_mdc</code> column next
-to the field, which keeps its type and has <code>NA</code> in those
-rows. A warning lists the fields with codes:</p>
+<code>rm_mdc = FALSE</code>, they are kept in a new
+<code>&lt;field&gt;_mdc</code> column next to the field, with the
+original code of each row: in the validated text fields (numbers, dates,
+…), the field keeps its type and has <code>NA</code> in those rows, and
+the multiple-choice variables also have the code as an additional
+category of their <code>.factor</code> version. Use the
+<code>_mdc</code> column to know which code each row had. A warning
+lists the fields with codes, only when the data has them (with
+<code>rm_mdc = TRUE</code>, only when the codes of the project weren’t
+given in <code>mdc</code>):</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/redcap_data.html">redcap_data</a></span><span class="op">(</span>data_path <span class="op">=</span> <span class="st">"C:/Users/username/example.r"</span>,</span>
 <span>                       dic_path <span class="op">=</span> <span class="st">"C:/Users/username/example_dictionary.csv"</span>,</span>
