@@ -19,7 +19,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/bruigtp/REDCapDM/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/bruigtp/REDCapDM/blob/v1.1.0/inst/CITATION)
 
 Carmezim J, Satorra P, Peñafiel J, García E, Pallarès N, Santos N, Tebé
 C (2024). “REDCapDM: An R package with a set of data management tools
