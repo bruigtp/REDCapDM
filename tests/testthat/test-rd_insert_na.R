@@ -348,3 +348,26 @@ test_that("rd_insert_na rejects the filters that use the data in a way whose col
   over_one <- function(v) v > 1
   expect_equal(run("over_one(x) %in% TRUE")$data$x, rep(NA_real_, 4))
 })
+
+test_that("rd_insert_na accepts drop without name, objects with the name of a function and filters with random numbers", {
+  data <- data.frame(record_id = c("1", "1", "2", "2"), redcap_event_name = c("a_arm_1", "b_arm_1", "a_arm_1", "b_arm_1"),
+                     age = c(40, NA, 50, NA), x = c(NA, 5, NA, 6))
+  dic <- data.frame(field_name = c("record_id", "age", "x"), form_name = c("fa", "fa", "fb"), field_type = "text", field_label = c("ID", "Age", "X"))
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "a_arm_1", "b_arm_1"), form = c("fa", "base", "fb"))
+  run <- function(filter) suppressWarnings(suppressMessages(rd_insert_na(data = data, dic = dic, event_form = ef, vars = "x", filter = filter)))
+
+  expect_equal(run("data[, 'x', FALSE] > 5")$data$x, c(NA, 5, NA, NA))
+  # (objects of the session called as some functions)
+  local <- 5
+  expect_equal(run("x > local")$data$x, c(NA, 5, NA, NA))
+  expect_error(run("is.na(local(age))"), "can't be determined", class = "REDCapDM_error_argument")
+
+  # A filter with random numbers is evaluated with the same numbers in the check of its columns, and the random numbers
+  # of the session continue as after a single evaluation
+  set.seed(10)
+  expect_equal(run("x > 5 & sample(c(TRUE, TRUE, FALSE), 4, replace = TRUE) | x > 5")$data$x, c(NA, 5, NA, NA))
+  after <- runif(1)
+  set.seed(10)
+  invisible(sample(c(TRUE, TRUE, FALSE), 4, replace = TRUE))
+  expect_identical(after, runif(1))
+})

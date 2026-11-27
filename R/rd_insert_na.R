@@ -154,6 +154,9 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     # (without the class `labelled` of the variable labels, which some functions don't accept, e.g. dplyr::between())
     data_eval <- without_labelled(data)
     eval_filter <- function(d) rlang::eval_tidy(filter_expr, data = d, env = rlang::env(user_env, data = d))
+    # (the state of the random numbers before the filter: the check below evaluates it again with the same numbers, and
+    # then the state is the one after the first evaluation, as if the filter had been evaluated once)
+    seed_before <- get0(".Random.seed", envir = globalenv(), inherits = FALSE)
     rows_mask <- tryCatch({
       eval_filter(data_eval)
     }, error = function(e) {
@@ -172,7 +175,17 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
       for (column in unused) {
         data_unused[[column]] <- data_unused[[column]][rep(NA_integer_, nrow(data_unused))]
       }
+      seed_after <- get0(".Random.seed", envir = globalenv(), inherits = FALSE)
+      set_seed <- function(seed) {
+        if (is.null(seed)) {
+          if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) rm(".Random.seed", envir = globalenv())
+        } else {
+          assign(".Random.seed", seed, envir = globalenv())
+        }
+      }
+      set_seed(seed_before)
       rows_unused <- tryCatch(eval_filter(data_unused), error = function(e) NULL)
+      set_seed(seed_after)
       if (!identical(rows_unused, rows_mask)) {
         rd_abort(
           c("The filter uses columns of the data that can't be determined from it, so their events can't be checked.",
@@ -401,6 +414,11 @@ filter_names <- function(expr, env = emptyenv(), columns = character(0), shadow 
     other <- if (double) "exact" else "drop"
     args <- args[!arg_names %in% other]
     arg_names <- arg_names[!arg_names %in% other]
+    # (the third argument of `[` without name is `drop`, e.g. `data[, "x", FALSE]`)
+    if (!double && length(args) == 3 && arg_names[3] == "") {
+      args <- args[1:2]
+      arg_names <- arg_names[1:2]
+    }
     if (any(!arg_names %in% c("", "i", "j")) || anyDuplicated(arg_names[arg_names != ""]) || length(args) > 2) {
       return(NULL)
     }
@@ -419,7 +437,9 @@ filter_names <- function(expr, env = emptyenv(), columns = character(0), shadow 
   walk <- function(e) {
     if (is.symbol(e)) {
       name <- as.character(e)
-      if (name %in% dataset || (name %in% c(indirect, ".env") && !name %in% c(columns, shadow))) {
+      # (an object of the session with the name of one of these functions, e.g. `local <- 5`, is an object)
+      if (name %in% dataset || (name %in% c(indirect, ".env") && !name %in% c(columns, shadow) &&
+        (name == ".env" || identical(env, emptyenv()) || is.function(get0(name, envir = env))))) {
         # (the data, the environment of the filter or a function of the list above, given as an argument, e.g.
         # `dplyr::pull(data, "x")`, `as.list(.env)` or `sapply("x", get)`)
         return(unknown(e))
