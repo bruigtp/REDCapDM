@@ -115,6 +115,7 @@ Sets selected variables to NA when a filter condition is satisfied. Useful for m
 <li><p>If the variable has a <code>.factor</code> version, it is updated too.</p></li>
 <li><p>For longitudinal projects, <code>event_form</code> must be provided for proper event-level filtering.</p></li>
 <li><p>Only one filter expression is allowed.</p></li>
+<li><p>The columns of the filter must be known to check their events: use their names (e.g. <code>age &gt; 30</code>), <code>data$age</code>, <code>data[["age"]]</code>, <code>.data[[field]]</code>, <code>data[, "age"]</code> or <code>data[, 3]</code>. A filter that uses the data in another way (e.g. <code>dplyr::pull(data, "age")</code> or <code>rev(data)[, 2]</code>), finds objects by their name or evaluates code (e.g. <code>get("age")</code> or <code>eval(parse(text = "age"))</code>), or whose result depends on other columns of the data (e.g. through a function of your session that reads them) stops with an error.</p></li>
 <li><p>Variables and filter columns must exist in both <code>data</code> and <code>dictionary</code>: their <code>.factor</code> and <code>_mdc</code> versions and the options of a checkbox (e.g. <code>cb___1</code>) are checked with their field. The objects of your session used in the filter don't need to be in them.</p></li>
 </ul></div>
     <div class="section level2">

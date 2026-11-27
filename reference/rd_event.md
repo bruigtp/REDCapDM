@@ -65,9 +65,11 @@ rd_event(
 
 - query_name:
 
-  Optional character vector describing each query. Defaults to a
-  standard format with the unique event name:
-  `The event 'event_name' is missing.`
+  Optional character vector describing each query: one message for all
+  the events, or one message for each event of `event` (in its order).
+  Defaults to a standard format with the unique event name:
+  `The event 'event_name' is missing.`, also for the events with an `NA`
+  message.
 
 - add_to:
 

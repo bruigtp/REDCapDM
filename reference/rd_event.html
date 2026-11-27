@@ -99,7 +99,7 @@ Helps identify records in a REDCap longitudinal project that are missing one or 
 
 
 <dt id="arg-query-name">query_name<a class="anchor" aria-label="anchor" href="#arg-query-name"></a></dt>
-<dd><p>Optional character vector describing each query. Defaults to a standard format with the unique event name: <code>The event 'event_name' is missing.</code></p></dd>
+<dd><p>Optional character vector describing each query: one message for all the events, or one message for each event of <code>event</code> (in its order). Defaults to a standard format with the unique event name: <code>The event 'event_name' is missing.</code>, also for the events with an <code>NA</code> message.</p></dd>
 
 
 <dt id="arg-add-to">add_to<a class="anchor" aria-label="anchor" href="#arg-add-to"></a></dt>

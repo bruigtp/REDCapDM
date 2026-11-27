@@ -1111,6 +1111,31 @@
   [`rd_delete_vars()`](https://bruigtp.github.io/REDCapDM/reference/rd_delete_vars.md)),
   as the other `.factor` columns without their variable: it stopped with
   “Can’t subset columns that don’t exist”.
+- [`rd_insert_na()`](https://bruigtp.github.io/REDCapDM/reference/rd_insert_na.md)
+  checks the events of every column of the filter, also when the data is
+  chosen in other ways: between parentheses (e.g. `(data)[, 'age']`),
+  with named arguments (e.g. `data[, j = 'age']`), with positions that
+  include 0 (e.g. `data[, c(0, 3)]`) or with the pronoun `.env`
+  (e.g. `.env$data$age`). A filter that uses the data in a way whose
+  columns can’t be determined (e.g. `dplyr::pull(data, 'age')`,
+  `rev(data)[, 2]` or `data[, names(data) == 'age']`), that finds
+  objects by their name or evaluates code (e.g. `get('age')`,
+  `get0('data')` or `eval(parse(text = 'age'))`), or whose result
+  depends on other columns of the data (e.g. through a function of the
+  session that reads them) stops with an error: these filters were
+  applied without checking their events, so a variable of another event
+  became `NA`, and `data[, j = 'age']` stopped with an internal error.
+- [`redcap_data()`](https://bruigtp.github.io/REDCapDM/reference/redcap_data.md)
+  gives each field read from the API the label of its `field_name`: the
+  labels were read in another request and given by position, so when the
+  fields (or the options of a checkbox) changed their order between both
+  requests (e.g. the project was modified while it was read), a field
+  got the label of another one.
+- [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md)
+  takes in `query_name` one message for all the events or one message
+  for each event: with another number of messages it gave queries
+  without text, and now it stops with an error. An `NA` message uses the
+  default message of its event.
 - [`rd_event()`](https://bruigtp.github.io/REDCapDM/reference/rd_event.md),
   [`rd_query()`](https://bruigtp.github.io/REDCapDM/reference/rd_query.md)
   and

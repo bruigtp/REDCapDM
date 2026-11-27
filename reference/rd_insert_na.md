@@ -86,6 +86,15 @@ A list with:
 
 - Only one filter expression is allowed.
 
+- The columns of the filter must be known to check their events: use
+  their names (e.g. `age > 30`), `data$age`, `data[["age"]]`,
+  `.data[[field]]`, `data[, "age"]` or `data[, 3]`. A filter that uses
+  the data in another way (e.g. `dplyr::pull(data, "age")` or
+  `rev(data)[, 2]`), finds objects by their name or evaluates code (e.g.
+  `get("age")` or `eval(parse(text = "age"))`), or whose result depends
+  on other columns of the data (e.g. through a function of your session
+  that reads them) stops with an error.
+
 - Variables and filter columns must exist in both `data` and
   `dictionary`: their `.factor` and `_mdc` versions and the options of a
   checkbox (e.g. `cb___1`) are checked with their field. The objects of
