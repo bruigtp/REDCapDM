@@ -46,6 +46,7 @@ Sets selected variables to \code{NA} when a filter condition is satisfied. Usefu
 \item If the variable has a \code{.factor} version, it is updated too.
 \item For longitudinal projects, \code{event_form} must be provided for proper event-level filtering.
 \item Only one filter expression is allowed.
+\item The columns of the filter must be known to check their events: use their names (e.g. \code{age > 30}), \code{data$age}, \code{data[["age"]]}, \code{.data[[field]]}, \code{data[, "age"]} or \code{data[, 3]}. A filter that uses the data in another way (e.g. \code{dplyr::pull(data, "age")} or \code{rev(data)[, 2]}), finds objects by their name or evaluates code (e.g. \code{get("age")} or \code{eval(parse(text = "age"))}), or whose result depends on other columns of the data (e.g. through a function of your session that reads them) stops with an error.
 \item Variables and filter columns must exist in both \code{data} and \code{dictionary}: their \code{.factor} and \verb{_mdc} versions and the options of a checkbox (e.g. \code{cb___1}) are checked with their field. The objects of your session used in the filter don't need to be in them.
 }
 }

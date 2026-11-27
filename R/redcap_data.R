@@ -491,9 +491,9 @@ redcap_data <- function(data_path = NA, dic_path = NA, event_path = NA, uri = NA
     names(dic_api)[names(dic_api) %in% c("select_choices_or_calculations", "branching_logic", "question_number")] <- c("choices_calculations_or_slider_labels", "branching_logic_show_field_only_if", "question_number_surveys_only")
 
     # Apply labels to the main dataset (named by column, so that they are applied again at the end)
-    if (length(labels) == ncol(data_api)) {
-      names(labels) <- names(data_api)
-    }
+    # (the labels are the headers of another request: the fields of the dictionary are checked by their field_name, see
+    # api_column_labels())
+    labels <- api_column_labels(labels, names(data_api), dic_api)
     data_api <- purrr::map2(data_api, as.list(labels), ~ {
       if (!is.null(.y)) {
         attr(.x, "label") <- .y
@@ -1588,4 +1588,69 @@ restore_choice_codes <- function(x) {
   }
 
   x
+}
+
+#' Labels of the columns of the data read from the API
+#'
+#' The labels are the headers of the request with labels, and the data are read in another request: when the fields of
+#' the project change their order between both requests (e.g. the project is modified while it is read), the label of a
+#' position is the one of another column. The fields of the dictionary are checked by their `field_name`: when their
+#' labels are those of the dictionary, every column keeps the label of its position, as REDCap gives it; otherwise the
+#' fields take the label of the dictionary, and the other columns (checkbox options, REDCap columns, `_complete` and
+#' `_timestamp`) a label made from their name, as REDCap writes it.
+#'
+#' @param headers Labels read with the headers of the request with labels.
+#' @param columns Names of the columns of the data.
+#' @param dic Dictionary read from the API.
+#' @return The labels, named by column.
+#' @noRd
+api_column_labels <- function(headers, columns, dic) {
+  dic_labels <- if ("field_label" %in% names(dic)) {
+    stats::setNames(as.character(dic$field_label), as.character(dic[[1]]))
+  } else {
+    stats::setNames(rep(NA_character_, nrow(dic)), as.character(dic[[1]]))
+  }
+  choices_col <- intersect(c("choices_calculations_or_slider_labels", "select_choices_or_calculations"), names(dic))[1]
+
+  # (the labels made from the names of the columns)
+  fixed <- c(redcap_event_name = "Event Name", redcap_repeat_instrument = "Repeat Instrument", redcap_repeat_instance = "Repeat Instance",
+             redcap_data_access_group = "Data Access Group", redcap_survey_identifier = "Survey Identifier")
+  option_column <- function(column) grepl("___", column, fixed = TRUE) && sub("___.*$", "", column) %in% names(dic_labels)
+  made <- vapply(columns, function(column) {
+    if (column %in% names(dic_labels)) {
+      return(unname(dic_labels[column]))
+    }
+    if (column %in% names(fixed)) {
+      return(unname(fixed[column]))
+    }
+    if (option_column(column)) {
+      # (checkbox option: `Label (choice=Option)`; the code of the column is written as REDCap writes it in its name)
+      base <- sub("___.*$", "", column)
+      code <- sub("^.*?___", "", column)
+      option <- code
+      if (!is.na(choices_col)) {
+        options <- trimws(strsplit(as.character(dic[[choices_col]][match(base, dic[[1]])]), "|", fixed = TRUE)[[1]])
+        option_codes <- tolower(gsub("[^A-Za-z0-9_]", "_", trimws(sub(",.*$", "", options))))
+        k <- match(tolower(code), option_codes)
+        if (!is.na(k)) option <- trimws(sub("^[^,]*,", "", options[k]))
+      }
+      return(paste0(dic_labels[[base]], " (choice=", option, ")"))
+    }
+    if (grepl("_complete$", column)) {
+      return("Complete?")
+    }
+    if (grepl("_timestamp$", column)) {
+      return("Survey Timestamp")
+    }
+    column
+  }, character(1), USE.NAMES = FALSE)
+
+  # The headers are in the order of the columns when the fields and the checkbox options have the labels of the
+  # dictionary
+  checked <- columns %in% names(dic_labels) | vapply(columns, option_column, logical(1), USE.NAMES = FALSE)
+  squash <- function(x) gsub("\\s+", " ", trimws(clean_label(replace(x, is.na(x), ""))))
+  if (length(headers) == length(columns) && identical(squash(headers[checked]), squash(made[checked]))) {
+    return(stats::setNames(as.character(headers), columns))
+  }
+  stats::setNames(made, columns)
 }

@@ -17,6 +17,7 @@
 #' * If the variable has a `.factor` version, it is updated too.
 #' * For longitudinal projects, `event_form` must be provided for proper event-level filtering.
 #' * Only one filter expression is allowed.
+#' * The columns of the filter must be known to check their events: use their names (e.g. `age > 30`), `data$age`, `data[["age"]]`, `.data[[field]]`, `data[, "age"]` or `data[, 3]`. A filter that uses the data in another way (e.g. `dplyr::pull(data, "age")` or `rev(data)[, 2]`), finds objects by their name or evaluates code (e.g. `get("age")` or `eval(parse(text = "age"))`), or whose result depends on other columns of the data (e.g. through a function of your session that reads them) stops with an error.
 #' * Variables and filter columns must exist in both `data` and `dictionary`: their `.factor` and `_mdc` versions and the options of a checkbox (e.g. `cb___1`) are checked with their field. The objects of your session used in the filter don't need to be in them.
 #'
 #' @return A list with:
@@ -90,6 +91,17 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     })
     # (`data$x`, `.data$x` and `.data[[field]]` are always columns of the data)
     vars_filter <- filter_names(parsed, env = user_env, columns = names(data))
+    # (the columns of the data that the filter uses)
+    filter_columns <- intersect(c(vars_filter$columns, vars_filter$names), names(data))
+    # Error: a use of the data whose columns can't be known (their events couldn't be checked)
+    if (length(vars_filter$unresolved) > 0) {
+      unresolved <- vars_filter$unresolved
+      rd_abort(
+        c("The filter uses the data in a way whose columns can't be determined: {.code {unresolved}}.",
+          "i" = "Use the names of the columns (e.g. {.code age > 30}), {.code data$age}, {.code data[['age']]} or {.code data[, 'age']}, so that the events of the filter can be checked."),
+        class = "REDCapDM_error_argument"
+      )
+    }
     vars_filter <- unique(c(
       vars_filter$columns,
       vars_filter$names[vars_filter$names %in% names(data) | !vapply(vars_filter$names, exists, logical(1), envir = user_env)]
@@ -138,17 +150,36 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
     # Evaluate the filter expression once to get logical mask for rows
     filter_expr <- parsed
 
+    # Evaluate in the context of `data`; result should be logical vector of length nrow(data)
+    # (without the class `labelled` of the variable labels, which some functions don't accept, e.g. dplyr::between())
+    data_eval <- without_labelled(data)
+    eval_filter <- function(d) rlang::eval_tidy(filter_expr, data = d, env = rlang::env(user_env, data = d))
     rows_mask <- tryCatch({
-      # Evaluate in the context of `data`; result should be logical vector of length nrow(data)
-      # (without the class `labelled` of the variable labels, which some functions don't accept, e.g. dplyr::between())
-      data_eval <- without_labelled(data)
-      rlang::eval_tidy(filter_expr, data = data_eval, env = rlang::env(user_env, data = data_eval))
+      eval_filter(data_eval)
     }, error = function(e) {
       rd_abort("Error evaluating filter {.code {filter[1]}}.", class = "REDCapDM_error_argument", parent = e, call = fn_env)
     })
 
     if (!is.logical(rows_mask) || length(rows_mask) != nrow(data)) {
       rd_abort("Filter {.code {filter[1]}} did not return a logical vector with length equal to {.code nrow(data)}.", class = "REDCapDM_error_argument")
+    }
+
+    # Error: the filter gives other rows without the values of the columns that it doesn't use (it uses columns that
+    # weren't found above, so their events weren't checked)
+    unused <- setdiff(names(data_eval), filter_columns)
+    if (length(unused) > 0 && nrow(data_eval) > 0) {
+      data_unused <- data_eval
+      for (column in unused) {
+        data_unused[[column]] <- data_unused[[column]][rep(NA_integer_, nrow(data_unused))]
+      }
+      rows_unused <- tryCatch(eval_filter(data_unused), error = function(e) NULL)
+      if (!identical(rows_unused, rows_mask)) {
+        rd_abort(
+          c("The filter uses columns of the data that can't be determined from it, so their events can't be checked.",
+            "i" = "Use the names of the columns (e.g. {.code age > 30}), {.code data$age}, {.code data[['age']]} or {.code data[, 'age']}."),
+          class = "REDCapDM_error_argument"
+        )
+      }
     }
     
     # Warning: no row meets the filter
@@ -257,21 +288,142 @@ rd_insert_na <- function(project = NULL, data = NULL, dic = NULL, event_form = N
 #' Names of the variables of a filter
 #'
 #' The names of an expression, except the functions (`abs(x)`, `dplyr::between(x, 1, 2)`), the objects after `.env$` and
-#' the components of other objects (`settings$threshold`). `data$x`, `.data$x`, `.data[["x"]]` and `.data[[field]]` (with
-#' `field` an object of the session) are the column `x`.
+#' the components of other objects (`settings$threshold`). The columns of the data chosen with `data$x`, `.data$x`,
+#' `data[["x"]]`, `.data[[field]]` (with `field` an object of the session), `data[, "x"]`, `data[, 3]` or `data["x"]` (also
+#' between parentheses, e.g. `(data)$x`, and with named arguments, e.g. `data[, j = "x"]`) are the column `x`.
+#'
+#' The other uses of the data, whose columns can't be known before evaluating the filter (e.g. `dplyr::pull(data, "x")`,
+#' `rev(data)[, 2]`, an index that depends on the data, e.g. `data[, names(data) == "x"]`), and the functions that find
+#' objects by their name or evaluate code (e.g. `get("x")`, `get0("data")` or `eval(parse(text = "x"))`) are returned in
+#' `unresolved`: the events of their columns can't be checked.
 #'
 #' @param expr A parsed expression.
 #' @param env Environment where the filter is evaluated (to know the column of `.data[[field]]`).
 #' @param columns Names of the columns of the data (to know the column of `data[[2]]`).
-#' @return A list with the names of the expression (`names`) and the names that are columns of the data for sure
-#'   (`columns`).
+#' @param shadow Names that are arguments of a function written in the filter (e.g. `function(data) data > 1`).
+#' @return A list with the names of the expression (`names`), the names that are columns of the data for sure
+#'   (`columns`) and the parts of the expression whose columns can't be known (`unresolved`).
 #' @noRd
-filter_names <- function(expr, env = emptyenv(), columns = character(0)) {
+filter_names <- function(expr, env = emptyenv(), columns = character(0), shadow = character(0)) {
   out <- character(0)
   out_columns <- character(0)
+  unresolved <- character(0)
+  # The data in the filter: `data` (unless a column has that name: the filter sees the column) and the pronoun `.data`
+  dataset <- setdiff(c("data", ".data"), c(shadow, if ("data" %in% columns) "data"))
+  # Functions that find objects or columns by their name or evaluate code built in the filter
+  indirect <- c(
+    "get", "get0", "mget", "dynGet", "eval", "evalq", "eval_tidy", "eval_bare", "inject", "parse", "parse_expr",
+    "parse_exprs", "str2lang", "str2expression", "sym", "syms", "as.name", "as.symbol", "call", "as.call", "call2", "exec",
+    "invoke", "do.call", "match.fun", "environment", "parent.frame", "parent.env", "sys.frame", "sys.frames", "sys.function",
+    "sys.call", "as.environment", "current_env", "caller_env", "env_get", "env_get_list", "env_parent", "local", "with",
+    "within", "attach", "cur_data", "cur_data_all", "pick", "across", "if_any", "if_all", "c_across"
+  )
+  # (functions that take another function, also by its name, e.g. `sapply("x", "get")`)
+  appliers <- c("sapply", "lapply", "vapply", "mapply", "Map", "Reduce", "Filter", "Find", "Position", "apply", "tapply",
+                "outer", "Vectorize", "rapply", "eapply")
+  empty <- function(x) identical(x, quote(expr = ))
+  unwrap <- function(x) {
+    while (is.call(x) && identical(x[[1]], as.name("(")) && length(x) == 2) x <- x[[2]]
+    x
+  }
+  # Name of the object of the session chosen with the pronoun `.env` (`.env$x`, `.env[["x"]]`, `.env[[name]]`): NULL when
+  # `x` isn't such a choice, NA when the name can't be known
+  env_object <- function(x) {
+    x <- unwrap(x)
+    if (!is.call(x) || length(x) < 3 || !identical(unwrap(x[[2]]), as.name(".env"))) {
+      return(NULL)
+    }
+    if (identical(x[[1]], as.name("$"))) {
+      return(as.character(x[[3]]))
+    }
+    if ((identical(x[[1]], as.name("[[")) || identical(x[[1]], as.name("["))) && length(x) == 3) {
+      name <- index_columns(x[[3]], single = TRUE)
+      return(if (is.null(name)) NA_character_ else name)
+    }
+    NA_character_
+  }
+  # The data: `data`, `.data` or `.env$data` (the environment of the filter, which has the data)
+  is_dataset <- function(x) {
+    x <- unwrap(x)
+    (is.symbol(x) && as.character(x) %in% dataset) || identical(env_object(x), "data")
+  }
+  fun_name <- function(head) {
+    if (is.symbol(head)) {
+      return(as.character(head))
+    }
+    if (is.call(head) && length(head) == 3 && (identical(head[[1]], as.name("::")) || identical(head[[1]], as.name(":::")))) {
+      return(as.character(head[[3]]))
+    }
+    ""
+  }
+  unknown <- function(e) {
+    unresolved <<- c(unresolved, paste(deparse(e, width.cutoff = 500L), collapse = " "))
+    invisible()
+  }
+  # Columns chosen by an index of the data (NULL when they can't be known: its value depends on the data, or it isn't a
+  # name, a position or a logical vector of the columns)
+  index_columns <- function(index, single = FALSE) {
+    if (empty(index)) {
+      return(if (single) NULL else columns)
+    }
+    if (any(all.vars(index) %in% c(dataset, columns)) || any(all.names(index) %in% indirect)) {
+      return(NULL)
+    }
+    value <- tryCatch(eval(index, env), error = function(e) NULL)
+    if (is.factor(value)) value <- as.character(value)
+    if (length(value) == 0 || anyNA(value) || (single && length(value) != 1)) {
+      return(NULL)
+    }
+    if (is.character(value)) {
+      return(value)
+    }
+    if (is.numeric(value)) {
+      # (0 chooses no column; the negative positions choose the other columns)
+      value <- value[value != 0]
+      if (length(value) == 0) {
+        return(character(0))
+      }
+      if (all(abs(value) <= length(columns)) && (all(value > 0) || (!single && all(value < 0)))) {
+        return(columns[value])
+      }
+      return(NULL)
+    }
+    if (is.logical(value) && !single && length(value) <= length(columns)) {
+      return(columns[rep_len(value, length(columns))])
+    }
+    NULL
+  }
+  # Arguments of `[` or `[[` of the data: the index of the rows (`i`) and of the columns (`j`)
+  data_index <- function(e, double) {
+    args <- as.list(e)[-(1:2)]
+    arg_names <- names(args)
+    if (is.null(arg_names)) arg_names <- rep("", length(args))
+    other <- if (double) "exact" else "drop"
+    args <- args[!arg_names %in% other]
+    arg_names <- arg_names[!arg_names %in% other]
+    if (any(!arg_names %in% c("", "i", "j")) || anyDuplicated(arg_names[arg_names != ""]) || length(args) > 2) {
+      return(NULL)
+    }
+    # (a single index chooses the columns: `data["x"]`, `data[[2]]`)
+    if (length(args) <= 1) {
+      return(list(i = quote(expr = ), j = if (length(args) == 1) args[[1]] else quote(expr = )))
+    }
+    slots <- list(i = NULL, j = NULL)
+    for (k in which(arg_names != "")) slots[[arg_names[k]]] <- args[[k]]
+    for (k in which(arg_names == "")) {
+      free <- names(slots)[vapply(slots, is.null, logical(1))][1]
+      slots[[free]] <- args[[k]]
+    }
+    slots
+  }
   walk <- function(e) {
     if (is.symbol(e)) {
       name <- as.character(e)
+      if (name %in% dataset || (name %in% c(indirect, ".env") && !name %in% c(columns, shadow))) {
+        # (the data, the environment of the filter or a function of the list above, given as an argument, e.g.
+        # `dplyr::pull(data, "x")`, `as.list(.env)` or `sapply("x", get)`)
+        return(unknown(e))
+      }
       if (nzchar(name)) out <<- c(out, name)
       return(invisible())
     }
@@ -280,96 +432,75 @@ filter_names <- function(expr, env = emptyenv(), columns = character(0)) {
     }
     head <- e[[1]]
     if (identical(head, as.name("::")) || identical(head, as.name(":::"))) {
+      if (fun_name(e) %in% indirect) unknown(e)
       return(invisible())
+    }
+    name <- fun_name(head)
+    if (name %in% indirect && !name %in% shadow) {
+      return(unknown(e))
+    }
+    if (name %in% appliers && any(vapply(as.list(e)[-1], function(a) is.character(a) && any(a %in% indirect), logical(1)))) {
+      return(unknown(e))
     }
     # The arguments of a formula of purrr or of the selection helpers (e.g. `~ .x > 1`, with `.x`, `.y`, `.` or `..1`)
     # aren't variables
     if (identical(head, as.name("~"))) {
-      inner <- filter_names(as.call(c(as.name("list"), as.list(e)[-1])), env, columns)
+      inner <- filter_names(as.call(c(as.name("list"), as.list(e)[-1])), env, columns, shadow)
       out <<- c(out, inner$names[!grepl("^[.]([xy]|[.][0-9]+)?$", inner$names)])
       out_columns <<- c(out_columns, inner$columns)
+      unresolved <<- c(unresolved, inner$unresolved)
       return(invisible())
     }
     # The arguments of a function written in the filter (e.g. `function(v) v > 1`) aren't variables
     if (identical(head, as.name("function"))) {
-      inner <- filter_names(e[[3]], env, columns)
-      out <<- c(out, setdiff(inner$names, names(e[[2]])))
+      arguments <- names(e[[2]])
+      inner <- filter_names(e[[3]], env, columns, c(shadow, arguments))
+      out <<- c(out, setdiff(inner$names, arguments))
       out_columns <<- c(out_columns, inner$columns)
+      unresolved <<- c(unresolved, inner$unresolved)
       return(invisible())
     }
     is_access <- length(e) >= 3 && (identical(head, as.name("$")) || identical(head, as.name("@")) || identical(head, as.name("[[")) || identical(head, as.name("[")))
     if (is_access) {
-      object <- if (is.symbol(e[[2]])) as.character(e[[2]]) else ""
-      # Objects of the session (`.env$x`, `.env$settings$threshold`)
-      if (object == ".env") {
+      object <- unwrap(e[[2]])
+      # Objects of the session (`.env$x`, `.env$settings$threshold`), except the data (`.env$data`, below, when its
+      # columns are chosen) and the objects whose name can't be known
+      if (identical(object, as.name(".env"))) {
+        name <- env_object(e)
+        if (is.na(name) || name == "data") {
+          return(unknown(e))
+        }
         return(invisible())
       }
-      # Columns of the data chosen with `[` (`data[, "x"]`, `data[, 3]`, `data[rows, c("x", "y")]` or `data["x"]`): the
-      # same columns as with `$` or `[[` (the index of the rows is walked, as it can use other columns)
-      if (object %in% c("data", ".data") && identical(head, as.name("["))) {
-        index <- as.list(e)[-(1:2)]
-        # (named arguments, e.g. `drop = FALSE`, aren't indices)
-        if (!is.null(names(index))) {
-          index <- index[names(index) %in% ""]
-        }
-        empty <- function(x) identical(x, quote(expr = ))
-        if (length(index) >= 2) {
-          if (!empty(index[[1]])) walk(index[[1]])
-          index <- index[[2]]
-        } else if (length(index) == 1) {
-          index <- index[[1]]
-        } else {
-          index <- quote(expr = )
-        }
-        # (all the columns, e.g. `data[rows, ]`)
-        if (empty(index)) {
-          out_columns <<- c(out_columns, columns)
+      if (is_dataset(object)) {
+        # Columns of the data with `$` (`data$x`, `.data$x`, `(data)$x`)
+        if (identical(head, as.name("$"))) {
+          out_columns <<- c(out_columns, as.character(e[[3]]))
           return(invisible())
         }
-        value <- tryCatch(eval(index, env), error = function(e) NULL)
-        if (is.numeric(value) && length(value) > 0 && all(abs(value) %in% seq_along(columns))) {
-          value <- columns[value]
-        } else if (is.logical(value) && length(value) == length(columns) && !anyNA(value)) {
-          value <- columns[value]
+        if (identical(head, as.name("@"))) {
+          return(unknown(e))
         }
-        if (is.character(value) && length(value) > 0 && !anyNA(value)) {
-          out_columns <<- c(out_columns, value)
-        } else {
-          walk(index)
+        # Columns of the data with `[[` or `[` (`.data[["x"]]`, `.data[[field]]`, `data[[2]]`, `data[, "x"]`, `data[, 3]`,
+        # `data[rows, c("x", "y")]`, `data["x"]`, `data[, j = "x"]`): the index of the rows is walked, as it can use other
+        # columns
+        double <- identical(head, as.name("[["))
+        index <- data_index(e, double)
+        if (is.null(index)) {
+          return(unknown(e))
         }
+        chosen <- index_columns(index$j, single = double)
+        if (is.null(chosen)) {
+          return(unknown(e))
+        }
+        if (!empty(index$i)) walk(index$i)
+        out_columns <<- c(out_columns, chosen)
         return(invisible())
       }
-      # Columns of the data (`data$x`, `.data[["x"]]`, `.data[[field]]`)
-      if (object %in% c("data", ".data") && !identical(head, as.name("[")) && !identical(head, as.name("@"))) {
-        index <- e[[3]]
-        if (identical(head, as.name("$")) || is.character(index)) {
-          out_columns <<- c(out_columns, as.character(index))
-          return(invisible())
-        }
-        # (an index that is an object or an expression: its value says the column)
-        value <- tryCatch(eval(index, env), error = function(e) NULL)
-        if (is.numeric(value) && length(value) == 1 && object == "data" && value %in% seq_along(columns)) {
-          value <- columns[value]
-        }
-        if (is.character(value) && length(value) == 1 && !is.na(value)) {
-          out_columns <<- c(out_columns, value)
-        } else {
-          walk(index)
-        }
-        return(invisible())
-      }
-      # Components of other objects (`settings$threshold`, `x@slot`) aren't variables: only the object is
+      # Components of other objects (`settings$threshold`, `x@slot`) aren't variables: only the object is (in a chain,
+      # e.g. `.env$settings[["threshold"]]` or `data$x[1]`, each object is walked in its turn)
       if (identical(head, as.name("$")) || identical(head, as.name("@"))) {
         walk(e[[2]])
-        return(invisible())
-      }
-      # (a chain that starts with .env, e.g. `.env$settings[["threshold"]]`)
-      root <- e[[2]]
-      while (is.call(root) && length(root) >= 2 && (identical(root[[1]], as.name("$")) || identical(root[[1]], as.name("@")) || identical(root[[1]], as.name("[[")) || identical(root[[1]], as.name("[")))) {
-        root <- root[[2]]
-      }
-      if (identical(root, as.name(".env"))) {
-        walk_args(as.list(e)[-(1:2)])
         return(invisible())
       }
     }
@@ -384,7 +515,7 @@ filter_names <- function(expr, env = emptyenv(), columns = character(0)) {
     }
   }
   walk(expr)
-  list(names = unique(out), columns = unique(out_columns))
+  list(names = unique(out), columns = unique(out_columns), unresolved = unique(unresolved))
 }
 
 #' Field of the dictionary of a column of the data

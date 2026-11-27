@@ -514,3 +514,34 @@ test_that("redcap_data keeps the text of the identifier of the survey of the exp
   expect_identical(as.vector(out$data$redcap_survey_identifier), c("1.50", "+12", "9007199254740993"))
   expect_identical(as.vector(out$data$notes), c("a", "NA", "c"))
 })
+
+test_that("redcap_data gives each field of the API the label of its field_name when the order of the fields changes between the requests", {
+  skip_if_not_installed("REDCapR", "1.2.0")
+  skip_if_not_installed("mockery")
+  dic <- audit_dic(c("record_id", "age", "weight", "symptoms"), c("text", "text", "text", "checkbox"), choices = c("", "", "", "1, Fever | 2, Cough"))
+  dic$field_label <- c("Record ID", "Age", "Weight", "Symptoms")
+  read <- function(label_order) {
+    fake_read <- function(redcap_uri = NULL, token = NULL, raw_or_label = "raw", ...) {
+      rows <- data.frame(record_id = c("1", "2"), age = c("54", "61"), weight = c("70", "80"), symptoms___1 = c("1", "0"), symptoms___2 = c("0", "1"))
+      if (raw_or_label == "label") {
+        labels <- c(record_id = "Record ID", age = "Age", weight = "Weight", symptoms___1 = "Symptoms (choice=Fever)", symptoms___2 = "Symptoms (choice=Cough)")
+        rows$symptoms___1 <- ifelse(rows$symptoms___1 == "1", "Checked", "Unchecked")
+        rows$symptoms___2 <- ifelse(rows$symptoms___2 == "1", "Checked", "Unchecked")
+        rows <- rows[label_order]
+        names(rows) <- labels[label_order]
+      }
+      list(data = rows)
+    }
+    f <- redcap_data
+    mockery::stub(f, "REDCapR::redcap_read", fake_read)
+    mockery::stub(f, "REDCapR::redcap_metadata_read", function(...) list(data = dic))
+    mockery::stub(f, "REDCapR::redcap_project_info_read", function(...) list(data = data.frame(missing_data_codes = NA)))
+    out <- suppressWarnings(suppressMessages(f(uri = "https://api.example", token = "tok")))$data
+    vapply(c("age", "weight", "symptoms___1", "symptoms___2"), function(v) attr(out[[v]], "label"), character(1))
+  }
+  expected <- c(age = "Age", weight = "Weight", symptoms___1 = "Symptoms (choice=Fever)", symptoms___2 = "Symptoms (choice=Cough)")
+  expect_equal(read(c("record_id", "age", "weight", "symptoms___1", "symptoms___2")), expected)
+  # The fields, or the options of a checkbox, in another order in the request with labels
+  expect_equal(read(c("record_id", "weight", "age", "symptoms___1", "symptoms___2")), expected)
+  expect_equal(read(c("record_id", "age", "weight", "symptoms___2", "symptoms___1")), expected)
+})

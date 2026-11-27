@@ -307,3 +307,44 @@ test_that("rd_insert_na checks the events of the columns chosen with [ in the fi
   # (a column of the events of x)
   expect_equal(run("data[, 'x'] %in% 5")$data$x, c(NA, NA, NA, 6))
 })
+
+test_that("rd_insert_na rejects the filters that use the data in a way whose columns can't be determined", {
+  data <- data.frame(record_id = c("1", "1", "2", "2"), redcap_event_name = c("a_arm_1", "b_arm_1", "a_arm_1", "b_arm_1"),
+                     age = c(40, NA, 50, NA), x = c(NA, 5, NA, 6))
+  dic <- data.frame(field_name = c("record_id", "age", "x"), form_name = c("fa", "fa", "fb"), field_type = "text", field_label = c("ID", "Age", "X"))
+  ef <- data.frame(arm_num = 1, unique_event_name = c("a_arm_1", "a_arm_1", "b_arm_1"), form = c("fa", "base", "fb"))
+  run <- function(filter) suppressWarnings(suppressMessages(rd_insert_na(data = data, dic = dic, event_form = ef, vars = "x", filter = filter)))
+  cols <- "age"
+  nm <- "data"
+
+  # `age` is only in the event a, and `x` only in b: the columns of these filters are known, so they stop because they
+  # don't share any event with x
+  for (filter in c("is.na((data)[, 'age'])", "is.na(((data))$age)", "is.na(data[, c(0, 3)])", "is.na(data[, j = 'age'])",
+                   "is.na(data[j = 'age', i = ])", "is.na(data[, cols])", "is.na(data[, -c(1, 2, 4)])",
+                   "is.na(data[, c(FALSE, FALSE, TRUE, FALSE)])", "is.na(data[['age', exact = TRUE]])", "is.na(data[, 'age', drop = TRUE])",
+                   "is.na(.env$data$age)", "is.na(.env[[nm]][, 'age'])", "is.na(data[, paste0('a', 'ge')])")) {
+    expect_error(run(filter), "do not overlap", class = "REDCapDM_error_argument", info = filter)
+  }
+
+  # Other uses of the data, and the functions that find objects by their name or evaluate code: their columns can't be
+  # known
+  for (filter in c("is.na(dplyr::pull(data, 'age'))", "is.na(dplyr::pull(data, age))", "is.na(data |> dplyr::pull(age))",
+                   "is.na(rev(data)[, 2])", "is.na(t(data)[3, ])", "is.na(with(data, age))", "is.na(subset(data, select = age)[[1]])",
+                   "is.na(data[, names(data) == 'age'])", "is.na(get('age'))", "is.na(get0('data')$age)", "is.na(dynGet('data')$age)",
+                   "is.na(eval(parse(text = 'age')))", "is.na(do.call('get', list('age')))", "is.na(sapply('age', get))",
+                   "is.na(sapply('age', 'get'))", "is.na(dplyr::pull(.env$data, 'age'))", "is.na(as.list(.env)$data$age)")) {
+    expect_error(run(filter), "can't be determined", class = "REDCapDM_error_argument", info = filter)
+  }
+
+  # A function of the session that reads a column: the result depends on a column that isn't in the filter
+  read_age <- function() get("age", envir = parent.frame())
+  expect_error(run("is.na(read_age())"), "can't be determined", class = "REDCapDM_error_argument")
+
+  # The filters with the columns of the events of x keep working
+  expect_equal(run("data[, 'x'] %in% 5")$data$x, c(NA, NA, NA, 6))
+  expect_equal(run("(data)$x > 5")$data$x, c(NA, 5, NA, NA))
+  expect_equal(run("data[, j = 'x'] > 5")$data$x, c(NA, 5, NA, NA))
+  expect_equal(run("sapply(x, function(data) isTRUE(data > 5))")$data$x, c(NA, 5, NA, NA))
+  over_one <- function(v) v > 1
+  expect_equal(run("over_one(x) %in% TRUE")$data$x, rep(NA_real_, 4))
+})

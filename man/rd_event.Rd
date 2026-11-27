@@ -32,7 +32,7 @@ rd_event(
 
 \item{filter}{Optional. A single character string containing a filter expression that selects the records to check. Example: \code{"age >= 18"}. It can use objects created in your session or in your function. Whether each selected record has the event is checked with all its data (also the rows that the filter doesn't select).}
 
-\item{query_name}{Optional character vector describing each query. Defaults to a standard format with the unique event name: \verb{The event 'event_name' is missing.}}
+\item{query_name}{Optional character vector describing each query: one message for all the events, or one message for each event of \code{event} (in its order). Defaults to a standard format with the unique event name: \verb{The event 'event_name' is missing.}, also for the events with an \code{NA} message.}
 
 \item{add_to}{Optional output of a previous \code{rd_query()} or \code{rd_event()} to which the new queries are appended. Its queries must be a data frame: the output of \code{rd_query(by_dag = TRUE)}, whose queries are a list of data frames, can't be used.}
 

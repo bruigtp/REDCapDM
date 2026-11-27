@@ -274,3 +274,27 @@ test_that("rd_event filters by an identifier with another name and takes it from
   expect_equal(rd_event(make_custom_id(age_first = TRUE), event = "visit_arm_1")$queries$Identifier, "002")
   expect_equal(rd_event(make_custom_id(external_first = TRUE), event = "visit_arm_1")$queries$Identifier, "002")
 })
+
+test_that("rd_event takes one message for all the events or one message for each event in query_name", {
+  d0 <- covican$data
+  events <- c("baseline_visit_arm_1", "follow_up_visit_da_arm_1")
+  # (a record without its baseline visit and another without its follow-up visit)
+  exported <- d0[!(d0$record_id == "100-6" & d0$redcap_event_name == events[1]) & !(d0$record_id == "100-13" & d0$redcap_event_name == events[2]), ]
+  run <- function(query_name) suppressMessages(rd_event(data = exported, dic = covican$dictionary, event = events, query_name = query_name))$queries
+
+  expect_true(all(run("Missing visit")$Query == "Missing visit"))
+  q <- run(c("No baseline", "No follow-up"))
+  expect_equal(unique(q$Query[q$Event == "baseline_visit_arm_1"]), "No baseline")
+  expect_equal(unique(q$Query[q$Event == "follow_up_visit_da_arm_1"]), "No follow-up")
+  # An NA message: the default message of its event
+  q <- run(c("No baseline", NA))
+  expect_equal(unique(q$Query[q$Event == "follow_up_visit_da_arm_1"]), "The event 'follow_up_visit_da_arm_1' is missing.")
+  expect_false(anyNA(q$Query))
+
+  # Another number of messages: an error (it gave queries without text)
+  expect_error(run(c("a", "b", "c")), "one message for each event", class = "REDCapDM_error_argument")
+  expect_error(
+    suppressMessages(rd_event(data = exported, dic = covican$dictionary, event = events[1], query_name = c("a", "b"))),
+    "one message for each event", class = "REDCapDM_error_argument"
+  )
+})

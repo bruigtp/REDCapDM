@@ -11,7 +11,7 @@
 #' @param event_form Only applicable for longitudinal projects (presence of events). Event-to-form mapping for longitudinal projects.
 #' @param event Character vector with one or more REDCap event names to check for missing records.
 #' @param filter Optional. A single character string containing a filter expression that selects the records to check. Example: \code{"age >= 18"}. It can use objects created in your session or in your function. Whether each selected record has the event is checked with all its data (also the rows that the filter doesn't select).
-#' @param query_name Optional character vector describing each query. Defaults to a standard format with the unique event name: `The event 'event_name' is missing.`
+#' @param query_name Optional character vector describing each query: one message for all the events, or one message for each event of `event` (in its order). Defaults to a standard format with the unique event name: `The event 'event_name' is missing.`, also for the events with an `NA` message.
 #' @param add_to Optional output of a previous `rd_query()` or `rd_event()` to which the new queries are appended. Its queries must be a data frame: the output of `rd_query(by_dag = TRUE)`, whose queries are a list of data frames, can't be used.
 #' @param addTo `r lifecycle::badge("deprecated")` Use `add_to` instead.
 #' @param report_title Optional string specifying the title of the final report. Defaults to `"Report of queries"`.
@@ -118,6 +118,14 @@ rd_event <- function(project = NULL,
     check_text(get(arg), arg)
     # An empty vector (e.g. character(0)) is not given, as NA
     if (length(get(arg)) == 0) assign(arg, NA)
+  }
+  # Error: `query_name` has a message for all the events or one message for each event
+  if (!all(is.na(query_name)) && !length(query_name) %in% c(1, length(event))) {
+    rd_abort(
+      c("{.arg query_name} must have one message for all the events or one message for each event ({length(event)}), not {length(query_name)}.",
+        "i" = "An {.code NA} message uses the default message of its event."),
+      class = "REDCapDM_error_argument"
+    )
   }
   check_flag(report_zeros, "report_zeros")
   if (is.null(add_to)) {
@@ -263,14 +271,11 @@ rd_event <- function(project = NULL,
           } else {
             "-"
           },
-          Query = if (!all(is.na(query_name))) {
-            if (length(query_name) > 1) {
-              query_name[k]
-            } else {
-              query_name
-            }
+          Query = if (!is.na(query_name[min(k, length(query_name))])) {
+            query_name[min(k, length(query_name))]
           } else {
-            # (with the unique event name, as `Event`: the label of the event, in `EventLabel`, can be renamed)
+            # (with the unique event name, as `Event`: the label of the event, in `EventLabel`, can be renamed; also the
+            # events with an NA message in `query_name`)
             paste0("The event '", event[k], "' is missing.")
           },
           Code = "",
